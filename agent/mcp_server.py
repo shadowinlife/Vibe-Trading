@@ -893,6 +893,9 @@ def backtest(run_dir: str) -> str:
     """
     from src.tools.backtest_tool import run_backtest
 
+    # Successful runs auto-reflect inside run_backtest (see
+    # src.memory.reflections), covering both this MCP entry path and the
+    # in-process BacktestTool path without double-appending lessons.
     return run_backtest(run_dir)
 
 
