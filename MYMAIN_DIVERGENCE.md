@@ -55,7 +55,10 @@
 - **根因**：5 个 A 股 loader 对 volume 零单位换算、原生透传（`tencent_loader.py` L146 / `baostock_loader.py` L153 / `mootdx_loader.py` L213 / `tushare.py` L240）；`market_data.py` 的 envelope 与 `_provenance` 均无单位元数据；`get_market_data` 工具描述亦无单位说明
 - **影响**：回退链按可用性动态选源 → 同一查询的 volume 单位非确定（手/股随选源变化）；批量查询中部分标的降级到 baostock 会产生混合单位数据集，静默污染跨标的成交量分析；MCP 路径（opencode/Claude Desktop 等外部客户端）完全无法获知单位
 - **F5 的隐性缓解**：mymain 的 ClickHouse 位于链首，`stk_factor_pro.vol` 为 tushare 口径（=手），与链首 tencent 一致 —— CH 可达时 volume 单位行为被锁定为「手」（确定性）；但 CH 不可达且链首源被限流时，链尾 baostock=股 的不一致仍然存在
-- **修复跟踪**：shadowinlife 已在 #1062 声明认领；修复分支 `fix/volume-unit-consistency` 基于上游 main（`1bf1d8b4`）。上游修复合入后，rebase 时同步更新本节并在 §2.2 登记
+- **修复跟踪**：shadowinlife 已在 #1062 声明认领；修复分两阶段提交上游（均 Draft）：
+  - Phase 1 [PR #1065](https://github.com/HKUDS/Vibe-Trading/pull/1065)：loader 按 market 声明 `volume_units`，`_provenance` 输出 `volume_unit`（tencent/eastmoney 市场依赖：A 股=手、HK=股）
+  - Phase 2 [PR #1067](https://github.com/HKUDS/Vibe-Trading/pull/1067)：baostock 股→手归一化 + 跨源一致性测试 + 缓存版本隔离（v3→v4）
+  - 规范单位定为「手」（4/5 源原生 + A 股行情惯例）。上游合入后 rebase 时同步更新本节并在 §2.2 登记；mymain 的 CH `stk_factor_pro.vol` 为 tushare 口径（手），与归一化方向一致，无需改动
 
 ## 3. E2E 验证方式
 
@@ -148,6 +151,12 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 | D3 | `VIBE_TRADING_HOME` 迁移缺口：上游 #925 迁移不覆盖 memory，旧路径历史记忆不自动迁移 | 设了 `VIBE_TRADING_HOME` 的环境丢历史记忆可见性 | 贡献队列 ① 内容 |
 | D4 | `MEMORY_BASE` import 期求值，env 变更需重启进程 | monkeypatch 测试不便 | 贡献队列 ① 顺手改调用期求值 |
 
+### 4.6 待办研究任务
+
+| # | 任务 | 背景与目标 |
+|---|---|---|
+| R1 | **ClickHouse 语义层深度研究** | 2026-08-11 调研结论：mymain 的 CH 语义层是「隐性的、代码携带的」——业务→表列映射/单位换算固化在 Python 工具链（connector 模板 + fallbacks 换算 + 工具描述 + skill 文档），数据库层零语义（仓库无 DDL、列无 COMMENT，CH 实例当前不可达未直查 `system.columns`）。已证实的缺口：① `get_market_data` 的 `SELECT *` 泄漏路径（pe_ttm/pb/total_mv 等 ~199 列）无语义标注，契约漂移；② 语义与数据物理分离，任何绕过工具链的直连（含 ClickHouse MCP）立即丢失全部语义。研究方向：a) 语义下沉数据库——CH 列 COMMENT + schema DDL 入仓库；b) 语义视图层——views + COMMENT（Altinity 模式：视图变工具）；c) SELECT * 泄漏路径显式工具化（如 `get_valuation`：pe_ttm/pb/total_mv 固定模板 + tushare daily_basic 兜底）；d) 指标字典——pe_ttm TTM 口径、amount/volume 单位、close vs close_hfq 选择规则；e) 若引入 ClickHouse MCP 供人工探索，语义层必须先库化或包领域工具层（官方 hdx-evals 证明领域工具 > 裸 SQL：准确率 +18%）。相关证据链见 #1062 审计评论与 opencode 会话记录 |
+
 ## 5. 迭代笔记
 
 ### 2026-07-27 五-agent 并行评审（Goal/QA/CodeQuality/Security/ContextMining）
@@ -179,3 +188,10 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 - **取代核查**：F1–F5 均未被上游取代；上游新增 MCP 工具（quantlib_call、alpha_zoo/alpha_bench、机构数据四件套等）与本地能力无重叠。本地 MCP 计数随之更新：头注释 70/75、冒烟门控 OFF=70 / ON=75；skills 89→90 差异依旧（上游本轮未新增 skill）。
 - **共享基础设施**：F4 继续复用上游 `get_runtime_root()`；F5 沿用上游 loader 注册/chain 模式，与上游新增 `ca_equity` chain 并存无冲突；上游 FTS5 排序衰减修复（`454364eb`）与本地 `_default_memory_base()` 在 persistent.py 不同区域并存。
 - 验证基线：memory **321/2**（+4 为上游新增 FTS5 衰减测试）、ClickHouse **13/8**、README+manifest 门禁 **54 passed**（上游新增 6 条 pin 测试）、env gate **exit 0**、MCP **OFF=70 / ON=75**；ruff clean。注：本机 black 升至 26.1.0，对 2 个 CH 测试文件有纯风格重排要求，为保持与已验证树逐字节一致未跟随重排（上游 CI 不跑 black --check）。
+
+### 2026-08-11 增量对齐（基线 `1bf1d8b4`）+ #1062 修复推进
+
+- 上游前进 14 commit（c33133f4 → 1bf1d8b4）：swarm 三连修（retry 工件隔离 / raw-envelope 分类 / path-shaped agent id 拒绝）、backtest benchmark 修正字段舍入 + excess_return 一致性、agent compaction 全量过 summarizer、RSI Wilder-EWM 平滑、token 成本优化、README 新闻。合并**零冲突**（上游改动面与 F1–F5 无交集）。
+- 验证基线：memory **321/2**、ClickHouse **13/8**、README+manifest 门禁 **54 passed**、env gate **exit 0** —— 与合并前完全一致。
+- **#1062（上游 volume 单位不一致）推进**：完成 Phase 0 全量单位审计（实证矩阵：tencent/eastmoney/akshare/mootdx(暂定)/tushare=手，baostock=股，HK 链全链=股；tencent/eastmoney 市场依赖；akshare 官方文档标注错误——文档写「股」实测为「手」），Phase 1/2 分别以 Draft PR #1065 / #1067 提交上游。详见 §2.4。
+- **新增 §4.6 待办研究任务**：R1 ClickHouse 语义层深度研究（语义下沉数据库 / 视图层 / SELECT * 泄漏路径工具化 / 指标字典 / MCP 引入前置条件）。
