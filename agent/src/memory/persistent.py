@@ -18,7 +18,32 @@ from src.agent.frontmatter import parse_frontmatter as _parse_frontmatter
 
 logger = logging.getLogger(__name__)
 
-MEMORY_BASE = Path.home() / ".vibe-trading" / "memory"
+def _default_memory_base() -> Path:
+    """Resolve the default memory base directory.
+
+    Resolution order: ``VT_MEMORY_BASE_DIR`` override (declared in
+    ``MemoryConfig``), else the runtime root (``VIBE_TRADING_HOME``-aware,
+    ``~/.vibe-trading`` by default) with a ``memory`` subdirectory.
+
+    Config access is wrapped in try/except: a malformed unrelated env var
+    must not crash module import (it surfaces on the first memory operation
+    instead), so the plain home path is the fallback of last resort.
+    """
+    try:
+        from src.config.accessor import get_env_config
+
+        override = (get_env_config().memory.base_dir or "").strip()
+        if override:
+            return Path(override)
+
+        from src.config.paths import get_runtime_root
+
+        return get_runtime_root() / "memory"
+    except Exception:  # noqa: BLE001 - import must stay resilient to bad env
+        return Path.home() / ".vibe-trading" / "memory"
+
+
+MEMORY_BASE = _default_memory_base()
 MAX_INDEX_LINES = 200
 MAX_ENTRY_CHARS = 8000
 MAX_RESULTS = 5
