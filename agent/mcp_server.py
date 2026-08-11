@@ -866,6 +866,30 @@ if _env_memory_tools_enabled():
     _register_memory_tools()
 
 # ---------------------------------------------------------------------------
+# Memory guard middleware (auto-save after every tool call)
+# ---------------------------------------------------------------------------
+
+_memory_guard_registered = False
+
+
+def _register_memory_guard() -> None:
+    global _memory_guard_registered
+    if _memory_guard_registered:
+        return
+    try:
+        from src.memory.memory_guard import MemoryGuardMiddleware
+
+        mcp.add_middleware(MemoryGuardMiddleware())
+        _memory_guard_registered = True
+        logger.info("memory_guard middleware registered")
+    except Exception:
+        logger.debug("memory_guard middleware skipped", exc_info=True)
+
+
+_register_memory_guard()
+
+
+# ---------------------------------------------------------------------------
 # Backtest tool
 # ---------------------------------------------------------------------------
 

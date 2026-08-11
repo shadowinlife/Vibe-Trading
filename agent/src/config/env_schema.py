@@ -478,6 +478,16 @@ class MemoryConfig(_EnvBase):
     # Preset: business-friendly one-liner
     preset: str = Field(default="off", alias="VT_MEMORY")
 
+    # Path override (not a feature flag: never touched by presets)
+    base_dir: str = Field(
+        default="",
+        alias="VT_MEMORY_BASE_DIR",
+        description=(
+            "Override the memory base directory. Empty keeps the runtime-root "
+            "default (<VIBE_TRADING_HOME or ~/.vibe-trading>/memory)."
+        ),
+    )
+
     # Tier 1 flags
     quality_enabled: EnvBool = Field(
         default=False,
