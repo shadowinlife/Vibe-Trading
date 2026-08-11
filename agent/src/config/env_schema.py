@@ -425,6 +425,8 @@ _PRESET_FLAGS: dict[str, dict[str, bool]] = {
         "links_enabled": False,
         "compression_enabled": False,
         "fts_index_enabled": False,
+        "reflections_enabled": False,
+        "mcp_tools_enabled": False,
     },
     "on": {
         "quality_enabled": True,
@@ -434,6 +436,8 @@ _PRESET_FLAGS: dict[str, dict[str, bool]] = {
         "links_enabled": False,
         "compression_enabled": False,
         "fts_index_enabled": False,
+        "reflections_enabled": False,
+        "mcp_tools_enabled": False,
     },
     "full": {
         "quality_enabled": True,
@@ -443,6 +447,10 @@ _PRESET_FLAGS: dict[str, dict[str, bool]] = {
         "links_enabled": True,
         "compression_enabled": True,
         "fts_index_enabled": True,
+        "reflections_enabled": True,
+        # MCP tool exposure is never implied by a preset; it must be
+        # switched on explicitly via VT_MEMORY_MCP_TOOLS.
+        "mcp_tools_enabled": False,
     },
 }
 
@@ -455,6 +463,8 @@ _MEMORY_FLAG_ALIASES: dict[str, str] = {
     "links_enabled": "VT_MEMORY_LINKS",
     "compression_enabled": "VT_MEMORY_COMPRESSION",
     "fts_index_enabled": "VT_MEMORY_FTS_INDEX",
+    "reflections_enabled": "VT_MEMORY_REFLECTIONS",
+    "mcp_tools_enabled": "VT_MEMORY_MCP_TOOLS",
 }
 
 
@@ -501,6 +511,18 @@ class MemoryConfig(_EnvBase):
     fts_index_enabled: EnvBool = Field(
         default=False, alias="VT_MEMORY_FTS_INDEX",
         description="Enable SQLite FTS5 search index",
+    )
+
+    # T1b / T4 flags
+    reflections_enabled: EnvBool = Field(
+        default=False,
+        alias="VT_MEMORY_REFLECTIONS",
+        description="Enable reflection lessons storage and retrieval",
+    )
+    mcp_tools_enabled: EnvBool = Field(
+        default=False,
+        alias="VT_MEMORY_MCP_TOOLS",
+        description="Enable memory MCP tool registration for external callers",
     )
 
     @model_validator(mode="before")
