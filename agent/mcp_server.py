@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 70 tools: skills, research goals, backtest/factor/options/pattern
+Surfaces 70 tools (75 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, backtest/factor/options/pattern
 analysis, market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_margin_trading /
 get_block_trades / get_shareholder_count / get_lockup_expiry / get_sector_info /
@@ -736,6 +736,134 @@ def update_research_goal_status(
     except ValueError as exc:
         return _json_error(str(exc), error_type="validation")
 
+
+# ---------------------------------------------------------------------------
+# Memory lifecycle tools (opt-in via VT_MEMORY_MCP_TOOLS)
+# ---------------------------------------------------------------------------
+
+_memory_adapter = None
+
+
+def _get_memory_adapter():
+    """Return the shared memory MCP adapter (lazy singleton)."""
+    global _memory_adapter
+    if _memory_adapter is None:
+        from src.memory.mcp_adapter import MemoryMCPAdapter
+
+        _memory_adapter = MemoryMCPAdapter()
+    return _memory_adapter
+
+
+def _memory_envelope(result: dict[str, Any]) -> str:
+    """Convert an adapter dict envelope into the standard MCP JSON reply."""
+    if result.get("status") == "error":
+        extras = {k: v for k, v in result.items() if k not in ("status", "error")}
+        message = str(result.get("error", "unknown error"))
+        if extras:
+            message += f" ({json.dumps(extras, ensure_ascii=False)})"
+        return _json_error(message)
+    # _json_ok preserves an explicit "skipped" status from the adapter.
+    return _json_ok(**result)
+
+
+def _env_memory_tools_enabled() -> bool:
+    """Return whether memory MCP tools were enabled via the environment."""
+    from src.config.accessor import get_env_config
+
+    return get_env_config().memory.mcp_tools_enabled
+
+
+def _register_memory_tools() -> None:
+    """Register the memory lifecycle MCP tools on the shared FastMCP instance.
+
+    Called at module level only when VT_MEMORY_MCP_TOOLS is enabled, so the
+    tools are absent from tools/list for both the stdio (main()) and the
+    ASGI-import deployment paths unless the operator opts in.
+    """
+
+    @mcp.tool
+    def memory_save(
+        name: str,
+        description: str,
+        content: str,
+        memory_type: str = "project",
+    ) -> str:
+        """Save a memory entry to the persistent memory store.
+
+        Args:
+            name: Short unique title for the memory entry.
+            description: One-line summary of the entry.
+            content: Full memory body (markdown allowed).
+            memory_type: One of 'user', 'feedback', 'project', 'reference'.
+        """
+        return _memory_envelope(
+            _get_memory_adapter().memory_save(name, description, content, memory_type)
+        )
+
+    @mcp.tool
+    def memory_recall(query: str, top_k: int = 5, type_filter: str = "") -> str:
+        """Recall memory entries relevant to a query.
+
+        Returns up to top_k entries as {title, type, snippet, quality_score,
+        importance}. Recalled entries get their access statistics updated.
+
+        Args:
+            query: Free-text keywords describing what to recall.
+            top_k: Maximum number of entries to return.
+            type_filter: Optional memory type filter (e.g. 'project').
+        """
+        return _memory_envelope(
+            _get_memory_adapter().memory_recall(query, top_k, type_filter)
+        )
+
+    @mcp.tool
+    def memory_reinforce(name: str, event: str, source: str = "system") -> str:
+        """Reinforce or weaken a memory entry's quality score.
+
+        Args:
+            name: Exact memory entry title.
+            event: One of 'task_success', 'task_failure', 'user_confirm',
+                'user_reject', 'passive_decay'.
+            source: 'user' (full weight) or 'system' (discounted weight).
+        """
+        return _memory_envelope(
+            _get_memory_adapter().memory_reinforce(name, event, source)
+        )
+
+    @mcp.tool
+    def memory_reflect(
+        strategy_type: str,
+        outcome: dict | None = None,
+        original_params: dict | None = None,
+    ) -> str:
+        """Store a reflection lesson extracted from a strategy outcome.
+
+        Requires VT_MEMORY_REFLECTIONS (or VT_MEMORY=full); otherwise the
+        call is skipped with a hint.
+
+        Args:
+            strategy_type: Strategy family (e.g. 'momentum', 'dual_ma').
+            outcome: Scalar outcome metrics (e.g. sharpe, max_drawdown).
+            original_params: Parameters of the original decision.
+        """
+        return _memory_envelope(
+            _get_memory_adapter().memory_reflect(
+                strategy_type, outcome or {}, original_params or {}
+            )
+        )
+
+    @mcp.tool
+    def memory_status() -> str:
+        """Report memory store statistics.
+
+        Returns entry_count, avg_quality, avg_importance and gc_pending
+        (entries a dry-run garbage collection would act on).
+        """
+        return _memory_envelope(_get_memory_adapter().memory_status())
+
+
+if _env_memory_tools_enabled():
+    _register_memory_tools()
 
 # ---------------------------------------------------------------------------
 # Backtest tool
