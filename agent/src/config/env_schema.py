@@ -234,6 +234,13 @@ class DataConfig(_EnvBase):
     market_data_order_macro: str = Field(alias="MARKET_DATA_ORDER_MACRO", default="")
     market_data_order_forex: str = Field(alias="MARKET_DATA_ORDER_FOREX", default="")
 
+    # ClickHouse (local A-share data warehouse)
+    clickhouse_host: str = Field(alias="CLICKHOUSE_HOST", default="172.24.165.51")
+    clickhouse_port: int = Field(alias="CLICKHOUSE_PORT", default=8123)
+    clickhouse_user: str = Field(alias="CLICKHOUSE_USER", default="default")
+    clickhouse_password: str = Field(alias="CLICKHOUSE_PASSWORD", default="")
+    clickhouse_database: str = Field(alias="CLICKHOUSE_DATABASE", default="ashare")
+
 
 # ---------------------------------------------------------------------------
 # OCR
