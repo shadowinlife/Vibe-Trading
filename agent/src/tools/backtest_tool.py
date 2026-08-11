@@ -86,6 +86,21 @@ def run_backtest(run_dir: str) -> str:
     else:
         state_store.mark_failure(run_path, f"backtest engine exited with code {result.exit_code}")
 
+    if result.success:
+        # Best-effort reflection hook: fire-and-forget so the backtest
+        # response is never delayed by reflection I/O.  When the feature
+        # flag is disabled auto_reflect_from_run_dir returns immediately
+        # (None), and the function itself never raises.
+        import threading
+
+        from src.memory.reflections import auto_reflect_from_run_dir
+
+        threading.Thread(
+            target=auto_reflect_from_run_dir,
+            args=(run_path,),
+            daemon=True,
+        ).start()
+
     emit_progress("finalize", message="collecting artifacts")
     artifacts_found = {name: str(path) for name, path in result.artifacts.items()}
     return json.dumps({

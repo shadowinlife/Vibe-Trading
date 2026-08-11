@@ -201,3 +201,17 @@ def _reset_env_config():
     os.environ.clear()
     os.environ.update(saved_environ)
     reset_env_config()
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip bench-marked tests unless explicitly selected via ``-m``.
+
+    Benchmarks assert wall-clock latency gates and are meaningless on shared
+    CI runners; run them locally with ``pytest -m bench``.
+    """
+    if config.getoption("-m"):
+        return  # an explicit marker expression takes full control
+    skip_bench = pytest.mark.skip(reason="bench tests only run with -m bench")
+    for item in items:
+        if "bench" in item.keywords:
+            item.add_marker(skip_bench)
