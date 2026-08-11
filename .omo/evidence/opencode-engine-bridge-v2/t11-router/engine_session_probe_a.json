@@ -1,0 +1,40 @@
+{
+  "container": "vt-t11-a",
+  "returncode": 0,
+  "body": [
+    {
+      "id": "ses_f67504d23ffeVDeIozgtJE8llM",
+      "slug": "eager-engine",
+      "projectID": "global",
+      "directory": "/workspace",
+      "path": "workspace",
+      "summary": {
+        "additions": 0,
+        "deletions": 0,
+        "files": 0
+      },
+      "cost": 0.10149715607,
+      "tokens": {
+        "input": 56644,
+        "output": 4,
+        "reasoning": 21,
+        "cache": {
+          "read": 3072,
+          "write": 0
+        }
+      },
+      "title": "T11 router model turn",
+      "agent": "Sisyphus - ultraworker",
+      "model": {
+        "id": "qwen3.8-max",
+        "providerID": "alibaba-cn",
+        "variant": "default"
+      },
+      "version": "1.18.30",
+      "time": {
+        "created": 1789268046558,
+        "updated": 1789268053087
+      }
+    }
+  ]
+}

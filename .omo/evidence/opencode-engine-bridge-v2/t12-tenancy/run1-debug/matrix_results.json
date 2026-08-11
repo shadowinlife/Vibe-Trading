@@ -1,0 +1,718 @@
+{
+  "passed": 90,
+  "total": 91,
+  "all_passed": false,
+  "checks": [
+    {
+      "group": "m1",
+      "name": "a's key -> b's upstream DIRECT -> 401",
+      "pass": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "group": "m1",
+      "name": "a's key + b's Host direct -> 401",
+      "pass": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "group": "m1",
+      "name": "anonymous -> b's upstream direct -> 401",
+      "pass": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "group": "m1",
+      "name": "a's token + b's Host via router -> 403",
+      "pass": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "group": "m1",
+      "name": "positive control: b's own key direct -> 200",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "m1",
+      "name": "b's key -> a's upstream DIRECT -> 401",
+      "pass": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "group": "m1",
+      "name": "b's key + a's Host direct -> 401",
+      "pass": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "group": "m1",
+      "name": "anonymous -> a's upstream direct -> 401",
+      "pass": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "group": "m1",
+      "name": "b's token + a's Host via router -> 403",
+      "pass": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "group": "m1",
+      "name": "positive control: a's own key direct -> 200",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "m2",
+      "name": "tenant a: browser-style POST via router -> 201 (not 403)",
+      "pass": true,
+      "detail": "HTTP 201 (Host preserved + API_ALLOWED_HOSTS + Origin match)"
+    },
+    {
+      "group": "m2",
+      "name": "tenant a: cross-site Origin POST -> 403 (guard alive)",
+      "pass": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "group": "m2",
+      "name": "tenant b: browser-style POST via router -> 201 (not 403)",
+      "pass": true,
+      "detail": "HTTP 201 (Host preserved + API_ALLOWED_HOSTS + Origin match)"
+    },
+    {
+      "group": "m2",
+      "name": "tenant b: cross-site Origin POST -> 403 (guard alive)",
+      "pass": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "group": "m3",
+      "name": "tenant a: POST /auth/sse-ticket (key auth) -> 200 + ticket",
+      "pass": true,
+      "detail": "HTTP 200 ticket=bncrGr…"
+    },
+    {
+      "group": "m3",
+      "name": "tenant a: own ticket opens own SSE stream -> 200",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "m3",
+      "name": "tenant a: ticket is single-use (replay -> 401)",
+      "pass": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "group": "m3",
+      "name": "a's ticket on b's stream -> 401",
+      "pass": true,
+      "detail": "HTTP 401 (ticket store is per-gateway-process)"
+    },
+    {
+      "group": "m3",
+      "name": "tenant b: POST /auth/sse-ticket (key auth) -> 200 + ticket",
+      "pass": true,
+      "detail": "HTTP 200 ticket=ZajNhU…"
+    },
+    {
+      "group": "m3",
+      "name": "tenant b: own ticket opens own SSE stream -> 200",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "m3",
+      "name": "tenant b: ticket is single-use (replay -> 401)",
+      "pass": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "group": "m3",
+      "name": "b's ticket on a's stream -> 401",
+      "pass": true,
+      "detail": "HTTP 401 (ticket store is per-gateway-process)"
+    },
+    {
+      "group": "m3",
+      "name": "minting without a key -> 401",
+      "pass": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "group": "m3",
+      "name": "tenant a: Bearer-auth SSE stream -> 200",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "m4",
+      "name": "tenant a: GET /sessions 200 and lists its own marker session",
+      "pass": true,
+      "detail": "HTTP 200 sessions=2"
+    },
+    {
+      "group": "m4",
+      "name": "tenant b: GET /sessions 200 and lists its own marker session",
+      "pass": true,
+      "detail": "HTTP 200 sessions=3"
+    },
+    {
+      "group": "m4",
+      "name": "tenant a: session list contains NONE of the other tenant's",
+      "pass": true,
+      "detail": "foreign=3 leaked=[]"
+    },
+    {
+      "group": "m4",
+      "name": "tenant b: session list contains NONE of the other tenant's",
+      "pass": true,
+      "detail": "foreign=2 leaked=[]"
+    },
+    {
+      "group": "m6",
+      "name": "docker topology: the tenants share NO network (separate compose networks)",
+      "pass": true,
+      "detail": "a=['vt-t12-a_default'] b=['vt-t12-b_default'] shared=[]"
+    },
+    {
+      "group": "m6",
+      "name": "tenant a: serve 4096 has NO published port (internal-only)",
+      "pass": true,
+      "detail": "published=['8080/tcp']"
+    },
+    {
+      "group": "m6",
+      "name": "tenant b: serve 4096 has NO published port (internal-only)",
+      "pass": true,
+      "detail": "published=['8080/tcp']"
+    },
+    {
+      "group": "m6",
+      "name": "inside a: victim container name does not resolve (DNS)",
+      "pass": true,
+      "detail": "NX"
+    },
+    {
+      "group": "m6",
+      "name": "inside a: victim gateway 172.20.0.2:8080 unreachable",
+      "pass": true,
+      "detail": "result='000CONN_FAIL'"
+    },
+    {
+      "group": "m6",
+      "name": "inside a: victim opencode serve 172.20.0.2:4096 unreachable",
+      "pass": true,
+      "detail": "result='000CONN_FAIL'"
+    },
+    {
+      "group": "m6",
+      "name": "inside a: exactly ONE opencode serve visible (its own)",
+      "pass": true,
+      "detail": "procs=6 serve_lines=1"
+    },
+    {
+      "group": "m6",
+      "name": "inside a: no victim process cmdline visible",
+      "pass": true,
+      "detail": "6 cmdlines scanned"
+    },
+    {
+      "group": "m6",
+      "name": "inside a: zero filesystem hits for victim markers",
+      "pass": true,
+      "detail": "{\"victim_public_host\": 0, \"victim_placeholder\": 0, \"victim_session_ids\": 0}"
+    },
+    {
+      "group": "m5-config",
+      "name": "tenant a: agent.json channels are fail-closed placeholders",
+      "pass": true,
+      "detail": "operators=[] placeholders=yes"
+    },
+    {
+      "group": "m5-config",
+      "name": "tenant a: agent.json carries ZERO of the other tenant's material",
+      "pass": true,
+      "detail": "markers_checked=3 leaked=0"
+    },
+    {
+      "group": "m5-config",
+      "name": "tenant a: container env carries ZERO of the other tenant's secrets",
+      "pass": true,
+      "detail": "leaked=[]"
+    },
+    {
+      "group": "m5-config",
+      "name": "tenant a: env API_ALLOWED_HOSTS names only its own host",
+      "pass": true,
+      "detail": "exact provisioned value present"
+    },
+    {
+      "group": "m5-config",
+      "name": "tenant a: tenant.env has no foreign key/host",
+      "pass": true,
+      "detail": "cross-grep clean"
+    },
+    {
+      "group": "m5-config",
+      "name": "tenant b: agent.json channels are fail-closed placeholders",
+      "pass": true,
+      "detail": "operators=[] placeholders=yes"
+    },
+    {
+      "group": "m5-config",
+      "name": "tenant b: agent.json carries ZERO of the other tenant's material",
+      "pass": true,
+      "detail": "markers_checked=3 leaked=0"
+    },
+    {
+      "group": "m5-config",
+      "name": "tenant b: container env carries ZERO of the other tenant's secrets",
+      "pass": true,
+      "detail": "leaked=[]"
+    },
+    {
+      "group": "m5-config",
+      "name": "tenant b: env API_ALLOWED_HOSTS names only its own host",
+      "pass": true,
+      "detail": "exact provisioned value present"
+    },
+    {
+      "group": "m5-config",
+      "name": "tenant b: tenant.env has no foreign key/host",
+      "pass": true,
+      "detail": "cross-grep clean"
+    },
+    {
+      "group": "m3",
+      "name": "witness stream on a opened (200) before b's turn",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "turn",
+      "name": "tenant b: POST /sessions -> 201",
+      "pass": true,
+      "detail": "HTTP 201"
+    },
+    {
+      "group": "turn",
+      "name": "tenant b: message accepted",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "turn",
+      "name": "tenant b: turn streamed to attempt.completed",
+      "pass": true,
+      "detail": "terminal=attempt.completed events=7 wall=13.759s"
+    },
+    {
+      "group": "m3",
+      "name": "a's SSE connection received ZERO events during b's turn",
+      "pass": true,
+      "detail": "frames=0 event_frames=0 bytes=0 session_leak=False"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant a: in-container IM probe completed the round trip",
+      "pass": true,
+      "detail": "exit=0 wall=16.391s error=None"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant a: outbound carries only its own {channel, chat_id}",
+      "pass": true,
+      "detail": "sent=2 foreign=0"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant a: session map holds only its own {channel,chat_id} key",
+      "pass": true,
+      "detail": "{\"mockim:t12-a-chat\": \"d667aafbf21e\"}"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant a: the IM session landed in its own store",
+      "pass": true,
+      "detail": "vt_session=d667aafbf21e store=3"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant b: in-container IM probe completed the round trip",
+      "pass": true,
+      "detail": "exit=0 wall=15.061s error=None"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant b: outbound carries only its own {channel, chat_id}",
+      "pass": true,
+      "detail": "sent=2 foreign=0"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant b: session map holds only its own {channel,chat_id} key",
+      "pass": true,
+      "detail": "{\"mockim:t12-b-chat\": \"b2daa791f6c6\"}"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant b: the IM session landed in its own store",
+      "pass": true,
+      "detail": "vt_session=b2daa791f6c6 store=5"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant a: its channel never saw the other tenant's chat/session",
+      "pass": true,
+      "detail": "scanned 2 outbound records"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant a: zero state hits for the other tenant's IM chat/session",
+      "pass": true,
+      "detail": "hits=0"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant b: its channel never saw the other tenant's chat/session",
+      "pass": true,
+      "detail": "scanned 2 outbound records"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant b: zero state hits for the other tenant's IM chat/session",
+      "pass": true,
+      "detail": "hits=0"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant a: its IM session is listed by its OWN gateway (via router)",
+      "pass": true,
+      "detail": "HTTP 200 own=d667aafbf21e"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant a: the other tenant's IM session is NOT in its list",
+      "pass": true,
+      "detail": "foreign=1 leaked=[]"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant b: its IM session is listed by its OWN gateway (via router)",
+      "pass": true,
+      "detail": "HTTP 200 own=b2daa791f6c6"
+    },
+    {
+      "group": "m5-im",
+      "name": "tenant b: the other tenant's IM session is NOT in its list",
+      "pass": true,
+      "detail": "foreign=1 leaked=[]"
+    },
+    {
+      "group": "m4",
+      "name": "tenant a: no foreign session dir on its volume",
+      "pass": true,
+      "detail": "disk_dirs=3 foreign=[]"
+    },
+    {
+      "group": "m4",
+      "name": "tenant a: zero grep hits for foreign session ids in its state",
+      "pass": true,
+      "detail": "hits=0 over 5 foreign ids"
+    },
+    {
+      "group": "m4",
+      "name": "tenant a: its own REST sessions exist on its own volume",
+      "pass": true,
+      "detail": "3/3"
+    },
+    {
+      "group": "m4",
+      "name": "tenant b: no foreign session dir on its volume",
+      "pass": true,
+      "detail": "disk_dirs=5 foreign=[]"
+    },
+    {
+      "group": "m4",
+      "name": "tenant b: zero grep hits for foreign session ids in its state",
+      "pass": true,
+      "detail": "hits=0 over 3 foreign ids"
+    },
+    {
+      "group": "m4",
+      "name": "tenant b: its own REST sessions exist on its own volume",
+      "pass": true,
+      "detail": "5/5"
+    },
+    {
+      "group": "reclaim",
+      "name": "idle tenant b was STOPPED by the policy loop (accelerated N=15.0s)",
+      "pass": true,
+      "detail": "state=exited verdict={\"tenant\": \"b\", \"reclaim\": true, \"reason\": \"idle 21476ms >= ttl 15000ms\", \"truth_source\": \"engine\", \"truth_updated_ms\": 1789272587798, \"idle_ms\": 21476, \"drained\": true, \"_pass_t\": 1789272604.7652118}"
+    },
+    {
+      "group": "reclaim",
+      "name": "tenant b: stop verdict backed by an activity truth, fence drained",
+      "pass": true,
+      "detail": "truth=engine drained=True reason=idle 21476ms >= ttl 15000ms"
+    },
+    {
+      "group": "reclaim",
+      "name": "idle tenant a was STOPPED by the policy loop (accelerated N=15.0s)",
+      "pass": true,
+      "detail": "state=exited verdict={\"tenant\": \"a\", \"reclaim\": true, \"reason\": \"idle 17488ms >= ttl 15000ms\", \"truth_source\": \"engine\", \"truth_updated_ms\": 1789272588044, \"idle_ms\": 17488, \"drained\": true, \"_pass_t\": 1789272604.7652118}"
+    },
+    {
+      "group": "reclaim",
+      "name": "tenant a: stop verdict backed by an activity truth, fence drained",
+      "pass": true,
+      "detail": "truth=engine drained=True reason=idle 17488ms >= ttl 15000ms"
+    },
+    {
+      "group": "wake",
+      "name": "wake sample (policy-idle-stop): stopped -> inbound -> 201 with a real session",
+      "pass": true,
+      "detail": "HTTP 201 in 30.7s (state_before=exited)"
+    },
+    {
+      "group": "wake",
+      "name": "wake sample (policy-idle-stop): container running afterwards",
+      "pass": true,
+      "detail": "running"
+    },
+    {
+      "group": "wake",
+      "name": "wake sample (policy-idle-stop): stopped -> inbound -> 201 with a real session",
+      "pass": true,
+      "detail": "HTTP 201 in 18.7s (state_before=exited)"
+    },
+    {
+      "group": "wake",
+      "name": "wake sample (policy-idle-stop): container running afterwards",
+      "pass": true,
+      "detail": "running"
+    },
+    {
+      "group": "reclaim",
+      "name": "tenant a: the live turn COMPLETED under the armed policy loop",
+      "pass": true,
+      "detail": "terminal=attempt.completed wall=11.779s"
+    },
+    {
+      "group": "reclaim",
+      "name": "tenant a: container stayed RUNNING through the turn",
+      "pass": true,
+      "detail": "running"
+    },
+    {
+      "group": "reclaim",
+      "name": "tenant a: ZERO stop verdicts while the turn was live",
+      "pass": false,
+      "detail": "stops=1 keeps=2"
+    },
+    {
+      "group": "reclaim",
+      "name": "tenant a: live-turn keeps cite the ENGINE truth (the proxy ledger alone was stale)",
+      "pass": true,
+      "detail": "engine_keeps=2/2 idle_ms=[403, 5122]"
+    },
+    {
+      "group": "reclaim",
+      "name": "engine time.updated tracked the live turn (truth age stayed small)",
+      "pass": true,
+      "detail": "age_ms min=163 max=6645 n=4"
+    },
+    {
+      "group": "reclaim",
+      "name": "tenant a: idle AGAIN after its turn -> stopped by the loop",
+      "pass": true,
+      "detail": "state=exited"
+    },
+    {
+      "group": "wake",
+      "name": "wake sample (phase-w-stop): stopped -> inbound -> 201 with a real session",
+      "pass": true,
+      "detail": "HTTP 201 in 18.5s (state_before=exited)"
+    },
+    {
+      "group": "wake",
+      "name": "wake sample (phase-w-stop): container running afterwards",
+      "pass": true,
+      "detail": "running"
+    },
+    {
+      "group": "wake",
+      "name": "at least 3 cold-start wake samples were measured",
+      "pass": true,
+      "detail": "n=3 samples=[30.728, 18.709, 18.501]"
+    }
+  ],
+  "measurements": [
+    {
+      "name": "web_turn_wall_s",
+      "value": 13.759,
+      "unit": "s",
+      "tenant": "b"
+    },
+    {
+      "name": "im_first_response_s",
+      "value": 4.318,
+      "unit": "s",
+      "tenant": "a",
+      "kind": "delta"
+    },
+    {
+      "name": "im_terminal_s",
+      "value": 12.412,
+      "unit": "s",
+      "tenant": "a"
+    },
+    {
+      "name": "im_turn_cost_usd",
+      "value": 0.015,
+      "unit": "USD",
+      "tenant": "a"
+    },
+    {
+      "name": "im_first_response_s",
+      "value": 3.046,
+      "unit": "s",
+      "tenant": "b",
+      "kind": "delta"
+    },
+    {
+      "name": "im_terminal_s",
+      "value": 11.122,
+      "unit": "s",
+      "tenant": "b"
+    },
+    {
+      "name": "im_turn_cost_usd",
+      "value": 0.015,
+      "unit": "USD",
+      "tenant": "b"
+    },
+    {
+      "name": "cold_start_wake_s",
+      "value": 30.728,
+      "unit": "s",
+      "tenant": "b",
+      "trigger": "policy-idle-stop",
+      "state_before": "exited",
+      "status": 201
+    },
+    {
+      "name": "cold_start_wake_s",
+      "value": 18.709,
+      "unit": "s",
+      "tenant": "a",
+      "trigger": "policy-idle-stop",
+      "state_before": "exited",
+      "status": 201
+    },
+    {
+      "name": "cold_start_wake_s",
+      "value": 18.501,
+      "unit": "s",
+      "tenant": "b",
+      "trigger": "phase-w-stop",
+      "state_before": "exited",
+      "status": 201
+    },
+    {
+      "name": "rss_mib[idle]",
+      "value": 1249.3,
+      "unit": "MiB",
+      "tenant": "a",
+      "n": 13,
+      "min": 1248.3,
+      "max": 1263.6
+    },
+    {
+      "name": "rss_mib[active-web-b]",
+      "value": 1274.35,
+      "unit": "MiB",
+      "tenant": "a",
+      "n": 2,
+      "min": 1267.7,
+      "max": 1281.0
+    },
+    {
+      "name": "rss_mib[active-im]",
+      "value": 1651.2,
+      "unit": "MiB",
+      "tenant": "a",
+      "n": 4,
+      "min": 1527.8,
+      "max": 1720.3
+    },
+    {
+      "name": "rss_mib[reclaim]",
+      "value": 1127.45,
+      "unit": "MiB",
+      "tenant": "a",
+      "n": 8,
+      "min": 30.7,
+      "max": 1291.3
+    },
+    {
+      "name": "rss_mib[idle]",
+      "value": 1047.6,
+      "unit": "MiB",
+      "tenant": "b",
+      "n": 13,
+      "min": 1046.5,
+      "max": 1047.6
+    },
+    {
+      "name": "rss_mib[active-web-b]",
+      "value": 1309.15,
+      "unit": "MiB",
+      "tenant": "b",
+      "n": 2,
+      "min": 1290.2,
+      "max": 1328.1
+    },
+    {
+      "name": "rss_mib[active-im]",
+      "value": 1370.1,
+      "unit": "MiB",
+      "tenant": "b",
+      "n": 4,
+      "min": 1324.0,
+      "max": 1431.6
+    },
+    {
+      "name": "rss_mib[reclaim]",
+      "value": 867.4,
+      "unit": "MiB",
+      "tenant": "b",
+      "n": 15,
+      "min": 30.7,
+      "max": 1055.7
+    }
+  ],
+  "notes": [
+    "T12 tenancy matrix: tenants=['a', 'b'] registry=/private/tmp/vt-t12-rig/tenants/tenant_registry.json",
+    "tenant a: container running, /health green",
+    "tenant b: container running, /health green",
+    "router up on http://127.0.0.1:28080 (log /Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/.omo/evidence/opencode-engine-bridge-v2/t12-tenancy/router.log)",
+    "router restarted with VT_ROUTER_IDLE_TTL_S=15.0 (accelerated N; production default 10800s = 3h)",
+    "phase W: vt-t12-b state before sample: exited",
+    "cold_start_wake_s distribution: min=18.501 median=18.709 max=30.728 (T11 baseline: 19.7-40.9s)"
+  ],
+  "phase": "T12 tenancy matrix",
+  "router_port": 28080,
+  "tenants": [
+    "a",
+    "b"
+  ],
+  "image": "opencode-serve:v3.0.0-tenant",
+  "reclaim_ttl_s": 15.0,
+  "exit_code": 1,
+  "aborted": false,
+  "finished_at": "2026-09-13T12:11:49+0800"
+}

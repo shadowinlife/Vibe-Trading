@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "tenants": {
+    "a": {
+      "container": "vt-t11-a",
+      "created_at": "2026-09-13T02:45:23+00:00",
+      "host_port": 28081,
+      "image": "opencode-serve:v3.0.0-tenant",
+      "public_host": "a.t11.tenant.local",
+      "tenant_id": "a",
+      "token_hint": "f8c0",
+      "updated_at": "2026-09-13T02:45:23+00:00",
+      "upstream": "http://127.0.0.1:28081",
+      "volume": "vt-t11-a-home"
+    },
+    "b": {
+      "container": "vt-t11-b",
+      "created_at": "2026-09-13T02:45:25+00:00",
+      "host_port": 28082,
+      "image": "opencode-serve:v3.0.0-tenant",
+      "public_host": "b.t11.tenant.local",
+      "tenant_id": "b",
+      "token_hint": "ea3f",
+      "updated_at": "2026-09-13T02:54:01+00:00",
+      "upstream": "http://127.0.0.1:28082",
+      "volume": "vt-t11-b-home"
+    }
+  },
+  "note": "token_sha256 stripped; generated keys are scratch and stay in the 0600 tenant.env files"
+}

@@ -1,0 +1,14 @@
+=== SPA from container (gateway serves frontend/dist) ===
+<div id="root"></div>
+  [PASS] SPA root div present
+  main asset: /assets/index-CWmPULMY.js
+  asset fetch HTTP 200 [PASS]
+<title>Vibe-Trading — vibe trading with your professional financial agent team</title>
+  index.html bytes:     7299
+
+=== channels-status (B2/D9 auth + lazy runtime) ===
+  HTTP 400
+  body: Invalid HTTP request received.
+
+=== auth enforcement: no key -> 401/403 ===
+  GET /sessions without key: HTTP 401 [PASS rejected]

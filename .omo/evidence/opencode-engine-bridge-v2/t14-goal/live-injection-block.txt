@@ -1,0 +1,7 @@
+[gateway context]
+vt_session_id=28417ddfdc40
+When calling research-goal tools (start_research_goal, add_goal_evidence, update_research_goal_status, get_research_goal), pass session_id='28417ddfdc40' so goal state binds to this conversation.
+
+Uploaded files: a relative path uploads/<name> in this conversation resolves to /tmp/vt-t14-rig/vt-home/uploads/<name>. Read it via that ABSOLUTE path with a file-reading tool (the built-in read tool works); the relative form resolves against your workspace and will miss the file.
+
+Record exactly ONE evidence note to research goal goal_8706674676ba using the add_goal_evidence tool, with text 'T14-E2E-EVIDENCE goal binding verified', goal_id 'goal_8706674676ba' and expected_goal_id 'goal_8706674676ba'. Call the tool exactly once, then reply with exactly: DONE. Do not create a todo list. Do not spawn subagents. Do not iterate.

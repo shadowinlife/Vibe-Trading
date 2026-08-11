@@ -1,0 +1,38 @@
+{
+  "engine_sessions": [
+    "ses_f693044e5ffe1nJ7Lru28B9R55",
+    "ses_f6944b1c9ffeWIJkSrhYUqWeIN",
+    "ses_f694770a4ffeDQfR6QDRQL1lfQ",
+    "ses_f6943f4ffffeuSAYUK9UZ1E8ou",
+    "ses_f6930bb9bffePlagO6S3up7uu6",
+    "ses_f692e6048ffepNDQY507gvbgPm",
+    "ses_f69446f32ffe65ZlJprYlYW4bH",
+    "ses_f69446599ffeSW3bIhBAgyGsOc",
+    "ses_f6947adfdffeMao3ubhMuPXaU6",
+    "ses_f6942107effeS9L6mYlzY1pfL4",
+    "ses_f6930ffe8ffe0R1ye5Rg5UTLlU",
+    "ses_f6934042cffe5a24MHclWLhtbg",
+    "ses_f6933ca89ffe3cIELjhIj8Piez",
+    "ses_f6931429effeuRFsjFhMDlgu3A",
+    "ses_f694fa7c4ffeHxe2uiLDR0Ay9r"
+  ],
+  "cost_usd_per_session": {
+    "ses_f693044e5ffe1nJ7Lru28B9R55": 0.02878919441,
+    "ses_f6944b1c9ffeWIJkSrhYUqWeIN": 0.0,
+    "ses_f694770a4ffeDQfR6QDRQL1lfQ": 0.0,
+    "ses_f6943f4ffffeuSAYUK9UZ1E8ou": 0.0,
+    "ses_f6930bb9bffePlagO6S3up7uu6": 0.0284959172,
+    "ses_f692e6048ffepNDQY507gvbgPm": 0.029578377439999998,
+    "ses_f69446f32ffe65ZlJprYlYW4bH": 0.0,
+    "ses_f69446599ffeSW3bIhBAgyGsOc": 0.0,
+    "ses_f6947adfdffeMao3ubhMuPXaU6": 0.0,
+    "ses_f6942107effeS9L6mYlzY1pfL4": 0.0,
+    "ses_f6930ffe8ffe0R1ye5Rg5UTLlU": 0.028575901879999997,
+    "ses_f6934042cffe5a24MHclWLhtbg": 0.01416086402,
+    "ses_f6933ca89ffe3cIELjhIj8Piez": 0.23476778151,
+    "ses_f6931429effeuRFsjFhMDlgu3A": 0.0,
+    "ses_f694fa7c4ffeHxe2uiLDR0Ay9r": 0.0
+  },
+  "cost_usd_total": 0.364368,
+  "note": "serve-side model cost of rig sessions (assistant message cost fields); excludes the gateway auto-title ChatLLM calls"
+}

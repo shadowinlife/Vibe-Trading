@@ -1,0 +1,60 @@
+[
+  {
+    "name": "sse_time_to_headers_s",
+    "value": 0.008,
+    "unit": "s",
+    "tenant": "a",
+    "session_id": "27156a5f104b"
+  },
+  {
+    "name": "sse_first_event_s",
+    "value": 0.03,
+    "unit": "s",
+    "tenant": "a"
+  },
+  {
+    "name": "sse_event_spread_s",
+    "value": 14.593,
+    "unit": "s",
+    "tenant": "a",
+    "events": 7
+  },
+  {
+    "name": "rss_mb[before_wake]",
+    "value": 1459.2,
+    "unit": "MiB",
+    "container": "vt-t11-a"
+  },
+  {
+    "name": "rss_mb[before_wake]",
+    "value": 1238.016,
+    "unit": "MiB",
+    "container": "vt-t11-b"
+  },
+  {
+    "name": "cold_start_wake_s",
+    "value": 40.791,
+    "unit": "s",
+    "tenant": "b",
+    "status": 201
+  },
+  {
+    "name": "rss_mb[after_wake]",
+    "value": 1480.704,
+    "unit": "MiB",
+    "container": "vt-t11-a"
+  },
+  {
+    "name": "rss_mb[after_wake]",
+    "value": 1027.072,
+    "unit": "MiB",
+    "container": "vt-t11-b"
+  },
+  {
+    "name": "wake_timeout_s",
+    "value": 6.009,
+    "unit": "s",
+    "tenant": "d",
+    "status": 503
+  }
+]

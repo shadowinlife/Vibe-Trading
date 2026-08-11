@@ -1,0 +1,81 @@
+{
+  "goal": {
+    "goal_id": "goal_8706674676ba",
+    "session_id": "28417ddfdc40",
+    "status": "active",
+    "objective": "T14: verify goal session binding end to end",
+    "ui_summary": "T14: verify goal session binding end to end",
+    "source": "api",
+    "protocol": "thesis_review",
+    "risk_tier": "research_general",
+    "token_budget": null,
+    "tokens_used": 0,
+    "turn_budget": null,
+    "turns_used": 0,
+    "time_budget_seconds": null,
+    "time_used_seconds": 0,
+    "budget_wrapup_sent": false,
+    "created_at": "2026-09-12T22:08:25.474050+00:00",
+    "updated_at": "2026-09-12T22:08:25.474050+00:00",
+    "completed_at": null,
+    "recap": null
+  },
+  "claims": [
+    {
+      "claim_id": "claim_7487e3bafd5f",
+      "goal_id": "goal_8706674676ba",
+      "session_id": "28417ddfdc40",
+      "claim_type": "thesis",
+      "text": "T14: verify goal session binding end to end",
+      "status": "active",
+      "created_at": "2026-09-12T22:08:25.474050+00:00",
+      "updated_at": "2026-09-12T22:08:25.474050+00:00"
+    }
+  ],
+  "criteria": [
+    {
+      "criterion_id": "crit_bd2ea72cc15c",
+      "goal_id": "goal_8706674676ba",
+      "session_id": "28417ddfdc40",
+      "text": "One evidence note recorded via the agent-side MCP goal tools",
+      "required": true,
+      "status": "pending",
+      "freshness_requirement": null,
+      "protocol_step": "step_1",
+      "created_at": "2026-09-12T22:08:25.474050+00:00",
+      "updated_at": "2026-09-12T22:08:25.474050+00:00"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "ev_f45c422ab6ab",
+      "goal_id": "goal_8706674676ba",
+      "session_id": "28417ddfdc40",
+      "text": "T14-E2E-EVIDENCE goal binding verified",
+      "criterion_id": null,
+      "claim_id": null,
+      "evidence_type": "evidence",
+      "tool_call_id": null,
+      "run_id": null,
+      "source_provider": null,
+      "source_type": null,
+      "source_uri": null,
+      "symbol_universe": [],
+      "benchmark": [],
+      "timeframe": null,
+      "method": null,
+      "assumptions": {},
+      "artifact_path": null,
+      "artifact_hash": null,
+      "retrieved_at": "2026-09-12T22:08:32.338910+00:00",
+      "data_as_of": null,
+      "freshness_status": "unknown",
+      "verification_status": "unverified",
+      "confidence": null,
+      "caveat": null,
+      "contradicts_claim_ids": [],
+      "created_at": "2026-09-12T22:08:32.338910+00:00"
+    }
+  ],
+  "evidence_count": 1
+}

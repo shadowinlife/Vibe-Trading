@@ -1,0 +1,15 @@
+{
+  "session_id": "12a3aa6ecbd0",
+  "title": "mockim:long-chat",
+  "status": "active",
+  "created_at": "2026-09-12T21:31:09.751585+00:00",
+  "updated_at": "2026-09-13T05:31:09.754328",
+  "last_attempt_id": "99300146d3c0",
+  "config": {
+    "channel": "mockim",
+    "channel_chat_id": "long-chat",
+    "include_shell_tools": false,
+    "opencode_engine_session_id": "ses_f6877f7c1ffexr78eatZakMqR8"
+  },
+  "owner": null
+}

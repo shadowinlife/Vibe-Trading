@@ -1,0 +1,24 @@
+Warning: OPENCODE_SERVER_PASSWORD is not set; server is unsecured.
+timestamp=2026-09-12T20:16:40.590Z level=INFO run=ebdc30e4 message=loading path=/tmp/vt-t8-rig/xdg/opencode/config.json
+timestamp=2026-09-12T20:16:40.592Z level=INFO run=ebdc30e4 message=loading path=/tmp/vt-t8-rig/xdg/opencode/opencode.json
+timestamp=2026-09-12T20:16:40.609Z level=INFO run=ebdc30e4 message=loading path=/tmp/vt-t8-rig/xdg/opencode/opencode.jsonc
+opencode server listening on http://127.0.0.1:14096
+timestamp=2026-09-12T20:16:40.814Z level=INFO run=ebdc30e4 message="creating instance" directory=/private/tmp/vt-t8-rig/workspace
+timestamp=2026-09-12T20:16:40.815Z level=INFO run=ebdc30e4 message=fromDirectory directory=/private/tmp/vt-t8-rig/workspace
+timestamp=2026-09-12T20:16:40.820Z level=INFO run=ebdc30e4 message=bootstrapping directory=/private/tmp/vt-t8-rig/workspace
+timestamp=2026-09-12T20:16:40.824Z level=INFO run=ebdc30e4 message=loading path=/tmp/vt-t8-rig/xdg/opencode/config.json
+timestamp=2026-09-12T20:16:40.824Z level=INFO run=ebdc30e4 message=loading path=/tmp/vt-t8-rig/xdg/opencode/opencode.json
+timestamp=2026-09-12T20:16:40.829Z level=INFO run=ebdc30e4 message=loading path=/tmp/vt-t8-rig/xdg/opencode/opencode.jsonc
+timestamp=2026-09-12T20:16:40.841Z level=INFO run=ebdc30e4 message=loading path=/Users/mgong/.opencode/opencode.json
+timestamp=2026-09-12T20:16:40.841Z level=INFO run=ebdc30e4 message=loading path=/Users/mgong/.opencode/opencode.jsonc
+timestamp=2026-09-12T20:16:43.034Z level=INFO run=ebdc30e4 message="all LSPs are disabled"
+timestamp=2026-09-12T20:16:43.035Z level=INFO run=ebdc30e4 message="all formatters are disabled"
+timestamp=2026-09-12T20:16:43.035Z level=INFO run=ebdc30e4 message=init
+timestamp=2026-09-12T20:16:43.065Z level=INFO run=ebdc30e4 message="removing share" sessionID=ses_f68c9f055ffeJ8wrb6dPc1Anys
+timestamp=2026-09-12T20:16:43.084Z level=INFO run=ebdc30e4 message="removing share" sessionID=ses_f68c6fcb4ffeVFkv7SkuyhVmXC
+timestamp=2026-09-12T20:16:43.090Z level=INFO run=ebdc30e4 message="fetching index" url=http://127.0.0.1:59163/index.json
+timestamp=2026-09-12T20:16:43.092Z level=INFO run=ebdc30e4 message="removing share" sessionID=ses_f68c6cf5affe7738XNUgHWNFk0
+timestamp=2026-09-12T20:16:43.105Z level=INFO run=ebdc30e4 message="removing share" sessionID=ses_f68c6a40cffecxTkB9Mys1isRg
+timestamp=2026-09-12T20:16:43.109Z level=WARN run=ebdc30e4 message="duplicate skill name" name=data-encryption existing=/Users/mgong/.claude/skills/data-encryption/SKILL.md duplicate=/Users/mgong/.agents/skills/data-encryption/SKILL.md
+timestamp=2026-09-12T20:16:43.109Z level=INFO run=ebdc30e4 message=init count=6
+timestamp=2026-09-12T20:16:43.115Z level=INFO run=ebdc30e4 message="removing share" sessionID=ses_f68c67894ffeDxR21pdGolt1fl

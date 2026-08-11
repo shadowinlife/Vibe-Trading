@@ -1,0 +1,15 @@
+{
+  "session_id": "1deba90a9d4f",
+  "title": "scheduled-research:t8-brief",
+  "status": "active",
+  "created_at": "2026-09-12T20:05:13.836172+00:00",
+  "updated_at": "2026-09-13T04:05:13.839279",
+  "last_attempt_id": "d09eebaaff49",
+  "config": {
+    "channel": "mockim",
+    "channel_chat_id": "brief-chat",
+    "include_shell_tools": false,
+    "opencode_engine_session_id": "ses_f68c6a40cffecxTkB9Mys1isRg"
+  },
+  "owner": null
+}

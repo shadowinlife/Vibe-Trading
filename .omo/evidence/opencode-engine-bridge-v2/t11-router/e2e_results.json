@@ -1,0 +1,454 @@
+{
+  "passed": 59,
+  "total": 59,
+  "all_passed": true,
+  "checks": [
+    {
+      "group": "provision",
+      "name": "re-provisioning tenant b succeeds (idempotent re-run)",
+      "pass": true,
+      "detail": "key_hint=ea3f"
+    },
+    {
+      "group": "provision",
+      "name": "the re-run REUSED the tenant's API_AUTH_KEY (no silent rotation)",
+      "pass": true,
+      "detail": "reused_key=True"
+    },
+    {
+      "group": "provision",
+      "name": "the registry still resolves the reused key to the same tenant",
+      "pass": true,
+      "detail": "resolution=Resolved"
+    },
+    {
+      "group": "routing",
+      "name": "router healthz 200",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "routing",
+      "name": "healthz reports the registered tenant count",
+      "pass": true,
+      "detail": "tenants=2"
+    },
+    {
+      "group": "routing",
+      "name": "unregistered Host -> 404",
+      "pass": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "group": "routing",
+      "name": "unregistered Host is not misrouted (no tenant header, no upstream answer)",
+      "pass": true,
+      "detail": "detail=unknown tenant host"
+    },
+    {
+      "group": "routing",
+      "name": "tenant a: own token+Host -> 200",
+      "pass": true,
+      "detail": "HTTP 200 x-vt-tenant=a"
+    },
+    {
+      "group": "routing",
+      "name": "tenant a: token alone routes (Host unregistered)",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "routing",
+      "name": "tenant b: own token+Host -> 200",
+      "pass": true,
+      "detail": "HTTP 200 x-vt-tenant=b"
+    },
+    {
+      "group": "routing",
+      "name": "tenant b: token alone routes (Host unregistered)",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "routing",
+      "name": "a's token with b's Host -> 403 (never guessed)",
+      "pass": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "group": "routing",
+      "name": "no token + registered Host is FORWARDED and the gateway rejects it (401)",
+      "pass": true,
+      "detail": "HTTP 401 — the router routes, the gateway authorizes"
+    },
+    {
+      "group": "routing",
+      "name": "a wrong key on a registered Host still reaches the gateway's 401",
+      "pass": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "group": "sse",
+      "name": "POST /sessions through the router -> 201",
+      "pass": true,
+      "detail": "HTTP 201"
+    },
+    {
+      "group": "sse",
+      "name": "headers arrive on an IDLE stream (a buffering proxy would hold them)",
+      "pass": true,
+      "detail": "0.008s"
+    },
+    {
+      "group": "sse",
+      "name": "content-type is text/event-stream",
+      "pass": true,
+      "detail": "text/event-stream"
+    },
+    {
+      "group": "sse",
+      "name": "X-Accel-Buffering: no (portal events.ts recipe)",
+      "pass": true,
+      "detail": "no"
+    },
+    {
+      "group": "sse",
+      "name": "cache-control disables caching/transform",
+      "pass": true,
+      "detail": "no-cache, no-transform"
+    },
+    {
+      "group": "sse",
+      "name": "no content-length on a stream",
+      "pass": true,
+      "detail": "None"
+    },
+    {
+      "group": "sse",
+      "name": "the router labels the tenant it routed to",
+      "pass": true,
+      "detail": "a"
+    },
+    {
+      "group": "fence",
+      "name": "an open stream holds exactly one admission (in-flight)",
+      "pass": true,
+      "detail": "inflight=1"
+    },
+    {
+      "group": "fence",
+      "name": "proxy-side activity was recorded for the tenant",
+      "pass": true,
+      "detail": "activity_ms=1789268046121"
+    },
+    {
+      "group": "fence",
+      "name": "client disconnect releases the admission",
+      "pass": true,
+      "detail": "inflight back to 0"
+    },
+    {
+      "group": "fence",
+      "name": "the router logged the disconnect (cancel propagated, not a silent close)",
+      "pass": true,
+      "detail": "log line present"
+    },
+    {
+      "group": "model",
+      "name": "POST /sessions -> 201",
+      "pass": true,
+      "detail": "HTTP 201"
+    },
+    {
+      "group": "model",
+      "name": "POST /messages accepted",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "group": "model",
+      "name": "events streamed through the router",
+      "pass": true,
+      "detail": "7 events: ['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+    },
+    {
+      "group": "model",
+      "name": "text_delta relayed",
+      "pass": true,
+      "detail": "1 deltas"
+    },
+    {
+      "group": "model",
+      "name": "terminal event relayed",
+      "pass": true,
+      "detail": "['attempt.completed']"
+    },
+    {
+      "group": "model",
+      "name": "no synthetic router error",
+      "pass": true,
+      "detail": "['text_delta', 'llm_usage', 'attempt.completed']"
+    },
+    {
+      "group": "sse",
+      "name": "events arrived SPREAD OUT, not in one buffered burst",
+      "pass": true,
+      "detail": "spread=14.59s first_event=0.030466250027529895"
+    },
+    {
+      "group": "model",
+      "name": "transcript persisted behind the router (user+assistant)",
+      "pass": true,
+      "detail": "roles=['user', 'assistant']"
+    },
+    {
+      "group": "reclaim",
+      "name": "engine GET /session?limit=1&roots=true answered",
+      "pass": true,
+      "detail": "[{\"id\":\"ses_f67504d23ffeVDeIozgtJE8llM\",\"slug\":\"eager-engine\",\"projectID\":\"global\",\"directory\":\"/workspace\",\"path\":\"workspace\",\"summary\":{\"additions\":0,\"deletio"
+    },
+    {
+      "group": "reclaim",
+      "name": "the engine answered with the documented list shape",
+      "pass": true,
+      "detail": "root sessions=1"
+    },
+    {
+      "group": "reclaim",
+      "name": "router parsed time.updated from the live engine (/session?limit=1&roots=true)",
+      "pass": true,
+      "detail": "time.updated=1789268053087"
+    },
+    {
+      "group": "reclaim",
+      "name": "admin reclaim resolved an activity truth for every tenant (expected source: engine)",
+      "pass": true,
+      "detail": "{\"a\": \"engine\", \"b\": \"proxy\"}"
+    },
+    {
+      "group": "reclaim",
+      "name": "with a long idle TTL nothing is reclaimed (truth check fails safe)",
+      "pass": true,
+      "detail": "{\"a\": \"idle 1553ms < ttl 86400000ms\", \"b\": \"idle 21565ms < ttl 86400000ms\"}"
+    },
+    {
+      "group": "hot-reload",
+      "name": "tenant c is unroutable before provisioning",
+      "pass": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "group": "hot-reload",
+      "name": "the router picked the new tenant up WITHOUT a restart",
+      "pass": true,
+      "detail": "HTTP 503 (404 would mean the table was not reloaded)"
+    },
+    {
+      "group": "hot-reload",
+      "name": "a new tenant with no container gets the fallback page, not a misroute",
+      "pass": true,
+      "detail": "HTTP 503"
+    },
+    {
+      "group": "hot-reload",
+      "name": "the router reported the missing container (wake unavailable)",
+      "pass": true,
+      "detail": "log line present"
+    },
+    {
+      "group": "hot-reload",
+      "name": "de-registering makes it 404 again",
+      "pass": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "group": "wake",
+      "name": "docker stop vt-t11-b",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "group": "wake",
+      "name": "container is exited before the request",
+      "pass": true,
+      "detail": "exited"
+    },
+    {
+      "group": "wake",
+      "name": "the inbound request woke the container and the gateway answered",
+      "pass": true,
+      "detail": "HTTP 201 in 40.8s"
+    },
+    {
+      "group": "wake",
+      "name": "the response is a real session (gateway answered, not the router)",
+      "pass": true,
+      "detail": "{'session_id': 'b4595d48b510', 'title': 'T11 cold-start wake', 'status': 'active', 'created_at': '2026-09-13T02:55:11.387351+00:00', 'updated_at': '2026-09-13T0"
+    },
+    {
+      "group": "wake",
+      "name": "the container is running afterwards",
+      "pass": true,
+      "detail": "running"
+    },
+    {
+      "group": "wake",
+      "name": "the router logged the wake",
+      "pass": true,
+      "detail": "log line present"
+    },
+    {
+      "group": "wake",
+      "name": "the router started the container itself",
+      "pass": true,
+      "detail": "log line present"
+    },
+    {
+      "group": "wake",
+      "name": "the woken gateway stays healthy",
+      "pass": true,
+      "detail": "/health reachable=True"
+    },
+    {
+      "group": "fallback",
+      "name": "a container that starts but never serves was created (vt-t11-d)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "group": "fallback",
+      "name": "wake timeout -> 503",
+      "pass": true,
+      "detail": "HTTP 503 after 6.0s"
+    },
+    {
+      "group": "fallback",
+      "name": "Retry-After is set",
+      "pass": true,
+      "detail": "30"
+    },
+    {
+      "group": "fallback",
+      "name": "the fallback page renders",
+      "pass": true,
+      "detail": "text/html; charset=utf-8"
+    },
+    {
+      "group": "fallback",
+      "name": "the page names tenant d",
+      "pass": true,
+      "detail": "tenant id present"
+    },
+    {
+      "group": "fallback",
+      "name": "the page is not cached",
+      "pass": true,
+      "detail": "no-store"
+    },
+    {
+      "group": "fallback",
+      "name": "the router waited roughly the configured budget",
+      "pass": true,
+      "detail": "6.0s >= 4.8s"
+    },
+    {
+      "group": "fallback",
+      "name": "the router logged the timeout",
+      "pass": true,
+      "detail": "log line present"
+    }
+  ],
+  "measurements": [
+    {
+      "name": "rss_mb[idle]",
+      "value": 1236.992,
+      "unit": "MiB",
+      "container": "vt-t11-a"
+    },
+    {
+      "name": "rss_mb[idle]",
+      "value": 1242.112,
+      "unit": "MiB",
+      "container": "vt-t11-b"
+    },
+    {
+      "name": "sse_time_to_headers_s",
+      "value": 0.008,
+      "unit": "s",
+      "tenant": "a",
+      "session_id": "27156a5f104b"
+    },
+    {
+      "name": "sse_first_event_s",
+      "value": 0.03,
+      "unit": "s",
+      "tenant": "a"
+    },
+    {
+      "name": "sse_event_spread_s",
+      "value": 14.593,
+      "unit": "s",
+      "tenant": "a",
+      "events": 7
+    },
+    {
+      "name": "model_turn_wall_s",
+      "value": 14.664,
+      "unit": "s",
+      "tenant": "a"
+    },
+    {
+      "name": "rss_mb[before_wake]",
+      "value": 1459.2,
+      "unit": "MiB",
+      "container": "vt-t11-a"
+    },
+    {
+      "name": "rss_mb[before_wake]",
+      "value": 1238.016,
+      "unit": "MiB",
+      "container": "vt-t11-b"
+    },
+    {
+      "name": "cold_start_wake_s",
+      "value": 40.791,
+      "unit": "s",
+      "tenant": "b",
+      "status": 201
+    },
+    {
+      "name": "rss_mb[after_wake]",
+      "value": 1480.704,
+      "unit": "MiB",
+      "container": "vt-t11-a"
+    },
+    {
+      "name": "rss_mb[after_wake]",
+      "value": 1027.072,
+      "unit": "MiB",
+      "container": "vt-t11-b"
+    },
+    {
+      "name": "wake_timeout_s",
+      "value": 6.009,
+      "unit": "s",
+      "tenant": "d",
+      "status": 503
+    }
+  ],
+  "notes": [
+    "tenants under test: ['a', 'b'] (registry /private/tmp/vt-t11-rig/tenants/tenant_registry.json)",
+    "router up on http://127.0.0.1:28080 (log /Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/.omo/evidence/opencode-engine-bridge-v2/t11-router/router.log)",
+    "router restarted with VT_ROUTER_WAKE_TIMEOUT_S=6.0",
+    "vt-t11-d removed; ghost tenants de-registered; real tenants left provisioned"
+  ],
+  "router_port": 28080,
+  "tenants": [
+    "a",
+    "b"
+  ],
+  "image": "opencode-serve:v3.0.0-tenant",
+  "exit_code": 0,
+  "aborted": false,
+  "finished_at": "2026-09-13T10:55:22+0800"
+}

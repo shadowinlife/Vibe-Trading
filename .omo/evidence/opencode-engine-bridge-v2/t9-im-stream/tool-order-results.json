@@ -1,0 +1,47 @@
+{
+  "group": "tool-order",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "sse_event_counts",
+      "pass": null,
+      "detail": "{'session.created': 1, 'message.received': 1, 'attempt.created': 1, 'attempt.started': 1, 'reasoning_delta': 2, 'text_delta': 5, 'tool_call': 1, 'tool_result': 1, 'llm_usage': 2, 'attempt.completed': 1}"
+    },
+    {
+      "assertion": "attempt_completed",
+      "pass": true,
+      "detail": "completed"
+    },
+    {
+      "assertion": "tool_call_observed",
+      "pass": true,
+      "detail": "{'session.created': 1, 'message.received': 1, 'attempt.created': 1, 'attempt.started': 1, 'reasoning_delta': 2, 'text_delta': 5, 'tool_call': 1, 'tool_result': 1, 'llm_usage': 2, 'attempt.completed': 1}"
+    },
+    {
+      "assertion": "pre_tool_text_flushed_before_tool_boundary",
+      "pass": true,
+      "detail": "first_tool_t=30.982 pre_tool_edits=2"
+    },
+    {
+      "assertion": "single_terminal_finalize",
+      "pass": true,
+      "detail": "1 finals"
+    },
+    {
+      "assertion": "flush_order: pre-tool text precedes post-tool text",
+      "pass": true,
+      "detail": "Checking now.\n\nThe command output was `t9-flush-check`."
+    },
+    {
+      "assertion": "intermediate_segments_marked_resuming",
+      "pass": true,
+      "detail": "1 intermediate finalizes"
+    },
+    {
+      "assertion": "no_duplicate_final_message",
+      "pass": true,
+      "detail": "0 message records"
+    }
+  ],
+  "finished_at": 1789244797.9736478
+}

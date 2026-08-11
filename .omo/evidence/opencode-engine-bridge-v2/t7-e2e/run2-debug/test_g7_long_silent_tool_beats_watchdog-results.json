@@ -1,0 +1,52 @@
+{
+  "group": "test_g7_long_silent_tool_beats_watchdog",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "tool_heartbeat synthesized through the silent gap",
+      "pass": true,
+      "detail": "n=32"
+    },
+    {
+      "assertion": "heartbeat elapsed_s crosses the 90s watchdog window",
+      "pass": true,
+      "detail": "max=96.0"
+    },
+    {
+      "assertion": "heartbeat cadence ~3s (D5)",
+      "pass": true,
+      "detail": "median=3.00s"
+    },
+    {
+      "assertion": "watchdog did NOT timeout-archive the turn",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "still streaming at t+98s (stop button present)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "silent-gap dwell seconds",
+      "pass": null,
+      "detail": "98.0"
+    },
+    {
+      "assertion": "post-terminal events not lost (attempt.completed after the gap)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "final answer rendered after the silent gap",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "turn archived done, never timeout",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "finished_at": 1789235424.215043
+}

@@ -1,0 +1,134 @@
+=== Vibe-Trading tool-selection eval (lexical baseline) ===
+corpus snapshot: captured_at=2026-09-13T01:21:41+00:00 tools=78 skills=91
+queries: 166 entries, 20 domains
+
+top-1 accuracy        : 75/166 = 0.4518
+top-3 hit rate        : 102/166 = 0.6145
+negative false-recall : 17/138 = 0.1232
+
+per-domain breakdown:
+domain  entries  top1  top3  top1_acc
+D01           9     4     6  0.4444
+D02          10     5     8  0.5000
+D03           5     2     3  0.4000
+D04           9     5     7  0.5556
+D05          11     6     7  0.5455
+D06          10     2     5  0.2000
+D07          10     3     5  0.3000
+D08           8     2     3  0.2500
+D09          10     4     6  0.4000
+D10           7     2     3  0.2857
+D11           8     5     5  0.6250
+D12           8     6     7  0.7500
+D13           9     3     5  0.3333
+D14           7     5     6  0.7143
+D15           7     3     3  0.4286
+D16           8     3     3  0.3750
+D17          11     4     6  0.3636
+D18           5     2     4  0.4000
+D19           6     3     4  0.5000
+T13           8     6     6  0.7500
+
+miss taxonomy:
+
+  name-collision      11
+  boundary-missing    8
+  keyword-buried      5
+  name-reality-drift  43
+  dual-exposure       0
+  other               24
+
+top-1 misses (id, domain, expected -> winner, taxonomy):
+
+D01-001   D01  tool:get_market_data -> skill:tushare  [boundary-missing]
+D01-003   D01  tool:screen_market -> skill:regulatory-knowledge  [name-reality-drift]
+D01-004   D01  tool:search_symbol -> skill:tushare  [name-reality-drift]
+D01-006   D01  tool:orderbook_depth -> tool:get_market_data  [boundary-missing]
+D01-008   D01  skill:mootdx -> skill:akshare  [boundary-missing]
+D02-001   D02  tool:get_financial_statements -> skill:tushare  [name-reality-drift]
+D02-007   D02  skill:edgar-sec-filings -> skill:ashare-pre-st-filter  [other]
+D02-008   D02  tool:get_institutional_holdings -> tool:trading_check  [other]
+D02-009   D02  tool:get_stock_profile -> skill:earnings-forecast  [name-reality-drift]
+D02-010   D02  skill:fundamental-filter -> tool:screen_market  [boundary-missing]
+D03-001   D03  tool:get_stock_news -> skill:eastmoney  [name-reality-drift]
+D03-003   D03  tool:get_research_reports -> skill:earnings-forecast  [other]
+D03-005   D03  tool:get_stock_news -> skill:eastmoney  [name-reality-drift]
+D04-001   D04  tool:get_fund_flow -> skill:eastmoney  [name-reality-drift]
+D04-002   D04  tool:get_northbound_flow -> skill:sentiment-analysis  [name-reality-drift]
+D04-008   D04  skill:hk-connect-flow -> tool:get_northbound_flow  [name-collision]
+D04-009   D04  skill:us-etf-flow -> skill:sector-rotation  [other]
+D05-003   D05  skill:technical-basic -> skill:chanlun  [name-reality-drift]
+D05-006   D05  tool:pattern_recognition -> skill:chanlun  [name-reality-drift]
+D05-008   D05  skill:ichimoku -> skill:adr-hshare  [name-reality-drift]
+D05-009   D05  skill:candlestick -> skill:chanlun  [name-reality-drift]
+D05-011   D05  skill:harmonic -> skill:chanlun  [other]
+D06-001   D06  tool:alpha_zoo -> skill:etf-analysis  [name-reality-drift]
+D06-002   D06  tool:query_strategies -> tool:get_strategy_evidence  [other]
+D06-003   D06  tool:list_strategies -> skill:etf-analysis  [name-reality-drift]
+D06-004   D06  tool:alpha_bench -> skill:alpha-zoo  [name-collision]
+D06-005   D06  tool:factor_analysis -> tool:analyze_trade_journal  [other]
+D06-006   D06  tool:get_strategy_evidence -> skill:sentiment-analysis  [name-reality-drift]
+D06-008   D06  skill:multi-factor -> skill:ashare-pre-st-filter  [keyword-buried]
+D06-009   D06  skill:strategy-dev-manager -> tool:research_papers  [other]
+D07-001   D07  tool:backtest -> skill:etf-analysis  [name-reality-drift]
+D07-002   D07  tool:backtest -> tool:run_shadow_backtest  [name-collision]
+D07-003   D07  skill:strategy-generate -> skill:etf-analysis  [name-reality-drift]
+D07-004   D07  skill:backtest-diagnose -> skill:shadow-account  [name-reality-drift]
+D07-008   D07  skill:cross-market-strategy -> tool:backtest  [other]
+D07-009   D07  tool:write_file -> tool:run_shadow_backtest  [other]
+D07-010   D07  tool:read_file -> tool:backtest  [name-reality-drift]
+D08-001   D08  tool:analyze_options -> tool:quantlib_call  [keyword-buried]
+D08-003   D08  tool:get_options_chain -> tool:get_market_data  [name-reality-drift]
+D08-004   D08  skill:options-strategy -> skill:convertible-bond  [name-reality-drift]
+D08-005   D08  skill:options-payoff -> tool:analyze_options_payoff  [name-collision]
+D08-006   D08  skill:options-advanced -> skill:corporate-events  [other]
+D08-008   D08  skill:crypto-derivatives -> skill:ashare-pre-st-filter  [name-reality-drift]
+D09-002   D09  tool:quantlib_call -> tool:run_shadow_backtest  [other]
+D09-003   D09  tool:cashflow_performance -> skill:fund-analysis  [name-reality-drift]
+D09-005   D09  skill:quant-statistics -> tool:get_run_result  [other]
+D09-006   D09  skill:correlation-analysis -> skill:tushare  [keyword-buried]
+D09-008   D09  skill:asset-allocation -> skill:ashare-pre-st-filter  [name-reality-drift]
+D09-009   D09  skill:performance-attribution -> skill:eastmoney  [other]
+D10-001   D10  skill:valuation-model -> skill:corporate-events  [other]
+D10-002   D10  skill:investor-lenses -> skill:deep-company-series  [other]
+D10-003   D10  skill:management-deep-dive -> skill:corporate-events  [name-reality-drift]
+D10-005   D10  skill:thesis-tracker -> skill:tushare  [name-reality-drift]
+D10-006   D10  skill:bottleneck-hunter -> tool:get_options_chain  [other]
+D11-003   D11  tool:get_sector_info -> skill:eastmoney  [name-reality-drift]
+D11-004   D11  skill:macro-analysis -> skill:financial-statement  [name-reality-drift]
+D11-006   D11  skill:geopolitical-risk -> skill:ashare-pre-st-filter  [name-reality-drift]
+D12-001   D12  tool:prediction_market -> skill:sentiment-analysis  [name-reality-drift]
+D12-006   D12  skill:earnings-forecast -> skill:ashare-pre-st-filter  [other]
+D13-001   D13  tool:sentiment -> skill:sentiment-analysis  [name-collision]
+D13-002   D13  tool:sentiment -> skill:crypto-derivatives  [other]
+D13-004   D13  skill:social-media-intelligence -> tool:extract_shadow_strategy  [other]
+D13-005   D13  skill:onchain-analysis -> skill:tushare  [keyword-buried]
+D13-006   D13  skill:stablecoin-flow -> tool:get_block_trades  [other]
+D13-008   D13  skill:liquidation-heatmap -> skill:adr-hshare  [name-reality-drift]
+D14-005   D14  skill:credit-analysis -> skill:private-company-research  [other]
+D14-007   D14  skill:dividend-analysis -> tool:trading_check  [other]
+D15-001   D15  tool:analyze_trade_journal -> skill:shadow-account  [name-reality-drift]
+D15-003   D15  tool:extract_shadow_strategy -> skill:shadow-account  [name-collision]
+D15-004   D15  tool:run_shadow_backtest -> skill:shadow-account  [name-collision]
+D15-006   D15  tool:scan_shadow_signals -> skill:shadow-account  [name-collision]
+D16-001   D16  tool:trading_connections -> skill:eastmoney  [name-reality-drift]
+D16-002   D16  tool:trading_select_connection -> skill:adr-hshare  [name-reality-drift]
+D16-004   D16  tool:trading_positions -> skill:eastmoney  [name-reality-drift]
+D16-006   D16  tool:trading_orders -> skill:adr-hshare  [name-reality-drift]
+D16-008   D16  tool:trading_history -> tool:get_market_data  [boundary-missing]
+D17-001   D17  tool:start_research_goal -> skill:tushare  [name-reality-drift]
+D17-003   D17  tool:add_goal_evidence -> skill:credit-analysis  [name-reality-drift]
+D17-004   D17  tool:run_swarm -> skill:tushare  [name-reality-drift]
+D17-006   D17  tool:retry_run -> tool:run_swarm  [other]
+D17-007   D17  tool:get_swarm_status -> tool:run_swarm  [name-collision]
+D17-008   D17  tool:list_skills -> skill:regulatory-knowledge  [name-reality-drift]
+D17-010   D17  skill:data-routing -> skill:tushare  [boundary-missing]
+D18-001   D18  tool:qveris_search -> skill:eastmoney  [name-reality-drift]
+D18-003   D18  tool:qveris_execute -> skill:qveris  [name-collision]
+D18-005   D18  tool:qveris_execute -> skill:qveris  [name-collision]
+D19-001   D19  tool:web_search -> skill:ashare-pre-st-filter  [name-reality-drift]
+D19-005   D19  skill:web-reader -> tool:read_url  [boundary-missing]
+D19-006   D19  skill:doc-reader -> tool:refresh_strategy_evidence  [keyword-buried]
+T13-06    T13  tool:scheduled_research -> skill:sentiment-analysis  [name-reality-drift]
+T13-08    T13  tool:scheduled_research -> tool:run_swarm  [boundary-missing]
+

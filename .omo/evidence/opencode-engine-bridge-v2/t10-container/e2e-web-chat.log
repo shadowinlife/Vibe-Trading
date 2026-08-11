@@ -1,0 +1,15 @@
+  [PASS] gateway /health 200 — HTTP 200
+  [PASS] POST /sessions 201 — HTTP 201
+  session_id=2cbf29a59c69
+  [PASS] POST /messages accepted — HTTP 200
+  SSE events (24): ['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta', 'tool_call', 'tool_result']
+  round-trip wall time: 34.6s
+  [PASS] text_delta streamed — 4 deltas
+  [PASS] MCP tool round-trip (serve->vibe-trading MCP) — 1 call(s): ['list_skills']
+  [PASS] terminal event emitted — attempt.completed
+  [PASS] attempt.completed run-card-capable (summary+run_dir fields) — keys=['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']
+  [PASS] attempt.completed status ok — status=completed
+  summary: The `list_skills` call returned 91 finance skills.
+  [PASS] transcript persisted (user+assistant) — roles=['user', 'assistant']
+
+=== WEB CHAT ROUND-TRIP: 9/9 checks passed ===

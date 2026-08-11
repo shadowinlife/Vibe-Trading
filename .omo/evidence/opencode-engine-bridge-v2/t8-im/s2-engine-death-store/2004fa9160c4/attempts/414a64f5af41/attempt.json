@@ -1,0 +1,14 @@
+{
+  "attempt_id": "414a64f5af41",
+  "session_id": "2004fa9160c4",
+  "parent_attempt_id": null,
+  "status": "failed",
+  "prompt": "Reply with exactly T8_RESUME_OK. Do not call any tools, do not iterate, no todo lists, no subagents.",
+  "run_dir": null,
+  "summary": null,
+  "react_trace": [],
+  "created_at": "2026-09-12T21:21:12.517047+00:00",
+  "completed_at": "2026-09-12T21:21:42.524423+00:00",
+  "error": "OpencodeConnectionError: opencode serve at http://127.0.0.1:14096 unreachable (POST /session): ",
+  "metrics": null
+}

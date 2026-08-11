@@ -1,0 +1,42 @@
+{
+  "group": "test_g8_upload_analysis_absolute_path",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "upload accepted, attachment chip visible",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "upload-analysis turn completed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "a read-class tool consumed the INJECTED ABSOLUTE uploads path (B6/D8②)",
+      "pass": true,
+      "detail": "[[\"read\", {\"filePath\": \"/tmp/vt-e2e-rig/vt-home/uploads/11abf2ef2c424b2aa9a22065fe40fb4d.csv\"}]]"
+    },
+    {
+      "assertion": "the read succeeded (engine could actually read the file)",
+      "pass": true,
+      "detail": "[('read', 'ok')]"
+    },
+    {
+      "assertion": "answer reports the correct row count",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "transcript keeps the relative uploads/<name> envelope (D3)",
+      "pass": true,
+      "detail": "[Uploaded files: [{\"filename\":\"t7e2e_data.csv\",\"path\":\"uploads/11abf2ef2c424b2aa9a22065fe40fb4d.csv\"}]]\n\nRead the uploaded CSV file via its ABSOLUTE path (per the gateway context) with a file-reading "
+    },
+    {
+      "assertion": "no gateway injection block in the transcript",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "finished_at": 1789236730.269724
+}

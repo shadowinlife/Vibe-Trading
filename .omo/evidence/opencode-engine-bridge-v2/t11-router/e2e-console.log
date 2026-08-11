@@ -1,0 +1,95 @@
+  [note] tenants under test: ['a', 'b'] (registry /private/tmp/vt-t11-rig/tenants/tenant_registry.json)
+  [PASS] provision/re-provisioning tenant b succeeds (idempotent re-run) — key_hint=ea3f
+  [PASS] provision/the re-run REUSED the tenant's API_AUTH_KEY (no silent rotation) — reused_key=True
+  [PASS] provision/the registry still resolves the reused key to the same tenant — resolution=Resolved
+  [note] router up on http://127.0.0.1:28080 (log /Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/.omo/evidence/opencode-engine-bridge-v2/t11-router/router.log)
+
+--- G1 routing table ---
+  [PASS] routing/router healthz 200 — HTTP 200
+  [PASS] routing/healthz reports the registered tenant count — tenants=2
+  [PASS] routing/unregistered Host -> 404 — HTTP 404
+  [PASS] routing/unregistered Host is not misrouted (no tenant header, no upstream answer) — detail=unknown tenant host
+  [PASS] routing/tenant a: own token+Host -> 200 — HTTP 200 x-vt-tenant=a
+  [PASS] routing/tenant a: token alone routes (Host unregistered) — HTTP 200
+  [PASS] routing/tenant b: own token+Host -> 200 — HTTP 200 x-vt-tenant=b
+  [PASS] routing/tenant b: token alone routes (Host unregistered) — HTTP 200
+  [PASS] routing/a's token with b's Host -> 403 (never guessed) — HTTP 403
+  [PASS] routing/no token + registered Host is FORWARDED and the gateway rejects it (401) — HTTP 401 — the router routes, the gateway authorizes
+  [PASS] routing/a wrong key on a registered Host still reaches the gateway's 401 — HTTP 401
+
+--- G8 resource sample (idle) ---
+  [MEASURE] rss_mb[idle] = 1236.992MiB {'container': 'vt-t11-a'}
+  [MEASURE] rss_mb[idle] = 1242.112MiB {'container': 'vt-t11-b'}
+
+--- G2/G7 SSE passthrough + fence ---
+  [PASS] sse/POST /sessions through the router -> 201 — HTTP 201
+  [MEASURE] sse_time_to_headers_s = 0.008s {'tenant': 'a', 'session_id': '27156a5f104b'}
+  [PASS] sse/headers arrive on an IDLE stream (a buffering proxy would hold them) — 0.008s
+  [PASS] sse/content-type is text/event-stream — text/event-stream
+  [PASS] sse/X-Accel-Buffering: no (portal events.ts recipe) — no
+  [PASS] sse/cache-control disables caching/transform — no-cache, no-transform
+  [PASS] sse/no content-length on a stream — None
+  [PASS] sse/the router labels the tenant it routed to — a
+  [PASS] fence/an open stream holds exactly one admission (in-flight) — inflight=1
+  [PASS] fence/proxy-side activity was recorded for the tenant — activity_ms=1789268046121
+  [PASS] fence/client disconnect releases the admission — inflight back to 0
+  [PASS] fence/the router logged the disconnect (cancel propagated, not a silent close) — log line present
+
+--- G5 one real model turn ---
+  [PASS] model/POST /sessions -> 201 — HTTP 201
+  [PASS] model/POST /messages accepted — HTTP 200
+  [MEASURE] sse_first_event_s = 0.030s {'tenant': 'a'}
+  [PASS] model/events streamed through the router — 7 events: ['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']
+  [PASS] model/text_delta relayed — 1 deltas
+  [PASS] model/terminal event relayed — ['attempt.completed']
+  [PASS] model/no synthetic router error — ['text_delta', 'llm_usage', 'attempt.completed']
+  [MEASURE] sse_event_spread_s = 14.593s {'tenant': 'a', 'events': 7}
+  [PASS] sse/events arrived SPREAD OUT, not in one buffered burst — spread=14.59s first_event=0.030466250027529895
+  [PASS] model/transcript persisted behind the router (user+assistant) — roles=['user', 'assistant']
+  [MEASURE] model_turn_wall_s = 14.664s {'tenant': 'a'}
+
+--- G6 idle-reclaim truth check against the live engine ---
+  [PASS] reclaim/engine GET /session?limit=1&roots=true answered — [{"id":"ses_f67504d23ffeVDeIozgtJE8llM","slug":"eager-engine","projectID":"global","directory":"/workspace","path":"workspace","summary":{"additions":0,"deletio
+  [PASS] reclaim/the engine answered with the documented list shape — root sessions=1
+  [PASS] reclaim/router parsed time.updated from the live engine (/session?limit=1&roots=true) — time.updated=1789268053087
+  [PASS] reclaim/admin reclaim resolved an activity truth for every tenant (expected source: engine) — {"a": "engine", "b": "proxy"}
+  [PASS] reclaim/with a long idle TTL nothing is reclaimed (truth check fails safe) — {"a": "idle 1553ms < ttl 86400000ms", "b": "idle 21565ms < ttl 86400000ms"}
+
+--- G3a registry hot reload (live provisioning of a ghost tenant) ---
+  [PASS] hot-reload/tenant c is unroutable before provisioning — HTTP 404
+  [PASS] hot-reload/the router picked the new tenant up WITHOUT a restart — HTTP 503 (404 would mean the table was not reloaded)
+  [PASS] hot-reload/a new tenant with no container gets the fallback page, not a misroute — HTTP 503
+  [PASS] hot-reload/the router reported the missing container (wake unavailable) — log line present
+  [PASS] hot-reload/de-registering makes it 404 again — HTTP 404
+
+--- G3b cold-start wake (QA happy path) ---
+  [MEASURE] rss_mb[before_wake] = 1459.200MiB {'container': 'vt-t11-a'}
+  [MEASURE] rss_mb[before_wake] = 1238.016MiB {'container': 'vt-t11-b'}
+  [PASS] wake/docker stop vt-t11-b
+  [PASS] wake/container is exited before the request — exited
+  [MEASURE] cold_start_wake_s = 40.791s {'tenant': 'b', 'status': 201}
+  [PASS] wake/the inbound request woke the container and the gateway answered — HTTP 201 in 40.8s
+  [PASS] wake/the response is a real session (gateway answered, not the router) — {'session_id': 'b4595d48b510', 'title': 'T11 cold-start wake', 'status': 'active', 'created_at': '2026-09-13T02:55:11.387351+00:00', 'updated_at': '2026-09-13T0
+  [PASS] wake/the container is running afterwards — running
+  [PASS] wake/the router logged the wake — log line present
+  [PASS] wake/the router started the container itself — log line present
+  [PASS] wake/the woken gateway stays healthy — /health reachable=True
+
+--- G8 resource sample (after wake) ---
+  [MEASURE] rss_mb[after_wake] = 1480.704MiB {'container': 'vt-t11-a'}
+  [MEASURE] rss_mb[after_wake] = 1027.072MiB {'container': 'vt-t11-b'}
+
+--- G4 wake timeout fallback page ---
+  [PASS] fallback/a container that starts but never serves was created (vt-t11-d)
+  [note] router restarted with VT_ROUTER_WAKE_TIMEOUT_S=6.0
+  [MEASURE] wake_timeout_s = 6.009s {'tenant': 'd', 'status': 503}
+  [PASS] fallback/wake timeout -> 503 — HTTP 503 after 6.0s
+  [PASS] fallback/Retry-After is set — 30
+  [PASS] fallback/the fallback page renders — text/html; charset=utf-8
+  [PASS] fallback/the page names tenant d — tenant id present
+  [PASS] fallback/the page is not cached — no-store
+  [PASS] fallback/the router waited roughly the configured budget — 6.0s >= 4.8s
+  [PASS] fallback/the router logged the timeout — log line present
+  [note] vt-t11-d removed; ghost tenants de-registered; real tenants left provisioned
+
+=== T11 ROUTER E2E PASSED: 59/59 checks passed ===

@@ -1,0 +1,52 @@
+{
+  "session_id": "bd83a76a83b9",
+  "passed": 9,
+  "total": 9,
+  "checks": [
+    {
+      "name": "gateway /health 200",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "POST /sessions 201",
+      "pass": true,
+      "detail": "HTTP 201"
+    },
+    {
+      "name": "POST /messages accepted",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "text_delta streamed",
+      "pass": true,
+      "detail": "5 deltas"
+    },
+    {
+      "name": "MCP tool round-trip (serve->vibe-trading MCP)",
+      "pass": true,
+      "detail": "1 call(s): ['list_skills']"
+    },
+    {
+      "name": "terminal event emitted",
+      "pass": true,
+      "detail": "attempt.completed"
+    },
+    {
+      "name": "attempt.completed run-card-capable (summary+run_dir fields)",
+      "pass": true,
+      "detail": "keys=['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+    },
+    {
+      "name": "attempt.completed status ok",
+      "pass": true,
+      "detail": "status=completed"
+    },
+    {
+      "name": "transcript persisted (user+assistant)",
+      "pass": true,
+      "detail": "roles=['user', 'assistant']"
+    }
+  ]
+}

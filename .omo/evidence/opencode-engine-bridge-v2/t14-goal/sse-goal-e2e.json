@@ -1,0 +1,103 @@
+[
+ {
+  "t": 1789250905470,
+  "kind": "ctor",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]"
+ },
+ {
+  "t": 1789250905480,
+  "kind": "event",
+  "type": "goal.created",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "fd3334b51d2f4b6a",
+  "data": "{\"goal\": {\"goal_id\": \"goal_8706674676ba\", \"session_id\": \"28417ddfdc40\", \"status\": \"active\", \"objective\": \"T14: verify goal session binding end to end\", \"ui_summary\": \"T14: verify goal session binding end to end\", \"source\": \"api\", \"protocol\": \"thesis_review\", \"risk_tier\": \"research_general\", \"token_budget\": null, \"tokens_used\": 0, \"turn_budget\": null, \"turns_used\": 0, \"time_budget_seconds\": null, \"time_used_seconds\": 0, \"budget_wrapup_sent\": false, \"created_at\": \"2026-09-12T22:08:25.474050+00:00\", \"updated_at\": \"2026-09-12T22:08:25.474050+00:00\", \"completed_at\": null, \"recap\": null}}"
+ },
+ {
+  "t": 1789250905564,
+  "kind": "event",
+  "type": "message.received",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "9d8d8d75206b4792",
+  "data": "{\"message_id\": \"2fbcd722a4a3\", \"role\": \"user\", \"content\": \"Record exactly ONE evidence note to research goal goal_8706674676ba using the add_goal_evidence tool, with text 'T14-E2E-EVIDENCE goal binding verified', goal_id 'goal_8706674676ba' and expected_goal_id 'goal_8706674676ba'. Call the tool exactly once, then reply with exactly: DONE. Do not create a todo list. Do not spawn subagents. Do not iterate.\"}"
+ },
+ {
+  "t": 1789250905564,
+  "kind": "event",
+  "type": "attempt.created",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "86b41d3d829046e2",
+  "data": "{\"attempt_id\": \"3b3b987e0ba1\", \"prompt\": \"Record exactly ONE evidence note to research goal goal_8706674676ba using the add_goal_evidence tool, with text 'T14-E2E-EVIDENCE goal binding verified', goal_id 'goal_8706674676ba' and expected_goal_id 'goal_8706674676ba'. Call the tool exactly once, then reply with exactly: DONE. Do not create a todo list. Do not spawn subagents. Do not iterate.\"}"
+ },
+ {
+  "t": 1789250905564,
+  "kind": "event",
+  "type": "attempt.started",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "4a2a0ee6d7664339",
+  "data": "{\"attempt_id\": \"3b3b987e0ba1\"}"
+ },
+ {
+  "t": 1789250909961,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "e7c504b7ef804fcd",
+  "data": "{\"tail\": \"Simple\", \"iter\": 1, \"chars\": 6, \"attempt_id\": \"3b3b987e0ba1\"}"
+ },
+ {
+  "t": 1789250912172,
+  "kind": "event",
+  "type": "tool_call",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "c3caa456c5524059",
+  "data": "{\"tool\": \"add_goal_evidence\", \"arguments\": {\"goal_id\": \"goal_8706674676ba\", \"expected_goal_id\": \"goal_8706674676ba\", \"text\": \"T14-E2E-EVIDENCE goal binding verified\", \"session_id\": \"28417ddfdc40\"}, \"iter\": 1, \"call_id\": \"call_7d1e2ae0c84240ee981be9de\", \"attempt_id\": \"3b3b987e0ba1\"}"
+ },
+ {
+  "t": 1789250912504,
+  "kind": "event",
+  "type": "tool_result",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "31ee2474344547cb",
+  "data": "{\"tool\": \"add_goal_evidence\", \"status\": \"ok\", \"elapsed_ms\": 321, \"preview\": \"{\\n  \\\"status\\\": \\\"ok\\\",\\n  \\\"evidence\\\": {\\n    \\\"evidence_id\\\": \\\"ev_f45c422ab6ab\\\",\\n    \\\"goal_id\\\": \\\"goal_8706674676ba\\\",\\n    \\\"session_id\\\": \\\"28417ddfdc40\\\",\\n    \\\"text\\\": \\\"T14-E2E-EVIDENCE goal binding verified\\\",\\n  \", \"call_id\": \"call_7d1e2ae0c84240ee981be9de\", \"attempt_id\": \"3b3b987e0ba1\"}"
+ },
+ {
+  "t": 1789250912505,
+  "kind": "event",
+  "type": "llm_usage",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "1eae69dcd04e4cec",
+  "data": "{\"input_tokens\": 10099, \"output_tokens\": 115, \"total_tokens\": 60930, \"iter\": 1, \"attempt_id\": \"3b3b987e0ba1\"}"
+ },
+ {
+  "t": 1789250914182,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "9c7bda880a6b4a61",
+  "data": "{\"tail\": \"The\", \"iter\": 2, \"chars\": 3, \"attempt_id\": \"3b3b987e0ba1\"}"
+ },
+ {
+  "t": 1789250914503,
+  "kind": "event",
+  "type": "text_delta",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "f9b7dfac25ef409a",
+  "data": "{\"delta\": \"DONE\", \"iter\": 2, \"attempt_id\": \"3b3b987e0ba1\"}"
+ },
+ {
+  "t": 1789250914557,
+  "kind": "event",
+  "type": "llm_usage",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "d7ddc04e0bd04356",
+  "data": "{\"input_tokens\": 1910, \"output_tokens\": 3, \"total_tokens\": 62342, \"iter\": 2, \"attempt_id\": \"3b3b987e0ba1\"}"
+ },
+ {
+  "t": 1789250922571,
+  "kind": "event",
+  "type": "attempt.completed",
+  "url": "/sessions/28417ddfdc40/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "58effd482f614175",
+  "data": "{\"attempt_id\": \"3b3b987e0ba1\", \"status\": \"completed\", \"summary\": \"DONE\", \"error\": null, \"run_dir\": null, \"elapsed_ms\": 17006, \"provider\": \"alibaba-cn\", \"model\": \"qwen3.8-max\"}"
+ }
+]

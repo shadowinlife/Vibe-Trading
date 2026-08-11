@@ -1,0 +1,14 @@
+[
+  {
+    "kind": "message",
+    "t": 1789244779.9260328,
+    "chat_id": "t9-off",
+    "content": "Welcome to the streaming test — glad to have you here. Let's get started!",
+    "metadata": {
+      "_channel_runtime": true,
+      "attempt_id": "82f0804a3a3c",
+      "session_id": "36dc90508a42",
+      "message_id": "t9-1789244769101592000"
+    }
+  }
+]

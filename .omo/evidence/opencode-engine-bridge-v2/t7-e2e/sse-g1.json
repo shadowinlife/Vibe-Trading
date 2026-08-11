@@ -1,0 +1,71 @@
+[
+ {
+  "t": 1789236345748,
+  "kind": "ctor",
+  "url": "/sessions/b04bbdb0e9a2/events?replay=active&ticket=[REDACTED]"
+ },
+ {
+  "t": 1789236345830,
+  "kind": "event",
+  "type": "message.received",
+  "url": "/sessions/b04bbdb0e9a2/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "47c5617caec74350",
+  "data": "{\"message_id\": \"b9c39a7b4e71\", \"role\": \"user\", \"content\": \"Reply with exactly this text and nothing else: E2E-OK-1\"}"
+ },
+ {
+  "t": 1789236345830,
+  "kind": "event",
+  "type": "attempt.created",
+  "url": "/sessions/b04bbdb0e9a2/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "9fcd02e07a38417c",
+  "data": "{\"attempt_id\": \"4a67852e8416\", \"prompt\": \"Reply with exactly this text and nothing else: E2E-OK-1\"}"
+ },
+ {
+  "t": 1789236345831,
+  "kind": "event",
+  "type": "attempt.started",
+  "url": "/sessions/b04bbdb0e9a2/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "ddd2db43e5d64731",
+  "data": "{\"attempt_id\": \"4a67852e8416\"}"
+ },
+ {
+  "t": 1789236350412,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/b04bbdb0e9a2/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "67ac4ef9788a4b56",
+  "data": "{\"tail\": \"The\", \"iter\": 1, \"chars\": 3, \"attempt_id\": \"4a67852e8416\"}"
+ },
+ {
+  "t": 1789236351119,
+  "kind": "event",
+  "type": "text_delta",
+  "url": "/sessions/b04bbdb0e9a2/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "1a200d56ad8c45b2",
+  "data": "{\"delta\": \"E2E-\", \"iter\": 1, \"attempt_id\": \"4a67852e8416\"}"
+ },
+ {
+  "t": 1789236351170,
+  "kind": "event",
+  "type": "text_delta",
+  "url": "/sessions/b04bbdb0e9a2/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "6357ce47e2fd4783",
+  "data": "{\"delta\": \"OK-1\", \"iter\": 1, \"attempt_id\": \"4a67852e8416\"}"
+ },
+ {
+  "t": 1789236351232,
+  "kind": "event",
+  "type": "llm_usage",
+  "url": "/sessions/b04bbdb0e9a2/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "6032bce123ce44fe",
+  "data": "{\"input_tokens\": 277, \"output_tokens\": 10, \"total_tokens\": 60739, \"iter\": 1, \"attempt_id\": \"4a67852e8416\"}"
+ },
+ {
+  "t": 1789236359257,
+  "kind": "event",
+  "type": "attempt.completed",
+  "url": "/sessions/b04bbdb0e9a2/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "791ee322a5bb4702",
+  "data": "{\"attempt_id\": \"4a67852e8416\", \"status\": \"completed\", \"summary\": \"E2E-OK-1\", \"error\": null, \"run_dir\": null, \"elapsed_ms\": 13416, \"provider\": \"alibaba-cn\", \"model\": \"qwen3.8-max\"}"
+ }
+]

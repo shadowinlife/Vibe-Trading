@@ -1,0 +1,18 @@
+{
+  "a": {
+    "tenant": "a",
+    "trigger": "phase-w-stop",
+    "state_before": "exited",
+    "elapsed_s": 18.503,
+    "status": 201,
+    "session_id": "982be29f8db8"
+  },
+  "b": {
+    "tenant": "b",
+    "trigger": "phase-w-stop",
+    "state_before": "exited",
+    "elapsed_s": 18.512,
+    "status": 201,
+    "session_id": "a7abfb65cb8b"
+  }
+}

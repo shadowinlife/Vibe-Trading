@@ -1,0 +1,35 @@
+INFO:     Started server process [60291]
+INFO:     Waiting for application startup.
+[prod] Frontend served from /Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/frontend/dist
+==================================================
+  Vibe-Trading Server
+  http://127.0.0.1:18081
+==================================================
+
+Preflight Check
+ N/A  │ LLM (openai)       │ LANGCHAIN_MODEL_NAME not set in .env (agent cannot 
+      │                    │ function)                                          
+ FAIL │ OKX API            │ ConnectionError:                                   
+      │                    │ HTTPSConnectionPool(host='www.okx.com', port=443): 
+      │                    │ Max retries exceeded with url:                     
+      │                    │ /api/v5/market/candles?instId=BTC-USDT&bar=1D&lim… 
+      │                    │ (Caused by                                         
+      │                    │ NewConnectionError("HTTPSConnection(host='www.okx… 
+      │                    │ port=443): Failed to establish a new connection:   
+      │                    │ [Errno 65] No route to host")) (crypto backtest    
+      │                    │ unavailable)                                       
+ OK   │ yfinance           │ reachable                                          
+ N/A  │ Tushare            │ TUSHARE_TOKEN not set (optional) (A-share data     
+      │                    │ unavailable)                                       
+ OK   │ akshare            │ installed                                          
+ OK   │ ccxt               │ installed                                          
+ OK   │ Content Filter     │ 5% (set via CONTENT_FILTER_WARNING_THRESHOLD)      
+      │ Threshold          │                                                    
+
+Critical check failed - agent cannot start without a working LLM provider.
+  See: agent/.env.example for configuration reference
+
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:18081 (Press CTRL+C to quit)
+INFO:     127.0.0.1:61279 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61380 - "GET /health HTTP/1.1" 200 OK

@@ -1,0 +1,47 @@
+[
+ {
+  "t": 1789236560939,
+  "kind": "ctor",
+  "url": "/sessions/51a290b4a380/events?replay=active&ticket=[REDACTED]"
+ },
+ {
+  "t": 1789236561015,
+  "kind": "event",
+  "type": "message.received",
+  "url": "/sessions/51a290b4a380/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "8475ea4e7ff742de",
+  "data": "{\"message_id\": \"355f86f4c9a2\", \"role\": \"user\", \"content\": \"Run this exact bash command: sleep 12. Then reply with exactly REPLAY-OK. Do not create a todo list. Do not spawn subagents.\"}"
+ },
+ {
+  "t": 1789236561015,
+  "kind": "event",
+  "type": "attempt.created",
+  "url": "/sessions/51a290b4a380/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "b8f959af690b407b",
+  "data": "{\"attempt_id\": \"a19c24a66da1\", \"prompt\": \"Run this exact bash command: sleep 12. Then reply with exactly REPLAY-OK. Do not create a todo list. Do not spawn subagents.\"}"
+ },
+ {
+  "t": 1789236561016,
+  "kind": "event",
+  "type": "attempt.started",
+  "url": "/sessions/51a290b4a380/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "ac454ce362ed43aa",
+  "data": "{\"attempt_id\": \"a19c24a66da1\"}"
+ },
+ {
+  "t": 1789236564709,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/51a290b4a380/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "89c10635cd57418f",
+  "data": "{\"tail\": \"Thinking\", \"iter\": 1, \"chars\": 8, \"attempt_id\": \"a19c24a66da1\"}"
+ },
+ {
+  "t": 1789236565815,
+  "kind": "event",
+  "type": "tool_call",
+  "url": "/sessions/51a290b4a380/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "51cd2f35017f4220",
+  "data": "{\"tool\": \"bash\", \"arguments\": {\"command\": \"sleep 12\", \"timeout\": \"30000\"}, \"iter\": 1, \"call_id\": \"call_90a23d55d4b140cca9e67de8\", \"attempt_id\": \"a19c24a66da1\"}"
+ }
+]

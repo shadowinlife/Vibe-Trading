@@ -1,0 +1,49 @@
+{
+  "a": {
+    "container": "vt-t12-a",
+    "networks": {
+      "vt-t12-a_default": {
+        "ip": "172.19.0.2",
+        "gateway": "172.19.0.1"
+      }
+    },
+    "published_ports": {
+      "8080/tcp": [
+        {
+          "HostIp": "0.0.0.0",
+          "HostPort": "28081"
+        },
+        {
+          "HostIp": "::",
+          "HostPort": "28081"
+        }
+      ]
+    }
+  },
+  "b": {
+    "container": "vt-t12-b",
+    "networks": {
+      "vt-t12-b_default": {
+        "ip": "172.20.0.2",
+        "gateway": "172.20.0.1"
+      }
+    },
+    "published_ports": {
+      "8080/tcp": [
+        {
+          "HostIp": "0.0.0.0",
+          "HostPort": "28082"
+        },
+        {
+          "HostIp": "::",
+          "HostPort": "28082"
+        }
+      ]
+    }
+  },
+  "host_published_port_probe_from_attacker": {
+    "target_port": 28082,
+    "result": "000CONN_FAIL",
+    "note": "the victim's PUBLIC key-gated surface as published on the docker host \u2014 equivalent to any external client; M1 proves 401 without the victim's key. Internal surfaces (4096, container-net 8080) are the isolation boundary and are unreachable above."
+  }
+}

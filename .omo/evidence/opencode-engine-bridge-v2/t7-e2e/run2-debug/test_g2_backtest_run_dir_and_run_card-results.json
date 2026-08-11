@@ -1,0 +1,12 @@
+{
+  "group": "test_g2_backtest_run_dir_and_run_card",
+  "passed": false,
+  "assertions": [
+    {
+      "assertion": "attempt.completed carries run_dir",
+      "pass": false,
+      "detail": "{'attempt_id': 'ab2673edf79b', 'status': 'completed', 'summary': '/tmp/vt-e2e-rig/vt-home/runs/aapl_sma_cross_2024h1', 'error': None, 'run_dir': None, 'elapsed_ms': 178569, 'provider': 'alibaba-cn', 'model': 'qwen3.8-max'}"
+    }
+  ],
+  "finished_at": 1789235251.8782258
+}

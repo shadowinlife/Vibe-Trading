@@ -1,0 +1,57 @@
+{
+  "group": "streaming-on",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "sse_event_counts",
+      "pass": null,
+      "detail": "{'session.created': 1, 'message.received': 1, 'attempt.created': 1, 'attempt.started': 1, 'reasoning_delta': 1, 'text_delta': 4, 'llm_usage': 1, 'attempt.completed': 1}"
+    },
+    {
+      "assertion": "adapter_call_counts",
+      "pass": null,
+      "detail": "{'finalize': 1, 'preview_edit': 2, 'preview_create': 1}"
+    },
+    {
+      "assertion": "attempt_completed",
+      "pass": true,
+      "detail": "completed"
+    },
+    {
+      "assertion": "preview_created",
+      "pass": true,
+      "detail": "1 creates"
+    },
+    {
+      "assertion": "progressive_edits",
+      "pass": true,
+      "detail": "2 edits"
+    },
+    {
+      "assertion": "edits_not_spam (send_delta << text_delta events)",
+      "pass": true,
+      "detail": "text_delta=4 adapter_deltas=3"
+    },
+    {
+      "assertion": "single_terminal_finalize",
+      "pass": true,
+      "detail": "1 finals"
+    },
+    {
+      "assertion": "no_duplicate_final_message (zero channel.send records)",
+      "pass": true,
+      "detail": "0 message records: []"
+    },
+    {
+      "assertion": "runtime_final_marked_streamed (producer log)",
+      "pass": true,
+      "detail": "[\"runtime final for attempt 0ecf925b4177 marked _streamed\"]"
+    },
+    {
+      "assertion": "finalized_stream_text == persisted reply",
+      "pass": true,
+      "detail": "stream=\"Welcome to the streaming test! I'm ready whenever you are.\" reply=\"Welcome to the streaming test! I'm ready whenever you are.\""
+    }
+  ],
+  "finished_at": 1789244769.101376
+}

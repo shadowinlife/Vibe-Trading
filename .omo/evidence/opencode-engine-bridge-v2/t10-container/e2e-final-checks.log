@@ -1,0 +1,22 @@
+=== no-key boot rejection (FINAL image, one-off container) ===
+  exit code = 1 (expect 1)
+  [PASS] fail-closed message present
+  [entrypoint] FATAL: API_AUTH_KEY (or VIBE_TRADING_API_KEY) is not set.
+  [entrypoint] Fail-closed (D9/B2): the tenant gateway refuses to boot without an API auth key.
+
+=== channels-status (FINAL image) ===
+
+  HTTP 200
+  running: False | total channels: 17
+  available adapters: 15 ['dingtalk', 'discord', 'email', 'feishu', 'mochat', 'msteams']
+  configured (should be 0, no bot creds): 0
+
+=== SPA from container (FINAL image) ===
+  [PASS] SPA root div
+  asset /assets/index-CWmPULMY.js -> HTTP 200 [PASS]
+
+=== auth + B2 API_ALLOWED_HOSTS (FINAL image) ===
+  /sessions with key: HTTP 200 (expect 200)
+  /sessions no key: HTTP 401 (expect 401)
+  loopback trusted Host t10.tenant.local: HTTP 200 (expect 200)
+  loopback untrusted Host evil.example: HTTP 403 (expect 403)

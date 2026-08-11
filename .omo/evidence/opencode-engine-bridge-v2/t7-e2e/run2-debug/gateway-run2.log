@@ -1,0 +1,324 @@
+INFO:     Started server process [57829]
+INFO:     Waiting for application startup.
+[prod] Frontend served from /Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/frontend/dist
+==================================================
+  Vibe-Trading Server
+  http://127.0.0.1:18080
+==================================================
+
+Preflight Check
+ OK   │ LLM (dashscope)    │ glm-5.1 via https://dashscope.aliyuncs.com |       
+      │                    │ base=https://dashscope.aliyuncs.com timeout=120s   
+      │                    │ retries=2 proxy=none                               
+ FAIL │ OKX API            │ ConnectionError:                                   
+      │                    │ HTTPSConnectionPool(host='www.okx.com', port=443): 
+      │                    │ Max retries exceeded with url:                     
+      │                    │ /api/v5/market/candles?instId=BTC-USDT&bar=1D&lim… 
+      │                    │ (Caused by                                         
+      │                    │ NewConnectionError("HTTPSConnection(host='www.okx… 
+      │                    │ port=443): Failed to establish a new connection:   
+      │                    │ [Errno 65] No route to host")) (crypto backtest    
+      │                    │ unavailable)                                       
+ OK   │ yfinance           │ reachable                                          
+ OK   │ Tushare            │ token configured                                   
+ OK   │ akshare            │ installed                                          
+ OK   │ ccxt               │ installed                                          
+ OK   │ Content Filter     │ 5% (set via CONTENT_FILTER_WARNING_THRESHOLD)      
+      │ Threshold          │                                                    
+
+6/7 services ready
+
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:18080 (Press CTRL+C to quit)
+INFO:     127.0.0.1:55989 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56088 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56089 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:56331 - "GET /sessions/fd34d539d6cc/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56356 - "POST /sessions/fd34d539d6cc/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56488 - "GET /sessions/fd34d539d6cc/events?replay=active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56937 - "GET /sessions/fd34d539d6cc/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57224 - "GET /agent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57224 - "GET /fonts/inter-latin-400-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57226 - "GET /theme-boot.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57225 - "GET /fonts/inter-latin-600-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57228 - "GET /assets/index-CWmPULMY.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57227 - "GET /assets/index-J0w1n-s-.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57229 - "GET /assets/rolldown-runtime-hePW80VL.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57224 - "GET /assets/vendor-react-CsOyGitS.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57225 - "GET /assets/createLucideIcon-oo-8UYpc.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57224 - "GET /assets/Agent-mXE4851l.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57225 - "GET /assets/arrow-down-DFLZm_A6.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57228 - "GET /assets/circle-check-qwBZqrr2.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57227 - "GET /assets/MetricsCard-DdInRuEm.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57226 - "GET /assets/circle-user-round-DVRbBfIO.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57229 - "GET /assets/formatters-Dsbn1g5n.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57225 - "GET /assets/circle-x-CrM1yaPH.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57228 - "GET /assets/Agent-ClQbWekD.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57229 - "GET /assets/download-D0f8-ZKJ.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57226 - "GET /assets/clock-3-BzyHPc76.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57227 - "GET /assets/square-BVHTvdq0.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57225 - "GET /assets/octagon-x-BqTH2ChF.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57228 - "GET /fonts/inter-latin-500-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57226 - "GET /assets/play-QT-gQR8p.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57229 - "GET /assets/x-Z0mQHJl7.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57224 - "GET /assets/shield-check-4j9p09uj.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57227 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57225 - "GET /assets/MiniEquityChart-B703INhZ.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57228 - "GET /assets/vendor-charts-BhIbxMb1.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57226 - "GET /assets/chart-theme-CZT0XBpI.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57228 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57226 - "GET /settings/llm HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57226 - "GET /fonts/jetbrains-mono-latin-400-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58166 - "GET /agent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58166 - "GET /fonts/inter-latin-400-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58168 - "GET /assets/index-J0w1n-s-.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58167 - "GET /fonts/inter-latin-600-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58170 - "GET /assets/index-CWmPULMY.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58169 - "GET /theme-boot.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58171 - "GET /assets/rolldown-runtime-hePW80VL.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58166 - "GET /assets/vendor-react-CsOyGitS.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58167 - "GET /assets/createLucideIcon-oo-8UYpc.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58167 - "GET /assets/arrow-down-DFLZm_A6.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58171 - "GET /assets/MetricsCard-DdInRuEm.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58170 - "GET /assets/circle-check-qwBZqrr2.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58169 - "GET /assets/circle-user-round-DVRbBfIO.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58166 - "GET /assets/Agent-mXE4851l.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58168 - "GET /assets/formatters-Dsbn1g5n.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58167 - "GET /assets/Agent-ClQbWekD.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58170 - "GET /assets/clock-3-BzyHPc76.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58169 - "GET /assets/circle-x-CrM1yaPH.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58168 - "GET /assets/download-D0f8-ZKJ.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58171 - "GET /assets/square-BVHTvdq0.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58169 - "GET /assets/x-Z0mQHJl7.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58167 - "GET /assets/octagon-x-BqTH2ChF.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58170 - "GET /assets/play-QT-gQR8p.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58166 - "GET /fonts/inter-latin-500-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58168 - "GET /assets/shield-check-4j9p09uj.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58169 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58171 - "GET /assets/MiniEquityChart-B703INhZ.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58167 - "GET /assets/chart-theme-CZT0XBpI.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58166 - "GET /assets/vendor-charts-BhIbxMb1.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58173 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:58166 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58179 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:58166 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58182 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:58166 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58189 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:58166 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58166 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58202 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:58166 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58205 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:58166 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58210 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59454 - "GET /agent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "GET /fonts/inter-latin-400-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59455 - "GET /fonts/inter-latin-600-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59459 - "GET /assets/index-J0w1n-s-.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59457 - "GET /assets/index-CWmPULMY.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59456 - "GET /theme-boot.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "GET /assets/vendor-react-CsOyGitS.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59458 - "GET /assets/rolldown-runtime-hePW80VL.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59455 - "GET /assets/createLucideIcon-oo-8UYpc.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59457 - "GET /assets/circle-check-qwBZqrr2.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59455 - "GET /assets/Agent-mXE4851l.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "GET /assets/arrow-down-DFLZm_A6.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59459 - "GET /assets/formatters-Dsbn1g5n.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59456 - "GET /assets/circle-user-round-DVRbBfIO.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59458 - "GET /assets/MetricsCard-DdInRuEm.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59457 - "GET /assets/Agent-ClQbWekD.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "GET /assets/circle-x-CrM1yaPH.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59456 - "GET /assets/clock-3-BzyHPc76.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59459 - "GET /assets/download-D0f8-ZKJ.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59458 - "GET /fonts/inter-latin-500-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59457 - "GET /assets/square-BVHTvdq0.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59455 - "GET /assets/octagon-x-BqTH2ChF.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59459 - "GET /assets/x-Z0mQHJl7.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "GET /assets/play-QT-gQR8p.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59456 - "GET /assets/shield-check-4j9p09uj.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59458 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59455 - "GET /assets/vendor-charts-BhIbxMb1.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59459 - "GET /assets/MiniEquityChart-B703INhZ.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59457 - "GET /assets/chart-theme-CZT0XBpI.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59460 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59455 - "GET /agent?session=6a02eb407805 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59455 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59455 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59457 - "GET /sessions/6a02eb407805/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59459 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59458 - "GET /settings/llm HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59456 - "GET /sessions/6a02eb407805/goal HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59454 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59456 - "GET /sessions/6a02eb407805/events?replay=active&ticket=***REDACTED*** HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "GET /fonts/jetbrains-mono-latin-400-normal.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "POST /sessions/6a02eb407805/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "GET /sessions/6a02eb407805/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "GET /sessions/6a02eb407805/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "GET /sessions/6a02eb407805/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59594 - "POST /sessions/6a02eb407805/title/auto HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59594 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59594 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59599 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59594 - "GET /agent?session=320a45c7736a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59594 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59594 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59605 - "GET /sessions/320a45c7736a/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59606 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59607 - "GET /settings/llm HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59609 - "GET /sessions/320a45c7736a/goal HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59610 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59610 - "GET /sessions/320a45c7736a/events?replay=active&ticket=***REDACTED*** HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59609 - "POST /sessions/320a45c7736a/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59609 - "GET /sessions/320a45c7736a/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59609 - "GET /sessions/320a45c7736a/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59609 - "GET /sessions/320a45c7736a/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59701 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59789 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59872 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59964 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60035 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60100 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60172 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60228 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60299 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60388 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60486 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60571 - "POST /sessions/320a45c7736a/title/auto HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60571 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60571 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60579 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60571 - "GET /agent?session=319ef68d44f8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60571 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60571 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60583 - "GET /sessions/319ef68d44f8/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60584 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60585 - "GET /settings/llm HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60586 - "GET /sessions/319ef68d44f8/goal HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60587 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60587 - "GET /sessions/319ef68d44f8/events?replay=active&ticket=***REDACTED*** HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60586 - "POST /sessions/319ef68d44f8/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60586 - "GET /sessions/319ef68d44f8/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60586 - "GET /sessions/319ef68d44f8/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60586 - "GET /sessions/319ef68d44f8/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60586 - "POST /sessions/319ef68d44f8/cancel HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60655 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60661 - "GET /sessions/319ef68d44f8/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60655 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60664 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60655 - "GET /agent?session=66cebb8f0b30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60655 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60655 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60666 - "GET /sessions/66cebb8f0b30/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60667 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60668 - "GET /settings/llm HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /sessions/66cebb8f0b30/goal HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60670 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60670 - "GET /sessions/66cebb8f0b30/events?replay=active&ticket=***REDACTED*** HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "POST /sessions/66cebb8f0b30/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /sessions/66cebb8f0b30/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60675 - "POST /sessions/66cebb8f0b30/messages HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:60676 - "POST /sessions/66cebb8f0b30/cancel HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /sessions/66cebb8f0b30/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /sessions/66cebb8f0b30/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60691 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60669 - "GET /agent?session=6873f452c676 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60668 - "GET /sessions/6873f452c676/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60667 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60666 - "GET /settings/llm HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60655 - "GET /sessions/6873f452c676/goal HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60669 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60655 - "GET /sessions/6873f452c676/events?replay=active&ticket=***REDACTED*** HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "POST /sessions/6873f452c676/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /sessions/6873f452c676/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /sessions/6873f452c676/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /sessions/6873f452c676/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /agent?session=6873f452c676 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60669 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60669 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60666 - "GET /sessions/6873f452c676/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60668 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60667 - "GET /settings/llm HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60698 - "GET /sessions/6873f452c676/goal HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60669 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60698 - "GET /sessions/6873f452c676/events?replay=active&ticket=***REDACTED*** HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60728 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60851 - "POST /sessions/6873f452c676/title/auto HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60851 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60851 - "GET /agent HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60851 - "GET /fonts/inter-latin-400-normal.woff2 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60852 - "GET /fonts/inter-latin-600-normal.woff2 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60853 - "GET /theme-boot.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60856 - "GET /assets/index-J0w1n-s-.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60854 - "GET /assets/index-CWmPULMY.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60855 - "GET /assets/rolldown-runtime-hePW80VL.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60851 - "GET /assets/vendor-react-CsOyGitS.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60852 - "GET /assets/createLucideIcon-oo-8UYpc.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60852 - "GET /assets/Agent-mXE4851l.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60854 - "GET /assets/MetricsCard-DdInRuEm.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60855 - "GET /assets/circle-check-qwBZqrr2.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60851 - "GET /assets/arrow-down-DFLZm_A6.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60856 - "GET /assets/formatters-Dsbn1g5n.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60853 - "GET /assets/circle-user-round-DVRbBfIO.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60854 - "GET /assets/square-BVHTvdq0.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60852 - "GET /assets/Agent-ClQbWekD.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60851 - "GET /assets/download-D0f8-ZKJ.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60856 - "GET /assets/clock-3-BzyHPc76.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60855 - "GET /assets/circle-x-CrM1yaPH.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60853 - "GET /assets/octagon-x-BqTH2ChF.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60851 - "GET /assets/shield-check-4j9p09uj.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60855 - "GET /assets/x-Z0mQHJl7.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60854 - "GET /assets/play-QT-gQR8p.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60854 - "GET /fonts/inter-latin-500-normal.woff2 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60851 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60860 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60851 - "GET /agent?session=473963b9f3f9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60851 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60855 - "GET /assets/chart-theme-CZT0XBpI.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60851 - "GET /assets/MiniEquityChart-B703INhZ.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60854 - "GET /assets/vendor-charts-BhIbxMb1.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60854 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60851 - "GET /sessions/473963b9f3f9/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60855 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60853 - "GET /settings/llm HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60852 - "GET /sessions/473963b9f3f9/goal HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60856 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60856 - "GET /sessions/473963b9f3f9/events?replay=active&ticket=***REDACTED*** HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60852 - "GET /fonts/jetbrains-mono-latin-400-normal.woff2 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60852 - "POST /sessions/473963b9f3f9/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60852 - "GET /sessions/473963b9f3f9/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60852 - "GET /sessions/473963b9f3f9/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60852 - "GET /sessions/473963b9f3f9/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60940 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60997 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61118 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61218 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61309 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61389 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61496 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "POST /sessions/473963b9f3f9/title/auto HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61631 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:61597 - "GET /agent?session=8ebb74fd9e81 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "GET /sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61634 - "GET /sessions/8ebb74fd9e81/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61635 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61636 - "GET /settings/llm HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61637 - "GET /sessions/8ebb74fd9e81/goal HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61597 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61637 - "GET /sessions/8ebb74fd9e81/events?replay=active&ticket=***REDACTED*** HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "POST /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "POST /sessions/8ebb74fd9e81/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "GET /sessions/8ebb74fd9e81/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "GET /sessions/8ebb74fd9e81/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61597 - "GET /sessions/8ebb74fd9e81/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61638 - "GET /live/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61789 - "POST /sessions/8ebb74fd9e81/title/auto HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61789 - "GET /sessions HTTP/1.1" 200 OK

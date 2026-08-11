@@ -1,0 +1,112 @@
+{
+  "pre_kill": {
+    "session_id": "49158b108d01",
+    "attempt_id": "ebfdb9f70c82",
+    "engine_session_id": "ses_f68dbb443ffere419b4prU7Y67",
+    "tool_call_seen": true,
+    "seconds_to_tool": 5.0
+  },
+  "t_kill_epoch": 1789242143.557219,
+  "killed_pid": 3222,
+  "serve_dead_after_kill": false,
+  "phase_a": {
+    "observe_s": 660.0,
+    "t_attempt_terminal_s": null,
+    "terminal_status": null,
+    "t_im_reply_s": 590.2,
+    "im_reply_content": "Channel runtime error: TimeoutError: timed out waiting for assistant reply",
+    "im_reply_metadata": {
+      "_channel_runtime": true,
+      "error": true,
+      "message_id": "t8-death-1"
+    },
+    "timeline_head": [
+      {
+        "t": 0.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 1.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 2.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 3.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 4.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      }
+    ],
+    "timeline_tail": [
+      {
+        "t": 655.4,
+        "attempt_status": "running",
+        "im_replies": 1
+      },
+      {
+        "t": 656.4,
+        "attempt_status": "running",
+        "im_replies": 1
+      },
+      {
+        "t": 657.4,
+        "attempt_status": "running",
+        "im_replies": 1
+      },
+      {
+        "t": 658.4,
+        "attempt_status": "running",
+        "im_replies": 1
+      },
+      {
+        "t": 659.4,
+        "attempt_status": "running",
+        "im_replies": 1
+      }
+    ],
+    "timeline_points": 658
+  },
+  "phase_b": {
+    "attempt_status_before": "running",
+    "load_tool_mapping": "raised OpencodeConnectionError (loud, per wiring contract)",
+    "reconcile": {
+      "reattached": [],
+      "backfilled": [],
+      "interrupted": [
+        "ebfdb9f70c82"
+      ]
+    },
+    "attempt_status_after": "interrupted",
+    "interrupted_reply": {
+      "found": true,
+      "metadata": {
+        "status": "interrupted",
+        "partial": false,
+        "recovery_reason": "service_restart"
+      },
+      "content_head": "Vibe Trading restarted before this response finished, so no complete assistant response was saved. Review any completed tool actions before retrying the request"
+    },
+    "wait_for_reply_s": 0.0,
+    "wait_for_reply_status": "interrupted",
+    "runtime1_replies_total": 1
+  },
+  "event_census": [
+    "attempt.created",
+    "attempt.started",
+    "message.received",
+    "reasoning_delta",
+    "session.created",
+    "tool_call",
+    "tool_heartbeat"
+  ]
+}

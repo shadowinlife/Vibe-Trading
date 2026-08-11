@@ -1,0 +1,143 @@
+[
+ {
+  "t": 1789235276213,
+  "kind": "ctor",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]"
+ },
+ {
+  "t": 1789235276218,
+  "kind": "event",
+  "type": "session.created",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "7eacbdf7bb814d26",
+  "data": "{\"session_id\": \"6873f452c676\", \"title\": \"T7E2E G6 replay\"}"
+ },
+ {
+  "t": 1789235276219,
+  "kind": "event",
+  "type": "message.received",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "5dee559152bb4a48",
+  "data": "{\"message_id\": \"485ff2591f36\", \"role\": \"user\", \"content\": \"Run this exact bash command: sleep 12. Then reply with exactly REPLAY-OK. Do not create a todo list. Do not spawn subagents.\"}"
+ },
+ {
+  "t": 1789235276219,
+  "kind": "event",
+  "type": "attempt.created",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "a0c2728919e8465c",
+  "data": "{\"attempt_id\": \"c320cae78f50\", \"prompt\": \"Run this exact bash command: sleep 12. Then reply with exactly REPLAY-OK. Do not create a todo list. Do not spawn subagents.\"}"
+ },
+ {
+  "t": 1789235276220,
+  "kind": "event",
+  "type": "attempt.started",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "e88d48ad032e4c8f",
+  "data": "{\"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235276220,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "9af77b1933b14f39",
+  "data": "{\"tail\": \"The\", \"iter\": 1, \"chars\": 3, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235276221,
+  "kind": "event",
+  "type": "tool_call",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "d3fb3c237951448c",
+  "data": "{\"tool\": \"bash\", \"arguments\": {\"command\": \"sleep 12\", \"timeout\": \"30000\"}, \"iter\": 1, \"call_id\": \"call_ac44b8f6df6d4b1bb6439280\", \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235278835,
+  "kind": "event",
+  "type": "tool_heartbeat",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "f1f545404ef14ae5",
+  "data": "{\"tool\": \"bash\", \"call_id\": \"call_ac44b8f6df6d4b1bb6439280\", \"elapsed_s\": 3.0, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235281832,
+  "kind": "event",
+  "type": "tool_heartbeat",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "dc888feeaa084930",
+  "data": "{\"tool\": \"bash\", \"call_id\": \"call_ac44b8f6df6d4b1bb6439280\", \"elapsed_s\": 6.0, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235284836,
+  "kind": "event",
+  "type": "tool_heartbeat",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "1c44718252cf4357",
+  "data": "{\"tool\": \"bash\", \"call_id\": \"call_ac44b8f6df6d4b1bb6439280\", \"elapsed_s\": 9.0, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235287835,
+  "kind": "event",
+  "type": "tool_heartbeat",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "c18d5245e3d24508",
+  "data": "{\"tool\": \"bash\", \"call_id\": \"call_ac44b8f6df6d4b1bb6439280\", \"elapsed_s\": 12.0, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235290223,
+  "kind": "event",
+  "type": "tool_result",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "9b7408d230114781",
+  "data": "{\"tool\": \"bash\", \"status\": \"ok\", \"elapsed_ms\": 14383, \"preview\": \"(no output)\", \"call_id\": \"call_ac44b8f6df6d4b1bb6439280\", \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235290224,
+  "kind": "event",
+  "type": "llm_usage",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "15b46fe800cd47b2",
+  "data": "{\"input_tokens\": 281, \"output_tokens\": 47, \"total_tokens\": 60785, \"iter\": 1, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235291462,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "04f5bb01885c486c",
+  "data": "{\"tail\": \"The\", \"iter\": 2, \"chars\": 3, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235291900,
+  "kind": "event",
+  "type": "text_delta",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "870c74f706c14f8f",
+  "data": "{\"delta\": \"RE\", \"iter\": 2, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235291946,
+  "kind": "event",
+  "type": "text_delta",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "da7fe12ec32d4358",
+  "data": "{\"delta\": \"PLAY-OK\", \"iter\": 2, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235292008,
+  "kind": "event",
+  "type": "llm_usage",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "fb038f49830b4b5c",
+  "data": "{\"input_tokens\": 368, \"output_tokens\": 7, \"total_tokens\": 60808, \"iter\": 2, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235300013,
+  "kind": "event",
+  "type": "attempt.completed",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "3980d86eef704fe2",
+  "data": "{\"attempt_id\": \"c320cae78f50\", \"status\": \"completed\", \"summary\": \"REPLAY-OK\", \"error\": null, \"run_dir\": null, \"elapsed_ms\": 27712, \"provider\": \"alibaba-cn\", \"model\": \"qwen3.8-max\"}"
+ }
+]

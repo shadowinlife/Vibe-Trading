@@ -1,0 +1,33 @@
+INFO:     Started server process [31066]
+INFO:     Waiting for application startup.
+[prod] Frontend served from /Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/frontend/dist
+==================================================
+  Vibe-Trading Server
+  http://127.0.0.1:18082
+==================================================
+
+Preflight Check
+ OK   │ LLM (dashscope)    │ glm-5.1 via https://dashscope.aliyuncs.com |       
+      │                    │ base=https://dashscope.aliyuncs.com timeout=120s   
+      │                    │ retries=2 proxy=none                               
+ FAIL │ OKX API            │ ConnectionError:                                   
+      │                    │ HTTPSConnectionPool(host='www.okx.com', port=443): 
+      │                    │ Max retries exceeded with url:                     
+      │                    │ /api/v5/market/candles?instId=BTC-USDT&bar=1D&lim… 
+      │                    │ (Caused by                                         
+      │                    │ NewConnectionError("HTTPSConnection(host='www.okx… 
+      │                    │ port=443): Failed to establish a new connection:   
+      │                    │ [Errno 65] No route to host")) (crypto backtest    
+      │                    │ unavailable)                                       
+ OK   │ yfinance           │ reachable                                          
+ OK   │ Tushare            │ token configured                                   
+ OK   │ akshare            │ installed                                          
+ OK   │ ccxt               │ installed                                          
+ OK   │ Content Filter     │ 5% (set via CONTENT_FILTER_WARNING_THRESHOLD)      
+      │ Threshold          │                                                    
+
+6/7 services ready
+
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:18082 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58072 - "GET /health HTTP/1.1" 200 OK

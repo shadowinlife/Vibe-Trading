@@ -1,0 +1,14 @@
+{
+  "engine_sessions": [
+    "ses_f68b3b995ffe2MH7rNW2XCi933",
+    "ses_f68b37cadffenPqEkivM34ai8g",
+    "ses_f68b34c85ffezytSfEVlXv6jkr"
+  ],
+  "cost_usd_per_session": {
+    "ses_f68b3b995ffe2MH7rNW2XCi933": 0.014125,
+    "ses_f68b37cadffenPqEkivM34ai8g": 0.014113,
+    "ses_f68b34c85ffezytSfEVlXv6jkr": 0.028631
+  },
+  "cost_usd_total": 0.056869,
+  "note": "serve-side model cost of the THREE T9 in-process turns (A: streaming ON, B: streaming OFF, C: tool-heavy). Engine sessions DELETEd here — the in-process store is not the rig vt_home that stop_rig.py sweeps."
+}

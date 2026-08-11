@@ -1,0 +1,54 @@
+{
+  "tenants": {
+    "a": {
+      "sessions": {
+        "3232031dd123": {
+          "engine_session_id": "ses_f66ff1349ffe0P6sRcXsa0zOas",
+          "cost_usd": 0.015186,
+          "tokens_input": 1054,
+          "tokens_output": 4
+        },
+        "c52b6922330e": {
+          "engine_session_id": "ses_f6709d882ffeIgGm9Y8iukiAJA",
+          "cost_usd": 0.015295,
+          "tokens_input": 1055,
+          "tokens_output": 4
+        },
+        "d667aafbf21e": {
+          "engine_session_id": "ses_f670b1203ffe3F0PuFi3MgWNKT",
+          "cost_usd": 0.102121,
+          "tokens_input": 48287,
+          "tokens_output": 8
+        }
+      },
+      "cost_usd": 0.132602,
+      "stderr_head": ""
+    },
+    "b": {
+      "sessions": {
+        "3808e2773630": {
+          "engine_session_id": "ses_f6700614affeg6Z1aCCJ72RHUk",
+          "cost_usd": 0.015243,
+          "tokens_input": 1056,
+          "tokens_output": 4
+        },
+        "87bedc5b510b": {
+          "engine_session_id": "ses_f670b4dc6ffemDer31jSdqUOJh",
+          "cost_usd": 0.107478,
+          "tokens_input": 60444,
+          "tokens_output": 4
+        },
+        "b2daa791f6c6": {
+          "engine_session_id": "ses_f670b0df1ffe1wiXdWa3iBa6hB",
+          "cost_usd": 0.029162,
+          "tokens_input": 1278,
+          "tokens_output": 8
+        }
+      },
+      "cost_usd": 0.151883,
+      "stderr_head": ""
+    }
+  },
+  "total_cost_usd": 0.284485,
+  "note": "serve-side assistant message cost fields (same source T8's stop_rig used); IM probe costs are cross-checked in im_probe_*.json"
+}

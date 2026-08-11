@@ -1,0 +1,242 @@
+[
+  {
+    "t": 0.002,
+    "type": "session.created",
+    "session_id": "eba4d36e568b",
+    "attempt_id": null
+  },
+  {
+    "t": 0.003,
+    "type": "message.received",
+    "session_id": "eba4d36e568b",
+    "attempt_id": null
+  },
+  {
+    "t": 0.004,
+    "type": "attempt.created",
+    "session_id": "eba4d36e568b",
+    "attempt_id": "0ecf925b4177"
+  },
+  {
+    "t": 0.004,
+    "type": "attempt.started",
+    "session_id": "eba4d36e568b",
+    "attempt_id": "0ecf925b4177"
+  },
+  {
+    "t": 2.34,
+    "type": "reasoning_delta",
+    "session_id": "eba4d36e568b",
+    "attempt_id": "0ecf925b4177"
+  },
+  {
+    "t": 2.878,
+    "type": "text_delta",
+    "session_id": "eba4d36e568b",
+    "attempt_id": "0ecf925b4177"
+  },
+  {
+    "t": 3.009,
+    "type": "text_delta",
+    "session_id": "eba4d36e568b",
+    "attempt_id": "0ecf925b4177"
+  },
+  {
+    "t": 3.043,
+    "type": "text_delta",
+    "session_id": "eba4d36e568b",
+    "attempt_id": "0ecf925b4177"
+  },
+  {
+    "t": 3.088,
+    "type": "text_delta",
+    "session_id": "eba4d36e568b",
+    "attempt_id": "0ecf925b4177"
+  },
+  {
+    "t": 3.148,
+    "type": "llm_usage",
+    "session_id": "eba4d36e568b",
+    "attempt_id": "0ecf925b4177"
+  },
+  {
+    "t": 11.157,
+    "type": "attempt.completed",
+    "session_id": "eba4d36e568b",
+    "attempt_id": "0ecf925b4177"
+  },
+  {
+    "t": 15.595,
+    "type": "session.created",
+    "session_id": "36dc90508a42",
+    "attempt_id": null
+  },
+  {
+    "t": 15.596,
+    "type": "message.received",
+    "session_id": "36dc90508a42",
+    "attempt_id": null
+  },
+  {
+    "t": 15.597,
+    "type": "attempt.created",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 15.597,
+    "type": "attempt.started",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 17.294,
+    "type": "reasoning_delta",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 17.891,
+    "type": "text_delta",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 17.891,
+    "type": "text_delta",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 17.922,
+    "type": "text_delta",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 17.924,
+    "type": "text_delta",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 18.029,
+    "type": "text_delta",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 18.031,
+    "type": "text_delta",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 18.161,
+    "type": "llm_usage",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 26.164,
+    "type": "attempt.completed",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c"
+  },
+  {
+    "t": 27.922,
+    "type": "session.created",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": null
+  },
+  {
+    "t": 27.923,
+    "type": "message.received",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": null
+  },
+  {
+    "t": 27.924,
+    "type": "attempt.created",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 27.924,
+    "type": "attempt.started",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 29.642,
+    "type": "reasoning_delta",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 30.452,
+    "type": "text_delta",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 30.521,
+    "type": "text_delta",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 30.982,
+    "type": "tool_call",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 32.456,
+    "type": "tool_result",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 32.456,
+    "type": "llm_usage",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 33.956,
+    "type": "reasoning_delta",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 34.655,
+    "type": "text_delta",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 34.704,
+    "type": "text_delta",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 34.806,
+    "type": "text_delta",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 34.866,
+    "type": "llm_usage",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  },
+  {
+    "t": 42.872,
+    "type": "attempt.completed",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1"
+  }
+]

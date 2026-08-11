@@ -1,0 +1,32 @@
+{
+  "group": "test_g4_concurrent_send_409",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "concurrent send while busy -> HTTP 409",
+      "pass": true,
+      "detail": "got 409: {'detail': 'Session 9e359d6ee73f already has a run in progress'}"
+    },
+    {
+      "assertion": "409 detail surfaces the busy semantics",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "UI busy state surfaced: stop button visible",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "UI busy state surfaced: composer read-only",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "session drained after cancel (cleanup)",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "finished_at": 1789236543.5861728
+}

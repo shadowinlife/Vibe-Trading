@@ -1,0 +1,29 @@
+{
+  "tenants": {
+    "a": {
+      "sessions": {},
+      "cost_usd": 0,
+      "stderr_head": "Error response from daemon: container 3afbf407ec6edd532aed0854bd24b8ea827d22fdeb7c80a9dadb7945489cee46 is not running"
+    },
+    "b": {
+      "sessions": {
+        "87bedc5b510b": {
+          "engine_session_id": "ses_f670b4dc6ffemDer31jSdqUOJh",
+          "cost_usd": 0.107478,
+          "tokens_input": 60444,
+          "tokens_output": 4
+        },
+        "b2daa791f6c6": {
+          "engine_session_id": "ses_f670b0df1ffe1wiXdWa3iBa6hB",
+          "cost_usd": 0.015201,
+          "tokens_input": 1053,
+          "tokens_output": 4
+        }
+      },
+      "cost_usd": 0.122679,
+      "stderr_head": ""
+    }
+  },
+  "total_cost_usd": 0.122679,
+  "note": "serve-side assistant message cost fields (same source T8's stop_rig used); IM probe costs are cross-checked in im_probe_*.json"
+}

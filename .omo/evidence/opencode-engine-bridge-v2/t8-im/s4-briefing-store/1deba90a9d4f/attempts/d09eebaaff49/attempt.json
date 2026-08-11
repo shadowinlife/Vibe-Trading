@@ -1,0 +1,14 @@
+{
+  "attempt_id": "d09eebaaff49",
+  "session_id": "1deba90a9d4f",
+  "parent_attempt_id": null,
+  "status": "completed",
+  "prompt": "Reply with exactly T8_BRIEF_OK. Do not call any tools, do not iterate, no todo lists, no subagents.",
+  "run_dir": null,
+  "summary": "T8_BRIEF_OK",
+  "react_trace": [],
+  "created_at": "2026-09-12T20:05:13.838560+00:00",
+  "completed_at": "2026-09-12T20:05:24.453509+00:00",
+  "error": null,
+  "metrics": null
+}

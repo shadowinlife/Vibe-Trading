@@ -1,0 +1,11 @@
+......                                                                   [100%]
+============================= slowest 10 durations =============================
+194.57s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario1_long_turn_roundtrip
+42.07s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario2_engine_death_recovery
+21.78s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario3_command_regression
+12.25s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario4_scheduled_briefing
+0.60s call     agent/tests/test_opencode_bridge_im_parity.py::test_channels_zero_diff_since_merge_base
+0.58s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario0_gateway_seam_preamble
+
+(4 durations < 0.005s hidden.  Use -vv to show these durations.)
+6 passed in 272.19s (0:04:32)

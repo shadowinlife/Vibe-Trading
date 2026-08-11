@@ -1,0 +1,37 @@
+{
+  "group": "test_g3_mid_turn_cancel",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "attempt.cancelled payload {attempt_id,status}",
+      "pass": true,
+      "detail": "{'attempt_id': '7ae743b0a171', 'status': 'cancelled', 'summary': None, 'error': 'cancelled by user', 'run_dir': None, 'elapsed_ms': 3596}"
+    },
+    {
+      "assertion": "UI shows the stopped activity state",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "composer unlocked (status idle, stop button gone)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "no zombie streaming after cancel (no post-terminal text_delta)",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "assertion": "cancelled reply persisted",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "persisted reply metadata.status == cancelled (D6)",
+      "pass": true,
+      "detail": "{'status': 'cancelled', 'elapsed_ms': 3596}"
+    }
+  ],
+  "finished_at": 1789235268.927456
+}

@@ -1,0 +1,22 @@
+{
+  "group": "test_compliance_sampling_session_id_passthrough",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "compliance rate",
+      "pass": null,
+      "detail": "12/12 = 100%"
+    },
+    {
+      "assertion": "every turn where the first call carried the correct session_id landed evidence",
+      "pass": true,
+      "detail": "landed=12 compliant=12"
+    },
+    {
+      "assertion": "session_id passthrough rate >= 80% (plan T14 escalation gate)",
+      "pass": true,
+      "detail": "rate=100% — below 80% requires the alias-mapping escalation"
+    }
+  ],
+  "finished_at": 1789251162.421151
+}

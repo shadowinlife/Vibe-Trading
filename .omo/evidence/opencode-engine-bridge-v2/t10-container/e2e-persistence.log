@@ -1,0 +1,26 @@
+PROBE=t10-persist-probe-d68c489edbcf
+=== 1. write Settings value (PUT /settings/data-sources) ===
+  PUT HTTP 200
+=== 2. verify it landed in the VOLUME .env (ENV_PATH=/home/opencode/.vibe-trading/.env) ===
+TUSHARE_TOKEN=t10-persist-probe-d68c489edbcf
+  [PASS] value in volume .env
+=== 3. docker compose down (NO -v → volume persists) ===
+ Network opencodeagent_default Removing 
+ Network opencodeagent_default Removed 
+=== 4. confirm volume still exists ===
+local     opencodeagent_vt-tenant-home
+  [PASS] volume survived down
+=== 5. docker compose up -d (recreate container, reuse volume) 2026-09-12T23:13:36Z ===
+ Container opencode-tenant Created 
+ Container opencode-tenant Starting 
+ Container opencode-tenant Started 
+=== 6. wait gateway healthy ===
+  [20s] health=000
+  healthy after ~40s
+=== 7. VERIFY Settings value SURVIVED down&&up (B5) ===
+TUSHARE_TOKEN=t10-persist-probe-d68c489edbcf
+  [PASS] raw value persisted in volume .env across recreation
+  via API (GET /settings/data-sources, masked):
+   tushare configured: True
+=== 8. confirm seeded provider config ALSO persisted (no re-seed needed) ===
+  [PASS] provider config persisted in volume

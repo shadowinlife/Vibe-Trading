@@ -1,0 +1,70 @@
+Warning: OPENCODE_SERVER_PASSWORD is not set; server is unsecured.
+timestamp=2026-09-12T21:30:47.703Z level=INFO run=911461f2 message=loading path=/tmp/vt-t8-rig/xdg/opencode/config.json
+timestamp=2026-09-12T21:30:47.706Z level=INFO run=911461f2 message=loading path=/tmp/vt-t8-rig/xdg/opencode/opencode.json
+timestamp=2026-09-12T21:30:47.724Z level=INFO run=911461f2 message=loading path=/tmp/vt-t8-rig/xdg/opencode/opencode.jsonc
+opencode server listening on http://127.0.0.1:14096
+timestamp=2026-09-12T21:30:56.608Z level=INFO run=911461f2 message="creating instance" directory=/private/tmp/vt-t8-rig/workspace
+timestamp=2026-09-12T21:30:56.609Z level=INFO run=911461f2 message=fromDirectory directory=/private/tmp/vt-t8-rig/workspace
+timestamp=2026-09-12T21:30:56.613Z level=INFO run=911461f2 message=bootstrapping directory=/private/tmp/vt-t8-rig/workspace
+timestamp=2026-09-12T21:30:56.616Z level=INFO run=911461f2 message=loading path=/tmp/vt-t8-rig/xdg/opencode/config.json
+timestamp=2026-09-12T21:30:56.616Z level=INFO run=911461f2 message=loading path=/tmp/vt-t8-rig/xdg/opencode/opencode.json
+timestamp=2026-09-12T21:30:56.621Z level=INFO run=911461f2 message=loading path=/tmp/vt-t8-rig/xdg/opencode/opencode.jsonc
+timestamp=2026-09-12T21:30:56.630Z level=INFO run=911461f2 message=loading path=/Users/mgong/.opencode/opencode.json
+timestamp=2026-09-12T21:30:56.720Z level=INFO run=911461f2 message=loading path=/Users/mgong/.opencode/opencode.jsonc
+timestamp=2026-09-12T21:31:00.444Z level=INFO run=911461f2 message="all LSPs are disabled"
+timestamp=2026-09-12T21:31:00.445Z level=INFO run=911461f2 message="all formatters are disabled"
+timestamp=2026-09-12T21:31:00.445Z level=INFO run=911461f2 message=init
+timestamp=2026-09-12T21:31:00.479Z level=INFO run=911461f2 message="fetching index" url=http://127.0.0.1:51693/index.json
+timestamp=2026-09-12T21:31:00.484Z level=WARN run=911461f2 message="duplicate skill name" name=data-encryption existing=/Users/mgong/.claude/skills/data-encryption/SKILL.md duplicate=/Users/mgong/.agents/skills/data-encryption/SKILL.md
+timestamp=2026-09-12T21:31:00.485Z level=INFO run=911461f2 message=init count=6
+timestamp=2026-09-12T21:31:06.930Z level=INFO run=911461f2 message="shell tool using shell" shell=/bin/zsh
+timestamp=2026-09-12T21:31:06.933Z level=INFO run=911461f2 message="event connected"
+timestamp=2026-09-12T21:31:09.755Z level=INFO run=911461f2 message="event connected"
+timestamp=2026-09-12T21:31:09.758Z level=INFO run=911461f2 message=created id=ses_f6877f7c1ffexr78eatZakMqR8 slug=tidy-pixel version=1.18.30 projectID=global directory=/private/tmp/vt-t8-rig/workspace path=private/tmp/vt-t8-rig/workspace workspaceID=undefined parentID=undefined title=mockim:long-chat agent=undefined model=undefined metadata=undefined permission=undefined cost=0 tokens.input=0 tokens.output=0 tokens.reasoning=0 tokens.cache.read=0 tokens.cache.write=0 time.created=1789248669758 time.updated=1789248669758
+timestamp=2026-09-12T21:31:11.519Z level=INFO run=911461f2 message=loop session.id=ses_f6877f7c1ffexr78eatZakMqR8 step=0
+timestamp=2026-09-12T21:31:12.118Z level=INFO run=911461f2 message="watcher backend" directory=/private/tmp/vt-t8-rig/workspace platform=darwin backend=fs-events
+timestamp=2026-09-12T21:31:12.137Z level=INFO run=911461f2 message="project copy refresh started" projectID=global
+timestamp=2026-09-12T21:31:12.138Z level=INFO run=911461f2 message="project copy refresh done" projectID=global updated=[] removed=[]
+timestamp=2026-09-12T21:31:12.149Z level=INFO run=911461f2 message="booting location services" directory=/private/tmp/vt-t8-rig/workspace workspaceID=undefined
+timestamp=2026-09-12T21:31:12.244Z level=INFO run=911461f2 message=process session.id=ses_f6877f7c1ffexr78eatZakMqR8 messageID=msg_097880f21001S1i1V7Ar9Lli95
+timestamp=2026-09-12T21:31:12.246Z level=INFO run=911461f2 message=stream providerID=alibaba-cn modelID=qwen3.8-max session.id=ses_f6877f7c1ffexr78eatZakMqR8 small=false agent="Sisyphus - ultraworker" mode=primary
+timestamp=2026-09-12T21:31:12.305Z level=INFO run=911461f2 message="llm runtime selected" llm.runtime=ai-sdk llm.provider=alibaba-cn llm.model=qwen3.8-max
+timestamp=2026-09-12T21:31:18.102Z level=INFO run=911461f2 message=evaluated permission=bash pattern="sleep 170" action.permission=* action.action=allow action.pattern=*
+timestamp=2026-09-12T21:31:18.103Z level=INFO run=911461f2 message=evaluated permission=bash pattern="echo T8_LONG_DONE" action.permission=* action.action=allow action.pattern=*
+timestamp=2026-09-12T21:34:08.829Z level=INFO run=911461f2 message=loop session.id=ses_f6877f7c1ffexr78eatZakMqR8 step=1
+timestamp=2026-09-12T21:34:08.849Z level=INFO run=911461f2 message=process session.id=ses_f6877f7c1ffexr78eatZakMqR8 messageID=msg_0978ac3be001ru0YeXzm4JCeKP
+timestamp=2026-09-12T21:34:08.850Z level=INFO run=911461f2 message=stream providerID=alibaba-cn modelID=qwen3.8-max session.id=ses_f6877f7c1ffexr78eatZakMqR8 small=false agent="Sisyphus - ultraworker" mode=primary
+timestamp=2026-09-12T21:34:08.852Z level=INFO run=911461f2 message="llm runtime selected" llm.runtime=ai-sdk llm.provider=alibaba-cn llm.model=qwen3.8-max
+timestamp=2026-09-12T21:34:11.550Z level=INFO run=911461f2 message=loop session.id=ses_f6877f7c1ffexr78eatZakMqR8 step=2
+timestamp=2026-09-12T21:34:11.551Z level=INFO run=911461f2 message="exiting loop" session.id=ses_f6877f7c1ffexr78eatZakMqR8
+timestamp=2026-09-12T21:34:23.786Z level=INFO run=911461f2 message="event connected"
+timestamp=2026-09-12T21:34:23.790Z level=INFO run=911461f2 message=created id=ses_f687501d1ffeES3Dq5LyE2DUDA slug=calm-eagle version=1.18.30 projectID=global directory=/private/tmp/vt-t8-rig/workspace path=private/tmp/vt-t8-rig/workspace workspaceID=undefined parentID=undefined title=mockim:cmd-chat agent=undefined model=undefined metadata=undefined permission=undefined cost=0 tokens.input=0 tokens.output=0 tokens.reasoning=0 tokens.cache.read=0 tokens.cache.write=0 time.created=1789248863790 time.updated=1789248863790
+timestamp=2026-09-12T21:34:24.038Z level=INFO run=911461f2 message=loop session.id=ses_f687501d1ffeES3Dq5LyE2DUDA step=0
+timestamp=2026-09-12T21:34:24.058Z level=INFO run=911461f2 message=process session.id=ses_f687501d1ffeES3Dq5LyE2DUDA messageID=msg_0978aff27001TzbLHQdJkEd5YF
+timestamp=2026-09-12T21:34:24.059Z level=INFO run=911461f2 message=stream providerID=alibaba-cn modelID=qwen3.8-max session.id=ses_f687501d1ffeES3Dq5LyE2DUDA small=false agent="Sisyphus - ultraworker" mode=primary
+timestamp=2026-09-12T21:34:24.061Z level=INFO run=911461f2 message="llm runtime selected" llm.runtime=ai-sdk llm.provider=alibaba-cn llm.model=qwen3.8-max
+timestamp=2026-09-12T21:34:26.356Z level=INFO run=911461f2 message=loop session.id=ses_f687501d1ffeES3Dq5LyE2DUDA step=1
+timestamp=2026-09-12T21:34:26.356Z level=INFO run=911461f2 message="exiting loop" session.id=ses_f687501d1ffeES3Dq5LyE2DUDA
+timestamp=2026-09-12T21:34:34.395Z level=INFO run=911461f2 message=created id=ses_f6874d864ffexSWg1dOwPkk0av slug=kind-circuit version=1.18.30 projectID=global directory=/private/tmp/vt-t8-rig/workspace path=private/tmp/vt-t8-rig/workspace workspaceID=undefined parentID=undefined title=mockim:cmd-chat agent=undefined model=undefined metadata=undefined permission=undefined cost=0 tokens.input=0 tokens.output=0 tokens.reasoning=0 tokens.cache.read=0 tokens.cache.write=0 time.created=1789248874395 time.updated=1789248874395
+timestamp=2026-09-12T21:34:34.682Z level=INFO run=911461f2 message=loop session.id=ses_f6874d864ffexSWg1dOwPkk0av step=0
+timestamp=2026-09-12T21:34:34.699Z level=INFO run=911461f2 message=process session.id=ses_f6874d864ffexSWg1dOwPkk0av messageID=msg_0978b28ba001u9PNEpT6c1UiFz
+timestamp=2026-09-12T21:34:34.700Z level=INFO run=911461f2 message=stream providerID=alibaba-cn modelID=qwen3.8-max session.id=ses_f6874d864ffexSWg1dOwPkk0av small=false agent="Sisyphus - ultraworker" mode=primary
+timestamp=2026-09-12T21:34:34.702Z level=INFO run=911461f2 message="llm runtime selected" llm.runtime=ai-sdk llm.provider=alibaba-cn llm.model=qwen3.8-max
+timestamp=2026-09-12T21:34:37.245Z level=INFO run=911461f2 message=loop session.id=ses_f6874d864ffexSWg1dOwPkk0av step=1
+timestamp=2026-09-12T21:34:37.245Z level=INFO run=911461f2 message="exiting loop" session.id=ses_f6874d864ffexSWg1dOwPkk0av
+timestamp=2026-09-12T21:34:45.743Z level=INFO run=911461f2 message="event connected"
+timestamp=2026-09-12T21:34:45.744Z level=INFO run=911461f2 message=created id=ses_f6874ac0fffeocMjsfrAivr7PI slug=cosmic-river version=1.18.30 projectID=global directory=/private/tmp/vt-t8-rig/workspace path=private/tmp/vt-t8-rig/workspace workspaceID=undefined parentID=undefined title=scheduled-research:t8-brief agent=undefined model=undefined metadata=undefined permission=undefined cost=0 tokens.input=0 tokens.output=0 tokens.reasoning=0 tokens.cache.read=0 tokens.cache.write=0 time.created=1789248885744 time.updated=1789248885744
+timestamp=2026-09-12T21:34:45.981Z level=INFO run=911461f2 message=loop session.id=ses_f6874ac0fffeocMjsfrAivr7PI step=0
+timestamp=2026-09-12T21:34:45.991Z level=INFO run=911461f2 message=process session.id=ses_f6874ac0fffeocMjsfrAivr7PI messageID=msg_0978b54de001fVvmznILC95dZW
+timestamp=2026-09-12T21:34:45.991Z level=INFO run=911461f2 message=stream providerID=alibaba-cn modelID=qwen3.8-max session.id=ses_f6874ac0fffeocMjsfrAivr7PI small=false agent="Sisyphus - ultraworker" mode=primary
+timestamp=2026-09-12T21:34:45.993Z level=INFO run=911461f2 message="llm runtime selected" llm.runtime=ai-sdk llm.provider=alibaba-cn llm.model=qwen3.8-max
+timestamp=2026-09-12T21:34:49.028Z level=INFO run=911461f2 message=loop session.id=ses_f6874ac0fffeocMjsfrAivr7PI step=1
+timestamp=2026-09-12T21:34:49.029Z level=INFO run=911461f2 message="exiting loop" session.id=ses_f6874ac0fffeocMjsfrAivr7PI
+timestamp=2026-09-12T21:34:57.873Z level=INFO run=911461f2 message="event connected"
+timestamp=2026-09-12T21:34:57.875Z level=INFO run=911461f2 message=created id=ses_f68747cacffeqfzmrJ6QCTEJ2s slug=curious-cactus version=1.18.30 projectID=global directory=/private/tmp/vt-t8-rig/workspace path=private/tmp/vt-t8-rig/workspace workspaceID=undefined parentID=undefined title=mockim:death-chat agent=undefined model=undefined metadata=undefined permission=undefined cost=0 tokens.input=0 tokens.output=0 tokens.reasoning=0 tokens.cache.read=0 tokens.cache.write=0 time.created=1789248897875 time.updated=1789248897875
+timestamp=2026-09-12T21:34:58.137Z level=INFO run=911461f2 message=loop session.id=ses_f68747cacffeqfzmrJ6QCTEJ2s step=0
+timestamp=2026-09-12T21:34:58.146Z level=INFO run=911461f2 message=process session.id=ses_f68747cacffeqfzmrJ6QCTEJ2s messageID=msg_0978b8459001Z4HG2b1Wpj7qgs
+timestamp=2026-09-12T21:34:58.146Z level=INFO run=911461f2 message=stream providerID=alibaba-cn modelID=qwen3.8-max session.id=ses_f68747cacffeqfzmrJ6QCTEJ2s small=false agent="Sisyphus - ultraworker" mode=primary
+timestamp=2026-09-12T21:34:58.148Z level=INFO run=911461f2 message="llm runtime selected" llm.runtime=ai-sdk llm.provider=alibaba-cn llm.model=qwen3.8-max
+timestamp=2026-09-12T21:35:03.996Z level=INFO run=911461f2 message=evaluated permission=bash pattern="sleep 120" action.permission=* action.action=allow action.pattern=*
+timestamp=2026-09-12T21:35:03.996Z level=INFO run=911461f2 message=evaluated permission=bash pattern="echo T8_DEATH_DONE" action.permission=* action.action=allow action.pattern=*

@@ -1,0 +1,850 @@
+=== Vendoring Vibe-Trading from .. (mymain-engine-bridge branch) ===
+=== Building frontend SPA (npm ci && npm run build) ===
+
+added 380 packages in 4s
+
+160 packages are looking for funding
+  run `npm fund` for details
+
+> vibe-trading-frontend@0.1.14 build
+> tsc -b && vite build
+
+vite v8.2.0 building client environment for production...
+[2Ktransforming...✓ 3043 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/assets/KaTeX_Size3-Regular-CTq5MqoE.woff           4.42 kB
+dist/assets/KaTeX_Size4-Regular-Dl5lxZxV.woff2          4.92 kB
+dist/assets/KaTeX_Size2-Regular-Dy4dx90m.woff2          5.20 kB
+dist/assets/KaTeX_Size1-Regular-mCD8mA8B.woff2          5.46 kB
+dist/assets/KaTeX_Size4-Regular-BF-4gkZK.woff           5.98 kB
+dist/assets/KaTeX_Size2-Regular-oD1tc_U0.woff           6.18 kB
+dist/assets/KaTeX_Size1-Regular-C195tn64.woff           6.49 kB
+dist/assets/KaTeX_Caligraphic-Regular-Di6jR-x-.woff2    6.90 kB
+dist/assets/KaTeX_Caligraphic-Bold-Dq_IR9rO.woff2       6.91 kB
+dist/index.html                                         7.29 kB │ gzip:   1.10 kB
+dist/assets/KaTeX_Size3-Regular-DgpXs0kz.ttf            7.58 kB
+dist/assets/KaTeX_Caligraphic-Regular-CTRA-rTL.woff     7.65 kB
+dist/assets/KaTeX_Caligraphic-Bold-BEiXGLvX.woff        7.71 kB
+dist/assets/KaTeX_Script-Regular-D3wIWfF6.woff2         9.64 kB
+dist/assets/KaTeX_SansSerif-Regular-DDBCnlJ7.woff2     10.34 kB
+dist/assets/KaTeX_Size4-Regular-DWFBv043.ttf           10.36 kB
+dist/assets/KaTeX_Script-Regular-D5yQViql.woff         10.58 kB
+dist/assets/KaTeX_Fraktur-Regular-CTYiF6lA.woff2       11.31 kB
+dist/assets/KaTeX_Fraktur-Bold-CL6g_b3V.woff2          11.34 kB
+dist/assets/KaTeX_Size2-Regular-B7gKUWhC.ttf           11.50 kB
+dist/assets/KaTeX_SansSerif-Italic-C3H0VqGB.woff2      12.02 kB
+dist/assets/KaTeX_SansSerif-Bold-D1sUS0GD.woff2        12.21 kB
+dist/assets/KaTeX_Size1-Regular-Dbsnue_I.ttf           12.22 kB
+dist/assets/KaTeX_SansSerif-Regular-CS6fqUqJ.woff      12.31 kB
+dist/assets/KaTeX_Caligraphic-Regular-wX97UBjC.ttf     12.34 kB
+dist/assets/KaTeX_Caligraphic-Bold-ATXxdsX0.ttf        12.36 kB
+dist/assets/KaTeX_Fraktur-Regular-Dxdc4cR9.woff        13.20 kB
+dist/assets/KaTeX_Fraktur-Bold-BsDP51OF.woff           13.29 kB
+dist/assets/KaTeX_Typewriter-Regular-CO6r4hn1.woff2    13.56 kB
+dist/assets/KaTeX_SansSerif-Italic-DN2j7dab.woff       14.11 kB
+dist/assets/KaTeX_SansSerif-Bold-DbIhKOiC.woff         14.40 kB
+dist/assets/KaTeX_Typewriter-Regular-C0xS9mPB.woff     16.02 kB
+dist/assets/KaTeX_Math-BoldItalic-CZnvNsCZ.woff2       16.40 kB
+dist/assets/KaTeX_Math-Italic-t53AETM-.woff2           16.44 kB
+dist/assets/KaTeX_Script-Regular-C5JkGWo-.ttf          16.64 kB
+dist/assets/KaTeX_Main-BoldItalic-DxDJ3AOS.woff2       16.78 kB
+dist/assets/KaTeX_Main-Italic-NWA7e6Wa.woff2           16.98 kB
+dist/assets/KaTeX_Math-BoldItalic-iY-2wyZ7.woff        18.66 kB
+dist/assets/KaTeX_Math-Italic-DA0__PXp.woff            18.74 kB
+dist/assets/KaTeX_Main-BoldItalic-SpSLRI95.woff        19.41 kB
+dist/assets/KaTeX_SansSerif-Regular-BNo7hRIc.ttf       19.43 kB
+dist/assets/KaTeX_Fraktur-Regular-CB_wures.ttf         19.57 kB
+dist/assets/KaTeX_Fraktur-Bold-BdnERNNW.ttf            19.58 kB
+dist/assets/KaTeX_Main-Italic-BMLOBm91.woff            19.67 kB
+dist/assets/KaTeX_SansSerif-Italic-YYjJ1zSn.ttf        22.36 kB
+dist/assets/KaTeX_SansSerif-Bold-CFMepnvq.ttf          24.50 kB
+dist/assets/KaTeX_Main-Bold-Cx986IdX.woff2             25.32 kB
+dist/assets/KaTeX_Main-Regular-B22Nviop.woff2          26.27 kB
+dist/assets/KaTeX_Typewriter-Regular-D3Ib7_Hf.ttf      27.55 kB
+dist/assets/KaTeX_AMS-Regular-BQhdFMY1.woff2           28.07 kB
+dist/assets/KaTeX_Main-Bold-Jm3AIy58.woff              29.91 kB
+dist/assets/KaTeX_Main-Regular-Dr94JaBh.woff           30.77 kB
+dist/assets/KaTeX_Math-BoldItalic-B3XSjfu4.ttf         31.19 kB
+dist/assets/KaTeX_Math-Italic-flOr_0UB.ttf             31.30 kB
+dist/assets/KaTeX_Main-BoldItalic-DzxPMmG6.ttf         32.96 kB
+dist/assets/KaTeX_AMS-Regular-DMm9YOAa.woff            33.51 kB
+dist/assets/KaTeX_Main-Italic-3WenGoN9.ttf             33.58 kB
+dist/assets/KaTeX_Main-Bold-waoOVXN0.ttf               51.33 kB
+dist/assets/KaTeX_Main-Regular-ypZvNtVU.ttf            53.58 kB
+dist/assets/KaTeX_AMS-Regular-DRggAlZN.ttf             63.63 kB
+dist/assets/Agent-ClQbWekD.css                         29.73 kB │ gzip:   7.94 kB
+dist/assets/index-J0w1n-s-.css                         66.36 kB │ gzip:  12.13 kB
+dist/assets/arrow-down-DFLZm_A6.js                      0.16 kB │ gzip:   0.16 kB
+dist/assets/arrow-left-a99-G08C.js                      0.16 kB │ gzip:   0.16 kB
+dist/assets/arrow-right-CAwvRZyU.js                     0.16 kB │ gzip:   0.16 kB
+dist/assets/clock-3-BzyHPc76.js                         0.16 kB │ gzip:   0.16 kB
+dist/assets/search-Y_0XLtx7.js                          0.17 kB │ gzip:   0.16 kB
+dist/assets/circle-check-qwBZqrr2.js                    0.17 kB │ gzip:   0.16 kB
+dist/assets/chart-line-BgUnhHFJ.js                      0.18 kB │ gzip:   0.17 kB
+dist/assets/play-QT-gQR8p.js                            0.19 kB │ gzip:   0.17 kB
+dist/assets/circle-x-CrM1yaPH.js                        0.20 kB │ gzip:   0.17 kB
+dist/assets/download-D0f8-ZKJ.js                        0.23 kB │ gzip:   0.19 kB
+dist/assets/database-vj-S341e.js                        0.24 kB │ gzip:   0.20 kB
+dist/assets/arrow-left-right-CGSGRsPm.js                0.24 kB │ gzip:   0.19 kB
+dist/assets/circle-user-round-DVRbBfIO.js               0.25 kB │ gzip:   0.20 kB
+dist/assets/git-compare-DVYPNLkW.js                     0.28 kB │ gzip:   0.21 kB
+dist/assets/shield-check-4j9p09uj.js                    0.32 kB │ gzip:   0.24 kB
+dist/assets/octagon-x-BqTH2ChF.js                       0.42 kB │ gzip:   0.25 kB
+dist/assets/x-Z0mQHJl7.js                               0.45 kB │ gzip:   0.27 kB
+dist/assets/pnl-colors-D0du4wDu.js                      0.56 kB │ gzip:   0.38 kB
+dist/assets/Skeleton-BEvg-RmU.js                        0.61 kB │ gzip:   0.35 kB
+dist/assets/useChartLifecycle-EBclMxXS.js               0.61 kB │ gzip:   0.36 kB
+dist/assets/rolldown-runtime-hePW80VL.js                0.71 kB │ gzip:   0.42 kB
+dist/assets/save-CxeLzDbo.js                            0.72 kB │ gzip:   0.40 kB
+dist/assets/square-BVHTvdq0.js                          0.85 kB │ gzip:   0.43 kB
+dist/assets/MiniEquityChart-B703INhZ.js                 1.20 kB │ gzip:   0.71 kB
+dist/assets/chart-theme-CZT0XBpI.js                     1.56 kB │ gzip:   0.87 kB
+dist/assets/createLucideIcon-oo-8UYpc.js                2.12 kB │ gzip:   1.19 kB
+dist/assets/CorrelationMatrix-CAUxPzG4.js               2.24 kB │ gzip:   1.19 kB
+dist/assets/formatters-Dsbn1g5n.js                      2.30 kB │ gzip:   1.01 kB
+dist/assets/Home-D0cDXw4f.js                            3.56 kB │ gzip:   1.34 kB
+dist/assets/Correlation-oRehlQ57.js                     6.02 kB │ gzip:   2.17 kB
+dist/assets/Reports-BehC6C5D.js                         8.87 kB │ gzip:   2.78 kB
+dist/assets/Compare-B7wPKfTq.js                        12.05 kB │ gzip:   3.76 kB
+dist/assets/Scheduled-B_nPGGed.js                      13.31 kB │ gzip:   3.99 kB
+dist/assets/Runtime-EGWdDuz3.js                        16.90 kB │ gzip:   4.91 kB
+dist/assets/OptionsLab-CSz6NmbN.js                     28.51 kB │ gzip:   7.00 kB
+dist/assets/AlphaZoo-BM7Gm2Dp.js                       36.92 kB │ gzip:   7.50 kB
+dist/assets/Settings-B7jhQR-e.js                       41.34 kB │ gzip:   8.67 kB
+dist/assets/Portfolio-CvRvWJzD.js                      44.10 kB │ gzip:  10.57 kB
+dist/assets/zh-CN-DHe2JYhw.js                          61.12 kB │ gzip:  26.30 kB
+dist/assets/de-D0t4TIYq.js                             69.92 kB │ gzip:  26.24 kB
+dist/assets/ko-DDVqLBvt.js                             70.35 kB │ gzip:  26.54 kB
+dist/assets/es-DlyHyOCQ.js                             71.37 kB │ gzip:  25.93 kB
+dist/assets/ja-D75nq_5N.js                             79.16 kB │ gzip:  28.06 kB
+dist/assets/ar-CPe3MF2z.js                             88.12 kB │ gzip:  28.28 kB
+dist/assets/RunDetail-BUMchqog.js                     113.42 kB │ gzip:  27.62 kB
+dist/assets/index-CWmPULMY.js                         216.51 kB │ gzip:  71.66 kB
+dist/assets/vendor-react-CsOyGitS.js                  279.80 kB │ gzip:  88.83 kB
+dist/assets/MetricsCard-DdInRuEm.js                   285.00 kB │ gzip:  88.88 kB
+dist/assets/Agent-mXE4851l.js                         443.57 kB │ gzip: 126.99 kB
+dist/assets/vendor-charts-BhIbxMb1.js                 743.34 kB │ gzip: 248.96 kB
+
+✓ built in 1.25s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+=== Frontend dist landed:      130 files ===
+=== VT vendored:     1143 Python files ===
+=== Vendored source commit: 02731637 (mymain-engine-bridge) built 2026-09-12T22:33:01Z ===
+=== Building app image: opencode-serve:v3.0.0-tenant ===
+>>> docker build --platform linux/amd64 --build-arg VT_SOURCE_COMMIT=027316377377eb2dc8cfb62f3f42086bdbe0f7c4 --build-arg VT_SOURCE_BRANCH=mymain-engine-bridge --build-arg BUILD_DATE=2026-09-12T22:33:01Z -t opencode-serve:v3.0.0-tenant -f /Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/OpencodeAgent/Dockerfile /Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/OpencodeAgent
+#0 building with "colima" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 8.31kB 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/opencode-serve-base:v3.0.0-tenant
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 457B done
+#3 DONE 0.0s
+
+#4 [ 1/26] FROM docker.io/library/opencode-serve-base:v3.0.0-tenant
+#4 CACHED
+
+#5 [internal] load build context
+#5 ...
+
+#6 [ 2/26] RUN mkdir -p /root/.config/pip &&     printf '[global]\nindex-url=https://mirrors.aliyun.com/pypi/simple/\n\n[install]\ntrusted-host=mirrors.aliyun.com\n'     > /root/.config/pip/pip.conf
+#6 DONE 0.2s
+
+#5 [internal] load build context
+#5 transferring context: 36.15MB 0.7s done
+#5 DONE 0.7s
+
+#7 [ 3/26] RUN npm install -g opencode-ai@1.18.30
+#7 174.3 
+#7 174.3 changed 3 packages in 3m
+#7 174.3 npm notice
+#7 174.3 npm notice New major version of npm available! 10.8.2 -> 12.0.2
+#7 174.3 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+#7 174.3 npm notice To update run: npm install -g npm@12.0.2
+#7 174.3 npm notice
+#7 DONE 174.3s
+
+#8 [ 4/26] COPY vendor/Vibe-Trading/ /opt/vibe-trading/
+#8 DONE 0.1s
+
+#9 [ 5/26] RUN pip install --no-cache-dir supervisor     && pip install --no-cache-dir -e "/opt/vibe-trading[channels]"
+#9 0.746 Looking in indexes: https://mirrors.aliyun.com/pypi/simple/
+#9 1.139 Collecting supervisor
+#9 1.178   Downloading https://mirrors.aliyun.com/pypi/packages/0e/65/5e726c372da8a5e35022a94388b12252710aad0c2351699c3d76ae8dba78/supervisor-4.3.0-py2.py3-none-any.whl (320 kB)
+#9 1.688 Installing collected packages: supervisor
+#9 1.862 Successfully installed supervisor-4.3.0
+#9 1.959 
+#9 1.959 [notice] A new release of pip is available: 25.0.1 -> 26.2.1
+#9 1.959 [notice] To update, run: pip install --upgrade pip
+#9 2.547 Looking in indexes: https://mirrors.aliyun.com/pypi/simple/
+#9 2.547 Obtaining file:///opt/vibe-trading
+#9 2.550   Installing build dependencies: started
+#9 5.240   Installing build dependencies: finished with status 'done'
+#9 5.241   Checking if build backend supports build_editable: started
+#9 5.447   Checking if build backend supports build_editable: finished with status 'done'
+#9 5.449   Getting requirements to build editable: started
+#9 5.777   Getting requirements to build editable: finished with status 'done'
+#9 5.778   Preparing editable metadata (pyproject.toml): started
+#9 6.089   Preparing editable metadata (pyproject.toml): finished with status 'done'
+#9 6.113 Requirement already satisfied: rich>=13.0.0 in /opt/venv/lib/python3.12/site-packages (from vibe-trading-ai==0.1.14) (15.0.0)
+#9 6.113 Requirement already satisfied: pyyaml>=6.0.0 in /opt/venv/lib/python3.12/site-packages (from vibe-trading-ai==0.1.14) (6.0.1)
+#9 6.266 Collecting langchain<2,>=1.3.9 (from vibe-trading-ai==0.1.14)
+#9 6.281   Downloading https://mirrors.aliyun.com/pypi/packages/92/fa/7da07d9977a5e292ef602c1bb911514ff8206e85dc09a66961874345d57a/langchain-1.4.0-py3-none-any.whl (161 kB)
+#9 6.592 Collecting langchain-core<2,>=1.0.0 (from vibe-trading-ai==0.1.14)
+#9 6.606   Downloading https://mirrors.aliyun.com/pypi/packages/e6/18/cf18cfec118b02e003f35300b54d6a1173dc6e4905cffdf5ea49e390a7f9/langchain_core-1.6.3-py3-none-any.whl (571 kB)
+#9 7.614      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 571.8/571.8 kB 515.6 kB/s eta 0:00:00
+#9 7.672 Collecting langchain-openai<2,>=1.0.0 (from vibe-trading-ai==0.1.14)
+#9 7.698   Downloading https://mirrors.aliyun.com/pypi/packages/b2/47/b87a3c372e52678eb4408360eadbe04cdd5371e21fe2560b6efd66989624/langchain_openai-1.6.2-py3-none-any.whl (125 kB)
+#9 7.746 Collecting langgraph<1.3,>=1.2.5 (from vibe-trading-ai==0.1.14)
+#9 7.759   Downloading https://mirrors.aliyun.com/pypi/packages/0a/7f/c5c30e4be99ff821029c7ac872a480676bb179c9f3df85ea3f38d13f86d4/langgraph-1.2.11-py3-none-any.whl (248 kB)
+#9 8.434 Collecting langgraph-checkpoint<5,>=2.1.0 (from vibe-trading-ai==0.1.14)
+#9 8.448   Downloading https://mirrors.aliyun.com/pypi/packages/05/71/3b475f09bd57d3a5649792c66353312b4432afd843f301739dfcebd157f0/langgraph_checkpoint-4.2.0-py3-none-any.whl (56 kB)
+#9 8.692 Collecting python-dotenv>=1.0.0 (from vibe-trading-ai==0.1.14)
+#9 8.706   Downloading https://mirrors.aliyun.com/pypi/packages/0d/17/c5c6b53ddc18f297992099b3d9ec16c855c0ccc83263a21fe4d1c625ec6c/python_dotenv-1.2.3-py3-none-any.whl (22 kB)
+#9 8.951 Collecting httpx>=0.28.0 (from vibe-trading-ai==0.1.14)
+#9 8.962   Downloading https://mirrors.aliyun.com/pypi/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl (73 kB)
+#9 9.213 Collecting h2>=4.4.1 (from vibe-trading-ai==0.1.14)
+#9 9.243   Downloading https://mirrors.aliyun.com/pypi/packages/7e/22/e85faf23bd72a92d1921e37d674ca56eb298a3c8be31fdecef0ff2b3aaac/h2-4.4.1-py3-none-any.whl (62 kB)
+#9 9.473 Collecting defusedxml>=0.7.1 (from vibe-trading-ai==0.1.14)
+#9 9.487   Downloading https://mirrors.aliyun.com/pypi/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl (25 kB)
+#9 9.811 Collecting oauth-cli-kit>=0.1.3 (from vibe-trading-ai==0.1.14)
+#9 10.04   Downloading https://mirrors.aliyun.com/pypi/packages/ff/9f/53555ec2543e6ba5f6eeff4331cca43842a2c48983c793c97560500b6764/oauth_cli_kit-0.1.6-py3-none-any.whl (11 kB)
+#9 10.39 Collecting pandas<3.0.0,>=2.0.0 (from vibe-trading-ai==0.1.14)
+#9 10.40   Downloading https://mirrors.aliyun.com/pypi/packages/e5/63/cd7d615331b328e287d8233ba9fdf191a9c2d11b6af0c7a59cfcec23de68/pandas-2.3.3-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (12.4 MB)
+#9 37.52      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.4/12.4 MB 452.9 kB/s eta 0:00:00
+#9 37.83 Collecting openpyxl>=3.1.0 (from vibe-trading-ai==0.1.14)
+#9 37.85   Downloading https://mirrors.aliyun.com/pypi/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl (250 kB)
+#9 38.71 Collecting python-docx>=1.1.0 (from vibe-trading-ai==0.1.14)
+#9 38.72   Downloading https://mirrors.aliyun.com/pypi/packages/d0/00/1e03a4989fa5795da308cd774f05b704ace555a70f9bf9d3be057b680bcf/python_docx-1.2.0-py3-none-any.whl (252 kB)
+#9 39.57 Collecting python-pptx>=0.6.23 (from vibe-trading-ai==0.1.14)
+#9 39.59   Downloading https://mirrors.aliyun.com/pypi/packages/d9/4f/00be2196329ebbff56ce564aa94efb0fbc828d00de250b1980de1a34ab49/python_pptx-1.0.2-py3-none-any.whl (472 kB)
+#9 41.13 Collecting pypdfium2>=4.0.0 (from vibe-trading-ai==0.1.14)
+#9 41.14   Downloading https://mirrors.aliyun.com/pypi/packages/d3/7c/74a2fb48e5b0d2402d9ca64b39074c722d67e9a8a2c58449a843a8c2329a/pypdfium2-5.13.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.7 MB)
+#9 50.60      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.7/3.7 MB 392.3 kB/s eta 0:00:00
+#9 51.44 Collecting Pillow>=12.2.0 (from vibe-trading-ai==0.1.14)
+#9 51.45   Downloading https://mirrors.aliyun.com/pypi/packages/84/21/a35af28dcc61f37ed850a2d64c65c701321dfbf25085e469d5559360cbbf/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.9 MB)
+#9 67.55      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.9/6.9 MB 431.4 kB/s eta 0:00:00
+#9 67.59 Requirement already satisfied: numpy>=1.24.0 in /opt/venv/lib/python3.12/site-packages (from vibe-trading-ai==0.1.14) (2.5.2)
+#9 68.18 Collecting scipy>=1.10.0 (from vibe-trading-ai==0.1.14)
+#9 68.20   Downloading https://mirrors.aliyun.com/pypi/packages/df/64/ff35eb9e54894cf471ff4716abd3c81eb0a0626869217ce3e6ba4ccf17d7/scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.3 MB)
+#9 139.7      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.3/35.3 MB 524.0 kB/s eta 0:00:00
+#9 139.9 Collecting bottleneck>=1.3.7 (from vibe-trading-ai==0.1.14)
+#9 140.0   Downloading https://mirrors.aliyun.com/pypi/packages/b5/d4/e7bbea08f4c0f0bab819d38c1a613da5f194fba7b19aae3e2b3a27e78886/bottleneck-1.6.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (377 kB)
+#9 141.5 Collecting duckdb>=1.2.0 (from vibe-trading-ai==0.1.14)
+#9 141.5   Downloading https://mirrors.aliyun.com/pypi/packages/4f/98/6549769f158126fa64fd6c1ac2eb59a18282146c939867a3eb31b7c1db07/duckdb-1.5.5-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl (21.5 MB)
+#9 185.1      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 21.5/21.5 MB 494.2 kB/s eta 0:00:00
+#9 185.3 Collecting scikit-learn>=1.3.0 (from vibe-trading-ai==0.1.14)
+#9 185.3   Downloading https://mirrors.aliyun.com/pypi/packages/6c/c2/63fdda36c56437eeb44aaf9493c8bcd62ce230ab1598924fc626ffbfa943/scikit_learn-1.9.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (9.1 MB)
+#9 203.8      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9.1/9.1 MB 490.4 kB/s eta 0:00:00
+#9 203.9 Collecting joblib>=1.3.0 (from vibe-trading-ai==0.1.14)
+#9 203.9   Downloading https://mirrors.aliyun.com/pypi/packages/18/53/84099323c2ec4be98d935f63c033ac4151ee83836ca1050ede3b3aadf155/joblib-1.6.0-py3-none-any.whl (306 kB)
+#9 204.4 Collecting tushare>=1.2.89 (from vibe-trading-ai==0.1.14)
+#9 204.4   Downloading https://mirrors.aliyun.com/pypi/packages/33/3e/d426a56e5feac9b0aaada1c6b0745ed03422d4a713295e0bbb44c8ea86fe/tushare-1.4.29-py3-none-any.whl (142 kB)
+#9 204.7 Requirement already satisfied: requests>=2.31.0 in /opt/venv/lib/python3.12/site-packages (from vibe-trading-ai==0.1.14) (2.34.2)
+#9 204.7 Requirement already satisfied: yfinance>=0.2.30 in /opt/venv/lib/python3.12/site-packages (from vibe-trading-ai==0.1.14) (0.2.58)
+#9 204.7 Collecting akshare>=1.12.0 (from vibe-trading-ai==0.1.14)
+#9 204.7   Downloading https://mirrors.aliyun.com/pypi/packages/83/cf/d77f01792b3b56990b5a72b92d086be7fbc2dc5bef304a1647bb5a7a53ad/akshare-1.18.94-py3-none-any.whl (1.3 MB)
+#9 207.2      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 453.0 kB/s eta 0:00:00
+#9 207.8 Collecting ccxt>=4.5.71 (from vibe-trading-ai==0.1.14)
+#9 207.8   Downloading https://mirrors.aliyun.com/pypi/packages/64/61/c1d4d109d886fed1e4c645aa060da2aaeb4808d2749ed12738c1d732cc65/ccxt-4.5.78-py3-none-any.whl (6.4 MB)
+#9 221.3      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.4/6.4 MB 461.9 kB/s eta 0:00:00
+#9 224.2 Collecting clickhouse-connect>=1.0.0 (from vibe-trading-ai==0.1.14)
+#9 224.3   Downloading https://mirrors.aliyun.com/pypi/packages/e2/16/5aff4e2216572d9e326f5f241c43bfb33f726503886e346ad5088a577f07/clickhouse_connect-1.8.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.4 MB)
+#9 227.1      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 490.4 kB/s eta 0:00:00
+#9 227.5 Collecting sqlglot>=30.0.0 (from vibe-trading-ai==0.1.14)
+#9 227.5   Downloading https://mirrors.aliyun.com/pypi/packages/08/9f/3dd2ec8dd84a33e0092f1c815267bc055073f9e833b93e389c59c10f62cc/sqlglot-30.18.0-py3-none-any.whl (748 kB)
+#9 228.5      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 748.8/748.8 kB 603.1 kB/s eta 0:00:00
+#9 228.5 Requirement already satisfied: aiohttp>=3.14.3 in /opt/venv/lib/python3.12/site-packages (from vibe-trading-ai==0.1.14) (3.14.3)
+#9 229.2 Collecting cryptography>=50.0.0 (from vibe-trading-ai==0.1.14)
+#9 229.2   Downloading https://mirrors.aliyun.com/pypi/packages/85/66/6ccca4722987ddedaa7fc9c3f4708af7431f5535666c174350830888c6b7/cryptography-50.0.1-cp311-abi3-manylinux_2_34_x86_64.whl (4.7 MB)
+#9 239.1      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.7/4.7 MB 463.6 kB/s eta 0:00:00
+#9 239.2 Collecting fastapi>=0.104.0 (from vibe-trading-ai==0.1.14)
+#9 239.2   Downloading https://mirrors.aliyun.com/pypi/packages/cb/03/10388a42375ee7e4ac9b94eb2c5c569c8b5795e377e701c9ac3ad63de890/fastapi-0.141.1-py3-none-any.whl (131 kB)
+#9 239.2 Collecting uvicorn>=0.24.0 (from uvicorn[standard]>=0.24.0->vibe-trading-ai==0.1.14)
+#9 239.2   Downloading https://mirrors.aliyun.com/pypi/packages/f1/79/4a20b54ab0491485ccd8c077db2d39187c7f12b3e15485d38a7be37c81b4/uvicorn-0.52.4-py3-none-any.whl (79 kB)
+#9 239.5 Collecting websockets>=12.0 (from vibe-trading-ai==0.1.14)
+#9 239.6   Downloading https://mirrors.aliyun.com/pypi/packages/fb/05/9f82d090c8d2d861604147ef6dfb938a90b039f9358d5193f1df62558593/websockets-17.1-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (224 kB)
+#9 240.1 Collecting pydantic>=2.0.0 (from vibe-trading-ai==0.1.14)
+#9 240.1   Downloading https://mirrors.aliyun.com/pypi/packages/eb/47/c95ffc2009878c7aac0c5e08528022dcb885933252a88b5f170058014464/pydantic-2.13.5-py3-none-any.whl (472 kB)
+#9 241.0 Collecting python-multipart>=0.0.18 (from vibe-trading-ai==0.1.14)
+#9 241.0   Downloading https://mirrors.aliyun.com/pypi/packages/e1/04/e8135ebd1ad02c56ec633277529b2602ff99ff634be76cdba5744cf554fd/python_multipart-0.0.32-py3-none-any.whl (30 kB)
+#9 241.3 Collecting sse-starlette>=1.6.0 (from vibe-trading-ai==0.1.14)
+#9 241.3   Downloading https://mirrors.aliyun.com/pypi/packages/98/6a/2ba3ed4a69babf3afdddf7d8314a48d87562c0a442206bbc2a1b50d5efc0/sse_starlette-3.4.11-py3-none-any.whl (17 kB)
+#9 241.3 Collecting fastmcp>=2.14.0 (from vibe-trading-ai==0.1.14)
+#9 241.5   Downloading https://mirrors.aliyun.com/pypi/packages/e4/cb/66600db497b3be21cf141f01296308169859d48ed9b1bc8ba7c9d83279b7/fastmcp-4.0.3-py3-none-any.whl (8.1 kB)
+#9 241.8 Collecting ddgs>=6.0.0 (from vibe-trading-ai==0.1.14)
+#9 241.8   Downloading https://mirrors.aliyun.com/pypi/packages/f9/0c/b43a87e81e45caf2c30fea9a5914dfd17b83a9f3c2c59ae22b6257bcf083/ddgs-9.16.0-py3-none-any.whl (47 kB)
+#9 242.1 Collecting jinja2>=3.1.0 (from vibe-trading-ai==0.1.14)
+#9 242.1   Downloading https://mirrors.aliyun.com/pypi/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl (134 kB)
+#9 242.7 Collecting matplotlib>=3.7.0 (from vibe-trading-ai==0.1.14)
+#9 242.7   Downloading https://mirrors.aliyun.com/pypi/packages/b8/90/2b3fd67ee273163faeda6d514be70b5596eaa0fd77b60ffc294ad0b34f5f/matplotlib-3.11.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (9.9 MB)
+#9 261.4      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9.9/9.9 MB 517.3 kB/s eta 0:00:00
+#9 261.5 Collecting weasyprint>=60.0 (from vibe-trading-ai==0.1.14)
+#9 261.5   Downloading https://mirrors.aliyun.com/pypi/packages/22/8b/0c53c869f29d3273536b896dd17f092549e34e35ffba4c7a60a6de1cb1c2/weasyprint-70.0-py3-none-any.whl (328 kB)
+#9 262.2 Collecting prompt_toolkit>=3.0.0 (from vibe-trading-ai==0.1.14)
+#9 262.2   Downloading https://mirrors.aliyun.com/pypi/packages/54/6f/84908cad2d6aa5144abcf7b42709fe4fdb459bc640ec7ac5786e7693dabc/prompt_toolkit-3.0.53-py3-none-any.whl (392 kB)
+#9 263.2 Collecting dingtalk-stream>=0.24.0 (from vibe-trading-ai==0.1.14)
+#9 263.2   Downloading https://mirrors.aliyun.com/pypi/packages/4c/44/102dede3f371277598df6aa9725b82e3add068c729333c7a5dbc12764579/dingtalk_stream-0.24.3-py3-none-any.whl (27 kB)
+#9 263.5 Collecting discord.py>=2.4.0 (from vibe-trading-ai==0.1.14)
+#9 263.6   Downloading https://mirrors.aliyun.com/pypi/packages/f7/a7/17208c3b3f92319e7fad259f1c6d5a5baf8fd0654c54846ced329f83c3eb/discord_py-2.7.1-py3-none-any.whl (1.2 MB)
+#9 266.4      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 400.9 kB/s eta 0:00:00
+#9 266.5 Collecting lark-oapi>=1.4.0 (from vibe-trading-ai==0.1.14)
+#9 266.5   Downloading https://mirrors.aliyun.com/pypi/packages/7c/65/91961331ba56308101cb932d446bd1b80e7d23234e498cefc6384ca04018/lark_oapi-1.7.3-py3-none-any.whl (7.7 MB)
+#9 281.4      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 7.7/7.7 MB 515.0 kB/s eta 0:00:00
+#9 281.7 Collecting matrix-nio>=0.25.0 (from matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 281.7   Downloading https://mirrors.aliyun.com/pypi/packages/6c/e9/fbb39da3f2ed164a6a92e09b2f86a177a3b24daa3a5d7b817ba3c6f1a8f6/matrix_nio-0.26.0-py3-none-any.whl (183 kB)
+#9 282.2 Collecting mistune>=3.0.0 (from vibe-trading-ai==0.1.14)
+#9 282.2   Downloading https://mirrors.aliyun.com/pypi/packages/77/e4/288365afae98953bc01de09f686f40d8ee84578135aa7767d5d4e60b5278/mistune-3.3.4-py3-none-any.whl (66 kB)
+#9 282.2 Requirement already satisfied: msgpack>=1.0.0 in /opt/venv/lib/python3.12/site-packages (from vibe-trading-ai==0.1.14) (1.0.3)
+#9 282.4 Collecting neonize>=0.3.18.post0 (from vibe-trading-ai==0.1.14)
+#9 282.5   Downloading https://mirrors.aliyun.com/pypi/packages/6d/b6/b5376fd3901caafb696ad090cdd48b04f3728ff437efe2dd0515339dc662/neonize-0.4.3.post0-py310-none-manylinux2014_x86_64.whl (8.0 MB)
+#9 299.2      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8.0/8.0 MB 474.4 kB/s eta 0:00:00
+#9 299.2 Collecting nh3>=0.2.18 (from vibe-trading-ai==0.1.14)
+#9 299.3   Downloading https://mirrors.aliyun.com/pypi/packages/a6/ed/c5510c615dce55b6fcc364aa1838142f938beed64f5e4927490dfcaf4405/nh3-0.3.7-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (832 kB)
+#9 300.7      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 832.2/832.2 kB 472.8 kB/s eta 0:00:00
+#9 300.9 Collecting PyJWT>=2.8.0 (from PyJWT[crypto]>=2.8.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 301.0   Downloading https://mirrors.aliyun.com/pypi/packages/9c/97/672cb32ce0dfea44b740cb7b4f97038463b9cf7c0ead1aacf595572851d6/pyjwt-2.14.0-py3-none-any.whl (32 kB)
+#9 301.0 Collecting python-socketio>=5.11.0 (from python-socketio[asyncio_client]>=5.11.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 301.0   Downloading https://mirrors.aliyun.com/pypi/packages/94/d9/463feca73ec119a135d90c9f40c0172b4758150b5ed442f0ca1e8fed807a/python_socketio-5.16.4-py3-none-any.whl (82 kB)
+#9 301.2 Collecting python-telegram-bot>=21.0 (from vibe-trading-ai==0.1.14)
+#9 301.2   Downloading https://mirrors.aliyun.com/pypi/packages/60/7c/ed7d4dd94280bd434173cae9f7a7aedaaab9af128ae4f494423a5687c820/python_telegram_bot-22.8-py3-none-any.whl (769 kB)
+#9 302.6      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 769.4/769.4 kB 422.1 kB/s eta 0:00:00
+#9 302.9 Collecting qrcode>=7.4.2 (from vibe-trading-ai==0.1.14)
+#9 302.9   Downloading https://mirrors.aliyun.com/pypi/packages/dd/b8/d2d6d731733f51684bbf76bf34dab3b70a9148e8f2cef2bb544fccec681a/qrcode-8.2-py3-none-any.whl (45 kB)
+#9 303.2 Collecting qq-botpy>=1.2.0 (from vibe-trading-ai==0.1.14)
+#9 303.3   Downloading https://mirrors.aliyun.com/pypi/packages/94/2e/cf662566627f1c3508924ef5a0f8277ffc4ac033d6c3a05d1ead6e76f60b/qq_botpy-1.2.1-py3-none-any.whl (51 kB)
+#9 303.4 Collecting slack-sdk>=3.33.0 (from vibe-trading-ai==0.1.14)
+#9 303.4   Downloading https://mirrors.aliyun.com/pypi/packages/ab/fc/67352b742fc6fa520a550581b0284f5757e4e31a32327c2a00276747fd30/slack_sdk-3.44.1-py2.py3-none-any.whl (319 kB)
+#9 304.3 Collecting slackify-markdown<1,>=0.2.4 (from vibe-trading-ai==0.1.14)
+#9 304.6   Downloading https://mirrors.aliyun.com/pypi/packages/b9/36/b4f9788907b95b5f217fa9602c94f97ceb2af902aaa2396f37ee7b1c74a0/slackify_markdown-0.2.4-py3-none-any.whl (7.5 kB)
+#9 305.0 Collecting wecom-aibot-sdk>=1.0.0 (from vibe-trading-ai==0.1.14)
+#9 305.2   Downloading https://mirrors.aliyun.com/pypi/packages/a8/82/8e342b64b29c52d9e92fa6f3596d53df5d2dd3dab871493ce0f871b01914/wecom_aibot_sdk-1.0.8-py3-none-any.whl (28 kB)
+#9 305.2 Requirement already satisfied: aiohappyeyeballs>=2.5.0 in /opt/venv/lib/python3.12/site-packages (from aiohttp>=3.14.3->vibe-trading-ai==0.1.14) (2.7.1)
+#9 305.2 Requirement already satisfied: aiosignal>=1.4.0 in /opt/venv/lib/python3.12/site-packages (from aiohttp>=3.14.3->vibe-trading-ai==0.1.14) (1.4.0)
+#9 305.2 Requirement already satisfied: attrs>=17.3.0 in /opt/venv/lib/python3.12/site-packages (from aiohttp>=3.14.3->vibe-trading-ai==0.1.14) (26.1.0)
+#9 305.2 Requirement already satisfied: frozenlist>=1.1.1 in /opt/venv/lib/python3.12/site-packages (from aiohttp>=3.14.3->vibe-trading-ai==0.1.14) (1.8.0)
+#9 305.2 Requirement already satisfied: multidict<7.0,>=4.5 in /opt/venv/lib/python3.12/site-packages (from aiohttp>=3.14.3->vibe-trading-ai==0.1.14) (6.7.1)
+#9 305.2 Requirement already satisfied: propcache>=0.2.0 in /opt/venv/lib/python3.12/site-packages (from aiohttp>=3.14.3->vibe-trading-ai==0.1.14) (0.5.2)
+#9 305.2 Requirement already satisfied: typing_extensions>=4.4 in /opt/venv/lib/python3.12/site-packages (from aiohttp>=3.14.3->vibe-trading-ai==0.1.14) (4.16.0)
+#9 305.2 Requirement already satisfied: yarl<2.0,>=1.17.0 in /opt/venv/lib/python3.12/site-packages (from aiohttp>=3.14.3->vibe-trading-ai==0.1.14) (1.24.5)
+#9 305.2 Requirement already satisfied: beautifulsoup4>=4.9.1 in /opt/venv/lib/python3.12/site-packages (from akshare>=1.12.0->vibe-trading-ai==0.1.14) (4.15.0)
+#9 306.3 Collecting lxml>=4.2.1 (from akshare>=1.12.0->vibe-trading-ai==0.1.14)
+#9 306.3   Downloading https://mirrors.aliyun.com/pypi/packages/0a/20/e022dbc6b4753a9bc9fc5fb28a27163430c1731b9913997f6544c1b2518c/lxml-6.1.3-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl (5.2 MB)
+#9 316.3      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.2/5.2 MB 516.4 kB/s eta 0:00:00
+#9 316.4 Requirement already satisfied: curl_cffi>=0.13.0 in /opt/venv/lib/python3.12/site-packages (from akshare>=1.12.0->vibe-trading-ai==0.1.14) (0.16.0)
+#9 316.6 Collecting html5lib>=1.0.1 (from akshare>=1.12.0->vibe-trading-ai==0.1.14)
+#9 316.6   Downloading https://mirrors.aliyun.com/pypi/packages/6c/dd/a834df6482147d48e225a49515aabc28974ad5a4ca3215c18a882565b028/html5lib-1.1-py2.py3-none-any.whl (112 kB)
+#9 316.8 Collecting xlrd>=1.2.0 (from akshare>=1.12.0->vibe-trading-ai==0.1.14)
+#9 316.9   Downloading https://mirrors.aliyun.com/pypi/packages/1a/62/c8d562e7766786ba6587d09c5a8ba9f718ed3fa8af7f4553e8f91c36f302/xlrd-2.0.2-py2.py3-none-any.whl (96 kB)
+#9 316.9 Requirement already satisfied: urllib3>=1.25.8 in /opt/venv/lib/python3.12/site-packages (from akshare>=1.12.0->vibe-trading-ai==0.1.14) (1.26.20)
+#9 316.9 Collecting tqdm>=4.43.0 (from akshare>=1.12.0->vibe-trading-ai==0.1.14)
+#9 316.9   Downloading https://mirrors.aliyun.com/pypi/packages/f9/1c/01bfd571a64e7f270e6bab5e33777debe0edc56759233ce84f27dec92d14/tqdm-4.70.0-py3-none-any.whl (80 kB)
+#9 317.0 Collecting jsonpath>=0.82 (from akshare>=1.12.0->vibe-trading-ai==0.1.14)
+#9 317.2   Downloading https://mirrors.aliyun.com/pypi/packages/cf/a1/693351acd0a9edca4de9153372a65e75398898ea7f8a5c722ab00f464929/jsonpath-0.82.2.tar.gz (10 kB)
+#9 317.2   Installing build dependencies: started
+#9 318.4   Installing build dependencies: finished with status 'done'
+#9 318.4   Getting requirements to build wheel: started
+#9 318.6   Getting requirements to build wheel: finished with status 'done'
+#9 318.6   Preparing metadata (pyproject.toml): started
+#9 318.8   Preparing metadata (pyproject.toml): finished with status 'done'
+#9 319.1 Collecting tabulate>=0.8.6 (from akshare>=1.12.0->vibe-trading-ai==0.1.14)
+#9 319.1   Downloading https://mirrors.aliyun.com/pypi/packages/99/55/db07de81b5c630da5cbf5c7df646580ca26dfaefa593667fc6f2fe016d2e/tabulate-0.10.0-py3-none-any.whl (39 kB)
+#9 319.3 Collecting decorator>=4.4.2 (from akshare>=1.12.0->vibe-trading-ai==0.1.14)
+#9 319.5   Downloading https://mirrors.aliyun.com/pypi/packages/05/7f/798705f5296a58ca505d600456748d1be48078eac8a7050d8a98bc9edb89/decorator-5.3.1-py3-none-any.whl (10 kB)
+#9 319.6 Collecting py-mini-racer>=0.6.0 (from akshare>=1.12.0->vibe-trading-ai==0.1.14)
+#9 319.6   Downloading https://mirrors.aliyun.com/pypi/packages/29/a9/8ce0ca222ef04d602924a1e099be93f5435ca6f3294182a30574d4159ca2/py_mini_racer-0.6.0-py2.py3-none-manylinux1_x86_64.whl (5.4 MB)
+#9 330.8      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.4/5.4 MB 474.9 kB/s eta 0:00:00
+#9 331.1 Collecting akracer>=0.0.13 (from akshare>=1.12.0->vibe-trading-ai==0.1.14)
+#9 331.1   Downloading https://mirrors.aliyun.com/pypi/packages/53/cb/1041355b14cd4b76ac082e8c676858f6eddb78f0ba37c59284adf36e5103/akracer-0.0.14-py3-none-any.whl (10.1 MB)
+#9 349.0      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.1/10.1 MB 555.5 kB/s eta 0:00:00
+#9 349.3 Collecting certifi==2026.6.17 (from ccxt>=4.5.71->vibe-trading-ai==0.1.14)
+#9 349.3   Downloading https://mirrors.aliyun.com/pypi/packages/ef/2f/c5464532e965badff2f4c4c1a3a83f5697f0d7c407ed0cda44aaa99bb451/certifi-2026.6.17-py3-none-any.whl (133 kB)
+#9 349.5 Collecting aiohttp-fast-zlib==0.3.0 (from ccxt>=4.5.71->vibe-trading-ai==0.1.14)
+#9 349.8   Downloading https://mirrors.aliyun.com/pypi/packages/b7/11/ea9ecbcd6cf68c5de690fd39b66341405ab091aa0c3598277e687aa65901/aiohttp_fast_zlib-0.3.0-py3-none-any.whl (8.6 kB)
+#9 349.8 Collecting zlib-ng==1.0.0 (from ccxt>=4.5.71->vibe-trading-ai==0.1.14)
+#9 349.8   Downloading https://mirrors.aliyun.com/pypi/packages/6a/ed/5baf549131c47cbf5a00c35c7db7a78d5aa3c405605255a1496160a96a87/zlib_ng-1.0.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (132 kB)
+#9 349.9 Collecting uvloop==0.22.1 (from ccxt>=4.5.71->vibe-trading-ai==0.1.14)
+#9 349.9   Downloading https://mirrors.aliyun.com/pypi/packages/5f/6f/e62b4dfc7ad6518e7eff2516f680d02a0f6eb62c0c212e152ca708a0085e/uvloop-0.22.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.4 MB)
+#9 359.2      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.4/4.4 MB 456.6 kB/s eta 0:00:00
+#9 360.3 Collecting orjson==3.11.9 (from ccxt>=4.5.71->vibe-trading-ai==0.1.14)
+#9 360.4   Downloading https://mirrors.aliyun.com/pypi/packages/0e/a4/82b7a2fe5d8a67a59ed831b24d59a3d46ea7d207b66e1602d376541d94a6/orjson-3.11.9-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (134 kB)
+#9 360.4 Collecting coincurve==21.0.0 (from ccxt>=4.5.71->vibe-trading-ai==0.1.14)
+#9 360.4   Downloading https://mirrors.aliyun.com/pypi/packages/b7/75/050b6fd08978de85a7b480f0f220ab6a30967c0910119f3096a8dd40befc/coincurve-21.0.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.6 MB)
+#9 363.6      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.6/1.6 MB 449.6 kB/s eta 0:00:00
+#9 364.0 Collecting cffi==2.0.0 (from ccxt>=4.5.71->vibe-trading-ai==0.1.14)
+#9 364.0   Downloading https://mirrors.aliyun.com/pypi/packages/78/2d/7fa73dfa841b5ac06c7b8855cfc18622132e365f5b81d02230333ff26e9e/cffi-2.0.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (219 kB)
+#9 364.2 Requirement already satisfied: pycparser==3.0 in /opt/venv/lib/python3.12/site-packages (from ccxt>=4.5.71->vibe-trading-ai==0.1.14) (3.0)
+#9 364.6 Collecting charset_normalizer==3.4.7 (from ccxt>=4.5.71->vibe-trading-ai==0.1.14)
+#9 364.6   Downloading https://mirrors.aliyun.com/pypi/packages/4b/f8/d0118a2f5f23b02cd166fa385c60f9b0d4f9194f574e2b31cef350ad7223/charset_normalizer-3.4.7-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (216 kB)
+#9 364.8 Requirement already satisfied: idna==3.18 in /opt/venv/lib/python3.12/site-packages (from ccxt>=4.5.71->vibe-trading-ai==0.1.14) (3.18)
+#9 364.8 Collecting urllib3>=1.25.8 (from akshare>=1.12.0->vibe-trading-ai==0.1.14)
+#9 364.9   Downloading https://mirrors.aliyun.com/pypi/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl (131 kB)
+#9 365.0 Collecting backports.zstd>=1.3.0 (from clickhouse-connect>=1.0.0->vibe-trading-ai==0.1.14)
+#9 365.0   Downloading https://mirrors.aliyun.com/pypi/packages/1e/40/121917bd2671bc3f1507c25503c0554f0b52483edcca4e6210e6d22228df/backports_zstd-1.7.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (496 kB)
+#9 365.6 Requirement already satisfied: lz4 in /opt/venv/lib/python3.12/site-packages (from clickhouse-connect>=1.0.0->vibe-trading-ai==0.1.14) (4.4.5)
+#9 365.9 Collecting click>=8.1.8 (from ddgs>=6.0.0->vibe-trading-ai==0.1.14)
+#9 365.9   Downloading https://mirrors.aliyun.com/pypi/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl (125 kB)
+#9 365.9 Collecting primp>=1.3.1 (from ddgs>=6.0.0->vibe-trading-ai==0.1.14)
+#9 366.0   Downloading https://mirrors.aliyun.com/pypi/packages/31/08/99c7e41d117ac3bed5b8814df9b295394420beb5a2249dad878927e64517/primp-2.0.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (5.9 MB)
+#9 378.6      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.9/5.9 MB 454.0 kB/s eta 0:00:00
+#9 378.7 Collecting starlette>=0.46.0 (from fastapi>=0.104.0->vibe-trading-ai==0.1.14)
+#9 378.7   Downloading https://mirrors.aliyun.com/pypi/packages/c8/cb/6a6a47d5b464bd08695d254f3da6e7986cc70c9fa5d778eda57538edfe56/starlette-1.6.0-py3-none-any.whl (75 kB)
+#9 378.9 Collecting typing-inspection>=0.4.2 (from fastapi>=0.104.0->vibe-trading-ai==0.1.14)
+#9 379.2   Downloading https://mirrors.aliyun.com/pypi/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+#9 379.2 Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.12/site-packages (from fastapi>=0.104.0->vibe-trading-ai==0.1.14) (0.0.5)
+#9 379.4 Collecting fastmcp-slim==4.0.3 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 379.4   Downloading https://mirrors.aliyun.com/pypi/packages/43/4b/6b31820d87f56d5773538860878c8634b618cd1e9044b3bfbd8a78380a0f/fastmcp_slim-4.0.3-py3-none-any.whl (859 kB)
+#9 380.7      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 859.7/859.7 kB 594.9 kB/s eta 0:00:00
+#9 380.9 Collecting mcp-types<3.0.0,>=2.0.0 (from fastmcp-slim==4.0.3->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 380.9   Downloading https://mirrors.aliyun.com/pypi/packages/8f/d7/6ffba5d8cd5dd9b8a19478875c50e04945314ba5074e84d749283f27f62d/mcp_types-2.2.0-py3-none-any.whl (69 kB)
+#9 380.9 Requirement already satisfied: platformdirs>=4.0.0 in /opt/venv/lib/python3.12/site-packages (from fastmcp-slim==4.0.3->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14) (4.11.3)
+#9 381.2 Collecting pydantic-settings>=2.0.0 (from fastmcp-slim==4.0.3->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 381.2   Downloading https://mirrors.aliyun.com/pypi/packages/30/a4/2bffa9f8e804325a09867f0e9d30795c80ea9f8d62560bd1b6ad6220eb2f/pydantic_settings-2.15.0-py3-none-any.whl (69 kB)
+#9 381.5 Collecting authlib>=1.6.11 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 381.5   Downloading https://mirrors.aliyun.com/pypi/packages/b8/c6/6f124bcfbbfb20fba22c939b4e43a06dccfc0e1ca20e5634ca573cb1e271/authlib-1.8.0-py2.py3-none-any.whl (260 kB)
+#9 381.9 Collecting exceptiongroup>=1.2.2 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 381.9   Downloading https://mirrors.aliyun.com/pypi/packages/8a/0e/97c33bf5009bdbac74fd2beace167cab3f978feb69cc36f1ef79360d6c4e/exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+#9 382.2 Collecting httpx2>=2.5.0 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 382.2   Downloading https://mirrors.aliyun.com/pypi/packages/c8/95/411ba65569158e862368917aaf56597f3e5fa3b91b0502919638465a08f3/httpx2-2.12.0-py3-none-any.whl (95 kB)
+#9 382.4 Collecting mcp<3.0.0,>=2.0.0 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 382.5   Downloading https://mirrors.aliyun.com/pypi/packages/1b/ff/8e7eade68b8a28f7da0ed1085544341b51f9c935dbf6b95c76b7edfea6a0/mcp-2.2.0-py3-none-any.whl (365 kB)
+#9 383.1 Collecting opentelemetry-api>=1.28.0 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 383.2   Downloading https://mirrors.aliyun.com/pypi/packages/ca/6f/a04e900f465ff3221ccc395522503e2d10e79fa21f2723c8e177aae1e0d1/opentelemetry_api-1.44.0-py3-none-any.whl (60 kB)
+#9 383.4 Collecting py-key-value-aio<0.5.0,>=0.4.4 (from py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 383.4   Downloading https://mirrors.aliyun.com/pypi/packages/f6/95/b8ba862968712caa12a19666175334fa979e1f198b896a430adb3bacfe87/py_key_value_aio-0.4.5-py3-none-any.whl (170 kB)
+#9 383.7 Collecting cyclopts>=4.0.0 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 383.8   Downloading https://mirrors.aliyun.com/pypi/packages/2c/0e/eadf712ca776fd96982c09348dd8f141ae6f96746a4eabc3e3fb54dea738/cyclopts-4.25.2-py3-none-any.whl (242 kB)
+#9 384.2 Collecting griffelib>=2.0.0 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 384.2   Downloading https://mirrors.aliyun.com/pypi/packages/41/63/e876e789525063c840ccfa8857febdabd6523bcef9ce7eb979b9305ea895/griffelib-2.3.0-py3-none-any.whl (169 kB)
+#9 384.7 Collecting joserfc>=1.5.0 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 384.7   Downloading https://mirrors.aliyun.com/pypi/packages/67/c5/82addfd375e5ee6520644e0553e4aadde92d668c4fc99cc716d337fe7bb3/joserfc-1.7.5-py3-none-any.whl (71 kB)
+#9 384.9 Collecting jsonref>=1.1.0 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 385.1   Downloading https://mirrors.aliyun.com/pypi/packages/0c/ec/e1db9922bceb168197a558a2b8c03a7963f1afe93517ddd3cf99f202f996/jsonref-1.1.0-py3-none-any.whl (9.4 kB)
+#9 385.4 Collecting jsonschema-path>=0.3.4 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 385.4   Downloading https://mirrors.aliyun.com/pypi/packages/04/2c/9e69d73c4297508be9e3b64a970ea3971b3eb8db64ffc5802d40bd25981f/jsonschema_path-0.5.0-py3-none-any.whl (24 kB)
+#9 385.6 Collecting openapi-pydantic>=0.5.1 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 385.6   Downloading https://mirrors.aliyun.com/pypi/packages/12/cf/03675d8bd8ecbf4445504d8071adab19f5f993676795708e36402ab38263/openapi_pydantic-0.5.1-py3-none-any.whl (96 kB)
+#9 385.7 Requirement already satisfied: packaging>=24.0 in /opt/venv/lib/python3.12/site-packages (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14) (26.3)
+#9 385.9 Collecting pyperclip>=1.9.0 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 386.1   Downloading https://mirrors.aliyun.com/pypi/packages/df/80/fc9d01d5ed37ba4c42ca2b55b4339ae6e200b456be3a1aaddf4a9fa99b8c/pyperclip-1.11.0-py3-none-any.whl (11 kB)
+#9 386.4 Collecting uncalled-for>=0.4.0 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 386.6   Downloading https://mirrors.aliyun.com/pypi/packages/a2/40/97cec87c077eb3291fc7905e6633e08b7ca593c57d30238444bcb6bb3d53/uncalled_for-0.4.0-py3-none-any.whl (15 kB)
+#9 386.7 Collecting watchfiles>=1.0.0 (from fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 386.7   Downloading https://mirrors.aliyun.com/pypi/packages/22/24/ed72f68cbc1333ca9b9f2200aa048bb6658ae41709bc1caad4310f4bdffd/watchfiles-1.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (456 kB)
+#9 387.9 Collecting hyperframe<7,>=6.1 (from h2>=4.4.1->vibe-trading-ai==0.1.14)
+#9 388.2   Downloading https://mirrors.aliyun.com/pypi/packages/48/30/47d0bf6072f7252e6521f3447ccfa40b421b6824517f82854703d0f5a98b/hyperframe-6.1.0-py3-none-any.whl (13 kB)
+#9 388.4 Collecting hpack<5,>=4.2 (from h2>=4.4.1->vibe-trading-ai==0.1.14)
+#9 388.5   Downloading https://mirrors.aliyun.com/pypi/packages/71/b4/4a9fcfb2aef6ba44d9073ecd301443aa00b3dac95de5619f2a7de7ec8a91/hpack-4.2.0-py3-none-any.whl (34 kB)
+#9 388.7 Collecting anyio (from httpx>=0.28.0->vibe-trading-ai==0.1.14)
+#9 388.7   Downloading https://mirrors.aliyun.com/pypi/packages/12/b8/4bd346e22b28902df4d651910f5242c28d84e4a5c2435ca5c3f797ed7e2e/anyio-4.15.1-py3-none-any.whl (132 kB)
+#9 389.2 Collecting httpcore==1.* (from httpx>=0.28.0->vibe-trading-ai==0.1.14)
+#9 389.2   Downloading https://mirrors.aliyun.com/pypi/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl (78 kB)
+#9 389.4 Collecting h11>=0.16 (from httpcore==1.*->httpx>=0.28.0->vibe-trading-ai==0.1.14)
+#9 389.5   Downloading https://mirrors.aliyun.com/pypi/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl (37 kB)
+#9 389.5 Collecting MarkupSafe>=2.0 (from jinja2>=3.1.0->vibe-trading-ai==0.1.14)
+#9 389.5   Downloading https://mirrors.aliyun.com/pypi/packages/3c/2e/8d0c2ab90a8c1d9a24f0399058ab8519a3279d1bd4289511d74e909f060e/markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+#9 389.7 Collecting cloudpickle>=3.0 (from joblib>=1.3.0->vibe-trading-ai==0.1.14)
+#9 389.8   Downloading https://mirrors.aliyun.com/pypi/packages/88/39/799be3f2f0f38cc727ee3b4f1445fe6d5e4133064ec2e4115069418a5bb6/cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+#9 390.0 Collecting jsonpatch<2.0.0,>=1.33.0 (from langchain-core<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 390.3   Downloading https://mirrors.aliyun.com/pypi/packages/73/07/02e16ed01e04a374e644b575638ec7987ae846d25ad97bcc9945a3ee4b0e/jsonpatch-1.33-py2.py3-none-any.whl (12 kB)
+#9 390.5 Collecting langchain-protocol>=0.0.17 (from langchain-core<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 390.7   Downloading https://mirrors.aliyun.com/pypi/packages/80/c9/f6cbf357d48ccbd18bb394433b1fd7ad9be004eed9377ad08bb85777e5e6/langchain_protocol-0.0.19-py3-none-any.whl (7.3 kB)
+#9 390.8 Collecting langsmith<1.0.0,>=0.3.45 (from langchain-core<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 390.8   Downloading https://mirrors.aliyun.com/pypi/packages/d1/b1/d0c6f84cde25b2443bcdca81f9b30732fc3af602c46f5114fcbe5246b978/langsmith-0.12.4-py3-none-any.whl (767 kB)
+#9 392.8      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 767.5/767.5 kB 452.7 kB/s eta 0:00:00
+#9 393.1 Collecting tenacity!=8.4.0,<10.0.0,>=8.1.0 (from langchain-core<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 393.1   Downloading https://mirrors.aliyun.com/pypi/packages/d7/c1/eb8f9debc45d3b7918a32ab756658a0904732f75e555402972246b0b8e71/tenacity-9.1.4-py3-none-any.whl (28 kB)
+#9 393.7 Collecting uuid-utils<1.0,>=0.12.0 (from langchain-core<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 393.7   Downloading https://mirrors.aliyun.com/pypi/packages/02/1e/2abb7d9e3062a7889142818e2a2ae758a54a1c3b6cf8a86877e051b3d1dc/uuid_utils-0.17.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (323 kB)
+#9 394.4 Collecting openai<4.0.0,>=2.45.0 (from langchain-openai<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 394.4   Downloading https://mirrors.aliyun.com/pypi/packages/63/7f/ee9ebb7c5ab7abf016969faec7c748a91c1fd893078bfe1e5ba5d82e96c2/openai-3.13.0-py3-none-any.whl (2.0 MB)
+#9 400.1      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.0/2.0 MB 363.0 kB/s eta 0:00:00
+#9 400.2 Collecting tiktoken<1.0.0,>=0.7.0 (from langchain-openai<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 400.2   Downloading https://mirrors.aliyun.com/pypi/packages/51/11/9976ad86980a00cdef05e730a0127a2578a1bc6d11644d8d47246de2eb26/tiktoken-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl (1.2 MB)
+#9 403.6      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 361.4 kB/s eta 0:00:00
+#9 403.9 Collecting langgraph-prebuilt<1.2.0,>=1.1.0 (from langgraph<1.3,>=1.2.5->vibe-trading-ai==0.1.14)
+#9 403.9   Downloading https://mirrors.aliyun.com/pypi/packages/e9/43/3fe1a700b8490ed02679cdbbc8c915eb23a092faf496c9c1118abcd10be3/langgraph_prebuilt-1.1.0-py3-none-any.whl (41 kB)
+#9 403.9 Collecting langgraph-sdk<0.5.0,>=0.4.2 (from langgraph<1.3,>=1.2.5->vibe-trading-ai==0.1.14)
+#9 403.9   Downloading https://mirrors.aliyun.com/pypi/packages/43/d5/2ad7f3a835c6fcebf58b6669552536ecd52d2dfe4cf49c6c36648fd83572/langgraph_sdk-0.4.4-py3-none-any.whl (162 kB)
+#9 404.7 Collecting xxhash>=3.5.0 (from langgraph<1.3,>=1.2.5->vibe-trading-ai==0.1.14)
+#9 404.7   Downloading https://mirrors.aliyun.com/pypi/packages/83/97/31bd8b8279e6935a0719f6910ced15e9d5a2cd554b253f6027ce1b5a1c2c/xxhash-4.0.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (261 kB)
+#9 405.0 Collecting ormsgpack>=1.12.0 (from langgraph-checkpoint<5,>=2.1.0->vibe-trading-ai==0.1.14)
+#9 405.1   Downloading https://mirrors.aliyun.com/pypi/packages/7b/ba/795b1036888542c9113269a3f5690ab53dd2258c6fb17676ac4bd44fcf94/ormsgpack-1.12.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (212 kB)
+#9 405.5 Collecting requests_toolbelt>=0.9 (from lark-oapi>=1.4.0->vibe-trading-ai==0.1.14)
+#9 405.5   Downloading https://mirrors.aliyun.com/pypi/packages/3f/51/d4db610ef29373b879047326cbf6fa98b6c1969d6f6dc423279de2b1be2c/requests_toolbelt-1.0.0-py2.py3-none-any.whl (54 kB)
+#9 405.5 Requirement already satisfied: pycryptodome>=3.9 in /opt/venv/lib/python3.12/site-packages (from lark-oapi>=1.4.0->vibe-trading-ai==0.1.14) (3.23.0)
+#9 405.5 Collecting websockets>=12.0 (from vibe-trading-ai==0.1.14)
+#9 405.6   Downloading https://mirrors.aliyun.com/pypi/packages/14/8f/aa61f528fba38578ec553c145857a181384c72b98156f858ca5c8e82d9d3/websockets-15.0.1-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (182 kB)
+#9 405.8 Collecting contourpy>=1.0.1 (from matplotlib>=3.7.0->vibe-trading-ai==0.1.14)
+#9 405.8   Downloading https://mirrors.aliyun.com/pypi/packages/78/f9/b6831508960d559581c448532ba4df312217072975486dbf2b24fcc5b76f/contourpy-1.4.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (383 kB)
+#9 406.5 Collecting cycler>=0.10 (from matplotlib>=3.7.0->vibe-trading-ai==0.1.14)
+#9 406.7   Downloading https://mirrors.aliyun.com/pypi/packages/e7/05/c19819d5e3d95294a6f5947fb9b9629efb316b96de511b418c53d245aae6/cycler-0.12.1-py3-none-any.whl (8.3 kB)
+#9 407.1 Collecting fonttools>=4.28.2 (from matplotlib>=3.7.0->vibe-trading-ai==0.1.14)
+#9 407.1   Downloading https://mirrors.aliyun.com/pypi/packages/b5/09/de2c0c20a42c18e565a2617932beb08c06697bbdd0d3f62b108262e11583/fonttools-4.65.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.4 MB)
+#9 418.4      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.4/5.4 MB 464.7 kB/s eta 0:00:00
+#9 418.5 Collecting kiwisolver>=1.3.1 (from matplotlib>=3.7.0->vibe-trading-ai==0.1.14)
+#9 418.5   Downloading https://mirrors.aliyun.com/pypi/packages/fc/f4/dadfec469313c7f428efa7e84b4aba9732f813c13ea7131a24b7b008ef57/kiwisolver-1.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.5 MB)
+#9 421.3      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.5/1.5 MB 504.3 kB/s eta 0:00:00
+#9 421.5 Collecting pyparsing>=3 (from matplotlib>=3.7.0->vibe-trading-ai==0.1.14)
+#9 421.5   Downloading https://mirrors.aliyun.com/pypi/packages/10/bd/c038d7cc38edc1aa5bf91ab8068b63d4308c66c4c8bb3cbba7dfbc049f9c/pyparsing-3.3.2-py3-none-any.whl (122 kB)
+#9 421.5 Requirement already satisfied: python-dateutil>=2.7 in /opt/venv/lib/python3.12/site-packages (from matplotlib>=3.7.0->vibe-trading-ai==0.1.14) (2.9.0.post0)
+#9 421.7 Collecting aiofiles>=24.1 (from matrix-nio>=0.25.0->matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 421.9   Downloading https://mirrors.aliyun.com/pypi/packages/bc/8a/340a1555ae33d7354dbca4faa54948d76d89a27ceef032c8c3bc661d003e/aiofiles-25.1.0-py3-none-any.whl (14 kB)
+#9 421.9 Collecting jsonschema>=4.14 (from matrix-nio>=0.25.0->matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 422.0   Downloading https://mirrors.aliyun.com/pypi/packages/69/90/f63fb5873511e014207a475e2bb4e8b2e570d655b00ac19a9a0ca0a385ee/jsonschema-4.26.0-py3-none-any.whl (90 kB)
+#9 422.2 Collecting unpaddedbase64>=2.1 (from matrix-nio>=0.25.0->matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 422.5   Downloading https://mirrors.aliyun.com/pypi/packages/4c/a7/563b2d8fb7edc07320bf69ac6a7eedcd7a1a9d663a6bb90a4d9bd2eda5f7/unpaddedbase64-2.1.0-py3-none-any.whl (6.1 kB)
+#9 422.7 Collecting aiohttp-socks>=0.8 (from matrix-nio>=0.25.0->matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 423.0   Downloading https://mirrors.aliyun.com/pypi/packages/86/64/ca6289632020523ea1841f01363f83ada10eeb0f21dd931fc1118dd85668/aiohttp_socks-0.12.0-py3-none-any.whl (10 kB)
+#9 423.2 Collecting atomicwrites~=1.4 (from matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 423.4   Downloading https://mirrors.aliyun.com/pypi/packages/87/c6/53da25344e3e3a9c01095a89f16dbcda021c609ddb42dd6d7c0528236fb2/atomicwrites-1.4.1.tar.gz (14 kB)
+#9 423.5   Installing build dependencies: started
+#9 424.9   Installing build dependencies: finished with status 'done'
+#9 424.9   Getting requirements to build wheel: started
+#9 425.1   Getting requirements to build wheel: finished with status 'done'
+#9 425.1   Preparing metadata (pyproject.toml): started
+#9 425.3   Preparing metadata (pyproject.toml): finished with status 'done'
+#9 425.6 Collecting cachetools>=5.3 (from matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 425.6   Downloading https://mirrors.aliyun.com/pypi/packages/d7/3d/9487690d0e937854db587205c66bab3c3cf88d9f00ed380b74cb88cc94ee/cachetools-7.1.8-py3-none-any.whl (16 kB)
+#9 425.7 Collecting peewee~=3.14 (from matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 425.8   Downloading https://mirrors.aliyun.com/pypi/packages/1a/41/19c65578ef9a54b3083253c68a607f099642747168fe00f3a2bceb7c3a34/peewee-3.19.0-py3-none-any.whl (411 kB)
+#9 426.5 Collecting vodozemac>=0.9.0.post2 (from matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 426.7   Downloading https://mirrors.aliyun.com/pypi/packages/2a/f5/d0cd120121629bc39adad4989ac175f70dceed40def45659656f460e8d75/vodozemac-0.10.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (750 kB)
+#9 428.1      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 750.4/750.4 kB 488.0 kB/s eta 0:00:00
+#9 428.5 Collecting linkpreview>=0.11.0 (from neonize>=0.3.18.post0->vibe-trading-ai==0.1.14)
+#9 428.5   Downloading https://mirrors.aliyun.com/pypi/packages/fd/bd/a973d4189aa3561a6abdd4e02971cd6a50b6ddb35eb3eec58f557535b1a6/linkpreview-0.12.1-py3-none-any.whl (21 kB)
+#9 428.7 Collecting phonenumbers>=8.13.52 (from neonize>=0.3.18.post0->vibe-trading-ai==0.1.14)
+#9 428.7   Downloading https://mirrors.aliyun.com/pypi/packages/99/53/238c99f028b9c638ceae8218a33904e4b84d60e1c3bd707c0ff231b388cf/phonenumbers-9.0.39-py2.py3-none-any.whl (2.6 MB)
+#9 434.0      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.6/2.6 MB 474.0 kB/s eta 0:00:00
+#9 434.6 Collecting protobuf>=6.32.1 (from neonize>=0.3.18.post0->vibe-trading-ai==0.1.14)
+#9 434.6   Downloading https://mirrors.aliyun.com/pypi/packages/22/df/c799fe7a05ef16ba853a59db01f3a2c5f7d0676469589ccc4874f76a2a88/protobuf-7.36.1-cp310-abi3-manylinux2014_x86_64.whl (343 kB)
+#9 435.3 Collecting python-magic>=0.4.27 (from neonize>=0.3.18.post0->vibe-trading-ai==0.1.14)
+#9 435.5   Downloading https://mirrors.aliyun.com/pypi/packages/6c/73/9f872cb81fc5c3bb48f7227872c28975f998f3e7c2b1c16e95e6432bbb90/python_magic-0.4.27-py2.py3-none-any.whl (13 kB)
+#9 435.8 Collecting segno>=1.6.1 (from neonize>=0.3.18.post0->vibe-trading-ai==0.1.14)
+#9 436.3   Downloading https://mirrors.aliyun.com/pypi/packages/d6/02/12c73fd423eb9577b97fc1924966b929eff7074ae6b2e15dd3d30cb9e4ae/segno-1.6.6-py3-none-any.whl (76 kB)
+#9 436.5 Collecting et-xmlfile (from openpyxl>=3.1.0->vibe-trading-ai==0.1.14)
+#9 436.6   Downloading https://mirrors.aliyun.com/pypi/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl (18 kB)
+#9 436.6 Requirement already satisfied: pytz>=2020.1 in /opt/venv/lib/python3.12/site-packages (from pandas<3.0.0,>=2.0.0->vibe-trading-ai==0.1.14) (2026.3.post1)
+#9 436.6 Requirement already satisfied: tzdata>=2022.7 in /opt/venv/lib/python3.12/site-packages (from pandas<3.0.0,>=2.0.0->vibe-trading-ai==0.1.14) (2026.3)
+#9 436.8 Collecting wcwidth>=0.1.4 (from prompt_toolkit>=3.0.0->vibe-trading-ai==0.1.14)
+#9 436.8   Downloading https://mirrors.aliyun.com/pypi/packages/c4/0e/57f6bb3024a597b2e8ec4aee710ffe62ddc95af2e2bb1ee7a7abdc22c68c/wcwidth-0.8.3-py3-none-any.whl (331 kB)
+#9 437.7 Collecting annotated-types>=0.6.0 (from pydantic>=2.0.0->vibe-trading-ai==0.1.14)
+#9 437.9   Downloading https://mirrors.aliyun.com/pypi/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl (13 kB)
+#9 440.8 Collecting pydantic-core==2.46.5 (from pydantic>=2.0.0->vibe-trading-ai==0.1.14)
+#9 440.8   Downloading https://mirrors.aliyun.com/pypi/packages/c0/a4/eb9409ec0736e50aa70a412f16c204ed149516846912f7e6724d4c73ee53/pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+#9 444.8      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 499.2 kB/s eta 0:00:00
+#9 444.9 Collecting XlsxWriter>=0.5.7 (from python-pptx>=0.6.23->vibe-trading-ai==0.1.14)
+#9 444.9   Downloading https://mirrors.aliyun.com/pypi/packages/3a/0c/3662f4a66880196a590b202f0db82d919dd2f89e99a27fadef91c4a33d41/xlsxwriter-3.2.9-py3-none-any.whl (175 kB)
+#9 445.4 Collecting bidict>=0.21.0 (from python-socketio>=5.11.0->python-socketio[asyncio_client]>=5.11.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 445.4   Downloading https://mirrors.aliyun.com/pypi/packages/97/53/2a3c7d562271ec6b6e38e7216b3104899f8aa4180c0713cb8aaf69e29cd5/bidict-0.24.1-py3-none-any.whl (36 kB)
+#9 445.5 Collecting python-engineio>=4.13.2 (from python-socketio>=5.11.0->python-socketio[asyncio_client]>=5.11.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 445.5   Downloading https://mirrors.aliyun.com/pypi/packages/e5/de/07cfd386974c2a26a7bde41f2111be29bbfc92b9ea0bb76694415a4a1a78/python_engineio-4.14.0-py3-none-any.whl (60 kB)
+#9 445.8 Collecting APScheduler (from qq-botpy>=1.2.0->vibe-trading-ai==0.1.14)
+#9 445.8   Downloading https://mirrors.aliyun.com/pypi/packages/42/c9/8638db32514dbb9157b3d82680c6faea89283523edf9ed2415ea3884f2ae/apscheduler-3.11.3-py3-none-any.whl (66 kB)
+#9 445.8 Requirement already satisfied: markdown-it-py>=2.2.0 in /opt/venv/lib/python3.12/site-packages (from rich>=13.0.0->vibe-trading-ai==0.1.14) (4.2.0)
+#9 445.8 Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /opt/venv/lib/python3.12/site-packages (from rich>=13.0.0->vibe-trading-ai==0.1.14) (2.21.0)
+#9 445.8 Requirement already satisfied: narwhals>=2.0.1 in /opt/venv/lib/python3.12/site-packages (from scikit-learn>=1.3.0->vibe-trading-ai==0.1.14) (2.24.0)
+#9 446.0 Collecting threadpoolctl>=3.5.0 (from scikit-learn>=1.3.0->vibe-trading-ai==0.1.14)
+#9 446.0   Downloading https://mirrors.aliyun.com/pypi/packages/32/d5/f9a850d79b0851d1d4ef6456097579a9005b31fea68726a4ae5f2d82ddd9/threadpoolctl-3.6.0-py3-none-any.whl (18 kB)
+#9 446.1 Requirement already satisfied: simplejson in /opt/venv/lib/python3.12/site-packages (from tushare>=1.2.89->vibe-trading-ai==0.1.14) (4.1.1)
+#9 446.1 Collecting bs4 (from tushare>=1.2.89->vibe-trading-ai==0.1.14)
+#9 446.3   Downloading https://mirrors.aliyun.com/pypi/packages/51/bb/bf7aab772a159614954d84aa832c129624ba6c32faa559dfb200a534e50b/bs4-0.0.2-py2.py3-none-any.whl (1.2 kB)
+#9 446.3 Requirement already satisfied: websocket-client>=0.57.0 in /opt/venv/lib/python3.12/site-packages (from tushare>=1.2.89->vibe-trading-ai==0.1.14) (1.9.0)
+#9 446.5 Collecting httptools>=0.8.0 (from uvicorn[standard]>=0.24.0->vibe-trading-ai==0.1.14)
+#9 446.5   Downloading https://mirrors.aliyun.com/pypi/packages/e3/a6/febbb8b8db0f58b38e44ad6cb946e6a255ae49b55f2e8543408fb7501ccd/httptools-0.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (523 kB)
+#9 447.6 Collecting pydyf>=0.11.0 (from weasyprint>=60.0->vibe-trading-ai==0.1.14)
+#9 447.8   Downloading https://mirrors.aliyun.com/pypi/packages/22/11/47efe2f66ba848a107adfd490b508f5c0cedc82127950553dca44d29e6c4/pydyf-0.12.1-py3-none-any.whl (8.0 kB)
+#9 448.0 Collecting tinyhtml5>=2.0.0b1 (from weasyprint>=60.0->vibe-trading-ai==0.1.14)
+#9 448.1   Downloading https://mirrors.aliyun.com/pypi/packages/52/48/01695a036b695f83fea7aef6955d735db0f517b1c8e25ddb399ac0bdbcbf/tinyhtml5-2.1.0-py3-none-any.whl (39 kB)
+#9 448.3 Collecting tinycss2>=1.5.0 (from weasyprint>=60.0->vibe-trading-ai==0.1.14)
+#9 448.3   Downloading https://mirrors.aliyun.com/pypi/packages/60/45/c7b5c3168458db837e8ceab06dc77824e18202679d0463f0e8f002143a97/tinycss2-1.5.1-py3-none-any.whl (28 kB)
+#9 448.6 Collecting cssselect2>=0.8.0 (from weasyprint>=60.0->vibe-trading-ai==0.1.14)
+#9 448.8   Downloading https://mirrors.aliyun.com/pypi/packages/bd/59/6b1daa3b94de8970e2a2787ba73616c2d0675d2f948ef4cad8bef7f21bc6/cssselect2-0.10.1-py3-none-any.whl (15 kB)
+#9 449.0 Collecting Pyphen>=0.9.1 (from weasyprint>=60.0->vibe-trading-ai==0.1.14)
+#9 449.0   Downloading https://mirrors.aliyun.com/pypi/packages/ec/1d/23801cf008f71575f0a4800463f349afa5f04b27fe783178a45cdc4d5edf/pyphen-0.18.1-py3-none-any.whl (2.1 MB)
+#9 453.1      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 512.2 kB/s eta 0:00:00
+#9 453.1 Requirement already satisfied: multitasking>=0.0.7 in /opt/venv/lib/python3.12/site-packages (from yfinance>=0.2.30->vibe-trading-ai==0.1.14) (0.0.13)
+#9 453.1 Requirement already satisfied: frozendict>=2.3.4 in /opt/venv/lib/python3.12/site-packages (from yfinance>=0.2.30->vibe-trading-ai==0.1.14) (2.4.7)
+#9 453.4 Collecting python-socks<4.0.0,>=2.4.3 (from python-socks[asyncio]<4.0.0,>=2.4.3->aiohttp-socks>=0.8->matrix-nio>=0.25.0->matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 453.4   Downloading https://mirrors.aliyun.com/pypi/packages/3b/23/2c2cef1b4313c55d1713201acd4ee2043fb2cf22e546ca9d36bf4317faea/python_socks-3.1.1-py3-none-any.whl (49 kB)
+#9 453.5 Requirement already satisfied: soupsieve>=1.6.1 in /opt/venv/lib/python3.12/site-packages (from beautifulsoup4>=4.9.1->akshare>=1.12.0->vibe-trading-ai==0.1.14) (2.9.2)
+#9 453.7 Collecting webencodings (from cssselect2>=0.8.0->weasyprint>=60.0->vibe-trading-ai==0.1.14)
+#9 453.9   Downloading https://mirrors.aliyun.com/pypi/packages/77/c6/040cbc72480d789a5f40d63fb484d3106554c4dfa2d2b70ad5022057750f/webencodings-0.6.1-py3-none-any.whl (8.7 kB)
+#9 454.0 Collecting brotli>=1.0.1 (from fonttools[woff]>=4.59.2->weasyprint>=60.0->vibe-trading-ai==0.1.14)
+#9 454.0   Downloading https://mirrors.aliyun.com/pypi/packages/03/a7/03aa61fbc3c5cbf99b44d158665f9b0dd3d8059be16c460208d9e385c837/brotli-1.2.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.4 MB)
+#9 456.5      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 575.6 kB/s eta 0:00:00
+#9 456.5 Collecting zopfli>=0.1.4 (from fonttools[woff]>=4.59.2->weasyprint>=60.0->vibe-trading-ai==0.1.14)
+#9 456.6   Downloading https://mirrors.aliyun.com/pypi/packages/55/c8/d8d8d731e0b192024567b7198fb77b748821d355f3c8bf0109de27191f43/zopfli-0.4.3-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (829 kB)
+#9 458.0      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 829.4/829.4 kB 565.0 kB/s eta 0:00:00
+#9 458.0 Requirement already satisfied: six>=1.9 in /opt/venv/lib/python3.12/site-packages (from html5lib>=1.0.1->akshare>=1.12.0->vibe-trading-ai==0.1.14) (1.17.0)
+#9 458.3 Collecting jsonpointer>=1.9 (from jsonpatch<2.0.0,>=1.33.0->langchain-core<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 458.5   Downloading https://mirrors.aliyun.com/pypi/packages/9e/6a/a83720e953b1682d2d109d3c2dbb0bc9bf28cc1cbc205be4ef4be5da709d/jsonpointer-3.1.1-py3-none-any.whl (7.7 kB)
+#9 458.7 Collecting jsonschema-specifications>=2023.03.6 (from jsonschema>=4.14->matrix-nio>=0.25.0->matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 458.7   Downloading https://mirrors.aliyun.com/pypi/packages/41/45/1a4ed80516f02155c51f51e8cedb3c1902296743db0bbc66608a0db2814f/jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+#9 458.8 Collecting referencing>=0.28.4 (from jsonschema>=4.14->matrix-nio>=0.25.0->matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 458.8   Downloading https://mirrors.aliyun.com/pypi/packages/2c/58/ca301544e1fa93ed4f80d724bf5b194f6e4b945841c5bfd555878eea9fcb/referencing-0.37.0-py3-none-any.whl (26 kB)
+#9 460.1 Collecting rpds-py>=0.25.0 (from jsonschema>=4.14->matrix-nio>=0.25.0->matrix-nio[e2e]>=0.25.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 460.1   Downloading https://mirrors.aliyun.com/pypi/packages/04/8f/d2f3f532616be4d06c316ef119683e832bd3d41e112bf3a88f4151c95b17/rpds_py-2026.6.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (366 kB)
+#9 461.0 Collecting distro>=1.7.0 (from langsmith<1.0.0,>=0.3.45->langchain-core<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 461.0   Downloading https://mirrors.aliyun.com/pypi/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl (20 kB)
+#9 461.2 Collecting sniffio>=1.1 (from langsmith<1.0.0,>=0.3.45->langchain-core<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 461.4   Downloading https://mirrors.aliyun.com/pypi/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl (10 kB)
+#9 461.5 Collecting zstandard>=0.23.0 (from langsmith<1.0.0,>=0.3.45->langchain-core<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 461.6   Downloading https://mirrors.aliyun.com/pypi/packages/53/60/7be26e610767316c028a2cbedb9a3beabdbe33e2182c373f71a1c0b88f36/zstandard-0.25.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.5 MB)
+#9 472.2      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.5/5.5 MB 515.9 kB/s eta 0:00:00
+#9 472.3 Requirement already satisfied: mdurl~=0.1 in /opt/venv/lib/python3.12/site-packages (from markdown-it-py>=2.2.0->rich>=13.0.0->vibe-trading-ai==0.1.14) (0.1.2)
+#9 472.4 Collecting jiter<1,>=0.16.0 (from openai<4.0.0,>=2.45.0->langchain-openai<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 472.4   Downloading https://mirrors.aliyun.com/pypi/packages/a8/d2/4839422241aa12860ce597b20068727094ba0bc480723c74924ca5bad483/jiter-0.16.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (343 kB)
+#9 473.5 Collecting simple-websocket>=0.10.0 (from python-engineio>=4.13.2->python-socketio>=5.11.0->python-socketio[asyncio_client]>=5.11.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 473.7   Downloading https://mirrors.aliyun.com/pypi/packages/52/59/0782e51887ac6b07ffd1570e0364cf901ebc36345fea669969d2084baebb/simple_websocket-1.1.0-py3-none-any.whl (13 kB)
+#9 475.5 Collecting regex (from tiktoken<1.0.0,>=0.7.0->langchain-openai<2,>=1.0.0->vibe-trading-ai==0.1.14)
+#9 475.6   Downloading https://mirrors.aliyun.com/pypi/packages/cb/f5/dcdf5e0d898024005cfcce631e3e934d111dfbe177ca0b7f253ae8a735a2/regex-2026.9.10-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (804 kB)
+#9 477.4      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 804.6/804.6 kB 449.9 kB/s eta 0:00:00
+#9 477.7 Collecting tzlocal>=3.0 (from APScheduler->qq-botpy>=1.2.0->vibe-trading-ai==0.1.14)
+#9 477.7   Downloading https://mirrors.aliyun.com/pypi/packages/9e/a4/017a7a6cbe387d961a688ec31364ae60a5c4e22c96ae9921b79a947c855d/tzlocal-5.4.4-py3-none-any.whl (18 kB)
+#9 478.0 Collecting docstring-parser<4.0,>=0.15 (from cyclopts>=4.0.0->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 478.0   Downloading https://mirrors.aliyun.com/pypi/packages/a7/5f/ed01f9a3cdffbd5a008556fc7b2a08ddb1cc6ace7effa7340604b1d16699/docstring_parser-0.18.0-py3-none-any.whl (22 kB)
+#9 478.2 Collecting rich-rst<3.0.0,>=1.3.1 (from cyclopts>=4.0.0->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 478.2   Downloading https://mirrors.aliyun.com/pypi/packages/2a/68/1fc93dd759605b5d00fc98b50200739e41ed32bd22d6ba35ca6c3932371b/rich_rst-2.1.0-py3-none-any.whl (272 kB)
+#9 479.1 Collecting httpcore2==2.12.0 (from httpx2>=2.5.0->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 479.2   Downloading https://mirrors.aliyun.com/pypi/packages/d2/74/d370e55600d9bcfa0d9794b0166126d49291a3d2b20c268fc98c453a4948/httpcore2-2.12.0-py3-none-any.whl (83 kB)
+#9 479.4 Collecting truststore>=0.10 (from httpx2>=2.5.0->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 479.4   Downloading https://mirrors.aliyun.com/pypi/packages/19/97/56608b2249fe206a67cd573bc93cd9896e1efb9e98bce9c163bcdc704b88/truststore-0.10.4-py3-none-any.whl (18 kB)
+#9 479.7 Collecting pathable<0.7.0,>=0.6.0 (from jsonschema-path>=0.3.4->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 479.7   Downloading https://mirrors.aliyun.com/pypi/packages/a2/e8/6d75ffd9784bce2e93d1ae4415649427e39a53bb172d4672b2b59c6f0a7b/pathable-0.6.0-py3-none-any.whl (18 kB)
+#9 480.0 Collecting beartype>=0.20.0 (from py-key-value-aio<0.5.0,>=0.4.4->py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 480.1   Downloading https://mirrors.aliyun.com/pypi/packages/71/cc/18245721fa7747065ab478316c7fea7c74777d07f37ae60db2e84f8172e8/beartype-0.22.9-py3-none-any.whl (1.3 MB)
+#9 483.3      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 410.1 kB/s eta 0:00:00
+#9 483.6 Collecting aiofile>=3.5.0 (from py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 483.6   Downloading https://mirrors.aliyun.com/pypi/packages/4e/79/6e45e778c4c3cab39e0937b007b720c15f76c50c6453d153282d0fcc3588/aiofile-3.12.3-py3-none-any.whl (22 kB)
+#9 483.7 Collecting keyring>=25.6.0 (from py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 483.7   Downloading https://mirrors.aliyun.com/pypi/packages/81/db/e655086b7f3a705df045bf0933bdd9c2f79bb3c97bfef1384598bb79a217/keyring-25.7.0-py3-none-any.whl (39 kB)
+#9 483.9 Collecting email-validator>=2.0.0 (from pydantic[email]>=2.12.0->fastmcp-slim==4.0.3->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 484.0   Downloading https://mirrors.aliyun.com/pypi/packages/de/15/545e2b6cf2e3be84bc1ed85613edd75b8aea69807a71c26f4ca6a9258e82/email_validator-2.3.0-py3-none-any.whl (35 kB)
+#9 484.2 Collecting wsproto (from simple-websocket>=0.10.0->python-engineio>=4.13.2->python-socketio>=5.11.0->python-socketio[asyncio_client]>=5.11.0; extra == "channels"->vibe-trading-ai==0.1.14)
+#9 484.2   Downloading https://mirrors.aliyun.com/pypi/packages/a4/f5/10b68b7b1544245097b2a1b8238f66f2fc6dcaeb24ba5d917f52bd2eed4f/wsproto-1.3.2-py3-none-any.whl (24 kB)
+#9 484.4 Collecting caio~=0.12.0 (from aiofile>=3.5.0->py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 484.4   Downloading https://mirrors.aliyun.com/pypi/packages/7a/11/519e40a1da4d18515ab5ddb54e75cdd896532339010f2dcee7e798e4edab/caio-0.12.4-cp312-cp312-manylinux_2_34_x86_64.whl (159 kB)
+#9 484.9 Collecting dnspython>=2.0.0 (from email-validator>=2.0.0->pydantic[email]>=2.12.0->fastmcp-slim==4.0.3->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 484.9   Downloading https://mirrors.aliyun.com/pypi/packages/ba/5a/18ad964b0086c6e62e2e7500f7edc89e3faa45033c71c1893d34eed2b2de/dnspython-2.8.0-py3-none-any.whl (331 kB)
+#9 485.8 Collecting SecretStorage>=3.2 (from keyring>=25.6.0->py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 486.0   Downloading https://mirrors.aliyun.com/pypi/packages/b7/46/f5af3402b579fd5e11573ce652019a67074317e18c1935cc0b4ba9b35552/secretstorage-3.5.0-py3-none-any.whl (15 kB)
+#9 486.3 Collecting jeepney>=0.4.2 (from keyring>=25.6.0->py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 486.3   Downloading https://mirrors.aliyun.com/pypi/packages/b2/a3/e137168c9c44d18eff0376253da9f1e9234d0239e0ee230d2fee6cea8e55/jeepney-0.9.0-py3-none-any.whl (49 kB)
+#9 486.5 Collecting jaraco.classes (from keyring>=25.6.0->py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 486.7   Downloading https://mirrors.aliyun.com/pypi/packages/7f/66/b15ce62552d84bbfcec9a4873ab79d993a1dd4edb922cbfccae192bd5b5f/jaraco.classes-3.4.0-py3-none-any.whl (6.8 kB)
+#9 487.0 Collecting jaraco.functools (from keyring>=25.6.0->py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 487.2   Downloading https://mirrors.aliyun.com/pypi/packages/02/36/ecc85bc96c273dc8a11273ed4782272975e6338d4a3e9228621175edf0e3/jaraco_functools-4.6.0-py3-none-any.whl (11 kB)
+#9 487.4 Collecting jaraco.context (from keyring>=25.6.0->py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 487.6   Downloading https://mirrors.aliyun.com/pypi/packages/f2/58/bc8954bda5fcda97bd7c19be11b85f91973d67a706ed4a3aec33e7de22db/jaraco_context-6.1.2-py3-none-any.whl (7.9 kB)
+#9 487.9 Collecting more-itertools (from jaraco.classes->keyring>=25.6.0->py-key-value-aio[filetree,keyring,memory]<0.5.0,>=0.4.4; extra == "client"->fastmcp-slim[client,server]==4.0.3->fastmcp>=2.14.0->vibe-trading-ai==0.1.14)
+#9 487.9   Downloading https://mirrors.aliyun.com/pypi/packages/e8/3d/1087453384dbde46a8c7f9356eead2c58be8a7bf156bca40243377c85715/more_itertools-11.1.0-py3-none-any.whl (72 kB)
+#9 488.0 Building wheels for collected packages: vibe-trading-ai, atomicwrites, jsonpath
+#9 488.0   Building editable for vibe-trading-ai (pyproject.toml): started
+#9 488.4   Building editable for vibe-trading-ai (pyproject.toml): finished with status 'done'
+#9 488.4   Created wheel for vibe-trading-ai: filename=vibe_trading_ai-0.1.14-0.editable-py3-none-any.whl size=97079 sha256=a84b70c6c2b7ae5d7d1d1c10abd0615b31c7684b31aa4a2d8cfd80bf66677cc3
+#9 488.4   Stored in directory: /tmp/pip-ephem-wheel-cache-tfg3o1mm/wheels/99/b1/38/e7b5ed0a12b7fc7bd1ba4c183fcdc4414ce1fad2eb371a3beb
+#9 488.5   Building wheel for atomicwrites (pyproject.toml): started
+#9 488.7   Building wheel for atomicwrites (pyproject.toml): finished with status 'done'
+#9 488.7   Created wheel for atomicwrites: filename=atomicwrites-1.4.1-py2.py3-none-any.whl size=7020 sha256=0fdefac72619ac2f4712f64a1d7bc80e16fe24bf804dfb5e7e960c73facc2a6a
+#9 488.7   Stored in directory: /tmp/pip-ephem-wheel-cache-tfg3o1mm/wheels/5f/62/41/b9b6bb992889b0b11742b8b8340bc86a58cedb0095dbbbc147
+#9 488.7   Building wheel for jsonpath (pyproject.toml): started
+#9 489.0   Building wheel for jsonpath (pyproject.toml): finished with status 'done'
+#9 489.0   Created wheel for jsonpath: filename=jsonpath-0.82.2-py3-none-any.whl size=5667 sha256=9afc0b226e85dc716b073d90bc6d876bd9d0edd9f2e975d894da9edce7a15799
+#9 489.0   Stored in directory: /tmp/pip-ephem-wheel-cache-tfg3o1mm/wheels/77/0d/9c/0254ddd8f4fe128f747e9647084c9a6ef6da3322020dfb4979
+#9 489.0 Successfully built vibe-trading-ai atomicwrites jsonpath
+#9 489.4 Installing collected packages: pyperclip, py-mini-racer, peewee, jsonpath, brotli, zstandard, zopfli, zlib-ng, xxhash, XlsxWriter, xlrd, websockets, webencodings, wcwidth, vodozemac, uvloop, uuid-utils, urllib3, unpaddedbase64, uncalled-for, tzlocal, typing-inspection, truststore, tqdm, threadpoolctl, tenacity, tabulate, sqlglot, sniffio, slack-sdk, segno, scipy, rpds-py, regex, qrcode, python-socks, python-multipart, python-magic, python-dotenv, Pyphen, pypdfium2, pyparsing, PyJWT, pydyf, pydantic-core, protobuf, primp, Pillow, phonenumbers, pathable, ormsgpack, orjson, opentelemetry-api, nh3, more-itertools, mistune, MarkupSafe, lxml, langchain-protocol, kiwisolver, jsonref, jsonpointer, jiter, jeepney, jaraco.context, hyperframe, httptools, hpack, h11, griffelib, fonttools, exceptiongroup, et-xmlfile, duckdb, docstring-parser, dnspython, distro, defusedxml, decorator, cycler, contourpy, coincurve, cloudpickle, click, charset_normalizer, cffi, certifi, caio, cachetools, bottleneck, bidict, beartype, backports.zstd, atomicwrites, anyio, annotated-types, akracer, aiofiles, wsproto, watchfiles, uvicorn, tinyhtml5, tinycss2, starlette, slackify-markdown, referencing, python-pptx, python-docx, pydantic, py-key-value-aio, prompt_toolkit, pandas, openpyxl, matplotlib, jsonpatch, joblib, jinja2, jaraco.functools, jaraco.classes, httpcore2, httpcore, html5lib, h2, email-validator, ddgs, cryptography, clickhouse-connect, bs4, APScheduler, aiofile, tushare, tiktoken, sse-starlette, simple-websocket, SecretStorage, scikit-learn, rich-rst, requests_toolbelt, qq-botpy, pydantic-settings, openapi-pydantic, mcp-types, linkpreview, jsonschema-specifications, jsonschema-path, joserfc, httpx2, httpx, fastapi, discord.py, dingtalk-stream, cssselect2, akshare, aiohttp-socks, aiohttp-fast-zlib, wecom-aibot-sdk, weasyprint, python-telegram-bot, python-engineio, openai, oauth-cli-kit, neonize, lark-oapi, langsmith, keyring, jsonschema, fastmcp-slim, cyclopts, ccxt, authlib, python-socketio, mcp, matrix-nio, langchain-core, langgraph-sdk, langgraph-checkpoint, langchain-openai, langgraph-prebuilt, fastmcp, langgraph, langchain, vibe-trading-ai
+#9 489.5   Attempting uninstall: peewee
+#9 489.5     Found existing installation: peewee 4.3.0
+#9 489.5     Uninstalling peewee-4.3.0:
+#9 489.7       Successfully uninstalled peewee-4.3.0
+#9 490.0   Attempting uninstall: websockets
+#9 490.1     Found existing installation: websockets 10.4
+#9 490.1     Uninstalling websockets-10.4:
+#9 490.1       Successfully uninstalled websockets-10.4
+#9 490.4   Attempting uninstall: urllib3
+#9 490.4     Found existing installation: urllib3 1.26.20
+#9 490.4     Uninstalling urllib3-1.26.20:
+#9 490.4       Successfully uninstalled urllib3-1.26.20
+#9 496.7   Attempting uninstall: orjson
+#9 496.7     Found existing installation: orjson 3.12.0
+#9 496.7     Uninstalling orjson-3.12.0:
+#9 496.7       Successfully uninstalled orjson-3.12.0
+#9 498.2   Attempting uninstall: charset_normalizer
+#9 498.2     Found existing installation: charset-normalizer 3.5.1
+#9 498.2     Uninstalling charset-normalizer-3.5.1:
+#9 498.2       Successfully uninstalled charset-normalizer-3.5.1
+#9 498.2   Attempting uninstall: cffi
+#9 498.2     Found existing installation: cffi 2.1.1
+#9 498.2     Uninstalling cffi-2.1.1:
+#9 498.3       Successfully uninstalled cffi-2.1.1
+#9 498.4   Attempting uninstall: certifi
+#9 498.4     Found existing installation: certifi 2026.7.22
+#9 498.4     Uninstalling certifi-2026.7.22:
+#9 498.4       Successfully uninstalled certifi-2026.7.22
+#9 499.6   Attempting uninstall: pandas
+#9 499.6     Found existing installation: pandas 3.0.5
+#9 499.7     Uninstalling pandas-3.0.5:
+#9 500.2       Successfully uninstalled pandas-3.0.5
+#9 516.8 ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+#9 516.8 alpaca-trade-api 3.2.0 requires urllib3<2,>1.24, but you have urllib3 2.7.0 which is incompatible.
+#9 516.8 alpaca-trade-api 3.2.0 requires websockets<11,>=9.0, but you have websockets 15.0.1 which is incompatible.
+#9 516.8 Successfully installed APScheduler-3.11.3 MarkupSafe-3.0.3 Pillow-12.3.0 PyJWT-2.14.0 Pyphen-0.18.1 SecretStorage-3.5.0 XlsxWriter-3.2.9 aiofile-3.12.3 aiofiles-25.1.0 aiohttp-fast-zlib-0.3.0 aiohttp-socks-0.12.0 akracer-0.0.14 akshare-1.18.94 annotated-types-0.8.0 anyio-4.15.1 atomicwrites-1.4.1 authlib-1.8.0 backports.zstd-1.7.0 beartype-0.22.9 bidict-0.24.1 bottleneck-1.6.0 brotli-1.2.0 bs4-0.0.2 cachetools-7.1.8 caio-0.12.4 ccxt-4.5.78 certifi-2026.6.17 cffi-2.0.0 charset_normalizer-3.4.7 click-8.5.0 clickhouse-connect-1.8.0 cloudpickle-3.1.2 coincurve-21.0.0 contourpy-1.4.0 cryptography-50.0.1 cssselect2-0.10.1 cycler-0.12.1 cyclopts-4.25.2 ddgs-9.16.0 decorator-5.3.1 defusedxml-0.7.1 dingtalk-stream-0.24.3 discord.py-2.7.1 distro-1.9.0 dnspython-2.8.0 docstring-parser-0.18.0 duckdb-1.5.5 email-validator-2.3.0 et-xmlfile-2.0.0 exceptiongroup-1.3.1 fastapi-0.141.1 fastmcp-4.0.3 fastmcp-slim-4.0.3 fonttools-4.65.0 griffelib-2.3.0 h11-0.16.0 h2-4.4.1 hpack-4.2.0 html5lib-1.1 httpcore-1.0.9 httpcore2-2.12.0 httptools-0.8.0 httpx-0.28.1 httpx2-2.12.0 hyperframe-6.1.0 jaraco.classes-3.4.0 jaraco.context-6.1.2 jaraco.functools-4.6.0 jeepney-0.9.0 jinja2-3.1.6 jiter-0.16.0 joblib-1.6.0 joserfc-1.7.5 jsonpatch-1.33 jsonpath-0.82.2 jsonpointer-3.1.1 jsonref-1.1.0 jsonschema-4.26.0 jsonschema-path-0.5.0 jsonschema-specifications-2025.9.1 keyring-25.7.0 kiwisolver-1.5.1 langchain-1.4.0 langchain-core-1.6.3 langchain-openai-1.6.2 langchain-protocol-0.0.19 langgraph-1.2.11 langgraph-checkpoint-4.2.0 langgraph-prebuilt-1.1.0 langgraph-sdk-0.4.4 langsmith-0.12.4 lark-oapi-1.7.3 linkpreview-0.12.1 lxml-6.1.3 matplotlib-3.11.2 matrix-nio-0.26.0 mcp-2.2.0 mcp-types-2.2.0 mistune-3.3.4 more-itertools-11.1.0 neonize-0.4.3.post0 nh3-0.3.7 oauth-cli-kit-0.1.6 openai-3.13.0 openapi-pydantic-0.5.1 openpyxl-3.1.5 opentelemetry-api-1.44.0 orjson-3.11.9 ormsgpack-1.12.2 pandas-2.3.3 pathable-0.6.0 peewee-3.19.0 phonenumbers-9.0.39 primp-2.0.0 prompt_toolkit-3.0.53 protobuf-7.36.1 py-key-value-aio-0.4.5 py-mini-racer-0.6.0 pydantic-2.13.5 pydantic-core-2.46.5 pydantic-settings-2.15.0 pydyf-0.12.1 pyparsing-3.3.2 pypdfium2-5.13.0 pyperclip-1.11.0 python-docx-1.2.0 python-dotenv-1.2.3 python-engineio-4.14.0 python-magic-0.4.27 python-multipart-0.0.32 python-pptx-1.0.2 python-socketio-5.16.4 python-socks-3.1.1 python-telegram-bot-22.8 qq-botpy-1.2.1 qrcode-8.2 referencing-0.37.0 regex-2026.9.10 requests_toolbelt-1.0.0 rich-rst-2.1.0 rpds-py-2026.6.3 scikit-learn-1.9.0 scipy-1.18.1 segno-1.6.6 simple-websocket-1.1.0 slack-sdk-3.44.1 slackify-markdown-0.2.4 sniffio-1.3.1 sqlglot-30.18.0 sse-starlette-3.4.11 starlette-1.6.0 tabulate-0.10.0 tenacity-9.1.4 threadpoolctl-3.6.0 tiktoken-0.14.0 tinycss2-1.5.1 tinyhtml5-2.1.0 tqdm-4.70.0 truststore-0.10.4 tushare-1.4.29 typing-inspection-0.4.4 tzlocal-5.4.4 uncalled-for-0.4.0 unpaddedbase64-2.1.0 urllib3-2.7.0 uuid-utils-0.17.1 uvicorn-0.52.4 uvloop-0.22.1 vibe-trading-ai-0.1.14 vodozemac-0.10.0 watchfiles-1.2.0 wcwidth-0.8.3 weasyprint-70.0 webencodings-0.6.1 websockets-15.0.1 wecom-aibot-sdk-1.0.8 wsproto-1.3.2 xlrd-2.0.2 xxhash-4.0.1 zlib-ng-1.0.0 zopfli-0.4.3 zstandard-0.25.0
+#9 517.0 
+#9 517.0 [notice] A new release of pip is available: 25.0.1 -> 26.2.1
+#9 517.0 [notice] To update, run: pip install --upgrade pip
+#9 DONE 518.0s
+
+#10 [ 6/26] COPY nano-search-mcp/ /opt/nano-search-mcp/
+#10 DONE 0.0s
+
+#11 [ 7/26] RUN pip install --no-cache-dir -e /opt/nano-search-mcp
+#11 0.623 Looking in indexes: https://mirrors.aliyun.com/pypi/simple/
+#11 0.624 Obtaining file:///opt/nano-search-mcp
+#11 0.627   Installing build dependencies: started
+#11 1.829   Installing build dependencies: finished with status 'done'
+#11 1.830   Checking if build backend supports build_editable: started
+#11 2.020   Checking if build backend supports build_editable: finished with status 'done'
+#11 2.022   Getting requirements to build editable: started
+#11 2.252   Getting requirements to build editable: finished with status 'done'
+#11 2.253   Preparing editable metadata (pyproject.toml): started
+#11 2.482   Preparing editable metadata (pyproject.toml): finished with status 'done'
+#11 2.491 Requirement already satisfied: mcp>=1.0.0 in /opt/venv/lib/python3.12/site-packages (from mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2.2.0)
+#11 2.492 Requirement already satisfied: httpx>=0.27.0 in /opt/venv/lib/python3.12/site-packages (from nano-search-mcp==0.1.0) (0.28.1)
+#11 2.492 Requirement already satisfied: pyyaml>=6.0 in /opt/venv/lib/python3.12/site-packages (from nano-search-mcp==0.1.0) (6.0.1)
+#11 2.493 Requirement already satisfied: uvicorn>=0.30.0 in /opt/venv/lib/python3.12/site-packages (from nano-search-mcp==0.1.0) (0.52.4)
+#11 2.493 Requirement already satisfied: playwright>=1.40.0 in /opt/venv/lib/python3.12/site-packages (from nano-search-mcp==0.1.0) (1.62.0)
+#11 2.493 Requirement already satisfied: beautifulsoup4>=4.12.0 in /opt/venv/lib/python3.12/site-packages (from nano-search-mcp==0.1.0) (4.15.0)
+#11 2.493 Requirement already satisfied: markdownify>=0.13.0 in /opt/venv/lib/python3.12/site-packages (from nano-search-mcp==0.1.0) (1.2.3)
+#11 2.495 Requirement already satisfied: soupsieve>=1.6.1 in /opt/venv/lib/python3.12/site-packages (from beautifulsoup4>=4.12.0->nano-search-mcp==0.1.0) (2.9.2)
+#11 2.495 Requirement already satisfied: typing-extensions>=4.0.0 in /opt/venv/lib/python3.12/site-packages (from beautifulsoup4>=4.12.0->nano-search-mcp==0.1.0) (4.16.0)
+#11 2.497 Requirement already satisfied: anyio in /opt/venv/lib/python3.12/site-packages (from httpx>=0.27.0->nano-search-mcp==0.1.0) (4.15.1)
+#11 2.497 Requirement already satisfied: certifi in /opt/venv/lib/python3.12/site-packages (from httpx>=0.27.0->nano-search-mcp==0.1.0) (2026.6.17)
+#11 2.497 Requirement already satisfied: httpcore==1.* in /opt/venv/lib/python3.12/site-packages (from httpx>=0.27.0->nano-search-mcp==0.1.0) (1.0.9)
+#11 2.497 Requirement already satisfied: idna in /opt/venv/lib/python3.12/site-packages (from httpx>=0.27.0->nano-search-mcp==0.1.0) (3.18)
+#11 2.499 Requirement already satisfied: h11>=0.16 in /opt/venv/lib/python3.12/site-packages (from httpcore==1.*->httpx>=0.27.0->nano-search-mcp==0.1.0) (0.16.0)
+#11 2.500 Requirement already satisfied: six<2,>=1.15 in /opt/venv/lib/python3.12/site-packages (from markdownify>=0.13.0->nano-search-mcp==0.1.0) (1.17.0)
+#11 2.502 Requirement already satisfied: httpx2>=2.5.0 in /opt/venv/lib/python3.12/site-packages (from mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2.12.0)
+#11 2.502 Requirement already satisfied: jsonschema>=4.20.0 in /opt/venv/lib/python3.12/site-packages (from mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (4.26.0)
+#11 2.503 Requirement already satisfied: mcp-types==2.2.0 in /opt/venv/lib/python3.12/site-packages (from mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2.2.0)
+#11 2.503 Requirement already satisfied: opentelemetry-api>=1.28.0 in /opt/venv/lib/python3.12/site-packages (from mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (1.44.0)
+#11 2.503 Requirement already satisfied: pydantic>=2.12.0 in /opt/venv/lib/python3.12/site-packages (from mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2.13.5)
+#11 2.504 Requirement already satisfied: pyjwt>=2.10.1 in /opt/venv/lib/python3.12/site-packages (from pyjwt[crypto]>=2.10.1->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2.14.0)
+#11 2.504 Requirement already satisfied: python-multipart>=0.0.9 in /opt/venv/lib/python3.12/site-packages (from mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (0.0.32)
+#11 2.504 Requirement already satisfied: sse-starlette>=3.0.0 in /opt/venv/lib/python3.12/site-packages (from mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (3.4.11)
+#11 2.505 Requirement already satisfied: starlette>=0.27 in /opt/venv/lib/python3.12/site-packages (from mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (1.6.0)
+#11 2.505 Requirement already satisfied: typing-inspection>=0.4.1 in /opt/venv/lib/python3.12/site-packages (from mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (0.4.4)
+#11 2.507 Requirement already satisfied: python-dotenv>=1.0.0 in /opt/venv/lib/python3.12/site-packages (from mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (1.2.3)
+#11 2.508 Requirement already satisfied: typer>=0.16.0 in /opt/venv/lib/python3.12/site-packages (from mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (0.27.1)
+#11 2.509 Requirement already satisfied: pyee<14,>=13 in /opt/venv/lib/python3.12/site-packages (from playwright>=1.40.0->nano-search-mcp==0.1.0) (13.0.1)
+#11 2.509 Requirement already satisfied: greenlet<4.0.0,>=3.1.1 in /opt/venv/lib/python3.12/site-packages (from playwright>=1.40.0->nano-search-mcp==0.1.0) (3.5.5)
+#11 2.511 Requirement already satisfied: click>=7.0 in /opt/venv/lib/python3.12/site-packages (from uvicorn>=0.30.0->nano-search-mcp==0.1.0) (8.5.0)
+#11 2.516 Requirement already satisfied: httpcore2==2.12.0 in /opt/venv/lib/python3.12/site-packages (from httpx2>=2.5.0->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2.12.0)
+#11 2.517 Requirement already satisfied: truststore>=0.10 in /opt/venv/lib/python3.12/site-packages (from httpx2>=2.5.0->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (0.10.4)
+#11 2.521 Requirement already satisfied: attrs>=22.2.0 in /opt/venv/lib/python3.12/site-packages (from jsonschema>=4.20.0->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (26.1.0)
+#11 2.521 Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /opt/venv/lib/python3.12/site-packages (from jsonschema>=4.20.0->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2025.9.1)
+#11 2.521 Requirement already satisfied: referencing>=0.28.4 in /opt/venv/lib/python3.12/site-packages (from jsonschema>=4.20.0->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (0.37.0)
+#11 2.522 Requirement already satisfied: rpds-py>=0.25.0 in /opt/venv/lib/python3.12/site-packages (from jsonschema>=4.20.0->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2026.6.3)
+#11 2.524 Requirement already satisfied: annotated-types>=0.6.0 in /opt/venv/lib/python3.12/site-packages (from pydantic>=2.12.0->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (0.8.0)
+#11 2.525 Requirement already satisfied: pydantic-core==2.46.5 in /opt/venv/lib/python3.12/site-packages (from pydantic>=2.12.0->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2.46.5)
+#11 2.529 Requirement already satisfied: cryptography>=3.4.0 in /opt/venv/lib/python3.12/site-packages (from pyjwt[crypto]>=2.10.1->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (50.0.1)
+#11 2.536 Requirement already satisfied: shellingham>=1.3.0 in /opt/venv/lib/python3.12/site-packages (from typer>=0.16.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (1.5.4)
+#11 2.537 Requirement already satisfied: rich>=13.8.0 in /opt/venv/lib/python3.12/site-packages (from typer>=0.16.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (15.0.0)
+#11 2.537 Requirement already satisfied: annotated-doc>=0.0.2 in /opt/venv/lib/python3.12/site-packages (from typer>=0.16.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (0.0.5)
+#11 2.543 Requirement already satisfied: cffi>=2.0.0 in /opt/venv/lib/python3.12/site-packages (from cryptography>=3.4.0->pyjwt[crypto]>=2.10.1->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2.0.0)
+#11 2.547 Requirement already satisfied: markdown-it-py>=2.2.0 in /opt/venv/lib/python3.12/site-packages (from rich>=13.8.0->typer>=0.16.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (4.2.0)
+#11 2.547 Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /opt/venv/lib/python3.12/site-packages (from rich>=13.8.0->typer>=0.16.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (2.21.0)
+#11 2.551 Requirement already satisfied: pycparser in /opt/venv/lib/python3.12/site-packages (from cffi>=2.0.0->cryptography>=3.4.0->pyjwt[crypto]>=2.10.1->mcp>=1.0.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (3.0)
+#11 2.553 Requirement already satisfied: mdurl~=0.1 in /opt/venv/lib/python3.12/site-packages (from markdown-it-py>=2.2.0->rich>=13.8.0->typer>=0.16.0->mcp[cli]>=1.0.0->nano-search-mcp==0.1.0) (0.1.2)
+#11 2.557 Building wheels for collected packages: nano-search-mcp
+#11 2.558   Building editable for nano-search-mcp (pyproject.toml): started
+#11 2.801   Building editable for nano-search-mcp (pyproject.toml): finished with status 'done'
+#11 2.802   Created wheel for nano-search-mcp: filename=nano_search_mcp-0.1.0-0.editable-py3-none-any.whl size=1751 sha256=e8f47b094bb192025945f19ce46f7fa5aec706932ae2eb75b1135f6ebec5b5cc
+#11 2.802   Stored in directory: /tmp/pip-ephem-wheel-cache-axk_y8s1/wheels/a4/6d/51/ebcddb16ec7e93f31d1a21e097b4561e70d93112a385d47f5f
+#11 2.806 Successfully built nano-search-mcp
+#11 2.972 Installing collected packages: nano-search-mcp
+#11 2.991 Successfully installed nano-search-mcp-0.1.0
+#11 3.116 
+#11 3.116 [notice] A new release of pip is available: 25.0.1 -> 26.2.1
+#11 3.116 [notice] To update, run: pip install --upgrade pip
+#11 DONE 3.2s
+
+#12 [ 8/26] COPY config/opencode.json.tmpl /workspace/.opencode/opencode.json.tmpl
+#12 DONE 0.0s
+
+#13 [ 9/26] COPY config/oh-my-openagent.json /workspace/.opencode/oh-my-openagent.json
+#13 DONE 0.0s
+
+#14 [10/26] COPY config/tui.json /workspace/.opencode/tui.json
+#14 DONE 0.0s
+
+#15 [11/26] COPY config/package.json /workspace/.opencode/package.json
+#15 DONE 0.0s
+
+#16 [12/26] COPY config/vibe-trading-tools.json /workspace/.opencode/vibe-trading-tools.json
+#16 DONE 0.0s
+
+#17 [13/26] COPY config/render_config.py /workspace/.opencode/render_config.py
+#17 DONE 0.0s
+
+#18 [14/26] COPY config/subagents.json /workspace/.opencode/subagents.json
+#18 DONE 0.0s
+
+#19 [15/26] COPY config/prompts/ /workspace/.opencode/prompts/
+#19 DONE 0.0s
+
+#20 [16/26] COPY AGENTS.md /workspace/AGENTS.md
+#20 DONE 0.0s
+
+#21 [17/26] COPY skills/ /workspace/.opencode/skills/
+#21 DONE 0.0s
+
+#22 [18/26] COPY workspace/scripts/ /workspace/scripts/
+#22 DONE 0.0s
+
+#23 [19/26] COPY workspace/cron_jobs/ /workspace/cron_jobs/
+#23 DONE 0.0s
+
+#24 [20/26] COPY entrypoint.sh /workspace/entrypoint.sh
+#24 DONE 0.0s
+
+#25 [21/26] COPY gateway-start.sh /workspace/gateway-start.sh
+#25 DONE 0.0s
+
+#26 [22/26] COPY supervisord.conf /etc/supervisord.conf
+#26 DONE 0.0s
+
+#27 [23/26] RUN chmod +x /workspace/entrypoint.sh /workspace/gateway-start.sh
+#27 DONE 0.1s
+
+#28 [24/26] RUN mkdir -p /workspace/analysis              /workspace/reports              /workspace/runs              /workspace/tmp              /workspace/cron_jobs/logs              /workspace/cron_jobs/state
+#28 DONE 0.1s
+
+#29 [25/26] RUN mkdir -p /home/opencode/.vibe-trading              /home/opencode/.vibe-trading/.vt-memory              /home/opencode/.local/share/opencode              /home/opencode/.local/state              /home/opencode/.cache              /home/opencode/.opencode     && chown -R opencode:opencode /home/opencode
+#29 DONE 0.2s
+
+#30 [26/26] RUN chown -R opencode:opencode /workspace
+#30 DONE 0.2s
+
+#31 exporting to image
+#31 exporting layers
+#31 exporting layers 2.5s done
+#31 writing image sha256:0fbba3957ab2a8652544271489eca070c62b12429468d3228a6ba37d16f07d0b done
+#31 naming to docker.io/library/opencode-serve:v3.0.0-tenant done
+#31 DONE 2.5s
+
+View build details: docker-desktop://dashboard/build/colima/colima/nl2ybt19gopetftzix4f2l7uk
+=== App image done: opencode-serve:v3.0.0-tenant ===
+
+Run with docker-compose:
+  cp .env.example .env
+  docker compose up -d

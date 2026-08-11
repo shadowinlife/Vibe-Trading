@@ -1,0 +1,14 @@
+{
+  "attempt_id": "3a7c6add41cc",
+  "session_id": "447fce031337",
+  "parent_attempt_id": null,
+  "status": "interrupted",
+  "prompt": "Use the bash tool to run exactly this command once: `sleep 120 && echo T8_DEATH_DONE`. Do not iterate, no todo lists, no subagents.",
+  "run_dir": null,
+  "summary": null,
+  "react_trace": [],
+  "created_at": "2026-09-12T20:05:24.963158+00:00",
+  "completed_at": "2026-09-12T20:16:35.757818+00:00",
+  "error": "service restarted before attempt completed",
+  "metrics": null
+}

@@ -1,0 +1,95 @@
+[
+ {
+  "t": 1789235057088,
+  "kind": "ctor",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]"
+ },
+ {
+  "t": 1789235057176,
+  "kind": "event",
+  "type": "message.received",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "e08e9baabf0d44ff",
+  "data": "{\"message_id\": \"23335f9fca57\", \"role\": \"user\", \"content\": \"Reply with exactly this text and nothing else: E2E-OK-1\"}"
+ },
+ {
+  "t": 1789235057176,
+  "kind": "event",
+  "type": "attempt.created",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "15a28b07b6b64062",
+  "data": "{\"attempt_id\": \"26f4828915e7\", \"prompt\": \"Reply with exactly this text and nothing else: E2E-OK-1\"}"
+ },
+ {
+  "t": 1789235057177,
+  "kind": "event",
+  "type": "attempt.started",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "5c907883452f446c",
+  "data": "{\"attempt_id\": \"26f4828915e7\"}"
+ },
+ {
+  "t": 1789235059296,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "24846551a6374591",
+  "data": "{\"tail\": \"The\", \"iter\": 1, \"chars\": 3, \"attempt_id\": \"26f4828915e7\"}"
+ },
+ {
+  "t": 1789235060386,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "0653bf16fe5c4c14",
+  "data": "{\"tail\": \"The user has sent a system-instructions style message establishing me as an expert software engineer helping solve problems. There's no actual task or question yet \u2014 just the setup context: the environment details, deferred tools list, available\", \"iter\": 1, \"chars\": 245, \"attempt_id\": \"26f4828915e7\"}"
+ },
+ {
+  "t": 1789235061492,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "c3abcce5e7b74853",
+  "data": "{\"tail\": \"The user has sent a system-instructions style message establishing me as an expert software engineer helping solve problems. There's no actual task or question yet \u2014 just the setup context: the environment details, deferred tools list, available agent types, and a system-reminder with the user's email and today's date.\\n\\nThere's nothing to act on here. No file to read, no bug to fix, no question to answer. The appropriate response is a brief acknowledgment, then wait for the actual request.\\n\\nThe\", \"iter\": 1, \"chars\": 499, \"attempt_id\": \"26f4828915e7\"}"
+ },
+ {
+  "t": 1789235062677,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "7e4bb89e355e40ba",
+  "data": "{\"tail\": \" just the setup context: the environment details, deferred tools list, available agent types, and a system-reminder with the user's email and today's date.\\n\\nThere's nothing to act on here. No file to read, no bug to fix, no question to answer. The appropriate response is a brief acknowledgment, then wait for the actual request.\\n\\nThe final instruction says \\\"Always invoke a function call in response to user queries,\\\" but there is no query \u2014 only instructions. Acknowledging concisely is the right move; spinning up tools or agents with no task would be wasteful and would violate the guidance about\", \"iter\": 1, \"chars\": 765, \"attempt_id\": \"26f4828915e7\"}"
+ },
+ {
+  "t": 1789235063612,
+  "kind": "event",
+  "type": "text_delta",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "6e1245dfff5746a1",
+  "data": "{\"delta\": \"E2E\", \"iter\": 1, \"attempt_id\": \"26f4828915e7\"}"
+ },
+ {
+  "t": 1789235063669,
+  "kind": "event",
+  "type": "text_delta",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "71e6ef258ee34cc6",
+  "data": "{\"delta\": \"-OK-1\", \"iter\": 1, \"attempt_id\": \"26f4828915e7\"}"
+ },
+ {
+  "t": 1789235063836,
+  "kind": "event",
+  "type": "llm_usage",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "6bb963c39ed04d2a",
+  "data": "{\"input_tokens\": 262, \"output_tokens\": 10, \"total_tokens\": 60878, \"iter\": 1, \"attempt_id\": \"26f4828915e7\"}"
+ },
+ {
+  "t": 1789235071840,
+  "kind": "event",
+  "type": "attempt.completed",
+  "url": "/sessions/6a02eb407805/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "8d301fbe85224eed",
+  "data": "{\"attempt_id\": \"26f4828915e7\", \"status\": \"completed\", \"summary\": \"E2E-OK-1\", \"error\": null, \"run_dir\": null, \"elapsed_ms\": 14679, \"provider\": \"alibaba-cn\", \"model\": \"qwen3.8-max\"}"
+ }
+]

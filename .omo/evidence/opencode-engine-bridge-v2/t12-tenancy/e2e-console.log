@@ -1,0 +1,146 @@
+  [note] T12 tenancy matrix: tenants=['a', 'b'] registry=/private/tmp/vt-t12-rig/tenants/tenant_registry.json
+  [note] tenant a: container running, /health green
+  [note] tenant b: container running, /health green
+  [note] router up on http://127.0.0.1:28080 (log /Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/.omo/evidence/opencode-engine-bridge-v2/t12-tenancy/router.log)
+
+--- M1 cross-key rejection (direct upstream) ---
+  [PASS] m1/a's key -> b's upstream DIRECT -> 401 — HTTP 401
+  [PASS] m1/a's key + b's Host direct -> 401 — HTTP 401
+  [PASS] m1/anonymous -> b's upstream direct -> 401 — HTTP 401
+  [PASS] m1/a's token + b's Host via router -> 403 — HTTP 403
+  [PASS] m1/positive control: b's own key direct -> 200 — HTTP 200
+  [PASS] m1/b's key -> a's upstream DIRECT -> 401 — HTTP 401
+  [PASS] m1/b's key + a's Host direct -> 401 — HTTP 401
+  [PASS] m1/anonymous -> a's upstream direct -> 401 — HTTP 401
+  [PASS] m1/b's token + a's Host via router -> 403 — HTTP 403
+  [PASS] m1/positive control: a's own key direct -> 200 — HTTP 200
+
+--- M2 browser-style POST via router (B2 recipe) ---
+  [PASS] m2/tenant a: browser-style POST via router -> 201 (not 403) — HTTP 201 (Host preserved + API_ALLOWED_HOSTS + Origin match)
+  [PASS] m2/tenant a: cross-site Origin POST -> 403 (guard alive) — HTTP 403
+  [PASS] m2/tenant b: browser-style POST via router -> 201 (not 403) — HTTP 201 (Host preserved + API_ALLOWED_HOSTS + Origin match)
+  [PASS] m2/tenant b: cross-site Origin POST -> 403 (guard alive) — HTTP 403
+
+--- M3 SSE ticket scoping ---
+  [PASS] m3/tenant a: POST /auth/sse-ticket (key auth) -> 200 + ticket — HTTP 200 ticket=vNfnlD…
+  [PASS] m3/tenant a: own ticket opens own SSE stream -> 200 — HTTP 200
+  [PASS] m3/tenant a: ticket is single-use (replay -> 401) — HTTP 401
+  [PASS] m3/a's ticket on b's stream -> 401 — HTTP 401 (ticket store is per-gateway-process)
+  [PASS] m3/tenant b: POST /auth/sse-ticket (key auth) -> 200 + ticket — HTTP 200 ticket=7U3gFC…
+  [PASS] m3/tenant b: own ticket opens own SSE stream -> 200 — HTTP 200
+  [PASS] m3/tenant b: ticket is single-use (replay -> 401) — HTTP 401
+  [PASS] m3/b's ticket on a's stream -> 401 — HTTP 401 (ticket store is per-gateway-process)
+  [PASS] m3/minting without a key -> 401 — HTTP 401
+  [PASS] m3/tenant a: Bearer-auth SSE stream -> 200 — HTTP 200
+
+--- M4 session-list isolation (REST) ---
+  [PASS] m4/tenant a: GET /sessions 200 and lists its own marker session — HTTP 200 sessions=5
+  [PASS] m4/tenant b: GET /sessions 200 and lists its own marker session — HTTP 200 sessions=8
+  [PASS] m4/tenant a: session list contains NONE of the other tenant's — foreign=8 leaked=[]
+  [PASS] m4/tenant b: session list contains NONE of the other tenant's — foreign=5 leaked=[]
+
+--- RSS idle window (60.0s) ---
+
+--- M6 process/network/filesystem isolation ---
+  [PASS] m6/docker topology: the tenants share NO network (separate compose networks) — a=['vt-t12-a_default'] b=['vt-t12-b_default'] shared=[]
+  [PASS] m6/tenant a: serve 4096 has NO published port (internal-only) — published=['8080/tcp']
+  [PASS] m6/tenant b: serve 4096 has NO published port (internal-only) — published=['8080/tcp']
+  [PASS] m6/inside a: victim container name does not resolve (DNS) — NX
+  [PASS] m6/inside a: victim gateway 172.20.0.2:8080 unreachable — result='000CONN_FAIL'
+  [PASS] m6/inside a: victim opencode serve 172.20.0.2:4096 unreachable — result='000CONN_FAIL'
+  [PASS] m6/inside a: exactly ONE opencode serve visible (its own) — procs=6 serve_lines=1
+  [PASS] m6/inside a: no victim process cmdline visible — 6 cmdlines scanned
+  [PASS] m6/inside a: zero filesystem hits for victim markers — {"victim_public_host": 0, "victim_placeholder": 0, "victim_session_ids": 0}
+
+--- M5 (config level) channels-config isolation ---
+  [PASS] m5-config/tenant a: agent.json channels are fail-closed placeholders — operators=[] placeholders=yes
+  [PASS] m5-config/tenant a: agent.json carries ZERO of the other tenant's material — markers_checked=3 leaked=0
+  [PASS] m5-config/tenant a: container env carries ZERO of the other tenant's secrets — leaked=[]
+  [PASS] m5-config/tenant a: env API_ALLOWED_HOSTS names only its own host — exact provisioned value present
+  [PASS] m5-config/tenant a: tenant.env has no foreign key/host — cross-grep clean
+  [PASS] m5-config/tenant b: agent.json channels are fail-closed placeholders — operators=[] placeholders=yes
+  [PASS] m5-config/tenant b: agent.json carries ZERO of the other tenant's material — markers_checked=3 leaked=0
+  [PASS] m5-config/tenant b: container env carries ZERO of the other tenant's secrets — leaked=[]
+  [PASS] m5-config/tenant b: env API_ALLOWED_HOSTS names only its own host — exact provisioned value present
+  [PASS] m5-config/tenant b: tenant.env has no foreign key/host — cross-grep clean
+
+--- Turn 1: web turn on B with a silent witness stream on A ---
+  [PASS] m3/witness stream on a opened (200) before b's turn — HTTP 200
+  [PASS] turn/tenant b: POST /sessions -> 201 — HTTP 201
+  [PASS] turn/tenant b: message accepted — HTTP 200
+  [PASS] turn/tenant b: turn streamed to attempt.completed — terminal=attempt.completed events=7 wall=13.119s
+  [MEASURE] web_turn_wall_s = 13.119s {'tenant': 'b'}
+  [PASS] m3/a's SSE connection received ZERO events during b's turn — frames=0 event_frames=0 bytes=0 session_leak=False
+
+--- Turn 2+3: concurrent in-container IM probes (M5 runtime level) ---
+  [PASS] m5-im/tenant a: in-container IM probe completed the round trip — exit=0 wall=18.2s error=None
+  [MEASURE] im_first_response_s = 6.061s {'tenant': 'a', 'kind': 'delta'}
+  [MEASURE] im_terminal_s = 14.222s {'tenant': 'a'}
+  [MEASURE] im_turn_cost_usd = 0.102USD {'tenant': 'a'}
+  [PASS] m5-im/tenant a: outbound carries only its own {channel, chat_id} — sent=2 foreign=0
+  [PASS] m5-im/tenant a: session map holds only its own {channel,chat_id} key — {"mockim:t12-a-chat": "d667aafbf21e"}
+  [PASS] m5-im/tenant a: the IM session landed in its own store — vt_session=d667aafbf21e store=5
+  [PASS] m5-im/tenant b: in-container IM probe completed the round trip — exit=0 wall=14.155s error=None
+  [MEASURE] im_first_response_s = 2.074s {'tenant': 'b', 'kind': 'delta'}
+  [MEASURE] im_terminal_s = 10.143s {'tenant': 'b'}
+  [MEASURE] im_turn_cost_usd = 0.029USD {'tenant': 'b'}
+  [PASS] m5-im/tenant b: outbound carries only its own {channel, chat_id} — sent=2 foreign=0
+  [PASS] m5-im/tenant b: session map holds only its own {channel,chat_id} key — {"mockim:t12-b-chat": "b2daa791f6c6"}
+  [PASS] m5-im/tenant b: the IM session landed in its own store — vt_session=b2daa791f6c6 store=9
+  [PASS] m5-im/tenant a: its channel never saw the other tenant's chat/session — scanned 2 outbound records
+  [PASS] m5-im/tenant a: zero state hits for the other tenant's IM chat/session — hits=0
+  [PASS] m5-im/tenant b: its channel never saw the other tenant's chat/session — scanned 2 outbound records
+  [PASS] m5-im/tenant b: zero state hits for the other tenant's IM chat/session — hits=0
+  [PASS] m5-im/tenant a: its IM session is listed by its OWN gateway (via router) — HTTP 200 own=d667aafbf21e
+  [PASS] m5-im/tenant a: the other tenant's IM session is NOT in its list — foreign=1 leaked=[]
+  [PASS] m5-im/tenant b: its IM session is listed by its OWN gateway (via router) — HTTP 200 own=b2daa791f6c6
+  [PASS] m5-im/tenant b: the other tenant's IM session is NOT in its list — foreign=1 leaked=[]
+
+--- M4 store-level isolation over the full state (web + IM sessions) ---
+  [PASS] m4/tenant a: no foreign session dir on its volume — disk_dirs=5 foreign=[]
+  [PASS] m4/tenant a: zero grep hits for foreign session ids in its state — hits=0 over 9 foreign ids
+  [PASS] m4/tenant a: its own REST sessions exist on its own volume — 5/5
+  [PASS] m4/tenant b: no foreign session dir on its volume — disk_dirs=9 foreign=[]
+  [PASS] m4/tenant b: zero grep hits for foreign session ids in its state — hits=0 over 5 foreign ids
+  [PASS] m4/tenant b: its own REST sessions exist on its own volume — 9/9
+
+--- Phase R: reclaim policy with an accelerated N ---
+  [note] router restarted with VT_ROUTER_IDLE_TTL_S=15.0 (accelerated N; production default 10800s = 3h)
+  [PASS] reclaim/idle tenant b was STOPPED by the policy loop (accelerated N=15.0s) — state=exited verdict={"tenant": "b", "reclaim": true, "reason": "idle 25129ms >= ttl 15000ms", "truth_source": "engine", "truth_updated_ms": 1789273302036, "idle_ms": 25129, "drained": true, "_pass_t": 1789273323.7967439}
+  [PASS] reclaim/tenant b: stop verdict backed by an activity truth, fence drained — truth=engine drained=True reason=idle 25129ms >= ttl 15000ms
+  [PASS] reclaim/idle tenant a was STOPPED by the policy loop (accelerated N=15.0s) — state=exited verdict={"tenant": "a", "reclaim": true, "reason": "idle 19440ms >= ttl 15000ms", "truth_source": "engine", "truth_updated_ms": 1789273305093, "idle_ms": 19440, "drained": true, "_pass_t": 1789273323.7967439}
+  [PASS] reclaim/tenant a: stop verdict backed by an activity truth, fence drained — truth=engine drained=True reason=idle 19440ms >= ttl 15000ms
+  [MEASURE] cold_start_wake_s = 19.696s {'tenant': 'b', 'trigger': 'policy-idle-stop', 'state_before': 'exited', 'status': 201}
+  [PASS] wake/wake sample (policy-idle-stop): stopped -> inbound -> 201 with a real session — HTTP 201 in 19.7s (state_before=exited)
+  [PASS] wake/wake sample (policy-idle-stop): container running afterwards — running
+  [MEASURE] cold_start_wake_s = 18.687s {'tenant': 'a', 'trigger': 'policy-idle-stop', 'state_before': 'exited', 'status': 201}
+  [PASS] wake/wake sample (policy-idle-stop): stopped -> inbound -> 201 with a real session — HTTP 201 in 18.7s (state_before=exited)
+  [PASS] wake/wake sample (policy-idle-stop): container running afterwards — running
+  [PASS] reclaim/tenant a: the live turn COMPLETED under the armed policy loop — terminal=attempt.completed wall=10.961s
+  [PASS] reclaim/tenant a: container stayed RUNNING through the turn — running
+  [PASS] reclaim/tenant a: ZERO stop verdicts while the turn was live — stops=0 keeps=1
+  [PASS] reclaim/tenant a: live-turn keeps cite the ENGINE truth (the proxy ledger alone was stale) — engine_keeps=1/1 idle_ms=[1245]
+  [PASS] reclaim/engine time.updated tracked the live turn (truth age stayed small) — age_ms min=398 max=7402 n=4
+  [PASS] reclaim/tenant a: idle AGAIN after its turn -> stopped by the loop — state=exited
+
+--- Phase W: final wake samples (>=3 total) ---
+  [note] phase W: vt-t12-a state before sample: exited
+  [MEASURE] cold_start_wake_s = 18.503s {'tenant': 'a', 'trigger': 'phase-w-stop', 'state_before': 'exited', 'status': 201}
+  [PASS] wake/wake sample (phase-w-stop): stopped -> inbound -> 201 with a real session — HTTP 201 in 18.5s (state_before=exited)
+  [PASS] wake/wake sample (phase-w-stop): container running afterwards — running
+  [note] phase W: vt-t12-b state before sample: exited
+  [MEASURE] cold_start_wake_s = 18.512s {'tenant': 'b', 'trigger': 'phase-w-stop', 'state_before': 'exited', 'status': 201}
+  [PASS] wake/wake sample (phase-w-stop): stopped -> inbound -> 201 with a real session — HTTP 201 in 18.5s (state_before=exited)
+  [PASS] wake/wake sample (phase-w-stop): container running afterwards — running
+  [MEASURE] rss_mib[idle] = 1047.600MiB {'tenant': 'a', 'n': 14, 'min': 1042.4, 'max': 1061.9}
+  [MEASURE] rss_mib[active-web-b] = 1048.100MiB {'tenant': 'a', 'n': 2, 'min': 1047.6, 'max': 1048.6}
+  [MEASURE] rss_mib[active-im] = 1365.000MiB {'tenant': 'a', 'n': 4, 'min': 1252.4, 'max': 1410.0}
+  [MEASURE] rss_mib[reclaim] = 1022.500MiB {'tenant': 'a', 'n': 16, 'min': 164.0, 'max': 1297.4}
+  [MEASURE] rss_mib[idle] = 1039.400MiB {'tenant': 'b', 'n': 14, 'min': 1039.4, 'max': 1285.1}
+  [MEASURE] rss_mib[active-web-b] = 1294.300MiB {'tenant': 'b', 'n': 2, 'min': 1290.2, 'max': 1298.4}
+  [MEASURE] rss_mib[active-im] = 1380.350MiB {'tenant': 'b', 'n': 4, 'min': 1294.3, 'max': 1455.1}
+  [MEASURE] rss_mib[reclaim] = 952.350MiB {'tenant': 'b', 'n': 14, 'min': 98.0, 'max': 1299.5}
+  [PASS] wake/at least 3 cold-start wake samples were measured — n=4 samples=[19.696, 18.687, 18.503, 18.512]
+  [note] cold_start_wake_s distribution: min=18.503 median=18.599 max=19.696 (T11 baseline: 19.7-40.9s)
+
+=== T12 TENANCY MATRIX PASSED: 93/93 checks passed ===

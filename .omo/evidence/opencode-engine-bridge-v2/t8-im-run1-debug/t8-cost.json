@@ -1,0 +1,29 @@
+{
+  "engine_sessions": [
+    "ses_f68dbb443ffere419b4prU7Y67",
+    "ses_f68dbdfe4ffezK3MaM1hjdNhi3",
+    "ses_f68dc093cffejMCl4Up5xDff5J",
+    "ses_f68dc32aefferO1iHHT3z3Rnx5",
+    "ses_f68df190bffepqD7IdIMHfvDbL",
+    "ses_f68dfc3f5ffeOyXzh8BJEKdQne",
+    "ses_f68e008acffeWTt28Pfu4mH6M8"
+  ],
+  "cost_usd_per_session": {
+    "ses_f68e008acffeWTt28Pfu4mH6M8": 0.02927976885,
+    "ses_f68dfc3f5ffeOyXzh8BJEKdQne": 0.01412353801,
+    "ses_f68df190bffepqD7IdIMHfvDbL": 0.02923533146,
+    "ses_f68dc32aefferO1iHHT3z3Rnx5": 0.01415019957,
+    "ses_f68dc093cffejMCl4Up5xDff5J": 0.01418219343,
+    "ses_f68dbdfe4ffezK3MaM1hjdNhi3": 0.01418930319,
+    "ses_f68dbb443ffere419b4prU7Y67": 0.0
+  },
+  "cost_usd_total": 0.11516,
+  "scenarios": [
+    "s1-long-turn",
+    "s2-engine-death",
+    "s3-commands",
+    "s4-briefing"
+  ],
+  "note": "serve-side model cost of the T8 IM-parity engine sessions (assistant message cost fields); sessions DELETEd after costing",
+  "finished_at": 1789242821.712203
+}

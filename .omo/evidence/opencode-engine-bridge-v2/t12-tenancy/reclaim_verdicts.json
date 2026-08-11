@@ -1,0 +1,237 @@
+{
+  "idle_ttl_s": 15.0,
+  "interval_s": 4.0,
+  "idle_stop_verdicts": {
+    "a": {
+      "tenant": "a",
+      "reclaim": true,
+      "reason": "idle 19440ms >= ttl 15000ms",
+      "truth_source": "engine",
+      "truth_updated_ms": 1789273305093,
+      "idle_ms": 19440,
+      "drained": true,
+      "_pass_t": 1789273323.7967439
+    },
+    "b": {
+      "tenant": "b",
+      "reclaim": true,
+      "reason": "idle 25129ms >= ttl 15000ms",
+      "truth_source": "engine",
+      "truth_updated_ms": 1789273302036,
+      "idle_ms": 25129,
+      "drained": true,
+      "_pass_t": 1789273323.7967439
+    }
+  },
+  "wake_hook": {
+    "wake_b": {
+      "tenant": "b",
+      "trigger": "policy-idle-stop",
+      "state_before": "exited",
+      "elapsed_s": 19.696,
+      "status": 201,
+      "session_id": "4ad36e491a8d"
+    },
+    "wake_a": {
+      "tenant": "a",
+      "trigger": "policy-idle-stop",
+      "state_before": "exited",
+      "elapsed_s": 18.687,
+      "status": 201,
+      "session_id": "3232031dd123"
+    },
+    "turn_session": {
+      "tenant": "a",
+      "session_id": "3232031dd123"
+    }
+  },
+  "live_turn_protection": {
+    "tenant": "a",
+    "session_id": "3232031dd123",
+    "phase": "done",
+    "resumed_at_first_event_s": 0.031,
+    "turn": {
+      "terminal": "attempt.completed",
+      "wall_s": 10.961,
+      "events": 7
+    },
+    "truth_age_ms_during_turn": {
+      "n": 4,
+      "min": 398,
+      "max": 7402
+    },
+    "mid_turn_verdicts": [
+      {
+        "tenant": "a",
+        "reclaim": false,
+        "reason": "idle 1245ms < ttl 15000ms",
+        "truth_source": "engine",
+        "truth_updated_ms": 1789273372674,
+        "idle_ms": 1245,
+        "drained": null,
+        "_pass_t": 1789273373.556567
+      }
+    ]
+  },
+  "classification": {
+    "a": {
+      "tenant": "a",
+      "passes_seen": 5,
+      "keep_verdicts": 3,
+      "stop_verdicts": 2,
+      "truth_sources": [
+        "engine"
+      ],
+      "idle_ms_range": [
+        1245,
+        19440
+      ],
+      "first_stop_reason": "idle 19440ms >= ttl 15000ms",
+      "stop_drained": [
+        true,
+        true
+      ]
+    },
+    "b": {
+      "tenant": "b",
+      "passes_seen": 5,
+      "keep_verdicts": 3,
+      "stop_verdicts": 2,
+      "truth_sources": [
+        "engine",
+        "unavailable"
+      ],
+      "idle_ms_range": [
+        25129,
+        43590
+      ],
+      "first_stop_reason": "idle 25129ms >= ttl 15000ms",
+      "stop_drained": [
+        true,
+        true
+      ]
+    }
+  },
+  "passes": [
+    {
+      "t": 1789273323.7967439,
+      "status": 200,
+      "decisions": [
+        {
+          "tenant": "a",
+          "reclaim": true,
+          "reason": "idle 19440ms >= ttl 15000ms",
+          "truth_source": "engine",
+          "truth_updated_ms": 1789273305093,
+          "idle_ms": 19440,
+          "drained": true
+        },
+        {
+          "tenant": "b",
+          "reclaim": true,
+          "reason": "idle 25129ms >= ttl 15000ms",
+          "truth_source": "engine",
+          "truth_updated_ms": 1789273302036,
+          "idle_ms": 25129,
+          "drained": true
+        }
+      ]
+    },
+    {
+      "t": 1789273373.556567,
+      "status": 200,
+      "decisions": [
+        {
+          "tenant": "a",
+          "reclaim": false,
+          "reason": "idle 1245ms < ttl 15000ms",
+          "truth_source": "engine",
+          "truth_updated_ms": 1789273372674,
+          "idle_ms": 1245,
+          "drained": null
+        },
+        {
+          "tenant": "b",
+          "reclaim": true,
+          "reason": "idle 43590ms >= ttl 15000ms",
+          "truth_source": "engine",
+          "truth_updated_ms": 1789273330681,
+          "idle_ms": 43590,
+          "drained": true
+        }
+      ]
+    },
+    {
+      "t": 1789273381.0936341,
+      "status": 200,
+      "decisions": [
+        {
+          "tenant": "a",
+          "reclaim": false,
+          "reason": "idle 8776ms < ttl 15000ms",
+          "truth_source": "engine",
+          "truth_updated_ms": 1789273372674,
+          "idle_ms": 8776,
+          "drained": null
+        },
+        {
+          "tenant": "b",
+          "reclaim": false,
+          "reason": "container state is 'exited', nothing to reclaim",
+          "truth_source": "unavailable",
+          "truth_updated_ms": null,
+          "idle_ms": null,
+          "drained": null
+        }
+      ]
+    },
+    {
+      "t": 1789273385.6055858,
+      "status": 200,
+      "decisions": [
+        {
+          "tenant": "a",
+          "reclaim": false,
+          "reason": "idle 13354ms < ttl 15000ms",
+          "truth_source": "engine",
+          "truth_updated_ms": 1789273372674,
+          "idle_ms": 13354,
+          "drained": null
+        },
+        {
+          "tenant": "b",
+          "reclaim": false,
+          "reason": "container state is 'exited', nothing to reclaim",
+          "truth_source": "unavailable",
+          "truth_updated_ms": null,
+          "idle_ms": null,
+          "drained": null
+        }
+      ]
+    },
+    {
+      "t": 1789273390.159919,
+      "status": 200,
+      "decisions": [
+        {
+          "tenant": "a",
+          "reclaim": true,
+          "reason": "idle 17886ms >= ttl 15000ms",
+          "truth_source": "engine",
+          "truth_updated_ms": 1789273372674,
+          "idle_ms": 17886,
+          "drained": true
+        },
+        {
+          "tenant": "b",
+          "reclaim": false,
+          "reason": "container state is 'exited', nothing to reclaim",
+          "truth_source": "unavailable",
+          "truth_updated_ms": null,
+          "idle_ms": null,
+          "drained": null
+        }
+      ]
+    }
+  ]
+}

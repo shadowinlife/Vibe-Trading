@@ -1,0 +1,36 @@
+[
+  {
+    "kind": "preview_create",
+    "t": 1789244756.385447,
+    "chat_id": "t9-on",
+    "stream_id": "0ecf925b4177",
+    "preview_id": "preview-1"
+  },
+  {
+    "kind": "preview_edit",
+    "t": 1789244756.385449,
+    "chat_id": "t9-on",
+    "stream_id": "0ecf925b4177",
+    "preview_id": "preview-1",
+    "chars": 24,
+    "delta_chars": 24
+  },
+  {
+    "kind": "preview_edit",
+    "t": 1789244764.6580539,
+    "chat_id": "t9-on",
+    "stream_id": "0ecf925b4177",
+    "preview_id": "preview-1",
+    "chars": 58,
+    "delta_chars": 34
+  },
+  {
+    "kind": "finalize",
+    "t": 1789244764.658062,
+    "chat_id": "t9-on",
+    "stream_id": "0ecf925b4177",
+    "resuming": false,
+    "text": "Welcome to the streaming test! I'm ready whenever you are.",
+    "edits": 2
+  }
+]

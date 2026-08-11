@@ -1,0 +1,55 @@
+[
+ {
+  "t": 1789236526376,
+  "kind": "ctor",
+  "url": "/sessions/d8af5137096a/events?replay=active&ticket=[REDACTED]"
+ },
+ {
+  "t": 1789236526451,
+  "kind": "event",
+  "type": "message.received",
+  "url": "/sessions/d8af5137096a/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "4d8f8a8ef7414113",
+  "data": "{\"message_id\": \"33ef6ea152c5\", \"role\": \"user\", \"content\": \"Run this exact bash command: sleep 30. After it completes, reply with exactly CANCEL-DONE. Do not create a todo list. Do not spawn subagents.\"}"
+ },
+ {
+  "t": 1789236526451,
+  "kind": "event",
+  "type": "attempt.created",
+  "url": "/sessions/d8af5137096a/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "538d2d4776424341",
+  "data": "{\"attempt_id\": \"304fbd583b09\", \"prompt\": \"Run this exact bash command: sleep 30. After it completes, reply with exactly CANCEL-DONE. Do not create a todo list. Do not spawn subagents.\"}"
+ },
+ {
+  "t": 1789236526452,
+  "kind": "event",
+  "type": "attempt.started",
+  "url": "/sessions/d8af5137096a/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "cff01905c8c644f0",
+  "data": "{\"attempt_id\": \"304fbd583b09\"}"
+ },
+ {
+  "t": 1789236528282,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/d8af5137096a/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "186728f164524edb",
+  "data": "{\"tail\": \"The\", \"iter\": 1, \"chars\": 3, \"attempt_id\": \"304fbd583b09\"}"
+ },
+ {
+  "t": 1789236529906,
+  "kind": "event",
+  "type": "tool_call",
+  "url": "/sessions/d8af5137096a/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "b5c420c26f0f4acb",
+  "data": "{\"tool\": \"bash\", \"arguments\": {\"command\": \"sleep 30\", \"timeout\": \"60000\"}, \"iter\": 1, \"call_id\": \"call_e09adfb4c10d4a3f8d797282\", \"attempt_id\": \"304fbd583b09\"}"
+ },
+ {
+  "t": 1789236530030,
+  "kind": "event",
+  "type": "attempt.cancelled",
+  "url": "/sessions/d8af5137096a/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "829f3040ce4e4218",
+  "data": "{\"attempt_id\": \"304fbd583b09\", \"status\": \"cancelled\", \"summary\": null, \"error\": \"cancelled by user\", \"run_dir\": null, \"elapsed_ms\": 3594}"
+ }
+]

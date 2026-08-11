@@ -1,0 +1,37 @@
+{
+  "group": "streaming-off",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "attempt_completed",
+      "pass": true,
+      "detail": "completed"
+    },
+    {
+      "assertion": "zero_stream_publications (switch OFF)",
+      "pass": true,
+      "detail": "0 stream records"
+    },
+    {
+      "assertion": "exactly_one_terminal_message",
+      "pass": true,
+      "detail": "1 messages"
+    },
+    {
+      "assertion": "terminal_message_unmarked (_streamed absent)",
+      "pass": true,
+      "detail": "{\"_channel_runtime\": true, \"attempt_id\": \"82f0804a3a3c\", \"session_id\": \"36dc90508a42\", \"message_id\": \"t9-1789244769101592000\"}"
+    },
+    {
+      "assertion": "terminal_message == persisted reply",
+      "pass": true,
+      "detail": "Welcome to the streaming test — glad to have you here. Let's get started!"
+    },
+    {
+      "assertion": "no_streamed_mark_logged",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "finished_at": 1789244781.428458
+}

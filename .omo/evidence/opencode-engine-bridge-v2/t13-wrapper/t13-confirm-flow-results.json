@@ -1,0 +1,138 @@
+{
+  "checks": {
+    "reply carries the vt session id": {
+      "pass": true,
+      "detail": ""
+    },
+    "confirmation card appended to the IM reply": {
+      "pass": true,
+      "detail": "PROPOSED\n\n[Scheduled research confirmation · create]\nTask: T13 confirm-flow probe\nSchedule: 0 8 * * * · Asia/Shanghai\nDelivery: in-app only\nReply exactly \"confirm\" (确认) to commit, or \"cancel\" (取消) to discard."
+    },
+    "scheduled_research tool call observed on the engine": {
+      "pass": true,
+      "detail": ""
+    },
+    "model passed session_id=<vt sid> (injection was the only hint)": {
+      "pass": true,
+      "detail": "{\"action\": \"propose_create\", \"session_id\": \"96b78ab8f99d\", \"draft\": \"{\\\"title\\\": \\\"T13 confirm-flow probe\\\", \\\"source\\\": {\\\"kind\\\": \\\"prompt\\\", \\\"prompt\\\": \\\"Summarize today's market moves\\\"}, \\\"schedule\\\": {\\\"expression\\\": \\\"0 8 * * *\\\", \\\"timezone\\\": \\\"Asia/Shanghai\\\"}, \\\"end_at\\\": null, \\\"deliver"
+    },
+    "action=propose_create reached the wrapper": {
+      "pass": true,
+      "detail": "{\"action\": \"propose_create\", \"session_id\": \"96b78ab8f99d\", \"draft\": \"{\\\"title\\\": \\\"T13 confirm-flow probe\\\", \\\"source\\\": {\\\"kind\\\": \\\"prompt\\\", \\\"prompt\\\": \\\"Summarize today's market moves\\\"}, \\\"sched"
+    },
+    "proposal_id inside the 200-char preview (relay regex hits)": {
+      "pass": true,
+      "detail": "{\"type\": \"scheduled_research.proposal\", \"proposal_id\": \"srp_a89be23b44d94d65afd41ea5b0d91dd6\", \"operation\": \"create\", \"status\": \"pending\", \"expires_at\": 1789263327326, \"job\": {\"id\": \"sr-a5d79fec7b4e\","
+    },
+    "pending proposal bound to the vt session": {
+      "pass": true,
+      "detail": ""
+    },
+    "preview proposal_id == on-disk proposal": {
+      "pass": true,
+      "detail": ""
+    },
+    "commit acknowledgement delivered": {
+      "pass": true,
+      "detail": "✅ Scheduled research job created: sr-a5d79fec7b4e"
+    },
+    "confirm was intercepted outside the model (no new turn)": {
+      "pass": true,
+      "detail": ""
+    },
+    "job id parsed from the acknowledgement": {
+      "pass": true,
+      "detail": ""
+    },
+    "scheduled job record exists in the store": {
+      "pass": true,
+      "detail": ""
+    },
+    "job carries the proposed title": {
+      "pass": true,
+      "detail": "T13 confirm-flow probe"
+    },
+    "job is pending with the proposed cron": {
+      "pass": true,
+      "detail": "pending/0 8 * * *"
+    }
+  },
+  "propose_elapsed_s": 22.43,
+  "reply_content": "PROPOSED\n\n[Scheduled research confirmation · create]\nTask: T13 confirm-flow probe\nSchedule: 0 8 * * * · Asia/Shanghai\nDelivery: in-app only\nReply exactly \"confirm\" (确认) to commit, or \"cancel\" (取消) to discard.",
+  "vt_session_id": "96b78ab8f99d",
+  "tool_input": {
+    "action": "propose_create",
+    "session_id": "96b78ab8f99d",
+    "draft": "{\"title\": \"T13 confirm-flow probe\", \"source\": {\"kind\": \"prompt\", \"prompt\": \"Summarize today's market moves\"}, \"schedule\": {\"expression\": \"0 8 * * *\", \"timezone\": \"Asia/Shanghai\"}, \"end_at\": null, \"delivery\": {\"mode\": \"in_app\"}}"
+  },
+  "tool_output_head": "{\"type\": \"scheduled_research.proposal\", \"proposal_id\": \"srp_a89be23b44d94d65afd41ea5b0d91dd6\", \"operation\": \"create\", \"status\": \"pending\", \"expires_at\": 1789263327326, \"job\": {\"id\": \"sr-a5d79fec7b4e\", \"title\": \"T13 confirm-flow probe\", \"state\": \"active\", \"source\": {\"kind\": \"prompt\", \"playbook_slug\": null, \"prompt\": \"Summarize today's market moves\"}, \"schedule\": {\"expression\": \"0 8 * * *\", \"timezon",
+  "proposal": {
+    "type": "scheduled_research.proposal",
+    "proposal_id": "srp_a89be23b44d94d65afd41ea5b0d91dd6",
+    "operation": "create",
+    "status": "pending",
+    "expires_at": 1789263327326,
+    "job": {
+      "id": "sr-a5d79fec7b4e",
+      "title": "T13 confirm-flow probe",
+      "state": "active",
+      "source": {
+        "kind": "prompt",
+        "playbook_slug": null,
+        "prompt": "Summarize today's market moves"
+      },
+      "schedule": {
+        "expression": "0 8 * * *",
+        "timezone": "Asia/Shanghai",
+        "next_run_at": 1789344000000,
+        "end_at": null
+      },
+      "delivery": {
+        "channel": null,
+        "target_ref": null,
+        "target_label": null,
+        "status": "none",
+        "attempts": 0,
+        "provider_message_id": null,
+        "error": null
+      },
+      "last_run_at": null,
+      "last_error": null
+    },
+    "job_id": null,
+    "committed_job_id": null
+  },
+  "confirm_reply_content": "✅ Scheduled research job created: sr-a5d79fec7b4e",
+  "job": {
+    "id": "sr-a5d79fec7b4e",
+    "prompt": "Summarize today's market moves",
+    "schedule": "0 8 * * *",
+    "title": "T13 confirm-flow probe",
+    "source_type": "prompt",
+    "playbook_slug": null,
+    "end_at": null,
+    "next_run_at": 1789344000000,
+    "status": "pending",
+    "created_at": 1789262427326,
+    "last_run_at": null,
+    "consecutive_failures": 0,
+    "last_error": null,
+    "failure_kind": null,
+    "config": {},
+    "timezone": "Asia/Shanghai",
+    "delivery_channel": null,
+    "delivery_target": null,
+    "delivery_target_ref": null,
+    "delivery_target_label": null,
+    "delivery": {
+      "status": "none",
+      "session_id": null,
+      "key": null,
+      "error": null,
+      "attempts": 0,
+      "updated_at": null,
+      "provider_message_id": null
+    },
+    "last_verdict": null
+  }
+}

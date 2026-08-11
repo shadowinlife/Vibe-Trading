@@ -1,0 +1,83 @@
+{
+  "checks": {
+    "pairing non-operator rejected": {
+      "pass": true,
+      "detail": "Not authorized: pairing management is restricted to configured operators."
+    },
+    "pairing reply metadata": {
+      "pass": true,
+      "detail": "{'_pairing_command': True, 'unauthorized': True, 'message_id': 't8-cmd-p1'}"
+    },
+    "pairing did not touch the engine": {
+      "pass": true,
+      "detail": "{}"
+    },
+    "pairing operator list answered": {
+      "pass": true,
+      "detail": "No pending pairing requests."
+    },
+    "pairing operator: still no engine session": {
+      "pass": true,
+      "detail": "{}"
+    },
+    "turn 1 replied": {
+      "pass": true,
+      "detail": "T8_OK1"
+    },
+    "turn 1 engine session attached": {
+      "pass": true,
+      "detail": "ses_f6881e553ffeN36Fj10eGzoL6O"
+    },
+    "/new reset reply": {
+      "pass": true,
+      "detail": "✅ Session reset. Your next message will start a new conversation."
+    },
+    "/new metadata session_reset": {
+      "pass": true,
+      "detail": "{'_channel_runtime': True, 'session_reset': True, 'message_id': 't8-cmd-2'}"
+    },
+    "/new dropped the mapping": {
+      "pass": true,
+      "detail": "{}"
+    },
+    "turn 2 replied": {
+      "pass": true,
+      "detail": "T8_OK2"
+    },
+    "next turn starts a fresh vt session": {
+      "pass": true,
+      "detail": "53e97b236c0b -> 3a4baf9fc8fa"
+    },
+    "next turn starts a FRESH engine session": {
+      "pass": true,
+      "detail": "ses_f6881e553ffeN36Fj10eGzoL6O -> ses_f6881bbd3ffelXQ2h0CYdK0agD"
+    },
+    "old engine session kept (D3: browsable transcript)": {
+      "pass": true,
+      "detail": "<class 'list'>"
+    },
+    "fresh session.config {channel, channel_chat_id} (T9 producer input)": {
+      "pass": true,
+      "detail": "{'channel': 'mockim', 'channel_chat_id': 'cmd-chat', 'include_shell_tools': False, 'opencode_engine_session_id': 'ses_f6881bbd3ffelXQ2h0CYdK0agD'}"
+    },
+    "/reset alias works": {
+      "pass": true,
+      "detail": "✅ Session reset. Your next message will start a new conversation."
+    },
+    "/newsession alias handled": {
+      "pass": true,
+      "detail": "{'_channel_runtime': True, 'session_reset': True, 'message_id': 't8-cmd-5'}"
+    },
+    "exactly two engine sessions created": {
+      "pass": true,
+      "detail": "{'53e97b236c0b': 'ses_f6881e553ffeN36Fj10eGzoL6O', '3a4baf9fc8fa': 'ses_f6881bbd3ffelXQ2h0CYdK0agD'}"
+    }
+  },
+  "sessions": {
+    "s1": "53e97b236c0b",
+    "e1": "ses_f6881e553ffeN36Fj10eGzoL6O",
+    "s2": "3a4baf9fc8fa",
+    "e2": "ses_f6881bbd3ffelXQ2h0CYdK0agD"
+  },
+  "engine_session_count": 2
+}

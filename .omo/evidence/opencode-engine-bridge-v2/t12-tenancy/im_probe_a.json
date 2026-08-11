@@ -1,0 +1,63 @@
+{
+  "tenant": "a",
+  "chat_id": "t12-a-chat",
+  "channel": "mockim",
+  "streaming": true,
+  "store_dir": "/home/opencode/.vibe-trading/sessions",
+  "started_at": 1789273298.8250284,
+  "stack_started": true,
+  "injected_at": 1789273298.8864799,
+  "first_outbound_at": 1789273304.9478478,
+  "first_outbound_kind": "delta",
+  "terminal_at": 1789273313.1081648,
+  "im_first_response_s": 6.061,
+  "im_terminal_s": 14.222,
+  "sent": [
+    {
+      "kind": "delta",
+      "chat_id": "t12-a-chat",
+      "channel": "mockim",
+      "t": 1789273304.9478478,
+      "content_len": 2,
+      "content_head": "OK",
+      "meta_flags": [
+        "_stream_delta",
+        "_stream_id"
+      ],
+      "session_id": null,
+      "t_rel": 6.061
+    },
+    {
+      "kind": "stream_end",
+      "chat_id": "t12-a-chat",
+      "channel": "mockim",
+      "t": 1789273313.1081648,
+      "content_len": 0,
+      "content_head": "",
+      "meta_flags": [
+        "_stream_end",
+        "_stream_id"
+      ],
+      "session_id": null,
+      "t_rel": 14.222
+    }
+  ],
+  "session_map": {
+    "mockim:t12-a-chat": "d667aafbf21e"
+  },
+  "engine_sessions": {
+    "d667aafbf21e": "ses_f670b1203ffe3F0PuFi3MgWNKT"
+  },
+  "store_sessions": [
+    "b7b1d053418f",
+    "c52b6922330e",
+    "d0cc70b1ce83",
+    "d667aafbf21e",
+    "db6d89895fbd"
+  ],
+  "round_trip": true,
+  "cost_usd": 0.102121,
+  "finished_at": 1789273315.2688503,
+  "_exit_code": 0,
+  "_wall_s": 18.2
+}

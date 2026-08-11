@@ -1,0 +1,16 @@
+{
+  "engine_sessions": [
+    "ses_f67a63783ffe8ucx99n7s2vF56",
+    "ses_f67a7f53cffeY86yq08TAEcNyt"
+  ],
+  "cost_usd_per_session": {
+    "ses_f67a7f53cffeY86yq08TAEcNyt": 0.0,
+    "ses_f67a63783ffe8ucx99n7s2vF56": 0.03212544743
+  },
+  "cost_usd_total": 0.032125,
+  "scenarios": [
+    "t13-confirm"
+  ],
+  "note": "serve-side model cost of the T13 confirm-flow engine sessions (assistant message cost fields); sessions DELETEd after costing",
+  "finished_at": 1789262439.3717198
+}

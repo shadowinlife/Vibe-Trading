@@ -1,0 +1,76 @@
+[
+  {
+    "check": "zero-diff:protected",
+    "base": "5eda88d1a762593ded46e50da5986392711681ff",
+    "paths": [
+      "agent/src/agent/",
+      "agent/src/session/",
+      "agent/src/providers/"
+    ],
+    "committed_changes": [],
+    "uncommitted_changes": [],
+    "pass": true
+  },
+  {
+    "check": "zero-diff:frontend",
+    "base": "5eda88d1a762593ded46e50da5986392711681ff",
+    "paths": [
+      "frontend/"
+    ],
+    "committed_changes": [],
+    "uncommitted_changes": [],
+    "pass": true
+  },
+  {
+    "check": "zero-diff:channels",
+    "base": "5eda88d1a762593ded46e50da5986392711681ff",
+    "paths": [
+      "agent/src/channels/"
+    ],
+    "committed_changes": [],
+    "uncommitted_changes": [],
+    "pass": true
+  },
+  {
+    "check": "frontend-build-artifacts-untracked",
+    "untracked_or_modified": [],
+    "pass": true
+  },
+  {
+    "check": "pytest-failure-set-identical",
+    "baseline_failures": [
+      "agent/tests/test_api_infrastructure.py::test_api_server_is_thin_assembler",
+      "agent/tests/test_dragon_tiger_tool.py::TestExecuteError::test_http_failure_uses_tushare_fallback_when_available",
+      "agent/tests/test_fund_flow_tool.py::TestPerSymbolIsolation::test_http_failure_uses_tushare_fallback_when_available",
+      "agent/tests/test_llm_reasoning_effort.py::TestAnthropicNativeProvider::test_effort_reaches_the_anthropic_adapter",
+      "agent/tests/test_llm_reasoning_effort.py::TestAnthropicNativeProvider::test_temperature_is_omitted_when_effort_is_sent",
+      "agent/tests/test_llm_reasoning_effort.py::TestAnthropicNativeProvider::test_the_installed_adapter_renders_effort_as_output_config",
+      "agent/tests/test_margin_trading_tool.py::TestErrors::test_provider_failure_uses_tushare_fallback_when_available",
+      "agent/tests/test_metrics.py::TestBarsPerYear::test_no_intraday_source_falls_to_default",
+      "agent/tests/test_northbound_tool.py::TestErrorEnvelope::test_http_failure_uses_tushare_fallback_when_available",
+      "agent/tests/test_provider_header_isolation.py::test_direct_openai_preserves_ambient_headers",
+      "agent/tests/test_state_migration_wiring.py::test_api_lifespan_preserves_startup_and_shutdown_order",
+      "agent/tests/test_state_migration_wiring.py::test_api_lifespan_stops_scheduler_when_channel_shutdown_fails",
+      "agent/tests/test_state_migration_wiring.py::test_api_startup_runs_migration"
+    ],
+    "run_failures": [
+      "agent/tests/test_dragon_tiger_tool.py::TestExecuteError::test_http_failure_uses_tushare_fallback_when_available",
+      "agent/tests/test_fund_flow_tool.py::TestPerSymbolIsolation::test_http_failure_uses_tushare_fallback_when_available",
+      "agent/tests/test_llm_reasoning_effort.py::TestAnthropicNativeProvider::test_effort_reaches_the_anthropic_adapter",
+      "agent/tests/test_llm_reasoning_effort.py::TestAnthropicNativeProvider::test_temperature_is_omitted_when_effort_is_sent",
+      "agent/tests/test_llm_reasoning_effort.py::TestAnthropicNativeProvider::test_the_installed_adapter_renders_effort_as_output_config",
+      "agent/tests/test_margin_trading_tool.py::TestErrors::test_provider_failure_uses_tushare_fallback_when_available",
+      "agent/tests/test_metrics.py::TestBarsPerYear::test_no_intraday_source_falls_to_default",
+      "agent/tests/test_northbound_tool.py::TestErrorEnvelope::test_http_failure_uses_tushare_fallback_when_available",
+      "agent/tests/test_provider_header_isolation.py::test_direct_openai_preserves_ambient_headers"
+    ],
+    "new_failures": [],
+    "fixed_failures": [
+      "agent/tests/test_api_infrastructure.py::test_api_server_is_thin_assembler",
+      "agent/tests/test_state_migration_wiring.py::test_api_lifespan_preserves_startup_and_shutdown_order",
+      "agent/tests/test_state_migration_wiring.py::test_api_lifespan_stops_scheduler_when_channel_shutdown_fails",
+      "agent/tests/test_state_migration_wiring.py::test_api_startup_runs_migration"
+    ],
+    "pass": false
+  }
+]

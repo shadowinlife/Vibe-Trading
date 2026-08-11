@@ -1,0 +1,191 @@
+..F..x                                                                   [100%]
+=================================== FAILURES ===================================
+______________________ test_scenario1_long_turn_roundtrip ______________________
+
+scratch = {'registry': PosixPath('/Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/.omo/evidence/opencode-engine-bridge-v2/t8-im/engine-sessions.jsonl'), 'root': PosixPath('/tmp/vt-t8-rig/im-stores'), 'serve_url': 'http://127.0.0.1:14096'}
+evidence_dir = PosixPath('/Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/.omo/evidence/opencode-engine-bridge-v2/t8-im')
+
+    @requires_rig
+    def test_scenario1_long_turn_roundtrip(scratch, evidence_dir) -> None:
+        sleep_s = LONG_SLEEP_S
+        prompt = (
+            f"Use the bash tool to run exactly this command once: "
+            f"`sleep {sleep_s} && echo T8_LONG_DONE`. Do not iterate, do not create "
+            f"todo lists, no subagents. After it finishes, reply with exactly the "
+            f"command's output text."
+        )
+    
+        async def scenario() -> Dict[str, Any]:
+            stack = await build_im_stack(**_stack_kwargs(scratch, "s1-long-turn"))
+            out: Dict[str, Any] = {}
+            try:
+                poll_log: List[Dict[str, Any]] = []
+                session_holder: Dict[str, str] = {}
+    
+                async def d4_poller() -> None:
+                    """Record when the attempt-linked assistant message FIRST appears."""
+                    while True:
+                        sid = session_holder.get("sid") or stack.runtime._session_map.get(
+                            f"{MOCK_CHANNEL_NAME}:long-chat"
+                        )
+                        if sid:
+                            session_holder["sid"] = sid
+                            linked = [
+                                m
+                                for m in stack.service.get_messages(sid, limit=200)
+                                if m.role == "assistant"
+                            ]
+                            poll_log.append(
+                                {"t": round(time.time() - t_send, 2), "n": len(linked)}
+                            )
+                            if linked:
+                                out["t_first_assistant"] = round(time.time() - t_send, 2)
+                                return
+                        await asyncio.sleep(2.0)
+    
+                mid = await stack.mock.inject(
+                    prompt, chat_id="long-chat", message_id="t8-long-1"
+                )
+                t_send = time.time()
+                poller = asyncio.create_task(d4_poller())
+                reply = await stack.mock.next_for("long-chat", timeout_s=sleep_s + 300)
+                out["elapsed_s"] = round(time.time() - t_send, 2)
+                poller.cancel()
+    
+                out["reply_content"] = reply.content
+                out["reply_metadata"] = dict(reply.metadata)
+                out["event_census"] = stack.recorder.types_seen()
+                hb = stack.recorder.times_of("tool_heartbeat")
+                gaps = [round(b - a, 2) for a, b in zip(hb, hb[1:])]
+                out["heartbeats"] = {
+                    "count": len(hb),
+                    "median_gap_s": sorted(gaps)[len(gaps) // 2] if gaps else None,
+                }
+    
+                sid = reply.metadata["session_id"]
+                attempt_id = reply.metadata["attempt_id"]
+                messages = [
+                    m
+                    for m in stack.service.get_messages(sid, limit=200)
+                    if m.role == "assistant" and m.linked_attempt_id == attempt_id
+                ]
+                out["assistant_messages_for_attempt"] = len(messages)
+                out["assistant_metadata"] = dict(messages[0].metadata) if messages else {}
+                out["attempt_status"] = attempt_status(stack.store, attempt_id)
+                out["session_config"] = dict(stack.service.get_session(sid).config)
+                out["poll_log"] = poll_log
+                out["checks"] = {}
+    
+                def check(name: str, cond: bool, detail: str = "") -> None:
+                    out["checks"][name] = {"pass": bool(cond), "detail": detail}
+                    assert cond, f"[s1] {name}: {detail}"
+    
+                check(
+                    "long turn really long (>= sleep)",
+                    out["elapsed_s"] >= sleep_s,
+                    f"{out['elapsed_s']}s",
+                )
+                check(
+                    "final reply delivered with marker",
+                    "T8_LONG_DONE" in reply.content,
+                    reply.content[:200],
+                )
+                check(
+                    "outbound shape = markdown-card source (dingtalk.py:672-680 renders content)",
+                    reply.metadata.get("_channel_runtime") is True
+                    and reply.metadata.get("message_id") == mid
+                    and isinstance(reply.metadata.get("attempt_id"), str)
+                    and isinstance(reply.metadata.get("session_id"), str),
+                    str(reply.metadata),
+                )
+                check(
+                    "exactly one assistant message for the attempt",
+                    len(messages) == 1,
+                    str(len(messages)),
+                )
+                meta = out["assistant_metadata"]
+                check(
+                    "D6 reply metadata status=completed",
+                    meta.get("status") == "completed",
+                    str(meta),
+                )
+                check(
+                    "D6 metadata elapsed_ms covers the sleep",
+                    int(meta.get("elapsed_ms", 0)) >= sleep_s * 900,
+                    str(meta.get("elapsed_ms")),
+                )
+                check(
+                    "D6 metadata provider/model present",
+                    bool(meta.get("provider")) and bool(meta.get("model")),
+                    str(meta),
+                )
+                check(
+                    "attempt terminal=completed in store",
+                    out["attempt_status"] == "completed",
+                    str(out["attempt_status"]),
+                )
+                check(
+                    "D4 polling contract: no assistant msg before terminal, then delivered",
+                    bool(poll_log)
+                    and all(e["n"] == 0 for e in poll_log[:-1])
+                    and poll_log[-1]["n"] >= 1
+                    and out.get("t_first_assistant") is not None
+                    and out["t_first_assistant"] >= out["elapsed_s"] - 15,
+                    f"first={out.get('t_first_assistant')} elapsed={out['elapsed_s']} polls={len(poll_log)}",
+                )
+                check(
+                    "translator alive during silence (tool_heartbeat >= 10)",
+                    len(hb) >= 10,
+                    str(len(hb)),
+                )
+                check(
+                    "session.config carries {channel, channel_chat_id} (runtime.py:329)",
+                    out["session_config"].get("channel") == MOCK_CHANNEL_NAME
+                    and out["session_config"].get("channel_chat_id") == "long-chat",
+                    str(out["session_config"]),
+                )
+                return out
+            finally:
+                copy_store_artifacts(stack, evidence_dir, "s1-long-turn")
+                await close_im_stack(stack)
+    
+>       result = asyncio.run(scenario())
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+
+agent/tests/test_opencode_bridge_im_parity.py:377: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../miniforge3/envs/legonanobot/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../miniforge3/envs/legonanobot/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniforge3/envs/legonanobot/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+agent/tests/test_opencode_bridge_im_parity.py:352: in scenario
+    check(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'D4 polling contract: no assistant msg before terminal, then delivered'
+cond = False, detail = 'first=None elapsed=189.88 polls=93'
+
+    def check(name: str, cond: bool, detail: str = "") -> None:
+        out["checks"][name] = {"pass": bool(cond), "detail": detail}
+>       assert cond, f"[s1] {name}: {detail}"
+E       AssertionError: [s1] D4 polling contract: no assistant msg before terminal, then delivered: first=None elapsed=189.88 polls=93
+E       assert False
+
+agent/tests/test_opencode_bridge_im_parity.py:306: AssertionError
+============================= slowest 10 durations =============================
+673.84s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario2_engine_death_recovery
+190.64s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario1_long_turn_roundtrip
+21.06s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario3_command_regression
+11.28s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario4_scheduled_briefing
+0.62s call     agent/tests/test_opencode_bridge_im_parity.py::test_channels_zero_diff_since_merge_base
+0.02s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario0_gateway_seam_preamble
+
+(4 durations < 0.005s hidden.  Use -vv to show these durations.)
+=========================== short test summary info ============================
+XFAIL agent/tests/test_opencode_bridge_im_parity.py::test_scenario2_engine_death_recovery - BUG(T8-1) engine-death mid-turn is not detected live: attempt landing=Nones (acceptance <30s), IM failure reply=590.2s content='Channel runtime error: TimeoutError: timed out waiting for assistant reply'. Root cause (code read): OpencodeDriver.events() reconnects forever (backoff 0.5->30s) so the pump task never dies and _fail_all_pending never fires; the attempt hangs until the 600s IM polling budget (TimeoutError reply = explicit failure, plan-QA non-silent holds) or a process-restart reconcile lands it interrupted (Phase B: {'reattached': [], 'backfilled': [], 'interrupted': ['ebfdb9f70c82']}). Bridge src fix owned by a follow-up task (T9 lane owns opencode_bridge/ this wave). Evidence: /Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/.omo/evidence/opencode-engine-bridge-v2/t8-im/s2-engine-death-results.json
+1 failed, 4 passed, 1 xfailed in 897.68s (0:14:57)

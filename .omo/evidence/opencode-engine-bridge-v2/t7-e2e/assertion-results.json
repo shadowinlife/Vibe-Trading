@@ -1,0 +1,414 @@
+{
+  "task": "T7 single-tenant Web E2E — eight mandatory assertion groups",
+  "all_passed": true,
+  "total_checks": 67,
+  "runs": {
+    "run2": "first full pass: g2/g5/g8 FAILED -> root-caused (governance findings 1+2 in FINDINGS.md, g8 assertion adjusted); evidence in run2-debug/",
+    "run3": "full pass after bridge fixes: 7/8 green (g5 failed on a TEST-SCRIPT selector bug: asserted literal 'backtest' but the UI renders localized tool labels)",
+    "g5-rerun": "fixed g5 rerun standalone (zero LLM steps; REST fallback onto run3's g2 session): PASS"
+  },
+  "groups": [
+    {
+      "group": "test_g1_send_message_streams_vt_vocabulary",
+      "passed": true,
+      "checks": 18,
+      "assertions": [
+        {
+          "assertion": "SSE vocabulary carries message.received",
+          "pass": true,
+          "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+        },
+        {
+          "assertion": "SSE vocabulary carries attempt.created",
+          "pass": true,
+          "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+        },
+        {
+          "assertion": "SSE vocabulary carries attempt.started",
+          "pass": true,
+          "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+        },
+        {
+          "assertion": "SSE vocabulary carries text_delta",
+          "pass": true,
+          "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+        },
+        {
+          "assertion": "SSE vocabulary carries attempt.completed",
+          "pass": true,
+          "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+        },
+        {
+          "assertion": "every streamed type is frontend-consumed (useSSE knownTypes)",
+          "pass": true,
+          "detail": "[]"
+        },
+        {
+          "assertion": "text_delta payload shape {delta:str}",
+          "pass": true,
+          "detail": "n=2"
+        },
+        {
+          "assertion": "text_delta carries attempt_id stamp",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "reasoning_delta payload shape {tail:str}",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "llm_usage observed",
+          "pass": null,
+          "detail": "{'input_tokens': 277, 'output_tokens': 10, 'total_tokens': 60739, 'iter': 1, 'attempt_id': '4a67852e8416'}"
+        },
+        {
+          "assertion": "attempt.completed enumerates attempt_id (D5)",
+          "pass": true,
+          "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+        },
+        {
+          "assertion": "attempt.completed enumerates status (D5)",
+          "pass": true,
+          "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+        },
+        {
+          "assertion": "attempt.completed enumerates summary (D5)",
+          "pass": true,
+          "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+        },
+        {
+          "assertion": "attempt.completed enumerates run_dir (D5)",
+          "pass": true,
+          "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+        },
+        {
+          "assertion": "attempt.completed enumerates elapsed_ms (D5)",
+          "pass": true,
+          "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+        },
+        {
+          "assertion": "attempt.completed enumerates provider (D5)",
+          "pass": true,
+          "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+        },
+        {
+          "assertion": "attempt.completed enumerates model (D5)",
+          "pass": true,
+          "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+        },
+        {
+          "assertion": "attempt.completed status=completed",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "answer bubble rendered in UI",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "group": "test_g2_backtest_run_dir_and_run_card",
+      "passed": true,
+      "checks": 11,
+      "assertions": [
+        {
+          "assertion": "attempt.completed carries run_dir",
+          "pass": true,
+          "detail": "{'attempt_id': '84ed5a5af234', 'status': 'completed', 'summary': '/tmp/vt-e2e-rig/vt-home/runs/aapl_sma_cross_2024h1_minimal', 'error': None, 'run_dir': '/tmp/vt-e2e-rig/vt-home/runs/aapl_sma_cross_2024h1_minimal', 'elapsed_ms': 164490, 'provider': 'alibaba-cn', 'model': 'qwen3.8-max'}"
+        },
+        {
+          "assertion": "GET /runs/{id} -> 200",
+          "pass": true,
+          "detail": "got 200"
+        },
+        {
+          "assertion": "run payload has data",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "tool_call streamed",
+          "pass": true,
+          "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta', 'tool_call', 'tool_heartbeat', 'tool_result']"
+        },
+        {
+          "assertion": "tool_result streamed",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "backtest execution observed (MCP tool or bash runner CLI)",
+          "pass": true,
+          "detail": "['bash', 'bash', 'bash', 'bash', 'bash', 'bash', 'bash', 'read', 'bash', 'bash', 'write', 'write', 'bash']"
+        },
+        {
+          "assertion": "no MCP-prefixed tool names leaked",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "tool_result payload shape {tool,status,preview,elapsed_ms}",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "run produced artifacts on disk",
+          "pass": true,
+          "detail": "/tmp/vt-e2e-rig/vt-home/runs/aapl_sma_cross_2024h1_minimal"
+        },
+        {
+          "assertion": "run card link rendered in UI",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "answer bubble mentions the run",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "group": "test_g3_mid_turn_cancel",
+      "passed": true,
+      "checks": 6,
+      "assertions": [
+        {
+          "assertion": "attempt.cancelled payload {attempt_id,status}",
+          "pass": true,
+          "detail": "{'attempt_id': '304fbd583b09', 'status': 'cancelled', 'summary': None, 'error': 'cancelled by user', 'run_dir': None, 'elapsed_ms': 3594}"
+        },
+        {
+          "assertion": "UI shows the stopped activity state",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "composer unlocked (status idle, stop button gone)",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "no zombie streaming after cancel (no post-terminal text_delta)",
+          "pass": true,
+          "detail": "0 -> 0"
+        },
+        {
+          "assertion": "cancelled reply persisted",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "persisted reply metadata.status == cancelled (D6)",
+          "pass": true,
+          "detail": "{'status': 'cancelled', 'elapsed_ms': 3594}"
+        }
+      ]
+    },
+    {
+      "group": "test_g4_concurrent_send_409",
+      "passed": true,
+      "checks": 5,
+      "assertions": [
+        {
+          "assertion": "concurrent send while busy -> HTTP 409",
+          "pass": true,
+          "detail": "got 409: {'detail': 'Session 9e359d6ee73f already has a run in progress'}"
+        },
+        {
+          "assertion": "409 detail surfaces the busy semantics",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "UI busy state surfaced: stop button visible",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "UI busy state surfaced: composer read-only",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "session drained after cancel (cleanup)",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "group": "test_g5_refresh_restores_history_and_tool_trail",
+      "passed": true,
+      "checks": 8,
+      "assertions": [
+        {
+          "assertion": "user message persisted",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "transcript keeps RAW user content (no injection block, D3)",
+          "pass": true,
+          "detail": "Run ONE minimal backtest exactly as specified below, then stop. Cost discipline: do NOT iterate, do NOT optimize, do NOT"
+        },
+        {
+          "assertion": "assistant reply persisted with tool_trail",
+          "pass": true,
+          "detail": "n=13"
+        },
+        {
+          "assertion": "tool_trail entries carry tool+status (native shape)",
+          "pass": true,
+          "detail": "[{'tool': 'bash', 'status': 'ok', 'arguments': {'command': 'ls -la /private/tmp/vt-e2e-rig/workspace && ls /tmp/vt-e2e-rig/vt-home 2>/dev/null && which vibe-trading; vibe-trading --help 2>&1 | head -50'}, 'timestamp': 1789236372875, 'call_id': 'call_5391bfec42764bcab9c8c405', 'elapsed_ms': 8680, 'preview': 'total 8\\ndrwxr-xr-x@ 4 mgong  wheel  128  9月 13 01:35 .\\ndrwxr-xr-x@ 9 mgong  wheel  288  9月 13 02:05 ..\\ndrwxr-xr-x@ 3 mgong  wheel   96  9月 13 01:35 .omo\\n-rw-r--r--@ 1 mgong  wheel  268  9月 13 02:04 AG'}, {'tool': 'bash', 'status': 'ok', 'arguments': {'command': 'ls /tmp/vt-e2e-rig/vt-home/runs/ && ls /tmp/vt-e2e-rig/vt-home/runs/safe_run 2>/dev/null; python -c \"import vibe_trading, os; print(os.path.dirname(vibe_trading.__file__))\" 2>/dev/null || /Users/mgong'}, 'timestamp': 1789236389189, 'call_id': 'call_6308fe405ace4a9b8840ead7', 'elapsed_ms': 2690, 'preview': 'aapl_sma_cross_2024h1\\nsafe_run\\nTraceback (most recent call last):\\n  File \"<string>\", line 1, in <module>\\nModuleNotFoundError: No module named \\'vibe_trading\\'\\n'}]"
+        },
+        {
+          "assertion": "reply metadata.run_id matches (run card source)",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "run card restored after refresh",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "trail has a localizable tool label",
+          "pass": true,
+          "detail": "['bash', 'bash', 'bash', 'bash', 'bash', 'bash', 'bash', 'read', 'bash', 'bash', 'write', 'write', 'bash']"
+        },
+        {
+          "assertion": "tool_trail rebuilt in the UI (step row 'Run command' visible)",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "group": "test_g6_replay_active_mid_turn_reconnect",
+      "passed": true,
+      "checks": 4,
+      "assertions": [
+        {
+          "assertion": "reconnect opens SSE with replay=active",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "live stream resumed to terminal after reconnect",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "post-reload SSE frames received",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "exactly one answer bubble (no duplicates)",
+          "pass": true,
+          "detail": "count=1"
+        }
+      ]
+    },
+    {
+      "group": "test_g7_long_silent_tool_beats_watchdog",
+      "passed": true,
+      "checks": 8,
+      "assertions": [
+        {
+          "assertion": "tool_heartbeat synthesized through the silent gap",
+          "pass": true,
+          "detail": "n=32"
+        },
+        {
+          "assertion": "heartbeat elapsed_s crosses the 90s watchdog window",
+          "pass": true,
+          "detail": "max=96.0"
+        },
+        {
+          "assertion": "heartbeat cadence ~3s (D5)",
+          "pass": true,
+          "detail": "median=3.00s"
+        },
+        {
+          "assertion": "watchdog did NOT timeout-archive the turn",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "still streaming at t+98s (stop button present)",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "silent-gap dwell seconds",
+          "pass": null,
+          "detail": "98.0"
+        },
+        {
+          "assertion": "post-terminal events not lost (attempt.completed after the gap)",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "final answer rendered after the silent gap",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "turn archived done, never timeout",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "group": "test_g8_upload_analysis_absolute_path",
+      "passed": true,
+      "checks": 7,
+      "assertions": [
+        {
+          "assertion": "upload accepted, attachment chip visible",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "upload-analysis turn completed",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "a read-class tool consumed the INJECTED ABSOLUTE uploads path (B6/D8②)",
+          "pass": true,
+          "detail": "[[\"read\", {\"filePath\": \"/tmp/vt-e2e-rig/vt-home/uploads/11abf2ef2c424b2aa9a22065fe40fb4d.csv\"}]]"
+        },
+        {
+          "assertion": "the read succeeded (engine could actually read the file)",
+          "pass": true,
+          "detail": "[('read', 'ok')]"
+        },
+        {
+          "assertion": "answer reports the correct row count",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "assertion": "transcript keeps the relative uploads/<name> envelope (D3)",
+          "pass": true,
+          "detail": "[Uploaded files: [{\"filename\":\"t7e2e_data.csv\",\"path\":\"uploads/11abf2ef2c424b2aa9a22065fe40fb4d.csv\"}]]\n\nRead the uploaded CSV file via its ABSOLUTE path (per the gateway context) with a file-reading "
+        },
+        {
+          "assertion": "no gateway injection block in the transcript",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "generated_at": 1789237112.5921578
+}

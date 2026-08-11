@@ -1,0 +1,27 @@
+{
+  "group": "test_g6_replay_active_mid_turn_reconnect",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "reconnect opens SSE with replay=active",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "live stream resumed to terminal after reconnect",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "post-reload SSE frames received",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "exactly one answer bubble (no duplicates)",
+      "pass": true,
+      "detail": "count=1"
+    }
+  ],
+  "finished_at": 1789236590.474921
+}

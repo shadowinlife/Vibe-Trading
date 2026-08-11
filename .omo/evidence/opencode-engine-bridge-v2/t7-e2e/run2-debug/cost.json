@@ -1,0 +1,24 @@
+{
+  "engine_sessions": [
+    "ses_f6944b1c9ffeWIJkSrhYUqWeIN",
+    "ses_f694770a4ffeDQfR6QDRQL1lfQ",
+    "ses_f6943f4ffffeuSAYUK9UZ1E8ou",
+    "ses_f69446f32ffe65ZlJprYlYW4bH",
+    "ses_f69446599ffeSW3bIhBAgyGsOc",
+    "ses_f6947adfdffeMao3ubhMuPXaU6",
+    "ses_f6942107effeS9L6mYlzY1pfL4",
+    "ses_f694fa7c4ffeHxe2uiLDR0Ay9r"
+  ],
+  "cost_usd_per_session": {
+    "ses_f6944b1c9ffeWIJkSrhYUqWeIN": 0.0,
+    "ses_f694770a4ffeDQfR6QDRQL1lfQ": 0.24130697202999998,
+    "ses_f6943f4ffffeuSAYUK9UZ1E8ou": 0.02865766397,
+    "ses_f69446f32ffe65ZlJprYlYW4bH": 0.0,
+    "ses_f69446599ffeSW3bIhBAgyGsOc": 0.028597231039999997,
+    "ses_f6947adfdffeMao3ubhMuPXaU6": 0.01495537816,
+    "ses_f6942107effeS9L6mYlzY1pfL4": 0.031956588620000004,
+    "ses_f694fa7c4ffeHxe2uiLDR0Ay9r": 0.10803280283
+  },
+  "cost_usd_total": 0.453507,
+  "note": "serve-side model cost of rig sessions (assistant message cost fields); excludes the gateway auto-title ChatLLM calls"
+}

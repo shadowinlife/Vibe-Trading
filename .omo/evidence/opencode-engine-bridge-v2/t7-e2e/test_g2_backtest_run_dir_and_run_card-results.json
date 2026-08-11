@@ -1,0 +1,62 @@
+{
+  "group": "test_g2_backtest_run_dir_and_run_card",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "attempt.completed carries run_dir",
+      "pass": true,
+      "detail": "{'attempt_id': '84ed5a5af234', 'status': 'completed', 'summary': '/tmp/vt-e2e-rig/vt-home/runs/aapl_sma_cross_2024h1_minimal', 'error': None, 'run_dir': '/tmp/vt-e2e-rig/vt-home/runs/aapl_sma_cross_2024h1_minimal', 'elapsed_ms': 164490, 'provider': 'alibaba-cn', 'model': 'qwen3.8-max'}"
+    },
+    {
+      "assertion": "GET /runs/{id} -> 200",
+      "pass": true,
+      "detail": "got 200"
+    },
+    {
+      "assertion": "run payload has data",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "tool_call streamed",
+      "pass": true,
+      "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta', 'tool_call', 'tool_heartbeat', 'tool_result']"
+    },
+    {
+      "assertion": "tool_result streamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "backtest execution observed (MCP tool or bash runner CLI)",
+      "pass": true,
+      "detail": "['bash', 'bash', 'bash', 'bash', 'bash', 'bash', 'bash', 'read', 'bash', 'bash', 'write', 'write', 'bash']"
+    },
+    {
+      "assertion": "no MCP-prefixed tool names leaked",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "tool_result payload shape {tool,status,preview,elapsed_ms}",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "run produced artifacts on disk",
+      "pass": true,
+      "detail": "/tmp/vt-e2e-rig/vt-home/runs/aapl_sma_cross_2024h1_minimal"
+    },
+    {
+      "assertion": "run card link rendered in UI",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "answer bubble mentions the run",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "finished_at": 1789236525.508088
+}

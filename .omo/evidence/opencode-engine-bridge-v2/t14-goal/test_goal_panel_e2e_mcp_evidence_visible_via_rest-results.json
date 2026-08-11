@@ -1,0 +1,72 @@
+{
+  "group": "test_goal_panel_e2e_mcp_evidence_visible_via_rest",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "goal panel renders after REST goal creation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "kickoff turn completed",
+      "pass": true,
+      "detail": "{'attempt_id': '3b3b987e0ba1', 'status': 'completed', 'summary': 'DONE', 'error': None, 'run_dir': None, 'elapsed_ms': 17006, 'provider': 'alibaba-cn', 'model': 'qwen3.8-max'}"
+    },
+    {
+      "assertion": "engine prompt carries the injection block",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "injection names vt_session_id and the session_id= instruction",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "transcript user message is raw (no injection block)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "add_goal_evidence tool call observed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "model passed session_id=<vt sid> (injection was the only hint)",
+      "pass": true,
+      "detail": "{\"goal_id\": \"goal_8706674676ba\", \"expected_goal_id\": \"goal_8706674676ba\", \"text\": \"T14-E2E-EVIDENCE goal binding verified\", \"session_id\": \"28417ddfdc40\"}"
+    },
+    {
+      "assertion": "tool call completed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "goal.* SSE frames during the agent turn (expected: only goal.created from the REST creation; NONE from the MCP-side evidence write — degradation item 12)",
+      "pass": null,
+      "detail": "['goal.created']"
+    },
+    {
+      "assertion": "REST re-fetch shows the MCP-written evidence",
+      "pass": true,
+      "detail": "status=200"
+    },
+    {
+      "assertion": "panel toggle before reload (stale — no goal.* SSE from MCP write)",
+      "pass": null,
+      "detail": "Goal | T14: verify goal session binding end to end | 0/1 met"
+    },
+    {
+      "assertion": "badge absent before reload",
+      "pass": null,
+      "detail": "True"
+    },
+    {
+      "assertion": "goal panel renders the evidence after reload",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "finished_at": 1789250923.869973
+}

@@ -1,0 +1,47 @@
+{
+  "engine_sessions": [
+    "ses_f68740b54ffe48aC5EfYE3x7va",
+    "ses_f68747cacffeqfzmrJ6QCTEJ2s",
+    "ses_f6874ac0fffeocMjsfrAivr7PI",
+    "ses_f6874d864ffexSWg1dOwPkk0av",
+    "ses_f687501d1ffeES3Dq5LyE2DUDA",
+    "ses_f6877f7c1ffexr78eatZakMqR8",
+    "ses_f68815fe0ffeIvpfLe7Nnof4Pq",
+    "ses_f68819379ffei29p01ZW1hx6bS",
+    "ses_f6881bbd3ffelXQ2h0CYdK0agD",
+    "ses_f6881e553ffeN36Fj10eGzoL6O",
+    "ses_f6884d900ffeeBlKz21xwJ00F5",
+    "ses_f68c67894ffeDxR21pdGolt1fl",
+    "ses_f68c6a40cffecxTkB9Mys1isRg",
+    "ses_f68c6cf5affe7738XNUgHWNFk0",
+    "ses_f68c6fcb4ffeVFkv7SkuyhVmXC",
+    "ses_f68c9f055ffeJ8wrb6dPc1Anys"
+  ],
+  "cost_usd_per_session": {
+    "ses_f68c9f055ffeJ8wrb6dPc1Anys": 0.0,
+    "ses_f68c6fcb4ffeVFkv7SkuyhVmXC": 0.0,
+    "ses_f68c6cf5affe7738XNUgHWNFk0": 0.0,
+    "ses_f68c6a40cffecxTkB9Mys1isRg": 0.0,
+    "ses_f68c67894ffeDxR21pdGolt1fl": 0.0,
+    "ses_f6884d900ffeeBlKz21xwJ00F5": 0.03772438501,
+    "ses_f6881e553ffeN36Fj10eGzoL6O": 0.01416264164,
+    "ses_f6881bbd3ffelXQ2h0CYdK0agD": 0.01414664469,
+    "ses_f68819379ffei29p01ZW1hx6bS": 0.0141270929,
+    "ses_f68815fe0ffeIvpfLe7Nnof4Pq": 0.0,
+    "ses_f6877f7c1ffexr78eatZakMqR8": 0.02915890164,
+    "ses_f687501d1ffeES3Dq5LyE2DUDA": 0.01419641293,
+    "ses_f6874d864ffexSWg1dOwPkk0av": 0.01412531545,
+    "ses_f6874ac0fffeocMjsfrAivr7PI": 0.01420352267,
+    "ses_f68747cacffeqfzmrJ6QCTEJ2s": 0.0,
+    "ses_f68740b54ffe48aC5EfYE3x7va": 0.01413598008
+  },
+  "cost_usd_total": 0.165981,
+  "scenarios": [
+    "s1-long-turn",
+    "s2-engine-death",
+    "s3-commands",
+    "s4-briefing"
+  ],
+  "note": "serve-side model cost of the T8 IM-parity engine sessions (assistant message cost fields); sessions DELETEd after costing",
+  "finished_at": 1789248940.898567
+}

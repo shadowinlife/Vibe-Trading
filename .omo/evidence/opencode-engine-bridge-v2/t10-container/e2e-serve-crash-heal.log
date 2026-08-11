@@ -1,0 +1,32 @@
+=== serve-crash heal test 2026-09-12T23:15:12Z ===
+--- BEFORE: supervisorctl status ---
+opencode-serve                   RUNNING   pid 24, uptime 0:01:30
+vt-gateway                       RUNNING   pid 25, uptime 0:01:30
+serve pid=24  gateway pid=25
+--- KILL serve (SIGKILL, simulate crash mid-idle) ---
+  killed serve pid 24
+--- poll supervisord auto-restart of serve ---
+  [3s] opencode-serve                   STARTING  
+  [6s] opencode-serve                   RUNNING   pid 180, uptime 0:00:06
+  [PASS] serve RESTARTED by supervisord: old pid 24 -> new pid 180
+--- wait serve /health (internal) ---
+  serve ready after ~3s
+--- VERIFY gateway did NOT restart (bridge heals without gateway restart) ---
+  gateway pid before=25 after=25
+  [PASS] gateway pid UNCHANGED (no gateway restart)
+=== POST-CRASH heal turn: new web chat round-trip (bridge must reconnect to restarted serve) ===
+  [PASS] gateway /health 200 — HTTP 200
+  [PASS] POST /sessions 201 — HTTP 201
+  session_id=522b6bf60b6e
+  [PASS] POST /messages accepted — HTTP 200
+  SSE events (24): ['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta', 'tool_call', 'tool_result']
+  round-trip wall time: 33.0s
+  [PASS] text_delta streamed — 4 deltas
+  [PASS] MCP tool round-trip (serve->vibe-trading MCP) — 1 call(s): ['list_skills']
+  [PASS] terminal event emitted — attempt.completed
+  [PASS] attempt.completed run-card-capable (summary+run_dir fields) — keys=['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']
+  [PASS] attempt.completed status ok — status=completed
+  summary: The `list_skills` call returned 91 finance skills.
+  [PASS] transcript persisted (user+assistant) — roles=['user', 'assistant']
+
+=== WEB CHAT ROUND-TRIP: 9/9 checks passed ===

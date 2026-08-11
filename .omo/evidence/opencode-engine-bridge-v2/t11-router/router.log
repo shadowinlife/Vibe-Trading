@@ -1,0 +1,150 @@
+
+===== router boot 10:30:37 env={'VT_ROUTER_WAKE_TIMEOUT_S': '420.0', 'VT_ROUTER_IDLE_TTL_S': '86400', 'VT_ROUTER_CONNECT_TIMEOUT_S': '5'} =====
+INFO:     Started server process [12298]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:28080 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63120 - "GET /router-healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63121 - "GET /router-healthz HTTP/1.1" 200 OK
+2026-09-13 10:30:38,225 INFO vt.router route rejected reason=unknown_host host=unregistered.invalid
+INFO:     127.0.0.1:63121 - "GET /sessions HTTP/1.1" 404 Not Found
+2026-09-13 10:30:38,242 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63121 - "GET /sessions HTTP/1.1" 200 OK
+2026-09-13 10:30:38,254 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63121 - "GET /sessions HTTP/1.1" 200 OK
+2026-09-13 10:30:38,266 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63121 - "GET /sessions HTTP/1.1" 200 OK
+2026-09-13 10:30:38,273 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63121 - "GET /sessions HTTP/1.1" 200 OK
+2026-09-13 10:30:38,274 WARNING vt.router route rejected reason=tenant_mismatch token_tenant=a host_tenant=b
+INFO:     127.0.0.1:63121 - "GET /sessions HTTP/1.1" 403 Forbidden
+2026-09-13 10:30:38,280 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions "HTTP/1.1 401 Unauthorized"
+INFO:     127.0.0.1:63121 - "GET /sessions HTTP/1.1" 401 Unauthorized
+2026-09-13 10:30:38,285 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions "HTTP/1.1 401 Unauthorized"
+INFO:     127.0.0.1:63121 - "GET /sessions HTTP/1.1" 401 Unauthorized
+2026-09-13 10:30:42,596 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:63121 - "POST /sessions HTTP/1.1" 201 Created
+2026-09-13 10:30:42,605 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/1cbc13708443/events "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63121 - "GET /sessions/1cbc13708443/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63143 - "GET /router-admin/state HTTP/1.1" 200 OK
+2026-09-13 10:30:42,608 INFO vt.router sse client disconnect tenant=a
+INFO:     127.0.0.1:63143 - "GET /router-admin/state HTTP/1.1" 200 OK
+2026-09-13 10:30:42,888 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:63143 - "POST /sessions HTTP/1.1" 201 Created
+2026-09-13 10:30:42,897 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/a3e86d8e1841/events "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63143 - "GET /sessions/a3e86d8e1841/events HTTP/1.1" 200 OK
+2026-09-13 10:30:42,925 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions/a3e86d8e1841/messages "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63147 - "POST /sessions/a3e86d8e1841/messages HTTP/1.1" 200 OK
+2026-09-13 10:30:54,100 INFO vt.router sse client disconnect tenant=a
+2026-09-13 10:30:54,112 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/a3e86d8e1841/messages "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63189 - "GET /sessions/a3e86d8e1841/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63189 - "POST /router-admin/reclaim HTTP/1.1" 200 OK
+2026-09-13 10:30:56,456 INFO vt.router route rejected reason=unknown_host host=c.t11.tenant.local
+INFO:     127.0.0.1:63189 - "GET /sessions HTTP/1.1" 404 Not Found
+2026-09-13 10:30:56,577 INFO vt.router registry reloaded tenants=3
+INFO:     127.0.0.1:63189 - "GET /router-admin/state HTTP/1.1" 200 OK
+2026-09-13 10:30:56,579 INFO vt.router wake begin tenant=c container=vt-t11-ghost-c
+2026-09-13 10:30:56,885 WARNING vt.router wake unavailable tenant=c reason=container 'vt-t11-ghost-c' not found
+INFO:     127.0.0.1:63189 - "GET /sessions HTTP/1.1" 503 Service Unavailable
+2026-09-13 10:30:56,887 INFO vt.router registry reloaded tenants=2
+INFO:     127.0.0.1:63189 - "GET /router-admin/state HTTP/1.1" 200 OK
+2026-09-13 10:30:56,888 INFO vt.router route rejected reason=unknown_host host=c.t11.tenant.local
+INFO:     127.0.0.1:63189 - "GET /sessions HTTP/1.1" 404 Not Found
+2026-09-13 10:31:03,296 INFO vt.router wake begin tenant=b container=vt-t11-b
+2026-09-13 10:31:22,922 INFO httpx HTTP Request: GET http://127.0.0.1:28082/health "HTTP/1.1 200 OK"
+2026-09-13 10:31:22,923 INFO vt.router wake ok tenant=b elapsed_s=19.6 started=True state_before=exited
+2026-09-13 10:31:22,948 INFO httpx HTTP Request: POST http://127.0.0.1:28082/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:63226 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12298]
+
+===== router boot 10:31:27 env={'VT_ROUTER_WAKE_TIMEOUT_S': '6.0', 'VT_ROUTER_IDLE_TTL_S': '86400', 'VT_ROUTER_CONNECT_TIMEOUT_S': '5'} =====
+INFO:     Started server process [12950]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:28080 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63364 - "GET /router-healthz HTTP/1.1" 200 OK
+2026-09-13 10:31:27,901 INFO vt.router wake begin tenant=d container=vt-t11-d
+2026-09-13 10:31:33,906 WARNING vt.router wake timed out tenant=d elapsed_s=6.0 started=True state_before=created
+INFO:     127.0.0.1:63365 - "GET /sessions HTTP/1.1" 503 Service Unavailable
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12950]
+
+===== router boot 10:54:01 env={'VT_ROUTER_WAKE_TIMEOUT_S': '420.0', 'VT_ROUTER_IDLE_TTL_S': '86400', 'VT_ROUTER_CONNECT_TIMEOUT_S': '5'} =====
+INFO:     Started server process [39442]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:28080 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53825 - "GET /router-healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53826 - "GET /router-healthz HTTP/1.1" 200 OK
+2026-09-13 10:54:01,760 INFO vt.router route rejected reason=unknown_host host=unregistered.invalid
+INFO:     127.0.0.1:53826 - "GET /sessions HTTP/1.1" 404 Not Found
+2026-09-13 10:54:01,776 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53826 - "GET /sessions HTTP/1.1" 200 OK
+2026-09-13 10:54:01,783 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53826 - "GET /sessions HTTP/1.1" 200 OK
+2026-09-13 10:54:01,794 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53826 - "GET /sessions HTTP/1.1" 200 OK
+2026-09-13 10:54:01,801 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53826 - "GET /sessions HTTP/1.1" 200 OK
+2026-09-13 10:54:01,802 WARNING vt.router route rejected reason=tenant_mismatch token_tenant=a host_tenant=b
+INFO:     127.0.0.1:53826 - "GET /sessions HTTP/1.1" 403 Forbidden
+2026-09-13 10:54:01,808 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions "HTTP/1.1 401 Unauthorized"
+INFO:     127.0.0.1:53826 - "GET /sessions HTTP/1.1" 401 Unauthorized
+2026-09-13 10:54:01,814 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions "HTTP/1.1 401 Unauthorized"
+INFO:     127.0.0.1:53826 - "GET /sessions HTTP/1.1" 401 Unauthorized
+2026-09-13 10:54:06,119 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:53826 - "POST /sessions HTTP/1.1" 201 Created
+2026-09-13 10:54:06,127 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/27156a5f104b/events "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53826 - "GET /sessions/27156a5f104b/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53854 - "GET /router-admin/state HTTP/1.1" 200 OK
+2026-09-13 10:54:06,131 INFO vt.router sse client disconnect tenant=a
+INFO:     127.0.0.1:53854 - "GET /router-admin/state HTTP/1.1" 200 OK
+2026-09-13 10:54:06,415 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:53854 - "POST /sessions HTTP/1.1" 201 Created
+2026-09-13 10:54:06,425 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/1b7f412cc349/events "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53854 - "GET /sessions/1b7f412cc349/events HTTP/1.1" 200 OK
+2026-09-13 10:54:06,455 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions/1b7f412cc349/messages "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53856 - "POST /sessions/1b7f412cc349/messages HTTP/1.1" 200 OK
+2026-09-13 10:54:21,051 INFO vt.router sse client disconnect tenant=a
+2026-09-13 10:54:21,056 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/1b7f412cc349/messages "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53923 - "GET /sessions/1b7f412cc349/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53923 - "POST /router-admin/reclaim HTTP/1.1" 200 OK
+2026-09-13 10:54:23,361 INFO vt.router route rejected reason=unknown_host host=c.t11.tenant.local
+INFO:     127.0.0.1:53923 - "GET /sessions HTTP/1.1" 404 Not Found
+2026-09-13 10:54:23,494 INFO vt.router registry reloaded tenants=3
+INFO:     127.0.0.1:53923 - "GET /router-admin/state HTTP/1.1" 200 OK
+2026-09-13 10:54:23,495 INFO vt.router wake begin tenant=c container=vt-t11-ghost-c
+2026-09-13 10:54:23,804 WARNING vt.router wake unavailable tenant=c reason=container 'vt-t11-ghost-c' not found
+INFO:     127.0.0.1:53923 - "GET /sessions HTTP/1.1" 503 Service Unavailable
+2026-09-13 10:54:23,806 INFO vt.router registry reloaded tenants=2
+INFO:     127.0.0.1:53923 - "GET /router-admin/state HTTP/1.1" 200 OK
+2026-09-13 10:54:23,807 INFO vt.router route rejected reason=unknown_host host=c.t11.tenant.local
+INFO:     127.0.0.1:53923 - "GET /sessions HTTP/1.1" 404 Not Found
+2026-09-13 10:54:30,531 INFO vt.router wake begin tenant=b container=vt-t11-b
+2026-09-13 10:55:11,290 INFO httpx HTTP Request: GET http://127.0.0.1:28082/health "HTTP/1.1 200 OK"
+2026-09-13 10:55:11,291 INFO vt.router wake ok tenant=b elapsed_s=40.8 started=True state_before=exited
+2026-09-13 10:55:11,318 INFO httpx HTTP Request: POST http://127.0.0.1:28082/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:53963 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [39442]
+
+===== router boot 10:55:15 env={'VT_ROUTER_WAKE_TIMEOUT_S': '6.0', 'VT_ROUTER_IDLE_TTL_S': '86400', 'VT_ROUTER_CONNECT_TIMEOUT_S': '5'} =====
+INFO:     Started server process [40416]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:28080 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54211 - "GET /router-healthz HTTP/1.1" 200 OK
+2026-09-13 10:55:16,274 INFO vt.router wake begin tenant=d container=vt-t11-d
+2026-09-13 10:55:22,277 WARNING vt.router wake timed out tenant=d elapsed_s=6.0 started=True state_before=created
+INFO:     127.0.0.1:54212 - "GET /sessions HTTP/1.1" 503 Service Unavailable
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [40416]

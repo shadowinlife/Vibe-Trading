@@ -1,0 +1,127 @@
+FEFEFEFEFEFEFEFE                                                         [100%]
+==================================== ERRORS ====================================
+_______ ERROR at teardown of test_g1_send_message_streams_vt_vocabulary ________
+agent/tests/e2e_engine_bridge/conftest.py:120: in recorder
+    rec.write(rep.passed if rep is not None else False)
+agent/tests/e2e_engine_bridge/riglib.py:279: in write
+    path.write_text(
+E   TypeError: Path.write_text() got an unexpected keyword argument 'ensure_ascii'
+__________ ERROR at teardown of test_g2_backtest_run_dir_and_run_card __________
+agent/tests/e2e_engine_bridge/conftest.py:120: in recorder
+    rec.write(rep.passed if rep is not None else False)
+agent/tests/e2e_engine_bridge/riglib.py:279: in write
+    path.write_text(
+E   TypeError: Path.write_text() got an unexpected keyword argument 'ensure_ascii'
+_________________ ERROR at teardown of test_g3_mid_turn_cancel _________________
+agent/tests/e2e_engine_bridge/conftest.py:120: in recorder
+    rec.write(rep.passed if rep is not None else False)
+agent/tests/e2e_engine_bridge/riglib.py:279: in write
+    path.write_text(
+E   TypeError: Path.write_text() got an unexpected keyword argument 'ensure_ascii'
+_______________ ERROR at teardown of test_g4_concurrent_send_409 _______________
+agent/tests/e2e_engine_bridge/conftest.py:120: in recorder
+    rec.write(rep.passed if rep is not None else False)
+agent/tests/e2e_engine_bridge/riglib.py:279: in write
+    path.write_text(
+E   TypeError: Path.write_text() got an unexpected keyword argument 'ensure_ascii'
+_____ ERROR at teardown of test_g5_refresh_restores_history_and_tool_trail _____
+agent/tests/e2e_engine_bridge/conftest.py:120: in recorder
+    rec.write(rep.passed if rep is not None else False)
+agent/tests/e2e_engine_bridge/riglib.py:279: in write
+    path.write_text(
+E   TypeError: Path.write_text() got an unexpected keyword argument 'ensure_ascii'
+________ ERROR at teardown of test_g6_replay_active_mid_turn_reconnect _________
+agent/tests/e2e_engine_bridge/conftest.py:120: in recorder
+    rec.write(rep.passed if rep is not None else False)
+agent/tests/e2e_engine_bridge/riglib.py:279: in write
+    path.write_text(
+E   TypeError: Path.write_text() got an unexpected keyword argument 'ensure_ascii'
+_________ ERROR at teardown of test_g7_long_silent_tool_beats_watchdog _________
+agent/tests/e2e_engine_bridge/conftest.py:120: in recorder
+    rec.write(rep.passed if rep is not None else False)
+agent/tests/e2e_engine_bridge/riglib.py:279: in write
+    path.write_text(
+E   TypeError: Path.write_text() got an unexpected keyword argument 'ensure_ascii'
+__________ ERROR at teardown of test_g8_upload_analysis_absolute_path __________
+agent/tests/e2e_engine_bridge/conftest.py:120: in recorder
+    rec.write(rep.passed if rep is not None else False)
+agent/tests/e2e_engine_bridge/riglib.py:279: in write
+    path.write_text(
+E   TypeError: Path.write_text() got an unexpected keyword argument 'ensure_ascii'
+=================================== FAILURES ===================================
+__________________ test_g1_send_message_streams_vt_vocabulary __________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:71: in test_g1_send_message_streams_vt_vocabulary
+    sid = open_session(page, api, "T7E2E G1 vocab")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agent/tests/e2e_engine_bridge/riglib.py:203: in open_session
+    assert status == 200, f"create session failed: {status} {body}"
+           ^^^^^^^^^^^^^
+E   AssertionError: create session failed: 201 {'session_id': '00749320904c', 'title': 'T7E2E G1 vocab', 'status': 'active', 'created_at': '2026-09-12T17:40:18.239477+00:00', 'updated_at': '2026-09-12T17:40:18.239485+00:00', 'last_attempt_id': None}
+____________________ test_g2_backtest_run_dir_and_run_card _____________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:182: in test_g2_backtest_run_dir_and_run_card
+    sid = open_session(page, api, "T7E2E G2 backtest")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agent/tests/e2e_engine_bridge/riglib.py:203: in open_session
+    assert status == 200, f"create session failed: {status} {body}"
+           ^^^^^^^^^^^^^
+E   AssertionError: create session failed: 201 {'session_id': '1605463d28ad', 'title': 'T7E2E G2 backtest', 'status': 'active', 'created_at': '2026-09-12T17:40:18.759480+00:00', 'updated_at': '2026-09-12T17:40:18.759489+00:00', 'last_attempt_id': None}
+___________________________ test_g3_mid_turn_cancel ____________________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:244: in test_g3_mid_turn_cancel
+    sid = open_session(page, api, "T7E2E G3 cancel")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agent/tests/e2e_engine_bridge/riglib.py:203: in open_session
+    assert status == 200, f"create session failed: {status} {body}"
+           ^^^^^^^^^^^^^
+E   AssertionError: create session failed: 201 {'session_id': '5bb16fca87d3', 'title': 'T7E2E G3 cancel', 'status': 'active', 'created_at': '2026-09-12T17:40:19.253589+00:00', 'updated_at': '2026-09-12T17:40:19.253597+00:00', 'last_attempt_id': None}
+_________________________ test_g4_concurrent_send_409 __________________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:300: in test_g4_concurrent_send_409
+    sid = open_session(page, api, "T7E2E G4 busy")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agent/tests/e2e_engine_bridge/riglib.py:203: in open_session
+    assert status == 200, f"create session failed: {status} {body}"
+           ^^^^^^^^^^^^^
+E   AssertionError: create session failed: 201 {'session_id': '583ffacd7c45', 'title': 'T7E2E G4 busy', 'status': 'active', 'created_at': '2026-09-12T17:40:19.773005+00:00', 'updated_at': '2026-09-12T17:40:19.773012+00:00', 'last_attempt_id': None}
+_______________ test_g5_refresh_restores_history_and_tool_trail ________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:343: in test_g5_refresh_restores_history_and_tool_trail
+    pytest.fail("g2 state missing — g2 must run before g5 in the same session")
+E   Failed: g2 state missing — g2 must run before g5 in the same session
+___________________ test_g6_replay_active_mid_turn_reconnect ___________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:396: in test_g6_replay_active_mid_turn_reconnect
+    open_session(page, api, "T7E2E G6 replay")
+agent/tests/e2e_engine_bridge/riglib.py:203: in open_session
+    assert status == 200, f"create session failed: {status} {body}"
+           ^^^^^^^^^^^^^
+E   AssertionError: create session failed: 201 {'session_id': 'edbc463448cd', 'title': 'T7E2E G6 replay', 'status': 'active', 'created_at': '2026-09-12T17:40:20.809757+00:00', 'updated_at': '2026-09-12T17:40:20.809764+00:00', 'last_attempt_id': None}
+___________________ test_g7_long_silent_tool_beats_watchdog ____________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:436: in test_g7_long_silent_tool_beats_watchdog
+    open_session(page, api, "T7E2E G7 long-silent")
+agent/tests/e2e_engine_bridge/riglib.py:203: in open_session
+    assert status == 200, f"create session failed: {status} {body}"
+           ^^^^^^^^^^^^^
+E   AssertionError: create session failed: 201 {'session_id': '4c1d637e9ae9', 'title': 'T7E2E G7 long-silent', 'status': 'active', 'created_at': '2026-09-12T17:40:21.300438+00:00', 'updated_at': '2026-09-12T17:40:21.300447+00:00', 'last_attempt_id': None}
+____________________ test_g8_upload_analysis_absolute_path _____________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:515: in test_g8_upload_analysis_absolute_path
+    sid = open_session(page, api, "T7E2E G8 upload")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agent/tests/e2e_engine_bridge/riglib.py:203: in open_session
+    assert status == 200, f"create session failed: {status} {body}"
+           ^^^^^^^^^^^^^
+E   AssertionError: create session failed: 201 {'session_id': 'e03d541df821', 'title': 'T7E2E G8 upload', 'status': 'active', 'created_at': '2026-09-12T17:40:21.792518+00:00', 'updated_at': '2026-09-12T17:40:21.792525+00:00', 'last_attempt_id': None}
+=========================== short test summary info ============================
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g1_send_message_streams_vt_vocabulary
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g2_backtest_run_dir_and_run_card
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g3_mid_turn_cancel
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g4_concurrent_send_409
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g5_refresh_restores_history_and_tool_trail
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g6_replay_active_mid_turn_reconnect
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g7_long_silent_tool_beats_watchdog
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g8_upload_analysis_absolute_path
+ERROR agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g1_send_message_streams_vt_vocabulary
+ERROR agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g2_backtest_run_dir_and_run_card
+ERROR agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g3_mid_turn_cancel
+ERROR agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g4_concurrent_send_409
+ERROR agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g5_refresh_restores_history_and_tool_trail
+ERROR agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g6_replay_active_mid_turn_reconnect
+ERROR agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g7_long_silent_tool_beats_watchdog
+ERROR agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g8_upload_analysis_absolute_path
+8 failed, 8 errors in 5.96s

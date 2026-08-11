@@ -1,0 +1,121 @@
+{
+  "pre_kill": {
+    "session_id": "71e2f63b656f",
+    "attempt_id": "1cadb90f3a9f",
+    "engine_session_id": "ses_f68747cacffeqfzmrJ6QCTEJ2s",
+    "tool_call_seen": true,
+    "seconds_to_tool": 5.5
+  },
+  "t_kill_epoch": 1789248908.50084,
+  "killed_pid": 43728,
+  "serve_dead_after_kill": false,
+  "phase_a": {
+    "observe_s": 120.0,
+    "t_attempt_terminal_s": 8.03,
+    "terminal_status": "failed",
+    "t_im_reply_s": 8.03,
+    "im_reply_content": "Execution failed: engine event stream lost: opencode serve at http://127.0.0.1:14096 presumed dead: 4 consecutive /event cycles delivered no frame (last frame 8.2s ago; a live serve sends server.heartbeat every ~10s)",
+    "im_reply_metadata": {
+      "_channel_runtime": true,
+      "attempt_id": "1cadb90f3a9f",
+      "session_id": "71e2f63b656f",
+      "message_id": "t8-death-1"
+    },
+    "timeline_head": [
+      {
+        "t": 0.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 1.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 2.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 3.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 4.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      }
+    ],
+    "timeline_tail": [
+      {
+        "t": 4.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 5.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 6.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 7.0,
+        "attempt_status": "running",
+        "im_replies": 0
+      },
+      {
+        "t": 8.0,
+        "attempt_status": "failed",
+        "im_replies": 1
+      }
+    ],
+    "timeline_points": 9
+  },
+  "phase_b": {
+    "attempt_status_before": "failed",
+    "load_tool_mapping": "raised OpencodeConnectionError (loud, per wiring contract)",
+    "reconcile": {
+      "reattached": [],
+      "backfilled": [],
+      "interrupted": []
+    },
+    "attempt_status_after": "failed",
+    "assistant_replies_for_attempt": 1,
+    "failed_reply": {
+      "found": true,
+      "metadata": {
+        "status": "failed",
+        "elapsed_ms": 18164
+      },
+      "content_head": "Execution failed: engine event stream lost: opencode serve at http://127.0.0.1:14096 presumed dead: 4 consecutive /event cycles delivered no frame (last frame 8"
+    },
+    "wait_for_reply_s": 0.0,
+    "wait_for_reply_status": "failed"
+  },
+  "phase_c": {
+    "respawned_pid": 48737,
+    "resume_elapsed_s": 12.86,
+    "resume_content": "T8_RESUME_OK",
+    "resume_attempt_status": "completed",
+    "pump_restarted": true
+  },
+  "event_census": [
+    "attempt.completed",
+    "attempt.created",
+    "attempt.failed",
+    "attempt.started",
+    "llm_usage",
+    "message.received",
+    "reasoning_delta",
+    "session.created",
+    "text_delta",
+    "tool_call",
+    "tool_heartbeat"
+  ]
+}

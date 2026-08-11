@@ -1,0 +1,15 @@
+{
+  "session_id": "447fce031337",
+  "title": "mockim:death-chat",
+  "status": "active",
+  "created_at": "2026-09-12T20:05:24.960969+00:00",
+  "updated_at": "2026-09-13T04:05:24.963670",
+  "last_attempt_id": "3a7c6add41cc",
+  "config": {
+    "channel": "mockim",
+    "channel_chat_id": "death-chat",
+    "include_shell_tools": false,
+    "opencode_engine_session_id": "ses_f68c67894ffeDxR21pdGolt1fl"
+  },
+  "owner": null
+}

@@ -1,0 +1,70 @@
+[
+  {
+    "kind": "preview_create",
+    "t": 1789244783.959832,
+    "chat_id": "t9-tool",
+    "stream_id": "5fb5c5e419a1",
+    "preview_id": "preview-2"
+  },
+  {
+    "kind": "preview_edit",
+    "t": 1789244783.9598331,
+    "chat_id": "t9-tool",
+    "stream_id": "5fb5c5e419a1",
+    "preview_id": "preview-2",
+    "chars": 13,
+    "delta_chars": 13
+  },
+  {
+    "kind": "preview_edit",
+    "t": 1789244784.4897861,
+    "chat_id": "t9-tool",
+    "stream_id": "5fb5c5e419a1",
+    "preview_id": "preview-2",
+    "chars": 15,
+    "delta_chars": 2
+  },
+  {
+    "kind": "finalize",
+    "t": 1789244788.162723,
+    "chat_id": "t9-tool",
+    "stream_id": "5fb5c5e419a1",
+    "resuming": true,
+    "text": "Checking now.\n\n",
+    "edits": 2
+  },
+  {
+    "kind": "preview_create",
+    "t": 1789244788.162747,
+    "chat_id": "t9-tool",
+    "stream_id": "5fb5c5e419a1",
+    "preview_id": "preview-3"
+  },
+  {
+    "kind": "preview_edit",
+    "t": 1789244788.1627479,
+    "chat_id": "t9-tool",
+    "stream_id": "5fb5c5e419a1",
+    "preview_id": "preview-3",
+    "chars": 22,
+    "delta_chars": 22
+  },
+  {
+    "kind": "preview_edit",
+    "t": 1789244796.375367,
+    "chat_id": "t9-tool",
+    "stream_id": "5fb5c5e419a1",
+    "preview_id": "preview-3",
+    "chars": 40,
+    "delta_chars": 18
+  },
+  {
+    "kind": "finalize",
+    "t": 1789244796.375372,
+    "chat_id": "t9-tool",
+    "stream_id": "5fb5c5e419a1",
+    "resuming": false,
+    "text": "The command output was `t9-flush-check`.",
+    "edits": 2
+  }
+]

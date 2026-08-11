@@ -1,0 +1,39 @@
+Warning: OPENCODE_SERVER_PASSWORD is not set; server is unsecured.
+timestamp=2026-09-13T01:19:51.579Z level=INFO run=c251005b message=loading path=/tmp/vt-t13-rig/xdg/opencode/config.json
+timestamp=2026-09-13T01:19:51.582Z level=INFO run=c251005b message=loading path=/tmp/vt-t13-rig/xdg/opencode/opencode.json
+timestamp=2026-09-13T01:19:51.599Z level=INFO run=c251005b message=loading path=/tmp/vt-t13-rig/xdg/opencode/opencode.jsonc
+opencode server listening on http://127.0.0.1:14098
+timestamp=2026-09-13T01:20:00.369Z level=INFO run=c251005b message="creating instance" directory=/private/tmp/vt-t13-rig/workspace
+timestamp=2026-09-13T01:20:00.369Z level=INFO run=c251005b message=fromDirectory directory=/private/tmp/vt-t13-rig/workspace
+timestamp=2026-09-13T01:20:00.373Z level=INFO run=c251005b message=bootstrapping directory=/private/tmp/vt-t13-rig/workspace
+timestamp=2026-09-13T01:20:00.376Z level=INFO run=c251005b message=loading path=/tmp/vt-t13-rig/xdg/opencode/config.json
+timestamp=2026-09-13T01:20:00.376Z level=INFO run=c251005b message=loading path=/tmp/vt-t13-rig/xdg/opencode/opencode.json
+timestamp=2026-09-13T01:20:00.381Z level=INFO run=c251005b message=loading path=/tmp/vt-t13-rig/xdg/opencode/opencode.jsonc
+timestamp=2026-09-13T01:20:00.390Z level=INFO run=c251005b message=loading path=/Users/mgong/.opencode/opencode.json
+timestamp=2026-09-13T01:20:00.482Z level=INFO run=c251005b message=loading path=/Users/mgong/.opencode/opencode.jsonc
+timestamp=2026-09-13T01:20:04.336Z level=INFO run=c251005b message="all LSPs are disabled"
+timestamp=2026-09-13T01:20:04.337Z level=INFO run=c251005b message="all formatters are disabled"
+timestamp=2026-09-13T01:20:04.337Z level=INFO run=c251005b message=init
+timestamp=2026-09-13T01:20:04.401Z level=INFO run=c251005b message="fetching index" url=http://127.0.0.1:57944/index.json
+timestamp=2026-09-13T01:20:04.407Z level=WARN run=c251005b message="duplicate skill name" name=data-encryption existing=/Users/mgong/.claude/skills/data-encryption/SKILL.md duplicate=/Users/mgong/.agents/skills/data-encryption/SKILL.md
+timestamp=2026-09-13T01:20:04.407Z level=INFO run=c251005b message=init count=6
+timestamp=2026-09-13T01:20:11.087Z level=INFO run=c251005b message="shell tool using shell" shell=/bin/zsh
+timestamp=2026-09-13T01:20:11.095Z level=INFO run=c251005b message="event connected"
+timestamp=2026-09-13T01:20:15.994Z level=INFO run=c251005b message="event connected"
+timestamp=2026-09-13T01:20:15.996Z level=INFO run=c251005b message=created id=ses_f67a63783ffe8ucx99n7s2vF56 slug=witty-meadow version=1.18.30 projectID=global directory=/private/tmp/vt-t13-rig/workspace path=private/tmp/vt-t13-rig/workspace workspaceID=undefined parentID=undefined title=mockim:t13-confirm-chat agent=undefined model=undefined metadata=undefined permission=undefined cost=0 tokens.input=0 tokens.output=0 tokens.reasoning=0 tokens.cache.read=0 tokens.cache.write=0 time.created=1789262415996 time.updated=1789262415996
+timestamp=2026-09-13T01:20:17.643Z level=INFO run=c251005b message=loop session.id=ses_f67a63783ffe8ucx99n7s2vF56 step=0
+timestamp=2026-09-13T01:20:18.198Z level=INFO run=c251005b message="watcher backend" directory=/private/tmp/vt-t13-rig/workspace platform=darwin backend=fs-events
+timestamp=2026-09-13T01:20:18.212Z level=INFO run=c251005b message="booting location services" directory=/private/tmp/vt-t13-rig/workspace workspaceID=undefined
+timestamp=2026-09-13T01:20:18.218Z level=INFO run=c251005b message="project copy refresh started" projectID=global
+timestamp=2026-09-13T01:20:18.219Z level=INFO run=c251005b message="project copy refresh done" projectID=global updated=[] removed=[]
+timestamp=2026-09-13T01:20:18.318Z level=INFO run=c251005b message=process session.id=ses_f67a63783ffe8ucx99n7s2vF56 messageID=msg_09859ceed001ytADKHbWm0GGxS
+timestamp=2026-09-13T01:20:18.319Z level=INFO run=c251005b message=stream providerID=alibaba-cn modelID=qwen3.8-max session.id=ses_f67a63783ffe8ucx99n7s2vF56 small=false agent="Sisyphus - ultraworker" mode=primary
+timestamp=2026-09-13T01:20:18.326Z level=INFO run=c251005b message="llm runtime selected" llm.runtime=ai-sdk llm.provider=alibaba-cn llm.model=qwen3.8-max
+timestamp=2026-09-13T01:20:27.321Z level=INFO run=c251005b message=evaluated permission=vibe-trading_scheduled_research pattern=* action.permission=* action.action=allow action.pattern=*
+timestamp=2026-09-13T01:20:27.478Z level=INFO run=c251005b message=loop session.id=ses_f67a63783ffe8ucx99n7s2vF56 step=1
+timestamp=2026-09-13T01:20:27.494Z level=INFO run=c251005b message=process session.id=ses_f67a63783ffe8ucx99n7s2vF56 messageID=msg_09859f557001o3cDh60dOSVkzK
+timestamp=2026-09-13T01:20:27.494Z level=INFO run=c251005b message=stream providerID=alibaba-cn modelID=qwen3.8-max session.id=ses_f67a63783ffe8ucx99n7s2vF56 small=false agent="Sisyphus - ultraworker" mode=primary
+timestamp=2026-09-13T01:20:27.497Z level=INFO run=c251005b message="llm runtime selected" llm.runtime=ai-sdk llm.provider=alibaba-cn llm.model=qwen3.8-max
+timestamp=2026-09-13T01:20:30.361Z level=INFO run=c251005b message=loop session.id=ses_f67a63783ffe8ucx99n7s2vF56 step=2
+timestamp=2026-09-13T01:20:30.362Z level=INFO run=c251005b message="exiting loop" session.id=ses_f67a63783ffe8ucx99n7s2vF56
+timestamp=2026-09-13T01:20:39.370Z level=INFO run=c251005b message="removing share" sessionID=ses_f67a63783ffe8ucx99n7s2vF56

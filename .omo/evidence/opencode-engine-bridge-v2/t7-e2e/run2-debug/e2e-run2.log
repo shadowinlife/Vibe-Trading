@@ -1,0 +1,25 @@
+.F..F..F                                                                 [100%]
+=================================== FAILURES ===================================
+____________________ test_g2_backtest_run_dir_and_run_card _____________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:187: in test_g2_backtest_run_dir_and_run_card
+    recorder.check(
+agent/tests/e2e_engine_bridge/riglib.py:266: in check
+    assert condition, f"[{self.group}] assertion failed: {name} ({detail})"
+           ^^^^^^^^^
+E   AssertionError: [test_g2_backtest_run_dir_and_run_card] assertion failed: attempt.completed carries run_dir ({'attempt_id': 'ab2673edf79b', 'status': 'completed', 'summary': '/tmp/vt-e2e-rig/vt-home/runs/aapl_sma_cross_2024h1', 'error': None, 'run_dir': None, 'elapsed_ms': 178569, 'provider': 'alibaba-cn', 'model': 'qwen3.8-max'})
+_______________ test_g5_refresh_restores_history_and_tool_trail ________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:343: in test_g5_refresh_restores_history_and_tool_trail
+    pytest.fail("g2 state missing — g2 must run before g5 in the same session")
+E   Failed: g2 state missing — g2 must run before g5 in the same session
+____________________ test_g8_upload_analysis_absolute_path _____________________
+agent/tests/e2e_engine_bridge/test_web_e2e.py:538: in test_g8_upload_analysis_absolute_path
+    recorder.check("read_file tool_call observed (bare name)", bool(read_calls))
+agent/tests/e2e_engine_bridge/riglib.py:266: in check
+    assert condition, f"[{self.group}] assertion failed: {name} ({detail})"
+           ^^^^^^^^^
+E   AssertionError: [test_g8_upload_analysis_absolute_path] assertion failed: read_file tool_call observed (bare name) ()
+=========================== short test summary info ============================
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g2_backtest_run_dir_and_run_card
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g5_refresh_restores_history_and_tool_trail
+FAILED agent/tests/e2e_engine_bridge/test_web_e2e.py::test_g8_upload_analysis_absolute_path
+3 failed, 5 passed in 393.26s (0:06:33)

@@ -1,0 +1,15 @@
+{
+  "session_id": "96b78ab8f99d",
+  "title": "mockim:t13-confirm-chat",
+  "status": "active",
+  "created_at": "2026-09-13T01:20:15.990516+00:00",
+  "updated_at": "2026-09-13T09:20:15.992795",
+  "last_attempt_id": "be2bc7e75ac2",
+  "config": {
+    "channel": "mockim",
+    "channel_chat_id": "t13-confirm-chat",
+    "include_shell_tools": false,
+    "opencode_engine_session_id": "ses_f67a63783ffe8ucx99n7s2vF56"
+  },
+  "owner": null
+}

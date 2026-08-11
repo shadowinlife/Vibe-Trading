@@ -1,0 +1,297 @@
+.....F                                                                   [100%]
+=================================== FAILURES ===================================
+_____________________ test_scenario2_engine_death_recovery _____________________
+
+rig_state = {'api_key': 'vt-t8-scratch-key', 'gateway_log': '/tmp/vt-t8-rig/gateway.log', 'gateway_pid': 26990, 'gateway_url': 'http://127.0.0.1:18080', ...}
+scratch = {'registry': PosixPath('/Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/.omo/evidence/opencode-engine-bridge-v2/t8-im/engine-sessions.jsonl'), 'root': PosixPath('/tmp/vt-t8-rig/im-stores'), 'serve_url': 'http://127.0.0.1:14096'}
+evidence_dir = PosixPath('/Users/mgong/LegoNanoBot/vibe-trading-engine-bridge/.omo/evidence/opencode-engine-bridge-v2/t8-im')
+
+    @requires_rig
+    def test_scenario2_engine_death_recovery(rig_state, scratch, evidence_dir) -> None:
+        """s2 — live engine death lands the attempt failed <30 s, then resumes.
+    
+        Phase A: SIGKILL the serve mid-turn (inside the silent bash sleep);
+        the driver's bounded liveness budget (T8-1 fix: 4 frameless reconnect
+        cycles / 15 s no-frame window, heartbeats are wire bytes) must trip the
+        pump's ``_fail_all_pending`` path — attempt terminal ``failed`` AND the
+        explicit IM failure reply both inside the plan's <30 s acceptance.
+        Phase B: restart reconciliation against the DEAD engine composes with
+        the live-death fail — startup is loud, ``reconcile()`` is idempotent on
+        the terminal attempt (no clobber to interrupted, no double reply), and
+        the real ``_wait_for_reply`` returns the failed reply immediately.
+        Phase C: respawn the serve (supervisord-restart mode, T10) — the SAME
+        stack's next send restarts the dead pump (``_ensure_pumps``) and a new
+        turn round-trips WITHOUT a gateway restart.
+        """
+        from src.opencode_bridge.driver import OpencodeDriver
+        from src.opencode_bridge.errors import OpencodeBridgeError
+        from src.opencode_bridge.recovery import RecoverableOpencodeSessionService
+        from src.opencode_bridge.translator import EventTranslator
+        from src.channels.runtime import ChannelRuntime
+        from src.channels.bus.queue import MessageBus
+        from src.session.events import EventBus
+        from src.session.store import SessionStore
+    
+        from tests.e2e_engine_bridge.imlib import respawn_serve
+    
+        observe_s = DEATH_OBSERVE_S
+        prompt = (
+            "Use the bash tool to run exactly this command once: `sleep 120 && echo "
+            "T8_DEATH_DONE`. Do not iterate, no todo lists, no subagents."
+        )
+        resume_prompt = (
+            "Reply with exactly T8_RESUME_OK. Do not call any tools, do not "
+            "iterate, no todo lists, no subagents."
+        )
+    
+        async def scenario() -> Dict[str, Any]:
+            stack = await build_im_stack(**_stack_kwargs(scratch, "s2-engine-death"))
+            out: Dict[str, Any] = {}
+            service2 = None
+            try:
+                await stack.mock.inject(
+                    prompt, chat_id="death-chat", message_id="t8-death-1"
+                )
+                t_send = time.time()
+    
+                # Wait until the attempt is running and the model reached the tool
+                # (kill lands mid-turn, inside the silent bash sleep).
+                session_id = None
+                deadline = t_send + 120
+                while time.time() < deadline:
+                    session_id = stack.runtime._session_map.get(
+                        f"{MOCK_CHANNEL_NAME}:death-chat"
+                    )
+                    if (
+                        session_id
+                        and stack.service._active_by_session.get(session_id)
+                        and stack.recorder.times_of("tool_call")
+                    ):
+                        break
+                    await asyncio.sleep(0.5)
+                assert session_id, "[s2] runtime never mapped the chat to a session"
+                attempt_id = stack.service._active_by_session.get(session_id)
+                assert attempt_id, "[s2] no active attempt before the kill"
+                pump_pre_kill = stack.service._pump_task
+                out["pre_kill"] = {
+                    "session_id": session_id,
+                    "attempt_id": attempt_id,
+                    "engine_session_id": engine_session_id_for(stack, session_id),
+                    "tool_call_seen": bool(stack.recorder.times_of("tool_call")),
+                    "seconds_to_tool": round(time.time() - t_send, 1),
+                }
+                await asyncio.sleep(5)  # let the bash tool actually run
+    
+                pid = verified_serve_pid(rig_state)
+                t_kill, _ = kill_serve(rig_state)
+                out["t_kill_epoch"] = t_kill
+                out["killed_pid"] = pid
+                out["serve_dead_after_kill"] = not serve_alive(rig_state)
+    
+                # Phase A — live-death detection window (acceptance: <30 s).
+                timeline: List[Dict[str, Any]] = []
+                t_attempt_terminal: Optional[float] = None
+                terminal_status: Optional[str] = None
+                t_im_reply: Optional[float] = None
+                im_reply: Optional[Any] = None
+                deadline = t_kill + observe_s
+                while time.time() < deadline:
+                    row: Dict[str, Any] = {"t": round(time.time() - t_kill, 1)}
+                    if t_attempt_terminal is None:
+                        st = attempt_status(stack.store, attempt_id)
+                        row["attempt_status"] = st
+                        if st in {"completed", "failed", "cancelled", "interrupted"}:
+                            t_attempt_terminal = time.time()
+                            terminal_status = st
+                    sent = stack.mock.sent_for("death-chat")
+                    row["im_replies"] = len(sent)
+                    if t_im_reply is None and sent:
+                        # Detection granularity = the 1 s poll below.
+                        t_im_reply = time.time()
+                        im_reply = sent[0]
+                    timeline.append(row)
+                    if t_attempt_terminal is not None and t_im_reply is not None:
+                        break
+                    await asyncio.sleep(1.0)
+    
+                out["phase_a"] = {
+                    "observe_s": observe_s,
+                    "t_attempt_terminal_s": (
+                        round(t_attempt_terminal - t_kill, 2)
+                        if t_attempt_terminal
+                        else None
+                    ),
+                    "terminal_status": terminal_status,
+                    "t_im_reply_s": round(t_im_reply - t_kill, 2) if t_im_reply else None,
+                    "im_reply_content": im_reply.content if im_reply else None,
+                    "im_reply_metadata": dict(im_reply.metadata) if im_reply else None,
+                    "timeline_head": timeline[:5],
+                    "timeline_tail": timeline[-5:],
+                    "timeline_points": len(timeline),
+                }
+    
+                # Phase B — restart reconciliation against the dead engine must
+                # COMPOSE with the live-death fail: loud startup, idempotent
+                # reconcile (terminal attempt untouched), immediate IM polling.
+                st_now = attempt_status(stack.store, attempt_id)
+                phase_b: Dict[str, Any] = {"attempt_status_before": st_now}
+                store2 = SessionStore(base_dir=stack.store.base_dir)
+                bus2 = EventBus()
+                bus2.set_loop(asyncio.get_running_loop())
+                driver2 = OpencodeDriver(base_url=rig_state["serve_url"])
+                service2 = RecoverableOpencodeSessionService(
+                    store=store2,
+                    event_bus=bus2,
+                    runs_dir=stack.store.base_dir.parent / "runs",
+                    driver=driver2,
+                    translator=EventTranslator(),
+                )
+                # Wiring contract: startup against a dead engine is LOUD.
+                try:
+                    await driver2.load_tool_mapping()
+                    phase_b["load_tool_mapping"] = "unexpectedly succeeded"
+                except OpencodeBridgeError as exc:
+                    phase_b["load_tool_mapping"] = (
+                        f"raised {type(exc).__name__} (loud, per wiring contract)"
+                    )
+                report = await service2.reconcile()
+                phase_b["reconcile"] = {
+                    "reattached": list(report.reattached),
+                    "backfilled": list(report.backfilled),
+                    "interrupted": list(report.interrupted),
+                }
+                phase_b["attempt_status_after"] = attempt_status(store2, attempt_id)
+                msgs = [
+                    m
+                    for m in store2.get_messages(session_id, limit=200)
+                    if m.role == "assistant" and m.linked_attempt_id == attempt_id
+                ]
+                phase_b["assistant_replies_for_attempt"] = len(msgs)
+                phase_b["failed_reply"] = {
+                    "found": bool(msgs),
+                    "metadata": dict(msgs[-1].metadata) if msgs else None,
+                    "content_head": (msgs[-1].content or "")[:160] if msgs else None,
+                }
+                # IM polling contract: the REAL _wait_for_reply returns the
+                # live-death failed reply immediately (no 600 s budget burn).
+                rt2 = ChannelRuntime(
+                    bus=MessageBus(),
+                    session_service=service2,
+                    manager=None,
+                    session_map_path=scratch["root"] / "s2-rt2-map.json",
+                    reply_timeout_s=30.0,
+                    poll_interval_s=PROD_POLL_INTERVAL_S,
+                )
+                t0 = time.time()
+                waited = await rt2._wait_for_reply(session_id, attempt_id)
+                phase_b["wait_for_reply_s"] = round(time.time() - t0, 2)
+                phase_b["wait_for_reply_status"] = (waited.metadata or {}).get("status")
+                out["phase_b"] = phase_b
+    
+                # Phase C — engine returns (supervisord-restart mode, T10): the
+                # SAME stack resumes on the next send, no gateway restart.
+                phase_c: Dict[str, Any] = {}
+                new_pid = await asyncio.to_thread(respawn_serve, rig_state)
+                phase_c["respawned_pid"] = new_pid
+                t_resume = time.time()
+                await stack.mock.inject(
+                    resume_prompt, chat_id="resume-chat", message_id="t8-resume-1"
+                )
+                resume_reply = await stack.mock.next_for("resume-chat", timeout_s=240)
+                phase_c["resume_elapsed_s"] = round(time.time() - t_resume, 2)
+                phase_c["resume_content"] = resume_reply.content
+                resume_attempt = resume_reply.metadata.get("attempt_id")
+                phase_c["resume_attempt_status"] = (
+                    attempt_status(stack.store, resume_attempt) if resume_attempt else None
+                )
+                phase_c["pump_restarted"] = (
+                    stack.service._pump_task is not pump_pre_kill
+                    and not stack.service._pump_task.done()
+                )
+                out["phase_c"] = phase_c
+                out["event_census"] = stack.recorder.types_seen()
+                return out
+            except BaseException as exc:
+                out["error"] = f"{type(exc).__name__}: {exc}"
+                raise
+            finally:
+                copy_store_artifacts(stack, evidence_dir, "s2-engine-death")
+                write_json(evidence_dir / "s2-engine-death-results.json", out)
+                if service2 is not None:
+                    await service2.aclose()
+                await close_im_stack(stack)
+    
+        result = asyncio.run(scenario())
+    
+        # Phase A — the plan's T8 acceptance: failed <30 s + explicit IM reply.
+        phase_a = result["phase_a"]
+        assert phase_a["t_attempt_terminal_s"] is not None, (
+            f"[s2] attempt never landed terminal within "
+            f"{phase_a['observe_s']}s: {phase_a['timeline_tail']}"
+        )
+        assert phase_a["t_attempt_terminal_s"] < DEATH_ACCEPTANCE_S, (
+            f"[s2] attempt landed at {phase_a['t_attempt_terminal_s']}s "
+            f"(acceptance <{DEATH_ACCEPTANCE_S}s)"
+        )
+        assert phase_a["terminal_status"] == "failed", str(phase_a["terminal_status"])
+        assert phase_a["t_im_reply_s"] is not None, "[s2] no IM failure reply"
+        assert phase_a["t_im_reply_s"] < DEATH_ACCEPTANCE_S, (
+            f"[s2] IM reply at {phase_a['t_im_reply_s']}s "
+            f"(acceptance <{DEATH_ACCEPTANCE_S}s)"
+        )
+        assert (phase_a["im_reply_content"] or "").strip(), "[s2] silent failure reply"
+        assert phase_a["im_reply_metadata"].get("_channel_runtime") is True
+    
+        # Phase B — restart reconcile composes: loud, idempotent, no double terminal.
+        phase_b = result["phase_b"]
+        assert "raised" in phase_b["load_tool_mapping"], phase_b["load_tool_mapping"]
+        assert phase_b["reconcile"] == {
+            "reattached": [],
+            "backfilled": [],
+            "interrupted": [],
+        }, str(phase_b["reconcile"])
+        assert phase_b["attempt_status_after"] == "failed"
+        assert phase_b["assistant_replies_for_attempt"] == 1
+        assert phase_b["wait_for_reply_s"] < 5.0, str(phase_b["wait_for_reply_s"])
+        assert phase_b["wait_for_reply_status"] == "failed"
+    
+        # Phase C — engine returned: stream re-established, new turn works.
+        phase_c = result["phase_c"]
+>       assert "T8_RESUME_OK" in phase_c["resume_content"], phase_c["resume_content"][:120]
+E       AssertionError: Execution failed: OpencodeConnectionError: opencode serve at http://127.0.0.1:14096 unreachable (POST /session): 
+E       assert 'T8_RESUME_OK' in 'Execution failed: OpencodeConnectionError: opencode serve at http://127.0.0.1:14096 unreachable (POST /session): '
+
+agent/tests/test_opencode_bridge_im_parity.py:938: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[rig] spawned pid=31333: /Users/mgong/.opencode/bin/opencode serve --hostname 127.0.0.1 --port 14096 --print-logs --log-level INFO (log: /tmp/vt-t8-rig/serve-respawn.log)
+------------------------------ Captured log call -------------------------------
+WARNING  opencode_bridge:driver.py:303 opencode /event stream failed (peer closed connection without sending complete message body (incomplete chunked read)); reconnecting in 0.50s
+WARNING  opencode_bridge:driver.py:303 opencode /event stream failed (All connection attempts failed); reconnecting in 1.00s
+WARNING  opencode_bridge:driver.py:303 opencode /event stream failed (All connection attempts failed); reconnecting in 2.00s
+WARNING  opencode_bridge:driver.py:303 opencode /event stream failed (All connection attempts failed); reconnecting in 4.00s
+WARNING  opencode_bridge:driver.py:303 opencode /event stream failed (All connection attempts failed); reconnecting in 8.00s
+ERROR    opencode_bridge:service_persistence.py:381 opencode event pump failed: opencode serve at http://127.0.0.1:14096 presumed dead: 4 consecutive /event cycles delivered no frame (last frame 7.7s ago; a live serve sends server.heartbeat every ~10s)
+WARNING  opencode_bridge:service_persistence.py:445 dropping bridge event 'tool_heartbeat': no active attempt matches
+WARNING  opencode_bridge:service_persistence.py:445 dropping bridge event 'tool_heartbeat': no active attempt matches
+WARNING  opencode_bridge:service_persistence.py:445 dropping bridge event 'tool_heartbeat': no active attempt matches
+WARNING  opencode_bridge:service_persistence.py:445 dropping bridge event 'tool_heartbeat': no active attempt matches
+WARNING  opencode_bridge:service_persistence.py:445 dropping bridge event 'tool_heartbeat': no active attempt matches
+WARNING  opencode_bridge:service_persistence.py:445 dropping bridge event 'tool_heartbeat': no active attempt matches
+WARNING  opencode_bridge:service_persistence.py:445 dropping bridge event 'tool_heartbeat': no active attempt matches
+WARNING  opencode_bridge:driver.py:303 opencode /event stream failed (); reconnecting in 0.50s
+ERROR    opencode_bridge:service_persistence.py:381 opencode event pump failed: opencode serve at http://127.0.0.1:14096 presumed dead: no frame received for 20.0s (window 15s = 1.5x the 10s heartbeat cadence; content silence alone never trips this — heartbeats are wire bytes)
+WARNING  opencode_bridge:service_persistence.py:445 dropping bridge event 'tool_heartbeat': no active attempt matches
+WARNING  opencode_bridge:service_persistence.py:445 dropping bridge event 'tool_heartbeat': no active attempt matches
+WARNING  opencode_bridge:service_persistence.py:445 dropping bridge event 'tool_heartbeat': no active attempt matches
+WARNING  opencode_bridge:service.py:425 opencode bridge attempt 414a64f5af41 failed: opencode serve at http://127.0.0.1:14096 unreachable (POST /session):
+============================= slowest 10 durations =============================
+193.93s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario1_long_turn_roundtrip
+49.61s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario2_engine_death_recovery
+20.84s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario3_command_regression
+13.31s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario4_scheduled_briefing
+0.62s call     agent/tests/test_opencode_bridge_im_parity.py::test_scenario0_gateway_seam_preamble
+0.60s call     agent/tests/test_opencode_bridge_im_parity.py::test_channels_zero_diff_since_merge_base
+0.15s teardown agent/tests/test_opencode_bridge_im_parity.py::test_scenario2_engine_death_recovery
+
+(3 durations < 0.005s hidden.  Use -vv to show these durations.)
+1 failed, 5 passed in 279.35s (0:04:39)

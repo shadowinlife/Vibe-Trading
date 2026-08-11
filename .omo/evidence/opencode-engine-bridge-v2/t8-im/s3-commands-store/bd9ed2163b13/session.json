@@ -1,0 +1,15 @@
+{
+  "session_id": "bd9ed2163b13",
+  "title": "mockim:cmd-chat",
+  "status": "active",
+  "created_at": "2026-09-12T20:05:02.745979+00:00",
+  "updated_at": "2026-09-13T04:05:02.751166",
+  "last_attempt_id": "1a66aa674541",
+  "config": {
+    "channel": "mockim",
+    "channel_chat_id": "cmd-chat",
+    "include_shell_tools": false,
+    "opencode_engine_session_id": "ses_f68c6cf5affe7738XNUgHWNFk0"
+  },
+  "owner": null
+}

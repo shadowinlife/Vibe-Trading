@@ -1,0 +1,10 @@
+OK
+[entrypoint] opencode.json rendered from template → /home/opencode/.opencode/opencode.json
+[entrypoint] INFO: CLICKHOUSE_HOST not set, skipping ClickHouse probe
+[entrypoint] VT MCP server OK — 82 tools registered
+[entrypoint] VT_MEMORY=full, VT_MEMORY_MCP_TOOLS=1 → memory tools enabled
+[entrypoint] VT_MEMORY_BASE_DIR=/home/opencode/.vibe-trading/.vt-memory
+[entrypoint] FATAL: API_AUTH_KEY (or VIBE_TRADING_API_KEY) is not set.
+[entrypoint] Fail-closed (D9/B2): the tenant gateway refuses to boot without an API auth key.
+CONTAINER_EXIT=
+no-key boot exit code = 1 (expect 1)

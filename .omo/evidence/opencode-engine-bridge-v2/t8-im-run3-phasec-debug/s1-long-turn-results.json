@@ -1,0 +1,465 @@
+{
+  "checks": {
+    "long turn really long (>= sleep)": {
+      "pass": true,
+      "detail": "193.29s"
+    },
+    "final reply delivered with marker": {
+      "pass": true,
+      "detail": "T8_LONG_DONE"
+    },
+    "outbound shape = markdown-card source (dingtalk.py:672-680 renders content)": {
+      "pass": true,
+      "detail": "{'_channel_runtime': True, 'attempt_id': '8268d0148bc6', 'session_id': '45e9827fa7ef', 'message_id': 't8-long-1'}"
+    },
+    "exactly one assistant message for the attempt": {
+      "pass": true,
+      "detail": "1"
+    },
+    "D6 reply metadata status=completed": {
+      "pass": true,
+      "detail": "{'status': 'completed', 'elapsed_ms': 188928, 'provider': 'alibaba-cn', 'model': 'qwen3.8-max'}"
+    },
+    "D6 metadata elapsed_ms covers the sleep": {
+      "pass": true,
+      "detail": "188928"
+    },
+    "D6 metadata provider/model present": {
+      "pass": true,
+      "detail": "{'status': 'completed', 'elapsed_ms': 188928, 'provider': 'alibaba-cn', 'model': 'qwen3.8-max'}"
+    },
+    "attempt terminal=completed in store": {
+      "pass": true,
+      "detail": "completed"
+    },
+    "D4 polling contract: IM polling saw NO assistant msg during the long silent turn (persisted only at terminal)": {
+      "pass": true,
+      "detail": "polls=94 all_empty=True elapsed=193.29"
+    },
+    "translator alive during silence (tool_heartbeat >= 10)": {
+      "pass": true,
+      "detail": "57"
+    },
+    "session.config carries {channel, channel_chat_id} (runtime.py:329)": {
+      "pass": true,
+      "detail": "{'channel': 'mockim', 'channel_chat_id': 'long-chat', 'include_shell_tools': False, 'opencode_engine_session_id': 'ses_f6884d900ffeeBlKz21xwJ00F5'}"
+    }
+  },
+  "elapsed_s": 193.29,
+  "reply_content": "T8_LONG_DONE",
+  "reply_metadata": {
+    "_channel_runtime": true,
+    "attempt_id": "8268d0148bc6",
+    "session_id": "45e9827fa7ef",
+    "message_id": "t8-long-1"
+  },
+  "event_census": [
+    "attempt.completed",
+    "attempt.created",
+    "attempt.started",
+    "llm_usage",
+    "message.received",
+    "reasoning_delta",
+    "session.created",
+    "text_delta",
+    "tool_call",
+    "tool_heartbeat",
+    "tool_result"
+  ],
+  "heartbeats": {
+    "count": 57,
+    "median_gap_s": 3.0
+  },
+  "assistant_messages_for_attempt": 1,
+  "assistant_metadata": {
+    "status": "completed",
+    "elapsed_ms": 188928,
+    "provider": "alibaba-cn",
+    "model": "qwen3.8-max"
+  },
+  "attempt_status": "completed",
+  "session_config": {
+    "channel": "mockim",
+    "channel_chat_id": "long-chat",
+    "include_shell_tools": false,
+    "opencode_engine_session_id": "ses_f6884d900ffeeBlKz21xwJ00F5"
+  },
+  "poll_log": [
+    {
+      "t": 2.0,
+      "n": 0
+    },
+    {
+      "t": 4.01,
+      "n": 0
+    },
+    {
+      "t": 6.01,
+      "n": 0
+    },
+    {
+      "t": 8.01,
+      "n": 0
+    },
+    {
+      "t": 10.01,
+      "n": 0
+    },
+    {
+      "t": 12.01,
+      "n": 0
+    },
+    {
+      "t": 14.01,
+      "n": 0
+    },
+    {
+      "t": 16.02,
+      "n": 0
+    },
+    {
+      "t": 18.02,
+      "n": 0
+    },
+    {
+      "t": 20.02,
+      "n": 0
+    },
+    {
+      "t": 22.02,
+      "n": 0
+    },
+    {
+      "t": 24.02,
+      "n": 0
+    },
+    {
+      "t": 26.03,
+      "n": 0
+    },
+    {
+      "t": 28.03,
+      "n": 0
+    },
+    {
+      "t": 30.03,
+      "n": 0
+    },
+    {
+      "t": 32.03,
+      "n": 0
+    },
+    {
+      "t": 34.03,
+      "n": 0
+    },
+    {
+      "t": 36.04,
+      "n": 0
+    },
+    {
+      "t": 38.04,
+      "n": 0
+    },
+    {
+      "t": 40.04,
+      "n": 0
+    },
+    {
+      "t": 42.04,
+      "n": 0
+    },
+    {
+      "t": 44.04,
+      "n": 0
+    },
+    {
+      "t": 46.05,
+      "n": 0
+    },
+    {
+      "t": 48.05,
+      "n": 0
+    },
+    {
+      "t": 50.05,
+      "n": 0
+    },
+    {
+      "t": 52.05,
+      "n": 0
+    },
+    {
+      "t": 54.06,
+      "n": 0
+    },
+    {
+      "t": 56.06,
+      "n": 0
+    },
+    {
+      "t": 58.06,
+      "n": 0
+    },
+    {
+      "t": 60.06,
+      "n": 0
+    },
+    {
+      "t": 62.06,
+      "n": 0
+    },
+    {
+      "t": 64.07,
+      "n": 0
+    },
+    {
+      "t": 66.07,
+      "n": 0
+    },
+    {
+      "t": 68.07,
+      "n": 0
+    },
+    {
+      "t": 70.07,
+      "n": 0
+    },
+    {
+      "t": 72.08,
+      "n": 0
+    },
+    {
+      "t": 74.08,
+      "n": 0
+    },
+    {
+      "t": 76.08,
+      "n": 0
+    },
+    {
+      "t": 78.08,
+      "n": 0
+    },
+    {
+      "t": 80.08,
+      "n": 0
+    },
+    {
+      "t": 82.09,
+      "n": 0
+    },
+    {
+      "t": 84.09,
+      "n": 0
+    },
+    {
+      "t": 86.09,
+      "n": 0
+    },
+    {
+      "t": 88.09,
+      "n": 0
+    },
+    {
+      "t": 90.09,
+      "n": 0
+    },
+    {
+      "t": 92.1,
+      "n": 0
+    },
+    {
+      "t": 94.1,
+      "n": 0
+    },
+    {
+      "t": 96.1,
+      "n": 0
+    },
+    {
+      "t": 98.1,
+      "n": 0
+    },
+    {
+      "t": 100.1,
+      "n": 0
+    },
+    {
+      "t": 102.11,
+      "n": 0
+    },
+    {
+      "t": 104.11,
+      "n": 0
+    },
+    {
+      "t": 106.11,
+      "n": 0
+    },
+    {
+      "t": 108.11,
+      "n": 0
+    },
+    {
+      "t": 110.12,
+      "n": 0
+    },
+    {
+      "t": 112.12,
+      "n": 0
+    },
+    {
+      "t": 114.12,
+      "n": 0
+    },
+    {
+      "t": 116.12,
+      "n": 0
+    },
+    {
+      "t": 118.12,
+      "n": 0
+    },
+    {
+      "t": 120.13,
+      "n": 0
+    },
+    {
+      "t": 122.13,
+      "n": 0
+    },
+    {
+      "t": 124.13,
+      "n": 0
+    },
+    {
+      "t": 126.13,
+      "n": 0
+    },
+    {
+      "t": 128.14,
+      "n": 0
+    },
+    {
+      "t": 130.14,
+      "n": 0
+    },
+    {
+      "t": 132.14,
+      "n": 0
+    },
+    {
+      "t": 134.14,
+      "n": 0
+    },
+    {
+      "t": 136.15,
+      "n": 0
+    },
+    {
+      "t": 138.15,
+      "n": 0
+    },
+    {
+      "t": 140.15,
+      "n": 0
+    },
+    {
+      "t": 142.15,
+      "n": 0
+    },
+    {
+      "t": 144.15,
+      "n": 0
+    },
+    {
+      "t": 146.15,
+      "n": 0
+    },
+    {
+      "t": 148.15,
+      "n": 0
+    },
+    {
+      "t": 150.16,
+      "n": 0
+    },
+    {
+      "t": 152.16,
+      "n": 0
+    },
+    {
+      "t": 154.16,
+      "n": 0
+    },
+    {
+      "t": 156.16,
+      "n": 0
+    },
+    {
+      "t": 158.16,
+      "n": 0
+    },
+    {
+      "t": 160.17,
+      "n": 0
+    },
+    {
+      "t": 162.17,
+      "n": 0
+    },
+    {
+      "t": 164.17,
+      "n": 0
+    },
+    {
+      "t": 166.17,
+      "n": 0
+    },
+    {
+      "t": 168.17,
+      "n": 0
+    },
+    {
+      "t": 170.17,
+      "n": 0
+    },
+    {
+      "t": 172.18,
+      "n": 0
+    },
+    {
+      "t": 174.18,
+      "n": 0
+    },
+    {
+      "t": 176.18,
+      "n": 0
+    },
+    {
+      "t": 178.18,
+      "n": 0
+    },
+    {
+      "t": 180.18,
+      "n": 0
+    },
+    {
+      "t": 182.19,
+      "n": 0
+    },
+    {
+      "t": 184.19,
+      "n": 0
+    },
+    {
+      "t": 186.19,
+      "n": 0
+    },
+    {
+      "t": 188.19,
+      "n": 0
+    }
+  ]
+}

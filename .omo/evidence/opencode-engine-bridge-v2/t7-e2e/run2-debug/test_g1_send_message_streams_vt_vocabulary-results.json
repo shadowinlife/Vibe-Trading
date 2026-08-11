@@ -1,0 +1,102 @@
+{
+  "group": "test_g1_send_message_streams_vt_vocabulary",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "SSE vocabulary carries message.received",
+      "pass": true,
+      "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+    },
+    {
+      "assertion": "SSE vocabulary carries attempt.created",
+      "pass": true,
+      "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+    },
+    {
+      "assertion": "SSE vocabulary carries attempt.started",
+      "pass": true,
+      "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+    },
+    {
+      "assertion": "SSE vocabulary carries text_delta",
+      "pass": true,
+      "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+    },
+    {
+      "assertion": "SSE vocabulary carries attempt.completed",
+      "pass": true,
+      "detail": "['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta']"
+    },
+    {
+      "assertion": "every streamed type is frontend-consumed (useSSE knownTypes)",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "assertion": "text_delta payload shape {delta:str}",
+      "pass": true,
+      "detail": "n=2"
+    },
+    {
+      "assertion": "text_delta carries attempt_id stamp",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "reasoning_delta payload shape {tail:str}",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "llm_usage observed",
+      "pass": null,
+      "detail": "{'input_tokens': 262, 'output_tokens': 10, 'total_tokens': 60878, 'iter': 1, 'attempt_id': '26f4828915e7'}"
+    },
+    {
+      "assertion": "attempt.completed enumerates attempt_id (D5)",
+      "pass": true,
+      "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+    },
+    {
+      "assertion": "attempt.completed enumerates status (D5)",
+      "pass": true,
+      "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+    },
+    {
+      "assertion": "attempt.completed enumerates summary (D5)",
+      "pass": true,
+      "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+    },
+    {
+      "assertion": "attempt.completed enumerates run_dir (D5)",
+      "pass": true,
+      "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+    },
+    {
+      "assertion": "attempt.completed enumerates elapsed_ms (D5)",
+      "pass": true,
+      "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+    },
+    {
+      "assertion": "attempt.completed enumerates provider (D5)",
+      "pass": true,
+      "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+    },
+    {
+      "assertion": "attempt.completed enumerates model (D5)",
+      "pass": true,
+      "detail": "['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']"
+    },
+    {
+      "assertion": "attempt.completed status=completed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "answer bubble rendered in UI",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "finished_at": 1789235071.979573
+}

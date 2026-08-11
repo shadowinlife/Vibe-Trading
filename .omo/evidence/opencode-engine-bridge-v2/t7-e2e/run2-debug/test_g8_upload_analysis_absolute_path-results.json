@@ -1,0 +1,22 @@
+{
+  "group": "test_g8_upload_analysis_absolute_path",
+  "passed": false,
+  "assertions": [
+    {
+      "assertion": "upload accepted, attachment chip visible",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "upload-analysis turn completed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "read_file tool_call observed (bare name)",
+      "pass": false,
+      "detail": ""
+    }
+  ],
+  "finished_at": 1789235447.585383
+}

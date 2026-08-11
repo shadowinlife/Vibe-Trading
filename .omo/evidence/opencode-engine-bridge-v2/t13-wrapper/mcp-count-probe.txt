@@ -1,0 +1,10 @@
+# T13 MCP tool-count probe (entrypoint.sh FastMCP list_tools pattern)
+# date: 2026-09-13T01:25:21Z  HEAD: 06507813
+
+## keyless surface (VT_MEMORY_MCP_TOOLS unset, credential gates cleared):
+OK:78
+scheduled_research present: True
+position: 7
+
+## VT_MEMORY_MCP_TOOLS=1 surface:
+OK:83

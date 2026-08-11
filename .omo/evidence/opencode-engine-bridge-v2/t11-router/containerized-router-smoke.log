@@ -1,0 +1,36 @@
+# Containerized router smoke (production shape: router in a container, container-name upstream)
+# image: vt-tenant-router:1.0.0 (built from OpencodeAgent/deploy/router/Dockerfile.router)
+# network: vt-t11-a_default (shared with the tenant container)
+
+registry for the container shape: tenant a upstream = http://vt-t11-a:8080
+
+## docker image
+vt-tenant-router:1.0.0 f30132174ee6 246MB
+
+## GET /router-healthz
+{"status":"ok","tenants":2}
+## GET /sessions (Bearer tenant-a key, Host: a.t11.tenant.local) — response headers
+HTTP/1.1 200 OK
+content-type: application/json
+x-content-type-options: nosniff
+x-vt-tenant: a
+## body (first 160 chars)
+[{"session_id":"a3e86d8e1841","title":"T11 router model turn","status":"active","created_at":"2026-09-13T02:30:42.998872+00:00","updated_at":"2026-09-13T10:30:4
+
+## unregistered Host -> 404
+{"detail":"unknown tenant host","host":"nope.invalid"}
+<- HTTP 404
+## SSE stream headers (session a3e86d8e1841) — curl closed after 6s
+HTTP/1.1 200 OK
+cache-control: no-cache, no-transform
+x-accel-buffering: no
+content-type: text/event-stream
+x-content-type-options: nosniff
+x-vt-tenant: a
+## router container log tail (note the disconnect line = cancel propagation)
+INFO:     172.19.0.1:60832 - "GET /sessions HTTP/1.1" 200 OK
+2026-09-13 02:32:44,472 INFO vt.router route rejected reason=unknown_host host=nope.invalid
+INFO:     172.19.0.1:60848 - "GET /sessions HTTP/1.1" 404 Not Found
+2026-09-13 02:32:44,587 INFO httpx HTTP Request: GET http://vt-t11-a:8080/sessions/a3e86d8e1841/events "HTTP/1.1 200 OK"
+INFO:     172.19.0.1:60854 - "GET /sessions/a3e86d8e1841/events HTTP/1.1" 200 OK
+2026-09-13 02:32:50,589 INFO vt.router sse client disconnect tenant=a

@@ -1,0 +1,23 @@
+=== serve-crash heal (FINAL image) 2026-09-13T00:12:16Z ===
+  before: serve pid=144 gateway pid=25
+  killed serve pid 144 (SIGKILL, mid-idle)
+  [PASS] serve restarted by supervisord: 144 -> 236 (~6s)
+  serve /mcp ready after restart (~3s)
+  gateway pid before=25 after=25
+  [PASS] gateway pid UNCHANGED (no gateway restart — bridge heals via _ensure_pumps)
+=== POST-CRASH heal turn (FINAL image) — bridge must reconnect to restarted serve ===
+  [PASS] gateway /health 200 — HTTP 200
+  [PASS] POST /sessions 201 — HTTP 201
+  session_id=bd83a76a83b9
+  [PASS] POST /messages accepted — HTTP 200
+  SSE events (24): ['attempt.completed', 'attempt.created', 'attempt.started', 'llm_usage', 'message.received', 'reasoning_delta', 'text_delta', 'tool_call', 'tool_result']
+  round-trip wall time: 26.9s
+  [PASS] text_delta streamed — 5 deltas
+  [PASS] MCP tool round-trip (serve->vibe-trading MCP) — 1 call(s): ['list_skills']
+  [PASS] terminal event emitted — attempt.completed
+  [PASS] attempt.completed run-card-capable (summary+run_dir fields) — keys=['attempt_id', 'elapsed_ms', 'error', 'model', 'provider', 'run_dir', 'status', 'summary']
+  [PASS] attempt.completed status ok — status=completed
+  summary: The `list_skills` tool returned 91 finance skills.
+  [PASS] transcript persisted (user+assistant) — roles=['user', 'assistant']
+
+=== WEB CHAT ROUND-TRIP: 9/9 checks passed ===

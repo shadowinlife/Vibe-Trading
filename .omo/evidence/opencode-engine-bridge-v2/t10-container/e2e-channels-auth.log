@@ -1,0 +1,15 @@
+=== channels-status (correct key) ===
+  HTTP 200 [PASS]
+  status: {"running": false, "inbound_queue": 0, "outbound_queue": 0, "session_count": 0, "channels": {"dingtalk": {"name": "dingtalk", "available": true, "display_name": "DingTalk", "error": "", "install_hint": "", "configured": false, "enabled": false, "loaded": false, "running": false}, "discord": {"name":
+
+=== auth: valid key -> 200 on /sessions ===
+  GET /sessions with key: HTTP 200
+=== auth: no key -> 401 ===
+  GET /sessions no key: HTTP 401
+=== B2: API_ALLOWED_HOSTS loopback Host trust (docker exec, loopback peer) ===
+  default localhost Host (allowed by default):
+    HTTP 200
+  custom trusted Host t10.tenant.local (in API_ALLOWED_HOSTS):
+    HTTP 200
+  untrusted Host evil.example (NOT in API_ALLOWED_HOSTS -> expect 403 from loopback guard):
+    HTTP 403

@@ -1,0 +1,35 @@
+{
+  "streaming-on": {
+    "chat_id": "t9-on",
+    "session_id": "eba4d36e568b",
+    "attempt_id": "0ecf925b4177",
+    "status": "completed",
+    "seconds": 15.59,
+    "reply_content": "Welcome to the streaming test! I'm ready whenever you are.",
+    "log_mark": 0,
+    "delta_mark": 0,
+    "adapter_mark": 0
+  },
+  "streaming-off": {
+    "chat_id": "t9-off",
+    "session_id": "36dc90508a42",
+    "attempt_id": "82f0804a3a3c",
+    "status": "completed",
+    "seconds": 12.33,
+    "reply_content": "Welcome to the streaming test — glad to have you here. Let's get started!",
+    "log_mark": 1,
+    "delta_mark": 11,
+    "adapter_mark": 4
+  },
+  "tool-order": {
+    "chat_id": "t9-tool",
+    "session_id": "4f97e0500b4a",
+    "attempt_id": "5fb5c5e419a1",
+    "status": "completed",
+    "seconds": 16.54,
+    "reply_content": "The command output was `t9-flush-check`.",
+    "log_mark": 1,
+    "delta_mark": 24,
+    "adapter_mark": 5
+  }
+}

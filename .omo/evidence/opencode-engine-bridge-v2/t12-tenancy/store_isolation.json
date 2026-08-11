@@ -1,0 +1,16 @@
+{
+  "a": {
+    "disk_dirs": 5,
+    "foreign_dirs": [],
+    "foreign_grep_hits": 0,
+    "own_present": 5,
+    "own_total": 5
+  },
+  "b": {
+    "disk_dirs": 9,
+    "foreign_dirs": [],
+    "foreign_grep_hits": 0,
+    "own_present": 9,
+    "own_total": 9
+  }
+}

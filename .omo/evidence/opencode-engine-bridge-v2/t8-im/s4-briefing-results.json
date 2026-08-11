@@ -1,0 +1,43 @@
+{
+  "checks": {
+    "dispatch returned a session id": {
+      "pass": true,
+      "detail": "4bf289872ba3"
+    },
+    "briefing reached terminal status": {
+      "pass": true,
+      "detail": "still in flight at deadline"
+    },
+    "metadata[\"status\"] == completed on opencode engine": {
+      "pass": true,
+      "detail": "completed"
+    },
+    "briefing text is the session reply": {
+      "pass": true,
+      "detail": "T8_BRIEF_OK"
+    },
+    "receipt is a DeliveryReceipt": {
+      "pass": true,
+      "detail": "<class 'src.channels.bus.events.DeliveryReceipt'>"
+    },
+    "receipt status accepted/sent": {
+      "pass": true,
+      "detail": "DeliveryReceipt(status='accepted', provider_message_id=None, sent_at=1789248897762)"
+    },
+    "brief reached the mock channel verbatim": {
+      "pass": true,
+      "detail": "T8_BRIEF_OK"
+    },
+    "unknown channel raises RuntimeError": {
+      "pass": true,
+      "detail": ""
+    },
+    "missing target raises RuntimeError": {
+      "pass": true,
+      "detail": ""
+    }
+  },
+  "session_id": "4bf289872ba3",
+  "briefing_status": "completed",
+  "briefing_text": "T8_BRIEF_OK"
+}

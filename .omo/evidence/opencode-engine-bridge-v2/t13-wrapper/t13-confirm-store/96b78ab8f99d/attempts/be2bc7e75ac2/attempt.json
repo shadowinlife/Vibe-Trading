@@ -1,0 +1,14 @@
+{
+  "attempt_id": "be2bc7e75ac2",
+  "session_id": "96b78ab8f99d",
+  "parent_attempt_id": null,
+  "status": "completed",
+  "prompt": "Use the scheduled_research tool exactly once with action='propose_create' to propose a scheduled research job with this draft: title 'T13 confirm-flow probe', source kind 'prompt' with prompt 'Summarize today's market moves', schedule expression '0 8 * * *' with timezone 'Asia/Shanghai', end_at null, delivery mode 'in_app'. Then reply with exactly: PROPOSED. Do not create a todo list. Do not spawn subagents. Do not iterate.",
+  "run_dir": null,
+  "summary": "PROPOSED",
+  "react_trace": [],
+  "created_at": "2026-09-13T01:20:15.992370+00:00",
+  "completed_at": "2026-09-13T01:20:38.373399+00:00",
+  "error": null,
+  "metrics": null
+}

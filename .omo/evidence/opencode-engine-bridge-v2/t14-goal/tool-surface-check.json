@@ -1,0 +1,12 @@
+{
+  "rendered_config_goal_tool_denies": [],
+  "rendered_config_deny_count": 15,
+  "mcp_list_tools_goal_tools": [
+    "start_research_goal",
+    "get_research_goal",
+    "add_goal_evidence",
+    "update_research_goal_status"
+  ],
+  "mcp_list_tools_total": 77,
+  "note": "goal tools are NOT in the frozen governance manifest (OpencodeAgent/config/vibe-trading-tools.json, 15 disabled) and are registered on the vt MCP surface (fastmcp Client.list_tools against agent/mcp_server.py with the rig env). On the model surface they appear prefixed vibe-trading_<name>; the D8(1) injection names the bare forms, which are exact suffixes \u2014 unlike D8(2) read_file (disabled = dead letter), no wording fix was required. Empirical confirmation: 12/12 compliance + E2E turn."
+}

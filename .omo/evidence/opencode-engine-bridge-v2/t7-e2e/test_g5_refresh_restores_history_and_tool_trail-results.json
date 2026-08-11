@@ -1,0 +1,47 @@
+{
+  "group": "test_g5_refresh_restores_history_and_tool_trail",
+  "passed": true,
+  "assertions": [
+    {
+      "assertion": "user message persisted",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "transcript keeps RAW user content (no injection block, D3)",
+      "pass": true,
+      "detail": "Run ONE minimal backtest exactly as specified below, then stop. Cost discipline: do NOT iterate, do NOT optimize, do NOT"
+    },
+    {
+      "assertion": "assistant reply persisted with tool_trail",
+      "pass": true,
+      "detail": "n=13"
+    },
+    {
+      "assertion": "tool_trail entries carry tool+status (native shape)",
+      "pass": true,
+      "detail": "[{'tool': 'bash', 'status': 'ok', 'arguments': {'command': 'ls -la /private/tmp/vt-e2e-rig/workspace && ls /tmp/vt-e2e-rig/vt-home 2>/dev/null && which vibe-trading; vibe-trading --help 2>&1 | head -50'}, 'timestamp': 1789236372875, 'call_id': 'call_5391bfec42764bcab9c8c405', 'elapsed_ms': 8680, 'preview': 'total 8\\ndrwxr-xr-x@ 4 mgong  wheel  128  9月 13 01:35 .\\ndrwxr-xr-x@ 9 mgong  wheel  288  9月 13 02:05 ..\\ndrwxr-xr-x@ 3 mgong  wheel   96  9月 13 01:35 .omo\\n-rw-r--r--@ 1 mgong  wheel  268  9月 13 02:04 AG'}, {'tool': 'bash', 'status': 'ok', 'arguments': {'command': 'ls /tmp/vt-e2e-rig/vt-home/runs/ && ls /tmp/vt-e2e-rig/vt-home/runs/safe_run 2>/dev/null; python -c \"import vibe_trading, os; print(os.path.dirname(vibe_trading.__file__))\" 2>/dev/null || /Users/mgong'}, 'timestamp': 1789236389189, 'call_id': 'call_6308fe405ace4a9b8840ead7', 'elapsed_ms': 2690, 'preview': 'aapl_sma_cross_2024h1\\nsafe_run\\nTraceback (most recent call last):\\n  File \"<string>\", line 1, in <module>\\nModuleNotFoundError: No module named \\'vibe_trading\\'\\n'}]"
+    },
+    {
+      "assertion": "reply metadata.run_id matches (run card source)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "run card restored after refresh",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "assertion": "trail has a localizable tool label",
+      "pass": true,
+      "detail": "['bash', 'bash', 'bash', 'bash', 'bash', 'bash', 'bash', 'read', 'bash', 'bash', 'write', 'write', 'bash']"
+    },
+    {
+      "assertion": "tool_trail rebuilt in the UI (step row 'Run command' visible)",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "finished_at": 1789237067.389739
+}

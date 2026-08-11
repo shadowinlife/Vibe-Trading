@@ -1,0 +1,12 @@
+=== Settings persistence (FINAL image) 2026-09-13T00:13:44Z ===
+  PROBE=t10-final-persist-ec69dc2da2ef
+  PUT /settings/data-sources HTTP 200
+  [PASS] value in volume .env (ENV_PATH)
+  --- down (no -v) && up ---
+ Network opencodeagent_default Removed 
+ Container opencode-tenant Started 
+  gateway healthy after ~25s (clean boot, cached volume)
+  'Application startup failed' count: 0
+  [PASS] Settings value SURVIVED down&&up (B5)
+  API tushare configured: True
+  [PASS] seeded provider config persisted (no re-seed)

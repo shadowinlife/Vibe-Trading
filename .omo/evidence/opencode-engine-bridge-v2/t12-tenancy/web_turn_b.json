@@ -1,0 +1,89 @@
+{
+  "tenant": "b",
+  "create_status": 201,
+  "session_id": "3808e2773630",
+  "events": [
+    {
+      "t_rel": 0.017,
+      "event": "message.received",
+      "data": {
+        "message_id": "bc51ac0606d7",
+        "role": "user",
+        "content": "Reply with exactly the single word OK. Do not call any tool, do not iterate, do not spawn subagents."
+      }
+    },
+    {
+      "t_rel": 0.018,
+      "event": "attempt.created",
+      "data": {
+        "attempt_id": "dc5a81e73eb0",
+        "prompt": "Reply with exactly the single word OK. Do not call any tool, do not iterate, do not spawn subagents."
+      }
+    },
+    {
+      "t_rel": 0.018,
+      "event": "attempt.started",
+      "data": {
+        "attempt_id": "dc5a81e73eb0"
+      }
+    },
+    {
+      "t_rel": 4.265,
+      "event": "reasoning_delta",
+      "data": {
+        "tail": "The",
+        "iter": 1,
+        "chars": 3,
+        "attempt_id": "dc5a81e73eb0"
+      }
+    },
+    {
+      "t_rel": 5.027,
+      "event": "text_delta",
+      "data": {
+        "delta": "OK",
+        "iter": 1,
+        "attempt_id": "dc5a81e73eb0"
+      }
+    },
+    {
+      "t_rel": 5.103,
+      "event": "llm_usage",
+      "data": {
+        "input_tokens": 1056,
+        "output_tokens": 4,
+        "total_tokens": 60480,
+        "iter": 1,
+        "attempt_id": "dc5a81e73eb0"
+      }
+    },
+    {
+      "t_rel": 13.118,
+      "event": "attempt.completed",
+      "data": {
+        "attempt_id": "dc5a81e73eb0",
+        "status": "completed",
+        "summary": "OK",
+        "error": null,
+        "run_dir": null,
+        "elapsed_ms": 13054,
+        "provider": "alibaba-cn",
+        "model": "qwen3.8-max"
+      }
+    }
+  ],
+  "stream_status": 200,
+  "message_status": 200,
+  "event_names": [
+    "message.received",
+    "attempt.created",
+    "attempt.started",
+    "reasoning_delta",
+    "text_delta",
+    "llm_usage",
+    "attempt.completed"
+  ],
+  "wall_s": 13.119,
+  "first_event_s": 0.017,
+  "terminal": "attempt.completed"
+}

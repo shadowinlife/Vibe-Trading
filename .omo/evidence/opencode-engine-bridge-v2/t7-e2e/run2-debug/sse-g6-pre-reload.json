@@ -1,0 +1,47 @@
+[
+ {
+  "t": 1789235272238,
+  "kind": "ctor",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]"
+ },
+ {
+  "t": 1789235272314,
+  "kind": "event",
+  "type": "message.received",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "5dee559152bb4a48",
+  "data": "{\"message_id\": \"485ff2591f36\", \"role\": \"user\", \"content\": \"Run this exact bash command: sleep 12. Then reply with exactly REPLAY-OK. Do not create a todo list. Do not spawn subagents.\"}"
+ },
+ {
+  "t": 1789235272314,
+  "kind": "event",
+  "type": "attempt.created",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "a0c2728919e8465c",
+  "data": "{\"attempt_id\": \"c320cae78f50\", \"prompt\": \"Run this exact bash command: sleep 12. Then reply with exactly REPLAY-OK. Do not create a todo list. Do not spawn subagents.\"}"
+ },
+ {
+  "t": 1789235272315,
+  "kind": "event",
+  "type": "attempt.started",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "e88d48ad032e4c8f",
+  "data": "{\"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235274225,
+  "kind": "event",
+  "type": "reasoning_delta",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "9af77b1933b14f39",
+  "data": "{\"tail\": \"The\", \"iter\": 1, \"chars\": 3, \"attempt_id\": \"c320cae78f50\"}"
+ },
+ {
+  "t": 1789235275832,
+  "kind": "event",
+  "type": "tool_call",
+  "url": "/sessions/6873f452c676/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "d3fb3c237951448c",
+  "data": "{\"tool\": \"bash\", \"arguments\": {\"command\": \"sleep 12\", \"timeout\": \"30000\"}, \"iter\": 1, \"call_id\": \"call_ac44b8f6df6d4b1bb6439280\", \"attempt_id\": \"c320cae78f50\"}"
+ }
+]

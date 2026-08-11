@@ -1,0 +1,8 @@
+{
+  "tenant": "b",
+  "trigger": "phase-w-stop",
+  "state_before": "exited",
+  "elapsed_s": 18.501,
+  "status": 201,
+  "session_id": "aac2e1c166f1"
+}

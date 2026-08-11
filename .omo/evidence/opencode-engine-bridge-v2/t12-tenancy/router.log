@@ -1,0 +1,113 @@
+
+===== router boot 12:19:59 env={'VT_ROUTER_WAKE_TIMEOUT_S': '420.0', 'VT_ROUTER_IDLE_TTL_S': '86400', 'VT_ROUTER_CONNECT_TIMEOUT_S': '5'} =====
+INFO:     Started server process [31286]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:28080 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62583 - "GET /router-healthz HTTP/1.1" 200 OK
+2026-09-13 12:20:00,070 WARNING vt.router route rejected reason=tenant_mismatch token_tenant=a host_tenant=b
+INFO:     127.0.0.1:62585 - "GET /sessions HTTP/1.1" 403 Forbidden
+2026-09-13 12:20:00,097 WARNING vt.router route rejected reason=tenant_mismatch token_tenant=b host_tenant=a
+INFO:     127.0.0.1:62585 - "GET /sessions HTTP/1.1" 403 Forbidden
+2026-09-13 12:20:00,127 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:62585 - "POST /sessions HTTP/1.1" 201 Created
+2026-09-13 12:20:00,131 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions "HTTP/1.1 403 Forbidden"
+INFO:     127.0.0.1:62585 - "POST /sessions HTTP/1.1" 403 Forbidden
+2026-09-13 12:20:00,139 INFO httpx HTTP Request: POST http://127.0.0.1:28082/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:62585 - "POST /sessions HTTP/1.1" 201 Created
+2026-09-13 12:20:00,143 INFO httpx HTTP Request: POST http://127.0.0.1:28082/sessions "HTTP/1.1 403 Forbidden"
+INFO:     127.0.0.1:62585 - "POST /sessions HTTP/1.1" 403 Forbidden
+2026-09-13 12:20:00,149 INFO httpx HTTP Request: POST http://127.0.0.1:28081/auth/sse-ticket "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62585 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+2026-09-13 12:20:00,154 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/b7b1d053418f/events?ticket=vNfnlDdwRiEXrXjjL8fUrn40OUjcYFQ1kbqR0DHqMQc "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62585 - "GET /sessions/b7b1d053418f/events?ticket=vNfnlDdwRiEXrXjjL8fUrn40OUjcYFQ1kbqR0DHqMQc HTTP/1.1" 200 OK
+2026-09-13 12:20:00,154 INFO vt.router sse client disconnect tenant=a
+2026-09-13 12:20:00,157 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/b7b1d053418f/events?ticket=vNfnlDdwRiEXrXjjL8fUrn40OUjcYFQ1kbqR0DHqMQc "HTTP/1.1 401 Unauthorized"
+INFO:     127.0.0.1:62590 - "GET /sessions/b7b1d053418f/events?ticket=vNfnlDdwRiEXrXjjL8fUrn40OUjcYFQ1kbqR0DHqMQc HTTP/1.1" 401 Unauthorized
+2026-09-13 12:20:00,162 INFO httpx HTTP Request: POST http://127.0.0.1:28081/auth/sse-ticket "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62592 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+2026-09-13 12:20:00,166 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions/9eb145d8eb6f/events?ticket=76GcfB69Xl-3KzxTTFbLbN-OTLTTEglivIk-a-09dIg "HTTP/1.1 401 Unauthorized"
+INFO:     127.0.0.1:62592 - "GET /sessions/9eb145d8eb6f/events?ticket=76GcfB69Xl-3KzxTTFbLbN-OTLTTEglivIk-a-09dIg HTTP/1.1" 401 Unauthorized
+2026-09-13 12:20:00,173 INFO httpx HTTP Request: POST http://127.0.0.1:28082/auth/sse-ticket "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62593 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+2026-09-13 12:20:00,177 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions/9eb145d8eb6f/events?ticket=7U3gFCnObFQ9-T7Y8j9DYU_byISDF2MEc_oA1xb-ygQ "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62593 - "GET /sessions/9eb145d8eb6f/events?ticket=7U3gFCnObFQ9-T7Y8j9DYU_byISDF2MEc_oA1xb-ygQ HTTP/1.1" 200 OK
+2026-09-13 12:20:00,178 INFO vt.router sse client disconnect tenant=b
+2026-09-13 12:20:00,182 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions/9eb145d8eb6f/events?ticket=7U3gFCnObFQ9-T7Y8j9DYU_byISDF2MEc_oA1xb-ygQ "HTTP/1.1 401 Unauthorized"
+INFO:     127.0.0.1:62594 - "GET /sessions/9eb145d8eb6f/events?ticket=7U3gFCnObFQ9-T7Y8j9DYU_byISDF2MEc_oA1xb-ygQ HTTP/1.1" 401 Unauthorized
+2026-09-13 12:20:00,186 INFO httpx HTTP Request: POST http://127.0.0.1:28082/auth/sse-ticket "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62596 - "POST /auth/sse-ticket HTTP/1.1" 200 OK
+2026-09-13 12:20:00,189 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/b7b1d053418f/events?ticket=No4tF0dFhIteiL0IA660KdUZrDYnYFb82U1GYM-uk3I "HTTP/1.1 401 Unauthorized"
+INFO:     127.0.0.1:62596 - "GET /sessions/b7b1d053418f/events?ticket=No4tF0dFhIteiL0IA660KdUZrDYnYFb82U1GYM-uk3I HTTP/1.1" 401 Unauthorized
+2026-09-13 12:20:00,196 INFO httpx HTTP Request: POST http://127.0.0.1:28081/auth/sse-ticket "HTTP/1.1 401 Unauthorized"
+INFO:     127.0.0.1:62597 - "POST /auth/sse-ticket HTTP/1.1" 401 Unauthorized
+2026-09-13 12:20:00,202 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/b7b1d053418f/events "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62597 - "GET /sessions/b7b1d053418f/events HTTP/1.1" 200 OK
+2026-09-13 12:20:00,203 INFO vt.router sse client disconnect tenant=a
+2026-09-13 12:20:00,209 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions?limit=200 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62598 - "GET /sessions?limit=200 HTTP/1.1" 200 OK
+2026-09-13 12:20:00,214 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions?limit=200 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62598 - "GET /sessions?limit=200 HTTP/1.1" 200 OK
+2026-09-13 12:21:24,193 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/b7b1d053418f/events "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62990 - "GET /sessions/b7b1d053418f/events HTTP/1.1" 200 OK
+2026-09-13 12:21:24,200 INFO httpx HTTP Request: POST http://127.0.0.1:28082/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:62992 - "POST /sessions HTTP/1.1" 201 Created
+2026-09-13 12:21:24,204 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions/3808e2773630/events "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62992 - "GET /sessions/3808e2773630/events HTTP/1.1" 200 OK
+2026-09-13 12:21:24,221 INFO httpx HTTP Request: POST http://127.0.0.1:28082/sessions/3808e2773630/messages "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:62994 - "POST /sessions/3808e2773630/messages HTTP/1.1" 200 OK
+2026-09-13 12:21:37,324 INFO vt.router sse client disconnect tenant=b
+2026-09-13 12:21:37,327 INFO vt.router sse client disconnect tenant=a
+2026-09-13 12:21:57,053 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions?limit=200 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63135 - "GET /sessions?limit=200 HTTP/1.1" 200 OK
+2026-09-13 12:21:57,058 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions?limit=200 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63135 - "GET /sessions?limit=200 HTTP/1.1" 200 OK
+2026-09-13 12:21:57,062 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions?limit=200 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63135 - "GET /sessions?limit=200 HTTP/1.1" 200 OK
+2026-09-13 12:21:57,065 INFO httpx HTTP Request: GET http://127.0.0.1:28082/sessions?limit=200 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63135 - "GET /sessions?limit=200 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [31286]
+
+===== router boot 12:22:03 env={'VT_ROUTER_WAKE_TIMEOUT_S': '420.0', 'VT_ROUTER_IDLE_TTL_S': '15.0', 'VT_ROUTER_CONNECT_TIMEOUT_S': '5'} =====
+INFO:     Started server process [33771]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:28080 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63168 - "GET /router-healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63169 - "POST /router-admin/reclaim HTTP/1.1" 200 OK
+2026-09-13 12:22:10,685 INFO vt.router wake begin tenant=b container=vt-t12-b
+2026-09-13 12:22:30,342 INFO httpx HTTP Request: GET http://127.0.0.1:28082/health "HTTP/1.1 200 OK"
+2026-09-13 12:22:30,344 INFO vt.router wake ok tenant=b elapsed_s=19.7 started=True state_before=exited
+2026-09-13 12:22:30,370 INFO httpx HTTP Request: POST http://127.0.0.1:28082/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:63169 - "POST /sessions HTTP/1.1" 201 Created
+2026-09-13 12:22:30,740 INFO vt.router wake begin tenant=a container=vt-t12-a
+2026-09-13 12:22:49,398 INFO httpx HTTP Request: GET http://127.0.0.1:28081/health "HTTP/1.1 200 OK"
+2026-09-13 12:22:49,399 INFO vt.router wake ok tenant=a elapsed_s=18.7 started=True state_before=exited
+2026-09-13 12:22:49,423 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:63169 - "POST /sessions HTTP/1.1" 201 Created
+2026-09-13 12:22:49,692 INFO httpx HTTP Request: GET http://127.0.0.1:28081/sessions/3232031dd123/events "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63169 - "GET /sessions/3232031dd123/events HTTP/1.1" 200 OK
+2026-09-13 12:22:49,723 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions/3232031dd123/messages "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63465 - "POST /sessions/3232031dd123/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63465 - "POST /router-admin/reclaim HTTP/1.1" 200 OK
+2026-09-13 12:23:00,654 INFO vt.router sse client disconnect tenant=a
+INFO:     127.0.0.1:63465 - "POST /router-admin/reclaim HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63465 - "POST /router-admin/reclaim HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63465 - "POST /router-admin/reclaim HTTP/1.1" 200 OK
+2026-09-13 12:23:14,566 INFO vt.router wake begin tenant=a container=vt-t12-a
+2026-09-13 12:23:33,041 INFO httpx HTTP Request: GET http://127.0.0.1:28081/health "HTTP/1.1 200 OK"
+2026-09-13 12:23:33,042 INFO vt.router wake ok tenant=a elapsed_s=18.5 started=True state_before=exited
+2026-09-13 12:23:33,062 INFO httpx HTTP Request: POST http://127.0.0.1:28081/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:63465 - "POST /sessions HTTP/1.1" 201 Created
+2026-09-13 12:23:33,637 INFO vt.router wake begin tenant=b container=vt-t12-b
+2026-09-13 12:23:52,117 INFO httpx HTTP Request: GET http://127.0.0.1:28082/health "HTTP/1.1 200 OK"
+2026-09-13 12:23:52,118 INFO vt.router wake ok tenant=b elapsed_s=18.5 started=True state_before=exited
+2026-09-13 12:23:52,143 INFO httpx HTTP Request: POST http://127.0.0.1:28082/sessions "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:63465 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [33771]

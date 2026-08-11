@@ -1,0 +1,14 @@
+{
+  "attempt_id": "701fd46c05e9",
+  "session_id": "cbea36f08110",
+  "parent_attempt_id": null,
+  "status": "completed",
+  "prompt": "Use the bash tool to run exactly this command once: `sleep 170 && echo T8_LONG_DONE`. Do not iterate, do not create todo lists, no subagents. After it finishes, reply with exactly the command's output text.",
+  "run_dir": null,
+  "summary": "T8_LONG_DONE",
+  "react_trace": [],
+  "created_at": "2026-09-12T19:38:31.024869+00:00",
+  "completed_at": "2026-09-12T19:41:37.490864+00:00",
+  "error": null,
+  "metrics": null
+}

@@ -1,0 +1,39 @@
+[
+ {
+  "t": 1789235269784,
+  "kind": "ctor",
+  "url": "/sessions/66cebb8f0b30/events?replay=active&ticket=[REDACTED]"
+ },
+ {
+  "t": 1789235269856,
+  "kind": "event",
+  "type": "message.received",
+  "url": "/sessions/66cebb8f0b30/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "f98f967604184bdd",
+  "data": "{\"message_id\": \"6069948349af\", \"role\": \"user\", \"content\": \"Run this exact bash command: sleep 20. Then reply with exactly B409-DONE. Do not create a todo list. Do not spawn subagents.\"}"
+ },
+ {
+  "t": 1789235269856,
+  "kind": "event",
+  "type": "attempt.created",
+  "url": "/sessions/66cebb8f0b30/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "504f69e76e7946c0",
+  "data": "{\"attempt_id\": \"80236d76948b\", \"prompt\": \"Run this exact bash command: sleep 20. Then reply with exactly B409-DONE. Do not create a todo list. Do not spawn subagents.\"}"
+ },
+ {
+  "t": 1789235269856,
+  "kind": "event",
+  "type": "attempt.started",
+  "url": "/sessions/66cebb8f0b30/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "d9fe0947cd144a10",
+  "data": "{\"attempt_id\": \"80236d76948b\"}"
+ },
+ {
+  "t": 1789235270423,
+  "kind": "event",
+  "type": "attempt.cancelled",
+  "url": "/sessions/66cebb8f0b30/events?replay=active&ticket=[REDACTED]",
+  "lastEventId": "733438be4cf24391",
+  "data": "{\"attempt_id\": \"80236d76948b\", \"status\": \"cancelled\", \"summary\": null, \"error\": \"cancelled by user\", \"run_dir\": null, \"elapsed_ms\": 586}"
+ }
+]
