@@ -251,6 +251,217 @@ class TushareFundamentalProvider:
         return pd.DataFrame(columns=columns)
 
 
+# ---------------------------------------------------------------------------
+# ClickHouse → Tushare table name mapping
+# ---------------------------------------------------------------------------
+
+_CH_TABLE_MAP: dict[str, str] = {
+    "balancesheet": "fin_balance",
+    "cashflow": "fin_cashflow",
+    "fina_indicator": "fin_indicator",
+    "income": "fin_income",
+}
+
+
+class ClickHouseFundamentalProvider:
+    """ClickHouse-backed fundamental data provider with PIT safeguards.
+
+    Queries the ``fin_balance``, ``fin_income``, ``fin_cashflow``, and
+    ``fin_indicator`` tables in ClickHouse, applies the same point-in-time
+    filtering and deduplication logic as :class:`TushareFundamentalProvider`,
+    and falls back to Tushare when ClickHouse is unreachable.
+
+    Connection parameters are read from :func:`get_env_config().data`.
+    """
+
+    def __init__(self) -> None:
+        self._ch_connector = self._build_connector()
+        self._fallback: TushareFundamentalProvider | None = None
+
+    # ------------------------------------------------------------------
+    # Public interface (same contract as TushareFundamentalProvider)
+    # ------------------------------------------------------------------
+
+    def list_tables(self) -> list[str]:
+        """Return supported fundamental tables in stable order."""
+        return sorted(_SCHEMAS)
+
+    def describe_table(self, table: str) -> TableSchema:
+        """Return schema metadata for a supported table."""
+        try:
+            return _SCHEMAS[table]
+        except KeyError as exc:
+            raise UnknownTableError(f"Unsupported fundamental table: {table}") from exc
+
+    def query_fundamentals(
+        self,
+        table: str,
+        codes: Iterable[str],
+        *,
+        as_of: str | pd.Timestamp,
+        periods: Iterable[str] | None = None,
+        fields: Iterable[str] | None = None,
+    ) -> pd.DataFrame:
+        """Query a fundamental table and filter out rows unpublished by ``as_of``.
+
+        Same contract as :meth:`TushareFundamentalProvider.query_fundamentals`.
+        """
+        result = self._query_pit_cut(table, codes, as_of=as_of, periods=periods, fields=fields)
+        if result.empty:
+            return result
+
+        schema = self.describe_table(table)
+        pit_column = schema.point_in_time_column
+        if pit_column not in result.columns or result[pit_column].isna().all():
+            pit_column = "ann_date"
+
+        pit_values = result[pit_column]
+        if pit_column != "ann_date" and "ann_date" in result.columns:
+            pit_values = pit_values.where(pit_values.notna(), result["ann_date"])
+        result = result.copy()
+        result["_eff_pit_date"] = pit_values.map(_parse_tushare_date)
+
+        result = result.sort_values("_eff_pit_date", kind="stable")
+        result = result.drop_duplicates(subset=["ts_code", "end_date"], keep="last")
+        result = result.drop(columns=["_eff_pit_date"])
+
+        output_columns = self._output_columns(schema, result, fields)
+        result = result.loc[:, output_columns].sort_values(["ts_code", "end_date"]).reset_index(drop=True)
+        return result
+
+    def _query_pit_cut(
+        self,
+        table: str,
+        codes: Iterable[str],
+        *,
+        as_of: str | pd.Timestamp,
+        periods: Iterable[str] | None = None,
+        fields: Iterable[str] | None = None,
+    ) -> pd.DataFrame:
+        """Return all rows visible by ``as_of`` without deduplication.
+
+        Same contract as :meth:`TushareFundamentalProvider._query_pit_cut`.
+        """
+        schema = self.describe_table(table)
+        requested_periods = set(periods or [])
+
+        try:
+            result = self._fetch_from_clickhouse(table, codes, schema, as_of, requested_periods)
+        except ConnectionError:
+            result = self._fallback_query_pit_cut(table, codes, schema, as_of, requested_periods, fields)
+
+        if result.empty:
+            return self._empty_frame(schema, fields)
+
+        output_columns = self._output_columns(schema, result, fields)
+        return result.loc[:, output_columns].reset_index(drop=True)
+
+    # ------------------------------------------------------------------
+    # ClickHouse query
+    # ------------------------------------------------------------------
+
+    def _fetch_from_clickhouse(
+        self,
+        table: str,
+        codes: Iterable[str],
+        schema: TableSchema,
+        as_of: str | pd.Timestamp,
+        requested_periods: set[str],
+    ) -> pd.DataFrame:
+        """Fetch and PIT-filter raw rows from ClickHouse."""
+        ch_table = _CH_TABLE_MAP[table]
+        as_of_date = _parse_tushare_date(as_of)
+
+        frames: list[pd.DataFrame] = []
+        for code in codes:
+            sql = f"""
+                SELECT *
+                FROM {ch_table}
+                WHERE ts_code = {{ts_code:String}}
+                ORDER BY end_date
+            """
+            frame = self._ch_connector.query(sql, params={"param_ts_code": code})
+            if frame is not None and not frame.empty:
+                frames.append(frame.copy())
+
+        if not frames:
+            return pd.DataFrame()
+
+        result = pd.concat(frames, ignore_index=True)
+        self._validate_schema(schema, result)
+
+        if requested_periods:
+            result = result[result["end_date"].astype(str).isin(requested_periods)]
+
+        # Apply PIT filter: keep rows where effective announcement date ≤ as_of
+        pit_column = schema.point_in_time_column
+        if pit_column not in result.columns or result[pit_column].isna().all():
+            pit_column = "ann_date"
+
+        pit_values = result[pit_column]
+        if pit_column != "ann_date" and "ann_date" in result.columns:
+            pit_values = pit_values.where(pit_values.notna(), result["ann_date"])
+        pit_dates = pit_values.map(_parse_tushare_date)
+        result = result[pit_dates <= as_of_date]
+
+        return result
+
+    def _fallback_query_pit_cut(
+        self,
+        table: str,
+        codes: Iterable[str],
+        schema: TableSchema,
+        as_of: str | pd.Timestamp,
+        requested_periods: set[str],
+        fields: Iterable[str] | None,
+    ) -> pd.DataFrame:
+        """Fall back to Tushare when ClickHouse is unavailable."""
+        if self._fallback is None:
+            self._fallback = TushareFundamentalProvider()
+        return self._fallback._query_pit_cut(
+            table, codes, as_of=as_of, periods=sorted(requested_periods) if requested_periods else None, fields=fields,
+        )
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _build_connector() -> Any:
+        from src.clickhouse_connector import ClickHouseConnector
+        from src.config.accessor import get_env_config
+
+        cfg = get_env_config().data
+        return ClickHouseConnector(
+            host=cfg.clickhouse_host,
+            port=cfg.clickhouse_port,
+            user=cfg.clickhouse_user,
+            password=cfg.clickhouse_password,
+            database=cfg.clickhouse_database,
+        )
+
+    def _validate_schema(self, schema: TableSchema, frame: pd.DataFrame) -> None:
+        missing = [column for column in schema.required_columns if column not in frame.columns]
+        if missing:
+            raise SchemaValidationError(f"{schema.name} missing required columns: {', '.join(missing)}")
+
+    def _output_columns(
+        self,
+        schema: TableSchema,
+        frame: pd.DataFrame,
+        fields: Iterable[str] | None,
+    ) -> list[str]:
+        identity = ["ts_code", "end_date", "ann_date"]
+        if schema.point_in_time_column in frame.columns and schema.point_in_time_column not in identity:
+            identity.append(schema.point_in_time_column)
+        wanted = identity + list(fields or [])
+        return [column for column in dict.fromkeys(wanted) if column in frame.columns]
+
+    def _empty_frame(self, schema: TableSchema, fields: Iterable[str] | None) -> pd.DataFrame:
+        columns = self._output_columns(schema, pd.DataFrame(columns=[c.name for c in schema.columns]), fields)
+        return pd.DataFrame(columns=columns)
+
+
 def _parse_tushare_date(value: str | pd.Timestamp) -> pd.Timestamp:
     """Parse Tushare YYYYMMDD strings and common timestamp/date strings."""
     if isinstance(value, pd.Timestamp):

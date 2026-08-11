@@ -206,6 +206,17 @@ class DragonTigerTool(BaseTool):
         code = _bare_code(code_arg) if isinstance(code_arg, str) and code_arg.strip() else None
 
         try:
+            from src.tools.clickhouse_fallbacks import fetch_dragon_tiger_ch
+
+            data = fetch_dragon_tiger_ch(trade_date, code)
+            return json.dumps(
+                {"ok": True, "market": "a_share", "source": "clickhouse", "data": data},
+                ensure_ascii=False,
+            )
+        except Exception:
+            pass
+
+        try:
             data = self._collect(trade_date, code)
         except Exception as exc:  # noqa: BLE001 - surface any fetch failure as an envelope
             logger.warning("dragon-tiger fetch failed for %s/%s: %s", trade_date, code, exc)

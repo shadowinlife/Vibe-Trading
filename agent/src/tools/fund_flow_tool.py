@@ -97,6 +97,15 @@ def _fetch_symbol_flow(symbol: str, *, period: str, days: int) -> dict[str, Any]
         A per-symbol result dict carrying either ``rows`` on success or an
         ``error`` string on failure. Never raises for a single symbol.
     """
+    # Try ClickHouse first for daily A-share fund flow.
+    if period == "daily":
+        try:
+            from src.tools.clickhouse_fallbacks import fetch_fund_flow_ch
+
+            return fetch_fund_flow_ch(symbol, days=days)
+        except Exception:
+            pass  # Fall through to Eastmoney → tushare fallback chain.
+
     secid = resolve_secid(symbol)
     if secid is None:
         if period == "daily":
