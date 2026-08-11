@@ -43,6 +43,20 @@
 | **⑤ F4 中间件部分** | MemoryGuard | `memory_guard.py` 整文件新增；`mcp_server.py` 注册段 | **必须先解决 D1（加 env 门控开关）与 D2（dedup/增长）**，否则过不了社区评审 |
 | ✗ F5 | ClickHouse | — | 暂不回流（个人部署独有） |
 
+### 2.4 已知上游缺陷（mymain 跟踪）
+
+| 缺陷 | 上游 Issue | mymain 状态 |
+|---|---|---|
+| A 股回退链内 volume 单位不一致（tencent/mootdx/eastmoney/tushare=手 vs baostock=股，相差 100x）+ 全链路无单位元数据 | [HKUDS/Vibe-Trading#1062](https://github.com/HKUDS/Vibe-Trading/issues/1062) | 继承存在；F5 部分缓解；shadowinlife 已认领修复 |
+
+**#1062 详情（2026-08-11 实证）**：
+
+- **实证证据**：`600519.SH` 2026-07-31，`tencent_loader` 返回 volume=55,128（手），`baostock_loader` 返回 volume=5,512,752（股），比值恰为 100.0x；经成交额交叉验证（5,512,752 股 × ¥1,350.60 ≈ 74 亿元）确认为同一物理量的不同单位
+- **根因**：5 个 A 股 loader 对 volume 零单位换算、原生透传（`tencent_loader.py` L146 / `baostock_loader.py` L153 / `mootdx_loader.py` L213 / `tushare.py` L240）；`market_data.py` 的 envelope 与 `_provenance` 均无单位元数据；`get_market_data` 工具描述亦无单位说明
+- **影响**：回退链按可用性动态选源 → 同一查询的 volume 单位非确定（手/股随选源变化）；批量查询中部分标的降级到 baostock 会产生混合单位数据集，静默污染跨标的成交量分析；MCP 路径（opencode/Claude Desktop 等外部客户端）完全无法获知单位
+- **F5 的隐性缓解**：mymain 的 ClickHouse 位于链首，`stk_factor_pro.vol` 为 tushare 口径（=手），与链首 tencent 一致 —— CH 可达时 volume 单位行为被锁定为「手」（确定性）；但 CH 不可达且链首源被限流时，链尾 baostock=股 的不一致仍然存在
+- **修复跟踪**：shadowinlife 已在 #1062 声明认领；修复分支 `fix/volume-unit-consistency` 基于上游 main（`1bf1d8b4`）。上游修复合入后，rebase 时同步更新本节并在 §2.2 登记
+
 ## 3. E2E 验证方式
 
 ### 3.1 测试套件与静态门禁（conda env `legonanobot`，macOS arm64 / Python 3.12）
