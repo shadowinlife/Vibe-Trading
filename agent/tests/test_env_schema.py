@@ -33,8 +33,11 @@ from src.config.env_schema import (
     DataConfig,
     EnvConfig,
     LLMConfig,
+    MemoryConfig,
     PathConfig,
     SwarmConfig,
+    _MEMORY_FLAG_ALIASES,
+    _PRESET_FLAGS,
     _parse_env_bool,
 )
 
@@ -545,3 +548,66 @@ class TestSubModelDirectConstruction:
     def test_extra_fields_ignored(self) -> None:
         cfg = LLMConfig(unknown_field="ignored")
         assert not hasattr(cfg, "unknown_field")
+
+
+# ===================================================================
+# TestMemoryConfigFlags — presets, aliases, and new T1b/T4 flags
+# ===================================================================
+
+
+class TestMemoryConfigFlags:
+    """Verify memory preset/alias consistency and the new feature flags."""
+
+    def test_preset_keys_match_alias_keys(self) -> None:
+        """Every preset dict must define exactly the aliased flag fields.
+
+        Guards against drift: adding a flag to _MEMORY_FLAG_ALIASES without
+        updating all _PRESET_FLAGS presets (or vice versa) breaks the
+        _apply_preset validator.
+        """
+        alias_keys = set(_MEMORY_FLAG_ALIASES)
+        for preset_name, flags in _PRESET_FLAGS.items():
+            assert set(flags) == alias_keys, f"preset {preset_name!r} drifted"
+
+    def test_alias_keys_are_model_fields(self) -> None:
+        """Every aliased flag must exist as a MemoryConfig field."""
+        for field_name, env_alias in _MEMORY_FLAG_ALIASES.items():
+            assert field_name in MemoryConfig.model_fields
+            assert MemoryConfig.model_fields[field_name].alias == env_alias
+
+    def test_new_flags_default_off(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("VT_MEMORY", raising=False)
+        monkeypatch.delenv("VT_MEMORY_REFLECTIONS", raising=False)
+        monkeypatch.delenv("VT_MEMORY_MCP_TOOLS", raising=False)
+        cfg = MemoryConfig()
+        assert cfg.reflections_enabled is False
+        assert cfg.mcp_tools_enabled is False
+
+    def test_full_preset_enables_reflections_but_not_mcp_tools(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("VT_MEMORY", "full")
+        monkeypatch.delenv("VT_MEMORY_REFLECTIONS", raising=False)
+        monkeypatch.delenv("VT_MEMORY_MCP_TOOLS", raising=False)
+        cfg = MemoryConfig()
+        assert cfg.reflections_enabled is True
+        # MCP tool exposure is never implied by a preset.
+        assert cfg.mcp_tools_enabled is False
+
+    def test_reflections_off_in_off_and_on_presets(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("VT_MEMORY_REFLECTIONS", raising=False)
+        for preset in ("off", "on"):
+            monkeypatch.setenv("VT_MEMORY", preset)
+            assert MemoryConfig().reflections_enabled is False
+
+    def test_explicit_env_flags_override_preset(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("VT_MEMORY", "off")
+        monkeypatch.setenv("VT_MEMORY_REFLECTIONS", "1")
+        monkeypatch.setenv("VT_MEMORY_MCP_TOOLS", "1")
+        cfg = MemoryConfig()
+        assert cfg.reflections_enabled is True
+        assert cfg.mcp_tools_enabled is True
