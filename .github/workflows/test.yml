@@ -53,6 +53,9 @@ jobs:
       - name: Test environment variable gate
         run: pytest tools/test_ci_env_var_gate.py -q
 
+      - name: Test ClickHouse schema gates
+        run: pytest tools/test_ci_clickhouse_comments_gate.py tools/test_clickhouse_export_ddl.py -q
+
       - name: Syntax check
         run: |
           cd agent
