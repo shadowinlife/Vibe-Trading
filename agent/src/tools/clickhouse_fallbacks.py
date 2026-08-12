@@ -4,6 +4,11 @@ Each function mirrors the corresponding tushare_fallbacks function's signature a
 return dict shape. When ClickHouse is unreachable or returns no data, the call is
 transparently forwarded to the tushare fallback so the caller always receives a
 compatible envelope.
+
+Unit conversions are metadata-driven (CLICKHOUSE_ITERATION_PLAN.md P1.4): the
+factors come from ``src.clickhouse_units`` (``schema/clickhouse/comments.yaml``)
+with transition assertions, so a COMMENT edit that breaks the verified contract
+fails loudly instead of silently rescaling data.
 """
 
 from __future__ import annotations
@@ -11,6 +16,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from src import clickhouse_units
 from src.clickhouse_connector import ClickHouseConnector
 from src.tools import tushare_fallbacks
 
@@ -55,6 +61,10 @@ def fetch_fund_flow_ch(symbol: str, *, days: int) -> dict[str, Any]:
 
     Returns the same dict shape as ``tushare_fallbacks.fetch_fund_flow``:
     ``{symbol, ts_code, source, rows: [{timestamp, main, small, medium, large, super_large}]}``.
+
+    Amount columns are stored in 万元 (10k CNY) and emitted in 元; the ×10⁴
+    factor is read from the unit registry (comments.yaml) and asserted against
+    the verified contract (``clickhouse_units.moneyflow_amount_to_yuan_factor``).
     """
     ts_code = _ts_code(symbol)
     try:
@@ -70,16 +80,25 @@ def fetch_fund_flow_ch(symbol: str, *, days: int) -> dict[str, Any]:
         )
         return tushare_fallbacks.fetch_fund_flow(symbol, days=days)
 
+    wan_to_yuan = clickhouse_units.moneyflow_amount_to_yuan_factor()
     rows: list[dict[str, Any]] = []
     for _, row in df.iterrows():
         rows.append(
             {
                 "timestamp": _dashed_date(row.get("trade_date")),
-                "main": (_to_float(row.get("net_mf_amount")) or 0.0) * 10_000,
-                "small": _net_amount(row, "buy_sm_amount", "sell_sm_amount"),
-                "medium": _net_amount(row, "buy_md_amount", "sell_md_amount"),
-                "large": _net_amount(row, "buy_lg_amount", "sell_lg_amount"),
-                "super_large": _net_amount(row, "buy_elg_amount", "sell_elg_amount"),
+                "main": (_to_float(row.get("net_mf_amount")) or 0.0) * wan_to_yuan,
+                "small": _net_amount(
+                    row, "buy_sm_amount", "sell_sm_amount", wan_to_yuan
+                ),
+                "medium": _net_amount(
+                    row, "buy_md_amount", "sell_md_amount", wan_to_yuan
+                ),
+                "large": _net_amount(
+                    row, "buy_lg_amount", "sell_lg_amount", wan_to_yuan
+                ),
+                "super_large": _net_amount(
+                    row, "buy_elg_amount", "sell_elg_amount", wan_to_yuan
+                ),
             }
         )
     rows.sort(key=lambda item: item.get("timestamp") or "")
@@ -87,13 +106,13 @@ def fetch_fund_flow_ch(symbol: str, *, days: int) -> dict[str, Any]:
     return {"symbol": symbol, "ts_code": ts_code, "source": "clickhouse", "rows": rows}
 
 
-def _net_amount(row: Any, buy_key: str, sell_key: str) -> float | None:
-    """Compute net amount from buy/sell columns, converting from 10k CNY to CNY."""
+def _net_amount(row: Any, buy_key: str, sell_key: str, factor: float) -> float | None:
+    """Compute net amount from buy/sell columns, converting 10k CNY to CNY."""
     buy = _to_float(row.get(buy_key))
     sell = _to_float(row.get(sell_key))
     if buy is None and sell is None:
         return None
-    return ((buy or 0.0) - (sell or 0.0)) * 10_000
+    return ((buy or 0.0) - (sell or 0.0)) * factor
 
 
 # ---------------------------------------------------------------------------
@@ -234,6 +253,14 @@ def fetch_northbound_flow_ch(*, lookback_days: int) -> dict[str, Any]:
 
     Returns the same dict shape as ``tushare_fallbacks.fetch_northbound_flow``:
     ``{unit, lookback_days, realtime: {shanghai_connect, shenzhen_connect, total}, history: [{...}]}``.
+
+    Unit correction (P1.4): ``hgt`` / ``sgt`` / ``north_money`` are stored in
+    万元 (10k CNY) and the envelope unit is 万元, so values pass through with
+    factor 1. The legacy ×100 was a confirmed 100x data bug — verified
+    2026-08-12 against live data (CH 20260722 north_money=375048.34 equals the
+    tushare live value, ≈37.5亿元, the correct northbound magnitude) — and has
+    been removed. The factor stays registry-asserted so a COMMENT edit that
+    changes the raw unit fails loudly.
     """
     try:
         ch = ClickHouseConnector()
@@ -246,6 +273,7 @@ def fetch_northbound_flow_ch(*, lookback_days: int) -> dict[str, Any]:
         logger.debug("CH northbound_flow returned empty, falling back to tushare")
         return tushare_fallbacks.fetch_northbound_flow(lookback_days=lookback_days)
 
+    raw_to_wan = clickhouse_units.northbound_raw_to_wan_factor()
     history: list[dict[str, Any]] = []
     for _, row in df.iterrows():
         shanghai = _to_float(row.get("hgt"))
@@ -254,9 +282,13 @@ def fetch_northbound_flow_ch(*, lookback_days: int) -> dict[str, Any]:
         history.append(
             {
                 "trade_date": _dashed_date(row.get("trade_date")),
-                "shanghai_connect": shanghai * 100 if shanghai is not None else None,
-                "shenzhen_connect": shenzhen * 100 if shenzhen is not None else None,
-                "total": total * 100 if total is not None else None,
+                "shanghai_connect": (
+                    shanghai * raw_to_wan if shanghai is not None else None
+                ),
+                "shenzhen_connect": (
+                    shenzhen * raw_to_wan if shenzhen is not None else None
+                ),
+                "total": total * raw_to_wan if total is not None else None,
             }
         )
     history.sort(key=lambda item: item.get("trade_date") or "")

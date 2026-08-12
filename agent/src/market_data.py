@@ -96,6 +96,23 @@ def _json_safe(value: Any) -> Any:
     return value
 
 
+def _clickhouse_provenance() -> dict[str, Any]:
+    """Additive unit metadata for ClickHouse-served bars (P1.2).
+
+    Returns ``volume_unit`` / ``amount_unit`` / ``price_adjust`` / ``caliber``
+    from the unit registry (``schema/clickhouse/comments.yaml``). Fail-soft:
+    any failure yields an empty dict so the provenance envelope only ever
+    grows, never breaks.
+    """
+    try:
+        from src.clickhouse_units import clickhouse_bar_provenance
+
+        return clickhouse_bar_provenance("stk_factor_pro")
+    except Exception as exc:  # noqa: BLE001 — additive metadata is best-effort
+        logger.debug("clickhouse provenance metadata unavailable: %s", exc)
+        return {}
+
+
 def fetch_market_data(
     *,
     codes: list[str],
@@ -124,9 +141,7 @@ def fetch_market_data(
     results: dict[str, Any] = {}
     provenance: dict[str, dict[str, Any]] = {}
     result_aliases = {
-        code: code.split(":", 1)[1]
-        if code.lower().startswith("local:")
-        else code
+        code: code.split(":", 1)[1] if code.lower().startswith("local:") else code
         for code in codes
     }
 
@@ -175,26 +190,34 @@ def fetch_market_data(
             except NoAvailableSourceError as exc:
                 logger.debug("loader %r unavailable: %s", attempt_src, exc)
                 continue
-            except Exception as exc:  # noqa: BLE001 — resolver may raise for non-network reasons
+            except (
+                Exception
+            ) as exc:  # noqa: BLE001 — resolver may raise for non-network reasons
                 logger.debug("loader %r resolver failed: %s", attempt_src, exc)
                 continue
             try:
                 loader = loader_cls()
-                data_map = loader.fetch(src_codes, start_date, end_date, interval=interval)
+                data_map = loader.fetch(
+                    src_codes, start_date, end_date, interval=interval
+                )
                 used_source = attempt_src
                 if data_map:
                     break
             except Exception as exc:  # noqa: BLE001 — contained per-symbol fallback
                 logger.error(
                     "market-data loader %r failed for %s; trying next source in chain: %s",
-                    attempt_src, src_codes, exc,
+                    attempt_src,
+                    src_codes,
+                    exc,
                 )
                 continue
 
         if used_source and used_source != src:
             logger.info(
                 "market-data source %r unavailable for %s; fell back to %r",
-                src, src_codes, used_source,
+                src,
+                src_codes,
+                used_source,
             )
 
         for symbol, df in data_map.items():
@@ -204,13 +227,16 @@ def fetch_market_data(
                     row[key] = _json_safe(value)
             results[symbol] = cap_rows(records, max_rows)
             if include_provenance:
-                provenance[symbol] = {
+                entry: dict[str, Any] = {
                     "source": used_source or src,
                     "requested_source": source,
                     "detected_source": src,
                     "fallback_used": bool(used_source and used_source != src),
                     "currency_conversion": "none",
                 }
+                if (used_source or src) == "clickhouse":
+                    entry.update(_clickhouse_provenance())
+                provenance[symbol] = entry
 
     unresolved = [
         code
@@ -227,4 +253,6 @@ def fetch_market_data(
 
 def fetch_market_data_json(**kwargs: Any) -> str:
     """Fetch market data and return strict JSON."""
-    return json.dumps(fetch_market_data(**kwargs), ensure_ascii=False, indent=2, allow_nan=False)
+    return json.dumps(
+        fetch_market_data(**kwargs), ensure_ascii=False, indent=2, allow_nan=False
+    )
