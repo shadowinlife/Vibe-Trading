@@ -43,6 +43,9 @@ defusedxml>=0.7.1
 yfinance>=0.2.30
 akshare>=1.12.0
 ccxt>=4.5.71
+# ClickHouse semantic-layer flexibility channel (ch_query guard + llm_role client)
+clickhouse-connect>=1.0.0
+sqlglot>=30.0.0
 aiohttp>=3.14.3
 cryptography>=50.0.0
 # optional: pip install "vibe-trading-ai[mt5]" — MetaTrader 5 terminal bridge (Windows only): forex/metals data + broker connector

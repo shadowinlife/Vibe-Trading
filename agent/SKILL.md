@@ -133,7 +133,7 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (74)
+## Available MCP Tools (77)
 
 | Tool | Description | API Key |
 |------|-------------|---------|
@@ -211,6 +211,9 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `sentiment` | Local lexicon text scoring + crypto Fear & Greed Index | None |
 | `technical_indicators` | RSI / MACD / Bollinger / SMA / EMA through the existing loaders | None* |
 | `get_fundamentals` | PIT-safe SEC fundamentals panels (filed-date anchored) | None |
+| `ch_list_tables` | ClickHouse ashare catalog — 56 tables with COMMENTs | None (ClickHouse warehouse) |
+| `ch_describe_table` | ClickHouse table columns/types/keys + sample rows | None (ClickHouse warehouse) |
+| `ch_query` | Guarded read-only SELECT over ashare (sqlglot AST guard, LIMIT 500, ~50KB cap, audit log) | CLICKHOUSE_LLM_USER + CLICKHOUSE_LLM_PASSWORD |
 
 <sub>*A-share symbols require `TUSHARE_TOKEN`. HK/US/Canada/crypto are free. Trading connector rows use the selected connector profile, e.g. IBKR local TWS/Gateway or Robinhood MCP OAuth.</sub>
 
