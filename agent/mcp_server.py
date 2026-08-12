@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 74 tools (79 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, strategy discovery,
+Surfaces 77 tools (82 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, strategy discovery,
 backtest/factor/options/pattern
 analysis, market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_margin_trading /
@@ -18,7 +18,9 @@ qveris_search / qveris_inspect / qveris_execute),
 institutional-research and alternative data (get_institutional_holdings /
 etf_holdings / prediction_market / research_papers), read-only finance math and
 market analytics (quantlib_call / cashflow_performance / orderbook_depth /
-sentiment / technical_indicators / get_fundamentals), read-only
+sentiment / technical_indicators / get_fundamentals), the constrained
+ClickHouse flexibility channel (ch_list_tables / ch_describe_table / ch_query,
+guarded read-only SELECTs over the dedicated llm_role credentials), read-only
 trading-connector reads, swarm orchestration, trade-journal and shadow-account
 analysis. Every exposed tool is read-only or research-only except
 refresh_strategy_evidence, which writes ONLY the disposable facade-owned
@@ -2573,6 +2575,11 @@ _MIRRORED_TOOL_SOURCES = (
     ("src.tools.sentiment_tool", "SentimentTool"),
     ("src.tools.technical_indicator_tool", "TechnicalIndicatorTool"),
     ("src.tools.get_fundamentals_tool", "GetFundamentalsTool"),
+    # ClickHouse semantic-layer flexibility channel (Phase 2): Catalog →
+    # Inspect → constrained Execute over the read-only llm_role credentials.
+    ("src.tools.clickhouse_explore_tools", "ChListTablesTool"),
+    ("src.tools.clickhouse_explore_tools", "ChDescribeTableTool"),
+    ("src.tools.clickhouse_query_tool", "ChQueryTool"),
 )
 
 

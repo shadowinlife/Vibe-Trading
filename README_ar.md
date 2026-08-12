@@ -1191,8 +1191,7 @@ curl -X POST http://localhost:8899/scheduled-runs/playbooks/premarket-brief \
 
 ## 🔌 MCP Plugin
 
-يعرض Vibe-Trading 74 أداة MCP لأي عميل متوافق مع MCP. يعمل كعملية stdio فرعية، دون إعداد خادم. أدوات البحث الأساسية تعمل دون أي مفاتيح API لأسواق HK/US/crypto؛ وأدوات connector للتداول تستخدم profile الموصل المختار، ويحتاج `run_swarm` وحده إلى مفتاح LLM.
-
+يعرض Vibe-Trading 77 أداة MCP لأي عميل متوافق مع MCP. يعمل كعملية stdio فرعية، دون إعداد خادم. أدوات البحث الأساسية تعمل دون أي مفاتيح API لأسواق HK/US/crypto؛ وأدوات connector للتداول تستخدم profile الموصل المختار، ويحتاج `run_swarm` وحده إلى مفتاح LLM.
 **متغيرات البيئة:** العميل هو من يشغّل الخادم بنفسه، لذا لا يصل إليه `export` من الـ shell أبداً —— اضبطها في كتلة `env` الخاصة بالعميل. كود الاختبار الخلفي المولَّد محصور ضمن جذور التشغيل المسموح بها، لذا تحتاج إلى `VIBE_TRADING_ALLOWED_RUN_ROOTS` لكتابة النتائج في دليل عمل خاص بك:
 
 ```json
@@ -1247,8 +1246,7 @@ vibe-trading-mcp --transport sse   # legacy SSE (deprecated)
 
 </details>
 
-**أدوات MCP المعروضة (74):** `list_skills`, `load_skill`, `start_research_goal`, `get_research_goal`, `add_goal_evidence`, `update_research_goal_status`, `backtest`, `factor_analysis`, `alpha_zoo`, `alpha_bench`, `analyze_options`, `analyze_options_payoff`, `pattern_recognition`, `read_url`, `read_document`, `web_search`, `write_file`, `read_file`, `list_strategies`, `query_strategies`, `get_strategy_evidence`, `refresh_strategy_evidence`, `trading_connections`, `trading_select_connection`, `trading_check`, `trading_account`, `trading_positions`, `trading_orders`, `trading_quote`, `trading_history`, `list_swarm_presets`, `run_swarm`, `get_market_data`, `get_fund_flow`, `get_dragon_tiger`, `get_northbound_flow`, `get_margin_trading`, `get_block_trades`, `get_shareholder_count`, `get_lockup_expiry`, `get_sector_info`, `get_research_reports`, `get_stock_news`, `get_sec_filings`, `get_financial_statements`, `get_options_chain`, `get_stock_profile`, `screen_market`, `search_symbol`, `get_macro_series`, `iwencai_search`, `qveris_search`, `qveris_inspect`, `qveris_execute`, `get_institutional_holdings`, `etf_holdings`, `prediction_market`, `research_papers`, `get_swarm_status`, `get_run_result`, `list_runs`, `reap_stale_runs`, `retry_run`, `analyze_trade_journal`, `extract_shadow_strategy`, `run_shadow_backtest`, `render_shadow_report`, `scan_shadow_signals`, `quantlib_call`, `cashflow_performance`, `orderbook_depth`, `sentiment`, `technical_indicators`, `get_fundamentals`.
-
+**أدوات MCP المعروضة (77):** `list_skills`, `load_skill`, `start_research_goal`, `get_research_goal`, `add_goal_evidence`, `update_research_goal_status`, `backtest`, `factor_analysis`, `alpha_zoo`, `alpha_bench`, `analyze_options`, `analyze_options_payoff`, `pattern_recognition`, `read_url`, `read_document`, `web_search`, `write_file`, `read_file`, `list_strategies`, `query_strategies`, `get_strategy_evidence`, `refresh_strategy_evidence`, `trading_connections`, `trading_select_connection`, `trading_check`, `trading_account`, `trading_positions`, `trading_orders`, `trading_quote`, `trading_history`, `list_swarm_presets`, `run_swarm`, `get_market_data`, `get_fund_flow`, `get_dragon_tiger`, `get_northbound_flow`, `get_margin_trading`, `get_block_trades`, `get_shareholder_count`, `get_lockup_expiry`, `get_sector_info`, `get_research_reports`, `get_stock_news`, `get_sec_filings`, `get_financial_statements`, `get_options_chain`, `get_stock_profile`, `screen_market`, `search_symbol`, `get_macro_series`, `iwencai_search`, `qveris_search`, `qveris_inspect`, `qveris_execute`, `get_institutional_holdings`, `etf_holdings`, `prediction_market`, `research_papers`, `get_swarm_status`, `get_run_result`, `list_runs`, `reap_stale_runs`, `retry_run`, `analyze_trade_journal`, `extract_shadow_strategy`, `run_shadow_backtest`, `render_shadow_report`, `scan_shadow_signals`, `quantlib_call`, `cashflow_performance`, `orderbook_depth`, `sentiment`, `technical_indicators`, `get_fundamentals`.
 ### أدوات MCP الخارجية في SWARM
 
 يمكن لعمّال `run_swarm` استدعاء أدوات من خوادم MCP خارجية بعد موافقة المشغّل. اضبط قائمة السماح على جانب الخادم في `VIBE_TRADING_SWARM_AGENT_CONFIG` أو `~/.vibe-trading/swarm-agent.json` أو الملف الاحتياطي `~/.vibe-trading/agent.json`، ثم اذكر الأدوات البعيدة داخل إعداد swarm باسم الغلاف المحلي مثل `mcp_internal_kb_search`. تبقى `variables` التي يمرّرها المستدعي بيانات قوالب فقط، ولا يمكنها حقن روابط MCP أو أوامر أو متغيرات بيئة أو تجاوزات لقائمة السماح.
@@ -1607,8 +1605,7 @@ Vibe-Trading/
 ├── agent/                          # Backend (Python)
 │   ├── cli/                        # CLI package — interactive TUI + subcommands
 │   ├── api_server.py               # FastAPI server — runs, sessions, upload, swarm, SSE
-│   ├── mcp_server.py               # MCP server — 74 tools for OpenClaw / Claude Desktop
-│   │
+│   ├── mcp_server.py               # MCP server — 77 tools for OpenClaw / Claude Desktop│   │
 │   ├── src/
 │   │   ├── agent/                  # ReAct agent core
 │   │   │   ├── loop.py             #   5-layer compression + read/write tool batching
