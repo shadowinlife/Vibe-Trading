@@ -202,6 +202,12 @@ class DataConfig(_EnvBase):
     clickhouse_user: str = Field(alias="CLICKHOUSE_USER", default="default")
     clickhouse_password: str = Field(alias="CLICKHOUSE_PASSWORD", default="")
     clickhouse_database: str = Field(alias="CLICKHOUSE_DATABASE", default="ashare")
+    # Dedicated read-only ``llm_role`` credentials for the constrained
+    # ``ch_query`` exploration tool (CLICKHOUSE_ITERATION_PLAN.md Phase 2).
+    # Empty defaults are intentional: when unset, ``ch_query`` must fail with
+    # an actionable error instead of falling back to the default user.
+    clickhouse_llm_user: str = Field(alias="CLICKHOUSE_LLM_USER", default="")
+    clickhouse_llm_password: str = Field(alias="CLICKHOUSE_LLM_PASSWORD", default="")
 
 
 # ---------------------------------------------------------------------------

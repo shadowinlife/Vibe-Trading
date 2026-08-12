@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 70 tools (75 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, backtest/factor/options/pattern
+Surfaces 73 tools (78 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, backtest/factor/options/pattern
 analysis, market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_margin_trading /
 get_block_trades / get_shareholder_count / get_lockup_expiry / get_sector_info /
@@ -17,7 +17,9 @@ qveris_search / qveris_inspect / qveris_execute),
 institutional-research and alternative data (get_institutional_holdings /
 etf_holdings / prediction_market / research_papers), read-only finance math and
 market analytics (quantlib_call / cashflow_performance / orderbook_depth /
-sentiment / technical_indicators / get_fundamentals), read-only
+sentiment / technical_indicators / get_fundamentals), the constrained
+ClickHouse flexibility channel (ch_list_tables / ch_describe_table / ch_query,
+guarded read-only SELECTs over the dedicated llm_role credentials), read-only
 trading-connector reads, swarm orchestration, trade-journal and shadow-account
 analysis. Every exposed tool is read-only or research-only; no order-placing or
 order-cancelling tool is ever surfaced via MCP. The QVeris tools additionally
@@ -2322,6 +2324,11 @@ _MIRRORED_TOOL_SOURCES = (
     ("src.tools.sentiment_tool", "SentimentTool"),
     ("src.tools.technical_indicator_tool", "TechnicalIndicatorTool"),
     ("src.tools.get_fundamentals_tool", "GetFundamentalsTool"),
+    # ClickHouse semantic-layer flexibility channel (Phase 2): Catalog →
+    # Inspect → constrained Execute over the read-only llm_role credentials.
+    ("src.tools.clickhouse_explore_tools", "ChListTablesTool"),
+    ("src.tools.clickhouse_explore_tools", "ChDescribeTableTool"),
+    ("src.tools.clickhouse_query_tool", "ChQueryTool"),
 )
 
 
