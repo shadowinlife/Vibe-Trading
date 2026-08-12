@@ -1,0 +1,483 @@
+version: 1
+convention: unit=; adjust=; caliber=; source=; desc=; ambiguous_with=
+tables:
+  stk_factor_pro:
+    api: stk_factor_pro
+    doc: https://tushare.pro/document/2?doc_id=328
+    columns:
+      ts_code: source=tushare stk_factor_pro; desc=股票代码(ts_code格式, 如000001.SZ)
+      trade_date: source=tushare stk_factor_pro; desc=交易日期
+      open: unit=yuan (CNY); adjust=raw; source=tushare stk_factor_pro; desc=开盘价(不复权); ambiguous_with=open_hfq
+      open_hfq: unit=yuan (CNY); adjust=hfq; caliber=不复权价×adj_factor; source=tushare stk_factor_pro; desc=开盘价(后复权); ambiguous_with=open
+      high: unit=yuan (CNY); adjust=raw; source=tushare stk_factor_pro; desc=最高价(不复权); ambiguous_with=high_hfq
+      high_hfq: unit=yuan (CNY); adjust=hfq; caliber=不复权价×adj_factor; source=tushare stk_factor_pro; desc=最高价(后复权); ambiguous_with=high
+      low: unit=yuan (CNY); adjust=raw; source=tushare stk_factor_pro; desc=最低价(不复权); ambiguous_with=low_hfq
+      low_hfq: unit=yuan (CNY); adjust=hfq; caliber=不复权价×adj_factor; source=tushare stk_factor_pro; desc=最低价(后复权); ambiguous_with=low
+      close: unit=yuan (CNY); adjust=raw; source=tushare stk_factor_pro; desc=收盘价(不复权); ambiguous_with=close_hfq
+      close_hfq: unit=yuan (CNY); adjust=hfq; caliber=不复权价×adj_factor; source=tushare stk_factor_pro; desc=收盘价(后复权); ambiguous_with=close
+      change: unit=yuan (CNY); adjust=raw; source=tushare stk_factor_pro; desc=涨跌额(收盘价-昨收价)
+      pct_chg: unit=percent (%); source=tushare stk_factor_pro; desc=涨跌幅; caliber=除权后的涨跌幅
+      vol: unit=lots; caliber=tushare口径(1手=100股); source=tushare stk_factor_pro; desc=成交量; ambiguous_with=amount
+      amount: unit=千元 (thousand CNY); caliber=已交叉验证amount×10/vol≈close; source=tushare stk_factor_pro; desc=成交额; ambiguous_with=vol
+      turnover_rate: unit=percent (%); source=tushare stk_factor_pro; desc=换手率; ambiguous_with=turnover_rate_f
+      turnover_rate_f: unit=percent (%); source=tushare stk_factor_pro; desc=换手率(自由流通股本口径); ambiguous_with=turnover_rate
+      volume_ratio: unit=ratio; source=tushare stk_factor_pro; desc=量比
+      pe: unit=ratio; caliber=总市值/净利润, 亏损的PE为空; source=tushare stk_factor_pro; desc=市盈率; ambiguous_with=pe_ttm
+      pe_ttm: unit=ratio; caliber=TTM(滚动12个月), 亏损的PE为空; source=tushare stk_factor_pro; desc=市盈率(TTM); ambiguous_with=pe
+      pb: unit=ratio; caliber=总市值/净资产; source=tushare stk_factor_pro; desc=市净率
+      ps: unit=ratio; source=tushare stk_factor_pro; desc=市销率; ambiguous_with=ps_ttm
+      ps_ttm: unit=ratio; source=tushare stk_factor_pro; desc=市销率(TTM); ambiguous_with=ps
+      dv_ratio: unit=percent (%); source=tushare stk_factor_pro; desc=股息率; ambiguous_with=dv_ttm
+      dv_ttm: unit=percent (%); source=tushare stk_factor_pro; desc=股息率(TTM); ambiguous_with=dv_ratio
+      total_share: unit=万股; source=tushare stk_factor_pro; desc=总股本
+      float_share: unit=万股; source=tushare stk_factor_pro; desc=流通股本
+      free_share: unit=万股; source=tushare stk_factor_pro; desc=自由流通股本
+      total_mv: unit=万元 (ten-thousand CNY); caliber=tushare daily_basic口径; source=tushare stk_factor_pro; desc=总市值; ambiguous_with=circ_mv
+      circ_mv: unit=万元 (ten-thousand CNY); caliber=tushare daily_basic口径; source=tushare stk_factor_pro; desc=流通市值; ambiguous_with=total_mv
+      adj_factor: unit=dimensionless; caliber=累计后复权因子, 后复权价=不复权价×因子; source=tushare stk_factor_pro; desc=复权因子
+      asi_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=振动升降指标ASI(M1=26,M2=10), 基于不复权价格计算
+      asi_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=振动升降指标ASI(M1=26,M2=10), 基于后复权价格计算
+      asit_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=振动升降指标ASIT(ASI的移动平均)(M1=26,M2=10), 基于不复权价格计算
+      asit_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=振动升降指标ASIT(ASI的移动平均)(M1=26,M2=10), 基于后复权价格计算
+      atr_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=真实波动N日平均值ATR(N=20), 基于不复权价格计算
+      atr_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=真实波动N日平均值ATR(N=20), 基于后复权价格计算
+      bbi_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=BBI多空指标(M=3,6,12,20), 基于不复权价格计算
+      bbi_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=BBI多空指标(M=3,6,12,20), 基于后复权价格计算
+      bias1_bfq: unit=percent (%); adjust=bfq; source=tushare stk_factor_pro; desc=BIAS乖离率1(L=6,12,24), 基于不复权价格计算
+      bias1_hfq: unit=percent (%); adjust=hfq; source=tushare stk_factor_pro; desc=BIAS乖离率1(L=6,12,24), 基于后复权价格计算
+      bias2_bfq: unit=percent (%); adjust=bfq; source=tushare stk_factor_pro; desc=BIAS乖离率2(L=6,12,24), 基于不复权价格计算
+      bias2_hfq: unit=percent (%); adjust=hfq; source=tushare stk_factor_pro; desc=BIAS乖离率2(L=6,12,24), 基于后复权价格计算
+      bias3_bfq: unit=percent (%); adjust=bfq; source=tushare stk_factor_pro; desc=BIAS乖离率3(L=6,12,24), 基于不复权价格计算
+      bias3_hfq: unit=percent (%); adjust=hfq; source=tushare stk_factor_pro; desc=BIAS乖离率3(L=6,12,24), 基于后复权价格计算
+      boll_lower_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=BOLL布林带下轨(N=20,P=2), 基于不复权价格计算
+      boll_lower_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=BOLL布林带下轨(N=20,P=2), 基于后复权价格计算
+      boll_mid_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=BOLL布林带中轨(N=20,P=2), 基于不复权价格计算
+      boll_mid_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=BOLL布林带中轨(N=20,P=2), 基于后复权价格计算
+      boll_upper_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=BOLL布林带上轨(N=20,P=2), 基于不复权价格计算
+      boll_upper_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=BOLL布林带上轨(N=20,P=2), 基于后复权价格计算
+      brar_ar_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=BRAR情绪指标AR(M1=26), 基于不复权价格计算
+      brar_ar_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=BRAR情绪指标AR(M1=26), 基于后复权价格计算
+      brar_br_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=BRAR情绪指标BR(M1=26), 基于不复权价格计算
+      brar_br_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=BRAR情绪指标BR(M1=26), 基于后复权价格计算
+      cci_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=CCI顺势指标(N=14), 基于不复权价格计算
+      cci_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=CCI顺势指标(N=14), 基于后复权价格计算
+      cr_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=CR价格动量指标(N=20), 基于不复权价格计算
+      cr_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=CR价格动量指标(N=20), 基于后复权价格计算
+      dfma_dif_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=平行线差指标DIF(N1=10,N2=50,M=10), 基于不复权价格计算
+      dfma_dif_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=平行线差指标DIF(N1=10,N2=50,M=10), 基于后复权价格计算
+      dfma_difma_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=平行线差指标DIFMA(DIF的移动平均)(N1=10,N2=50,M=10), 基于不复权价格计算
+      dfma_difma_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=平行线差指标DIFMA(DIF的移动平均)(N1=10,N2=50,M=10), 基于后复权价格计算
+      dmi_adx_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=DMI动向指标ADX(M1=14,M2=6), 基于不复权价格计算
+      dmi_adx_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=DMI动向指标ADX(M1=14,M2=6), 基于后复权价格计算
+      dmi_adxr_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=DMI动向指标ADXR(M1=14,M2=6), 基于不复权价格计算
+      dmi_adxr_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=DMI动向指标ADXR(M1=14,M2=6), 基于后复权价格计算
+      dmi_mdi_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=DMI动向指标MDI(空方)(M1=14,M2=6), 基于不复权价格计算
+      dmi_mdi_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=DMI动向指标MDI(空方)(M1=14,M2=6), 基于后复权价格计算
+      dmi_pdi_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=DMI动向指标PDI(多方)(M1=14,M2=6), 基于不复权价格计算
+      dmi_pdi_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=DMI动向指标PDI(多方)(M1=14,M2=6), 基于后复权价格计算
+      downdays: unit=days; source=tushare stk_factor_pro; desc=连跌天数
+      updays: unit=days; source=tushare stk_factor_pro; desc=连涨天数
+      dpo_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=DPO区间震荡线(M1=20,M2=10,M3=6), 基于不复权价格计算
+      dpo_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=DPO区间震荡线(M1=20,M2=10,M3=6), 基于后复权价格计算
+      madpo_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=区间震荡线MADPO(DPO的移动平均)(M1=20,M2=10,M3=6), 基于不复权价格计算
+      madpo_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=区间震荡线MADPO(DPO的移动平均)(M1=20,M2=10,M3=6), 基于后复权价格计算
+      ema_bfq_10: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=10), 基于不复权价格计算
+      ema_bfq_20: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=20), 基于不复权价格计算
+      ema_bfq_250: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=250), 基于不复权价格计算
+      ema_bfq_30: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=30), 基于不复权价格计算
+      ema_bfq_5: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=5), 基于不复权价格计算
+      ema_bfq_60: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=60), 基于不复权价格计算
+      ema_bfq_90: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=90), 基于不复权价格计算
+      ema_hfq_10: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=10), 基于后复权价格计算
+      ema_hfq_20: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=20), 基于后复权价格计算
+      ema_hfq_250: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=250), 基于后复权价格计算
+      ema_hfq_30: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=30), 基于后复权价格计算
+      ema_hfq_5: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=5), 基于后复权价格计算
+      ema_hfq_60: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=60), 基于后复权价格计算
+      ema_hfq_90: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=90), 基于后复权价格计算
+      ema_qfq_10: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=10), 基于前复权价格计算
+      ema_qfq_20: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=20), 基于前复权价格计算
+      ema_qfq_250: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=250), 基于前复权价格计算
+      ema_qfq_30: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=30), 基于前复权价格计算
+      ema_qfq_5: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=5), 基于前复权价格计算
+      ema_qfq_60: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=60), 基于前复权价格计算
+      ema_qfq_90: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=EMA指数移动平均(N=90), 基于前复权价格计算
+      emv_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=EMV简易波动指标(N=14,M=9), 基于不复权价格计算
+      emv_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=EMV简易波动指标(N=14,M=9), 基于后复权价格计算
+      maemv_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=简易波动指标MAEMV(EMV的移动平均)(N=14,M=9), 基于不复权价格计算
+      maemv_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=简易波动指标MAEMV(EMV的移动平均)(N=14,M=9), 基于后复权价格计算
+      expma_12_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=EXPMA指数平均数指标(N1=12,N2=50), 基于不复权价格计算
+      expma_12_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=EXPMA指数平均数指标(N1=12,N2=50), 基于后复权价格计算
+      expma_50_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=EXPMA指数平均数指标(N1=12,N2=50), 基于不复权价格计算
+      expma_50_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=EXPMA指数平均数指标(N1=12,N2=50), 基于后复权价格计算
+      kdj_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=KDJ随机指标J值(N=9,M1=3,M2=3), 基于不复权价格计算
+      kdj_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=KDJ随机指标J值(N=9,M1=3,M2=3), 基于后复权价格计算
+      kdj_d_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=KDJ随机指标D值(N=9,M1=3,M2=3), 基于不复权价格计算
+      kdj_d_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=KDJ随机指标D值(N=9,M1=3,M2=3), 基于后复权价格计算
+      kdj_k_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=KDJ随机指标K值(N=9,M1=3,M2=3), 基于不复权价格计算
+      kdj_k_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=KDJ随机指标K值(N=9,M1=3,M2=3), 基于后复权价格计算
+      ktn_down_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=肯特纳交易通道下轨(N=20,ATR M=10), 基于不复权价格计算
+      ktn_down_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=肯特纳交易通道下轨(N=20,ATR M=10), 基于后复权价格计算
+      ktn_mid_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=肯特纳交易通道中轨(N=20,ATR M=10), 基于不复权价格计算
+      ktn_mid_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=肯特纳交易通道中轨(N=20,ATR M=10), 基于后复权价格计算
+      ktn_upper_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=肯特纳交易通道上轨(N=20,ATR M=10), 基于不复权价格计算
+      ktn_upper_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=肯特纳交易通道上轨(N=20,ATR M=10), 基于后复权价格计算
+      lowdays: unit=days; source=tushare stk_factor_pro; desc=LOWRANGE(LOW), 当前最低价是近多少周期内最低价的最小值
+      topdays: unit=days; source=tushare stk_factor_pro; desc=TOPRANGE(HIGH), 当前最高价是近多少周期内最高价的最大值
+      ma_bfq_10: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=10), 基于不复权价格计算
+      ma_bfq_20: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=20), 基于不复权价格计算
+      ma_bfq_250: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=250), 基于不复权价格计算
+      ma_bfq_30: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=30), 基于不复权价格计算
+      ma_bfq_5: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=5), 基于不复权价格计算
+      ma_bfq_60: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=60), 基于不复权价格计算
+      ma_bfq_90: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=90), 基于不复权价格计算
+      ma_hfq_10: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=10), 基于后复权价格计算
+      ma_hfq_20: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=20), 基于后复权价格计算
+      ma_hfq_250: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=250), 基于后复权价格计算
+      ma_hfq_30: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=30), 基于后复权价格计算
+      ma_hfq_5: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=5), 基于后复权价格计算
+      ma_hfq_60: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=60), 基于后复权价格计算
+      ma_hfq_90: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=90), 基于后复权价格计算
+      ma_qfq_10: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=10), 基于前复权价格计算
+      ma_qfq_20: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=20), 基于前复权价格计算
+      ma_qfq_250: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=250), 基于前复权价格计算
+      ma_qfq_30: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=30), 基于前复权价格计算
+      ma_qfq_5: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=5), 基于前复权价格计算
+      ma_qfq_60: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=60), 基于前复权价格计算
+      ma_qfq_90: unit=yuan (CNY); adjust=qfq; source=tushare stk_factor_pro; desc=MA简单移动平均(N=90), 基于前复权价格计算
+      macd_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MACD指标柱(2×(DIF-DEA))(SHORT=12,LONG=26,M=9), 基于不复权价格计算
+      macd_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MACD指标柱(2×(DIF-DEA))(SHORT=12,LONG=26,M=9), 基于后复权价格计算
+      macd_dea_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MACD指标DEA(信号线)(SHORT=12,LONG=26,M=9), 基于不复权价格计算
+      macd_dea_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MACD指标DEA(信号线)(SHORT=12,LONG=26,M=9), 基于后复权价格计算
+      macd_dif_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MACD指标DIF(快慢线差)(SHORT=12,LONG=26,M=9), 基于不复权价格计算
+      macd_dif_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MACD指标DIF(快慢线差)(SHORT=12,LONG=26,M=9), 基于后复权价格计算
+      mass_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=梅斯线MASS(N1=9,N2=25,M=6), 基于不复权价格计算
+      mass_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=梅斯线MASS(N1=9,N2=25,M=6), 基于后复权价格计算
+      ma_mass_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=梅斯线MA_MASS(MASS的移动平均)(N1=9,N2=25,M=6), 基于不复权价格计算
+      ma_mass_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=梅斯线MA_MASS(MASS的移动平均)(N1=9,N2=25,M=6), 基于后复权价格计算
+      mfi_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=MFI资金流量指标(成交量的RSI)(N=14), 基于不复权价格计算
+      mfi_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=MFI资金流量指标(成交量的RSI)(N=14), 基于后复权价格计算
+      mtm_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=MTM动量指标(N=12,M=6), 基于不复权价格计算
+      mtm_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=MTM动量指标(N=12,M=6), 基于后复权价格计算
+      mtmma_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=动量指标MTMMA(MTM的移动平均)(N=12,M=6), 基于不复权价格计算
+      mtmma_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=动量指标MTMMA(MTM的移动平均)(N=12,M=6), 基于后复权价格计算
+      obv_bfq: unit=lots (cumulative volume); adjust=bfq; source=tushare stk_factor_pro; desc=OBV能量潮指标(带符号累计成交量), 基于不复权价格计算
+      obv_hfq: unit=lots (cumulative volume); adjust=hfq; source=tushare stk_factor_pro; desc=OBV能量潮指标(带符号累计成交量), 基于后复权价格计算
+      psy_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=PSY心理线(N=12,M=6), 基于不复权价格计算
+      psy_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=PSY心理线(N=12,M=6), 基于后复权价格计算
+      psyma_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=心理线PSYMA(PSY的移动平均)(N=12,M=6), 基于不复权价格计算
+      psyma_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=心理线PSYMA(PSY的移动平均)(N=12,M=6), 基于后复权价格计算
+      roc_bfq: unit=percent (%); adjust=bfq; source=tushare stk_factor_pro; desc=ROC变动率指标(N=12,M=6), 基于不复权价格计算
+      roc_hfq: unit=percent (%); adjust=hfq; source=tushare stk_factor_pro; desc=ROC变动率指标(N=12,M=6), 基于后复权价格计算
+      maroc_bfq: unit=percent (%); adjust=bfq; source=tushare stk_factor_pro; desc=变动率指标MAROC(ROC的移动平均)(N=12,M=6), 基于不复权价格计算
+      maroc_hfq: unit=percent (%); adjust=hfq; source=tushare stk_factor_pro; desc=变动率指标MAROC(ROC的移动平均)(N=12,M=6), 基于后复权价格计算
+      rsi_bfq_12: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=RSI相对强弱指标(N=12), 基于不复权价格计算
+      rsi_bfq_24: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=RSI相对强弱指标(N=24), 基于不复权价格计算
+      rsi_bfq_6: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=RSI相对强弱指标(N=6), 基于不复权价格计算
+      rsi_hfq_12: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=RSI相对强弱指标(N=12), 基于后复权价格计算
+      rsi_hfq_24: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=RSI相对强弱指标(N=24), 基于后复权价格计算
+      rsi_hfq_6: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=RSI相对强弱指标(N=6), 基于后复权价格计算
+      rsi_qfq_12: unit=dimensionless (indicator value); adjust=qfq; source=tushare stk_factor_pro; desc=RSI相对强弱指标(N=12), 基于前复权价格计算
+      rsi_qfq_24: unit=dimensionless (indicator value); adjust=qfq; source=tushare stk_factor_pro; desc=RSI相对强弱指标(N=24), 基于前复权价格计算
+      rsi_qfq_6: unit=dimensionless (indicator value); adjust=qfq; source=tushare stk_factor_pro; desc=RSI相对强弱指标(N=6), 基于前复权价格计算
+      taq_down_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=唐安奇通道(海龟)下轨(N=20), 基于不复权价格计算
+      taq_down_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=唐安奇通道(海龟)下轨(N=20), 基于后复权价格计算
+      taq_mid_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=唐安奇通道(海龟)中轨(N=20), 基于不复权价格计算
+      taq_mid_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=唐安奇通道(海龟)中轨(N=20), 基于后复权价格计算
+      taq_up_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=唐安奇通道(海龟)上轨(N=20), 基于不复权价格计算
+      taq_up_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=唐安奇通道(海龟)上轨(N=20), 基于后复权价格计算
+      trix_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=TRIX三重指数平滑平均线(M1=12,M2=20), 基于不复权价格计算
+      trix_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=TRIX三重指数平滑平均线(M1=12,M2=20), 基于后复权价格计算
+      trma_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=三重指数平滑平均线TRMA(TRIX的移动平均)(M1=12,M2=20), 基于不复权价格计算
+      trma_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=三重指数平滑平均线TRMA(TRIX的移动平均)(M1=12,M2=20), 基于后复权价格计算
+      vr_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=VR容量比率(M1=26), 基于不复权价格计算
+      vr_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=VR容量比率(M1=26), 基于后复权价格计算
+      wr_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=W&R威廉指标(N=10,N1=6), 基于不复权价格计算
+      wr_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=W&R威廉指标(N=10,N1=6), 基于后复权价格计算
+      wr1_bfq: unit=dimensionless (indicator value); adjust=bfq; source=tushare stk_factor_pro; desc=W&R威廉指标WR1(N=10,N1=6), 基于不复权价格计算
+      wr1_hfq: unit=dimensionless (indicator value); adjust=hfq; source=tushare stk_factor_pro; desc=W&R威廉指标WR1(N=10,N1=6), 基于后复权价格计算
+      xsii_td1_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=薛斯通道II TD1(N=102,M=7), 基于不复权价格计算
+      xsii_td1_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=薛斯通道II TD1(N=102,M=7), 基于后复权价格计算
+      xsii_td2_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=薛斯通道II TD2(N=102,M=7), 基于不复权价格计算
+      xsii_td2_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=薛斯通道II TD2(N=102,M=7), 基于后复权价格计算
+      xsii_td3_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=薛斯通道II TD3(N=102,M=7), 基于不复权价格计算
+      xsii_td3_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=薛斯通道II TD3(N=102,M=7), 基于后复权价格计算
+      xsii_td4_bfq: unit=yuan (CNY); adjust=bfq; source=tushare stk_factor_pro; desc=薛斯通道II TD4(N=102,M=7), 基于不复权价格计算
+      xsii_td4_hfq: unit=yuan (CNY); adjust=hfq; source=tushare stk_factor_pro; desc=薛斯通道II TD4(N=102,M=7), 基于后复权价格计算
+  fin_indicator:
+    api: fina_indicator
+    doc: https://tushare.pro/document/2?doc_id=79
+    columns:
+      ts_code: source=tushare fina_indicator; desc=TS代码
+      ann_date: source=tushare fina_indicator; desc=公告日期
+      end_date: source=tushare fina_indicator; desc=报告期
+      ann_date_key: source=tushare fina_indicator; desc=待补充; needs_review=1
+      eps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=基本每股收益; ambiguous_with=dt_eps
+      dt_eps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=稀释每股收益; ambiguous_with=eps
+      total_revenue_ps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股营业总收入
+      revenue_ps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股营业收入
+      capital_rese_ps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股资本公积
+      surplus_rese_ps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股盈余公积
+      undist_profit_ps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股未分配利润
+      extra_item: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=非经常性损益
+      profit_dedt: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=扣除非经常性损益后的净利润(扣非净利润)
+      gross_margin: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=毛利; ambiguous_with=grossprofit_margin
+      current_ratio: unit=times; source=tushare fina_indicator; desc=流动比率
+      quick_ratio: unit=times; source=tushare fina_indicator; desc=速动比率
+      cash_ratio: unit=times; source=tushare fina_indicator; desc=保守速动比率
+      invturn_days: unit=days; source=tushare fina_indicator; desc=存货周转天数
+      arturn_days: unit=days; source=tushare fina_indicator; desc=应收账款周转天数
+      inv_turn: unit=times; source=tushare fina_indicator; desc=存货周转率
+      ar_turn: unit=times; source=tushare fina_indicator; desc=应收账款周转率
+      ca_turn: unit=times; source=tushare fina_indicator; desc=流动资产周转率
+      fa_turn: unit=times; source=tushare fina_indicator; desc=固定资产周转率
+      assets_turn: unit=times; source=tushare fina_indicator; desc=总资产周转率
+      op_income: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=经营活动净收益
+      valuechange_income: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=价值变动净收益
+      interst_income: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=利息费用
+      daa: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=折旧与摊销
+      ebit: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=息税前利润
+      ebitda: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=息税折旧摊销前利润
+      fcff: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=企业自由现金流量
+      fcfe: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=股权自由现金流量
+      current_exint: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=无息流动负债
+      noncurrent_exint: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=无息非流动负债
+      interestdebt: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=带息债务
+      netdebt: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=净债务
+      tangible_asset: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=有形资产
+      working_capital: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=营运资金
+      networking_capital: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=营运流动资本
+      invest_capital: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=全部投入资本
+      retained_earnings: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=留存收益
+      diluted2_eps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=期末摊薄每股收益
+      bps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股净资产
+      ocfps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股经营活动产生的现金流量净额
+      retainedps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股留存收益
+      cfps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股现金流量净额
+      ebit_ps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股息税前利润
+      fcff_ps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股企业自由现金流量
+      fcfe_ps: unit=yuan/share (元/股); caliber=报告期累计口径; source=tushare fina_indicator; desc=每股股东自由现金流量
+      netprofit_margin: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=销售净利率
+      grossprofit_margin: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=销售毛利率; ambiguous_with=gross_margin
+      cogs_of_sales: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=销售成本率
+      expense_of_sales: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=销售期间费用率
+      profit_to_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=净利润/营业总收入
+      saleexp_to_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=销售费用/营业总收入
+      adminexp_of_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=管理费用/营业总收入
+      finaexp_of_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=财务费用/营业总收入
+      impai_ttm: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=资产减值损失/营业总收入
+      gc_of_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业总成本/营业总收入
+      op_of_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业利润/营业总收入
+      ebit_of_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=息税前利润/营业总收入
+      roe: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=净资产收益率; ambiguous_with=roe_dt,roe_waa
+      roe_waa: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=加权平均净资产收益率
+      roe_dt: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=净资产收益率(扣除非经常损益)
+      roa: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=总资产报酬率
+      npta: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=总资产净利润
+      roic: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=投入资本回报率
+      roe_yearly: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=年化净资产收益率
+      roa2_yearly: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=年化总资产报酬率
+      roe_avg: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=平均净资产收益率(增发条件)
+      opincome_of_ebt: source=tushare fina_indicator; desc=经营活动净收益/利润总额
+      investincome_of_ebt: source=tushare fina_indicator; desc=价值变动净收益/利润总额
+      n_op_profit_of_ebt: source=tushare fina_indicator; desc=营业外收支净额/利润总额
+      tax_to_ebt: source=tushare fina_indicator; desc=所得税/利润总额
+      dtprofit_to_profit: source=tushare fina_indicator; desc=扣除非经常损益后的净利润/净利润
+      salescash_to_or: source=tushare fina_indicator; desc=销售商品提供劳务收到的现金/营业收入
+      ocf_to_or: source=tushare fina_indicator; desc=经营活动产生的现金流量净额/营业收入
+      ocf_to_opincome: source=tushare fina_indicator; desc=经营活动产生的现金流量净额/经营活动净收益
+      capitalized_to_da: source=tushare fina_indicator; desc=资本支出/折旧和摊销
+      debt_to_assets: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=资产负债率
+      assets_to_eqt: unit=times; source=tushare fina_indicator; desc=权益乘数
+      dp_assets_to_eqt: unit=times; source=tushare fina_indicator; desc=权益乘数(杜邦分析)
+      ca_to_assets: source=tushare fina_indicator; desc=流动资产/总资产
+      nca_to_assets: source=tushare fina_indicator; desc=非流动资产/总资产
+      tbassets_to_totalassets: source=tushare fina_indicator; desc=有形资产/总资产
+      int_to_talcap: source=tushare fina_indicator; desc=带息债务/全部投入资本
+      eqt_to_talcapital: source=tushare fina_indicator; desc=归属于母公司的股东权益/全部投入资本
+      currentdebt_to_debt: source=tushare fina_indicator; desc=流动负债/负债合计
+      longdeb_to_debt: source=tushare fina_indicator; desc=非流动负债/负债合计
+      ocf_to_shortdebt: source=tushare fina_indicator; desc=经营活动产生的现金流量净额/流动负债
+      debt_to_eqt: unit=times; source=tushare fina_indicator; desc=产权比率
+      eqt_to_debt: source=tushare fina_indicator; desc=归属于母公司的股东权益/负债合计
+      eqt_to_interestdebt: source=tushare fina_indicator; desc=归属于母公司的股东权益/带息债务
+      tangibleasset_to_debt: source=tushare fina_indicator; desc=有形资产/负债合计
+      tangasset_to_intdebt: source=tushare fina_indicator; desc=有形资产/带息债务
+      tangibleasset_to_netdebt: source=tushare fina_indicator; desc=有形资产/净债务
+      ocf_to_debt: source=tushare fina_indicator; desc=经营活动产生的现金流量净额/负债合计
+      ocf_to_interestdebt: source=tushare fina_indicator; desc=经营活动产生的现金流量净额/带息债务
+      ocf_to_netdebt: source=tushare fina_indicator; desc=经营活动产生的现金流量净额/净债务
+      ebit_to_interest: unit=times; source=tushare fina_indicator; desc=已获利息倍数(EBIT/利息费用)
+      longdebt_to_workingcapital: source=tushare fina_indicator; desc=长期债务与营运资金比率
+      ebitda_to_debt: source=tushare fina_indicator; desc=息税折旧摊销前利润/负债合计
+      turn_days: unit=days; source=tushare fina_indicator; desc=营业周期
+      roa_yearly: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=年化总资产净利率
+      roa_dp: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=总资产净利率(杜邦分析)
+      fixed_assets: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=固定资产合计
+      profit_prefin_exp: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=扣除财务费用前营业利润
+      non_op_profit: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=非营业利润
+      op_to_ebt: source=tushare fina_indicator; desc=营业利润/利润总额
+      nop_to_ebt: source=tushare fina_indicator; desc=非营业利润/利润总额
+      ocf_to_profit: source=tushare fina_indicator; desc=经营活动产生的现金流量净额/营业利润
+      cash_to_liqdebt: source=tushare fina_indicator; desc=货币资金/流动负债
+      cash_to_liqdebt_withinterest: source=tushare fina_indicator; desc=货币资金/带息流动负债
+      op_to_liqdebt: source=tushare fina_indicator; desc=营业利润/流动负债
+      op_to_debt: source=tushare fina_indicator; desc=营业利润/负债合计
+      roic_yearly: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=年化投入资本回报率
+      total_fa_trun: unit=times; source=tushare fina_indicator; desc=固定资产合计周转率
+      profit_to_op: source=tushare fina_indicator; desc=利润总额/营业收入
+      q_opincome: unit=yuan (CNY); caliber=单季度口径(元); source=tushare fina_indicator; desc=经营活动单季度净收益
+      q_investincome: unit=yuan (CNY); caliber=单季度口径(元); source=tushare fina_indicator; desc=价值变动单季度净收益
+      q_dtprofit: unit=yuan (CNY); caliber=单季度口径(元); source=tushare fina_indicator; desc=扣除非经常损益后的单季度净利润
+      q_eps: unit=yuan/share (元/股); caliber=单季度口径; source=tushare fina_indicator; desc=每股收益(单季度)
+      q_netprofit_margin: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=销售净利率(单季度)
+      q_gsprofit_margin: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=销售毛利率(单季度)
+      q_exp_to_sales: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=销售期间费用率(单季度)
+      q_profit_to_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=净利润/营业总收入(单季度)
+      q_saleexp_to_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=销售费用/营业总收入(单季度)
+      q_adminexp_to_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=管理费用/营业总收入(单季度)
+      q_finaexp_to_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=财务费用/营业总收入(单季度)
+      q_impair_to_gr_ttm: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=资产减值损失/营业总收入(单季度)
+      q_gc_to_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业总成本/营业总收入(单季度)
+      q_op_to_gr: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业利润/营业总收入(单季度)
+      q_roe: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=净资产收益率(单季度)
+      q_dt_roe: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=净资产单季度收益率(扣除非经常损益)
+      q_npta: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=总资产净利润(单季度)
+      q_opincome_to_ebt: source=tushare fina_indicator; desc=经营活动净收益/利润总额(单季度)
+      q_investincome_to_ebt: source=tushare fina_indicator; desc=价值变动净收益/利润总额(单季度)
+      q_dtprofit_to_profit: source=tushare fina_indicator; desc=扣除非经常损益后的净利润/净利润(单季度)
+      q_salescash_to_or: source=tushare fina_indicator; desc=销售商品提供劳务收到的现金/营业收入(单季度)
+      q_ocf_to_sales: source=tushare fina_indicator; desc=经营活动产生的现金流量净额/营业收入(单季度)
+      q_ocf_to_or: source=tushare fina_indicator; desc=经营活动产生的现金流量净额/经营活动净收益(单季度)
+      basic_eps_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=基本每股收益同比增长率(%)
+      dt_eps_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=稀释每股收益同比增长率(%)
+      cfps_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=每股经营活动产生的现金流量净额同比增长率(%)
+      op_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业利润同比增长率(%)
+      ebt_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=利润总额同比增长率(%)
+      netprofit_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=归属母公司股东的净利润同比增长率(%)
+      dt_netprofit_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=归属母公司股东的净利润-扣除非经常损益同比增长率(%)
+      ocf_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=经营活动产生的现金流量净额同比增长率(%)
+      roe_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=净资产收益率(摊薄)同比增长率(%)
+      bps_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=每股净资产相对年初增长率(%)
+      assets_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=资产总计相对年初增长率(%)
+      eqt_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=归属母公司的股东权益相对年初增长率(%)
+      tr_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业总收入同比增长率(%)
+      or_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业收入同比增长率(%)
+      q_gr_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业总收入同比增长率(%)(单季度)
+      q_gr_qoq: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业总收入环比增长率(%)(单季度)
+      q_sales_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业收入同比增长率(%)(单季度)
+      q_sales_qoq: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业收入环比增长率(%)(单季度)
+      q_op_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业利润同比增长率(%)(单季度)
+      q_op_qoq: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=营业利润环比增长率(%)(单季度)
+      q_profit_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=净利润同比增长率(%)(单季度)
+      q_profit_qoq: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=净利润环比增长率(%)(单季度)
+      q_netprofit_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=归属母公司股东的净利润同比增长率(%)(单季度)
+      q_netprofit_qoq: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=归属母公司股东的净利润环比增长率(%)(单季度)
+      equity_yoy: unit=percent (%); caliber=tushare财报口径(百分比类为百分值, 12.5=12.5%); source=tushare fina_indicator; desc=净资产同比增长率
+      rd_exp: unit=yuan (CNY); caliber=tushare财报口径(元); source=tushare fina_indicator; desc=研发费用
+      update_flag: source=tushare fina_indicator; desc=更新标识
+  stk_moneyflow:
+    api: moneyflow
+    doc: https://tushare.pro/document/2?doc_id=170
+    columns:
+      ts_code: source=tushare moneyflow; desc=股票代码(ts_code格式, 如000001.SZ)
+      trade_date: source=tushare moneyflow; desc=交易日期
+      buy_sm_vol: unit=lots; caliber=小单(成交额<5万), 基于主动买卖单统计; source=tushare moneyflow; desc=小单买入量; ambiguous_with=buy_sm_amount
+      buy_sm_amount: unit=万元 (ten-thousand CNY); caliber=小单(成交额<5万), 基于主动买卖单统计, 工具层×10000换算为元输出; source=tushare moneyflow; desc=小单买入金额; ambiguous_with=buy_sm_vol
+      sell_sm_vol: unit=lots; caliber=小单(成交额<5万), 基于主动买卖单统计; source=tushare moneyflow; desc=小单卖出量; ambiguous_with=sell_sm_amount
+      sell_sm_amount: unit=万元 (ten-thousand CNY); caliber=小单(成交额<5万), 基于主动买卖单统计, 工具层×10000换算为元输出; source=tushare moneyflow; desc=小单卖出金额; ambiguous_with=sell_sm_vol
+      buy_md_vol: unit=lots; caliber=中单(成交额5万~20万), 基于主动买卖单统计; source=tushare moneyflow; desc=中单买入量; ambiguous_with=buy_md_amount
+      buy_md_amount: unit=万元 (ten-thousand CNY); caliber=中单(成交额5万~20万), 基于主动买卖单统计, 工具层×10000换算为元输出; source=tushare moneyflow; desc=中单买入金额; ambiguous_with=buy_md_vol
+      sell_md_vol: unit=lots; caliber=中单(成交额5万~20万), 基于主动买卖单统计; source=tushare moneyflow; desc=中单卖出量; ambiguous_with=sell_md_amount
+      sell_md_amount: unit=万元 (ten-thousand CNY); caliber=中单(成交额5万~20万), 基于主动买卖单统计, 工具层×10000换算为元输出; source=tushare moneyflow; desc=中单卖出金额; ambiguous_with=sell_md_vol
+      buy_lg_vol: unit=lots; caliber=大单(成交额20万~100万), 基于主动买卖单统计; source=tushare moneyflow; desc=大单买入量; ambiguous_with=buy_lg_amount
+      buy_lg_amount: unit=万元 (ten-thousand CNY); caliber=大单(成交额20万~100万), 基于主动买卖单统计, 工具层×10000换算为元输出; source=tushare moneyflow; desc=大单买入金额; ambiguous_with=buy_lg_vol
+      sell_lg_vol: unit=lots; caliber=大单(成交额20万~100万), 基于主动买卖单统计; source=tushare moneyflow; desc=大单卖出量; ambiguous_with=sell_lg_amount
+      sell_lg_amount: unit=万元 (ten-thousand CNY); caliber=大单(成交额20万~100万), 基于主动买卖单统计, 工具层×10000换算为元输出; source=tushare moneyflow; desc=大单卖出金额; ambiguous_with=sell_lg_vol
+      buy_elg_vol: unit=lots; caliber=特大单(成交额>=100万), 基于主动买卖单统计; source=tushare moneyflow; desc=特大单买入量; ambiguous_with=buy_elg_amount
+      buy_elg_amount: unit=万元 (ten-thousand CNY); caliber=特大单(成交额>=100万), 基于主动买卖单统计, 工具层×10000换算为元输出; source=tushare moneyflow; desc=特大单买入金额; ambiguous_with=buy_elg_vol
+      sell_elg_vol: unit=lots; caliber=特大单(成交额>=100万), 基于主动买卖单统计; source=tushare moneyflow; desc=特大单卖出量; ambiguous_with=sell_elg_amount
+      sell_elg_amount: unit=万元 (ten-thousand CNY); caliber=特大单(成交额>=100万), 基于主动买卖单统计, 工具层×10000换算为元输出; source=tushare moneyflow; desc=特大单卖出金额; ambiguous_with=sell_elg_vol
+      net_mf_vol: unit=lots; source=tushare moneyflow; desc=净流入量; ambiguous_with=net_mf_amount
+      net_mf_amount: unit=万元 (ten-thousand CNY); caliber=工具层×10000换算为元输出; source=tushare moneyflow; desc=净流入额; ambiguous_with=net_mf_vol
+  stk_top_list:
+    api: top_list
+    doc: https://tushare.pro/document/2?doc_id=106
+    columns:
+      trade_date: source=tushare top_list; desc=交易日期
+      ts_code: source=tushare top_list; desc=股票代码(ts_code格式, 如000001.SZ)
+      name: source=tushare top_list; desc=股票名称
+      close: unit=yuan (CNY); adjust=raw; source=tushare top_list; desc=收盘价
+      pct_change: unit=percent (%); source=tushare top_list; desc=涨跌幅
+      turnover_rate: unit=percent (%); source=tushare top_list; desc=换手率
+      amount: unit=yuan (CNY); caliber=文档样例验证为元; source=tushare top_list; desc=总成交额; ambiguous_with=l_amount
+      l_sell: unit=yuan (CNY); source=tushare top_list; desc=龙虎榜卖出额
+      l_buy: unit=yuan (CNY); source=tushare top_list; desc=龙虎榜买入额
+      l_amount: unit=yuan (CNY); source=tushare top_list; desc=龙虎榜成交额; ambiguous_with=amount
+      net_amount: unit=yuan (CNY); source=tushare top_list; desc=龙虎榜净买入额; ambiguous_with=net_rate
+      net_rate: unit=percent (%); source=tushare top_list; desc=龙虎榜净买额占比; ambiguous_with=net_amount
+      amount_rate: unit=percent (%); source=tushare top_list; desc=龙虎榜成交额占比
+      float_values: unit=yuan (CNY); source=tushare top_list; desc=当日流通市值
+      reason: source=tushare top_list; desc=上榜理由
+  stk_margin:
+    api: margin_detail
+    doc: https://tushare.pro/document/2?doc_id=59
+    columns:
+      ts_code: source=tushare margin_detail; desc=股票代码(ts_code格式, 如000001.SZ)
+      trade_date: source=tushare margin_detail; desc=交易日期
+      name: source=tushare margin_detail; desc=股票名称(20190910后有数据)
+      rzye: unit=yuan (CNY); caliber=本日融资余额=前日融资余额+本日融资买入-本日融资偿还额; source=tushare margin_detail; desc=融资余额; ambiguous_with=rzrqye
+      rqye: unit=yuan (CNY); caliber=本日融券余额=本日融券余量×本日收盘价; source=tushare margin_detail; desc=融券余额; ambiguous_with=rqyl
+      rzmre: unit=yuan (CNY); source=tushare margin_detail; desc=融资买入额
+      rqyl: unit=股; caliber=本日融券余量=前日融券余量+本日融券卖出量-本日融券买入量-本日现券偿还量; source=tushare margin_detail; desc=融券余量; ambiguous_with=rqye
+      rzche: unit=yuan (CNY); source=tushare margin_detail; desc=融资偿还额
+      rqchl: unit=股; source=tushare margin_detail; desc=融券偿还量
+      rqmcl: unit=股/份/手; caliber=标的为股票计股、基金计份、债券计手; source=tushare margin_detail; desc=融券卖出量
+      rzrqye: unit=yuan (CNY); caliber=融资融券余额=融资余额+融券余额; source=tushare margin_detail; desc=融资融券余额; ambiguous_with=rzye
+  stk_info:
+    api: stock_basic
+    doc: https://tushare.pro/document/2?doc_id=25
+    columns:
+      ts_code: source=tushare stock_basic; desc=股票代码(ts_code格式, 如000001.SZ)
+      symbol: source=tushare stock_basic; desc=股票代码(6位数字)
+      name: source=tushare stock_basic; desc=股票名称
+      area: source=tushare stock_basic; desc=地域
+      industry: source=tushare stock_basic; desc=所属行业
+      cnspell: source=tushare stock_basic; desc=股票名称拼音缩写
+      market: source=tushare stock_basic; desc=市场类型(主板/创业板/科创板/CDR)
+      list_date: source=tushare stock_basic; desc=上市日期(YYYYMMDD格式)
+      act_name: source=tushare stock_basic; desc=实控人名称
+      act_ent_type: source=tushare stock_basic; desc=实控人企业性质
+  stk_top_inst:
+    api: top_inst
+    doc: https://tushare.pro/document/2?doc_id=107
+    columns:
+      trade_date: source=tushare top_inst; desc=交易日期
+      ts_code: source=tushare top_inst; desc=股票代码(ts_code格式, 如000001.SZ)
+      exalter: source=tushare top_inst; desc=营业部名称(交易席位)
+      buy: unit=yuan (CNY); source=tushare top_inst; desc=买入额; ambiguous_with=buy_rate
+      buy_rate: unit=percent (%); source=tushare top_inst; desc=买入占总成交比例; ambiguous_with=buy
+      sell: unit=yuan (CNY); source=tushare top_inst; desc=卖出额; ambiguous_with=sell_rate
+      sell_rate: unit=percent (%); source=tushare top_inst; desc=卖出占总成交比例; ambiguous_with=sell
+      net_buy: unit=yuan (CNY); source=tushare top_inst; desc=净成交额
+      side: source=tushare top_inst; desc=买卖类型(0=买入金额最大的前5名, 1=卖出金额最大的前5名)
+      reason: source=tushare top_inst; desc=上榜理由
+  stk_moneyflow_hsgt:
+    api: moneyflow_hsgt
+    doc: https://tushare.pro/document/2?doc_id=47
+    columns:
+      trade_date: source=tushare moneyflow_hsgt; desc=交易日期
+      ggt_ss: unit=万元 (10k CNY); caliber=2026-08-12实测与tushare活数据逐位一致; 官方文档"百万元"标注与实测数量级不符, 以实测为准; source=tushare moneyflow_hsgt; desc=港股通(上海)资金流向
+      ggt_sz: unit=万元 (10k CNY); caliber=2026-08-12实测与tushare活数据逐位一致; 官方文档"百万元"标注与实测数量级不符, 以实测为准; source=tushare moneyflow_hsgt; desc=港股通(深圳)资金流向
+      hgt: unit=万元 (10k CNY); caliber=2026-08-12实测CH与tushare活数据一致(375048.34万元≈37.5亿, 符合北向数量级); 注意工具层clickhouse_fallbacks×100为缺陷(P1.4修复); source=tushare moneyflow_hsgt; desc=沪股通(北向上海)资金流; ambiguous_with=north_money
+      sgt: unit=万元 (10k CNY); caliber=2026-08-12实测CH与tushare活数据一致; 注意工具层clickhouse_fallbacks×100为缺陷(P1.4修复); source=tushare moneyflow_hsgt; desc=深股通(北向深圳)资金流
+      north_money: unit=万元 (10k CNY); caliber=north_money=hgt+sgt, 2026-08-12实测与tushare活数据逐位一致; 注意工具层clickhouse_fallbacks×100为缺陷(P1.4修复); source=tushare moneyflow_hsgt; desc=北向资金; ambiguous_with=south_money
+      south_money: unit=万元 (10k CNY); caliber=south_money=ggt_ss+ggt_sz, 2026-08-12实测与tushare活数据一致; 注意工具层clickhouse_fallbacks×100为缺陷(P1.4修复); source=tushare moneyflow_hsgt; desc=南向资金; ambiguous_with=north_money
+  trade_calendar:
+    api: trade_cal
+    doc: https://tushare.pro/document/2?doc_id=26
+    columns:
+      exchange: source=tushare trade_cal; desc=交易所代码(SSE=上交所, SZSE=深交所; 另有CFFEX/SHFE/CZCE/DCE/INE)
+      cal_date: source=tushare trade_cal; desc=日历日期(YYYYMMDD格式)
+      is_open: source=tushare trade_cal; desc=是否交易(0=休市, 1=交易)
+      pretrade_date: source=tushare trade_cal; desc=上一个交易日(YYYYMMDD格式)
