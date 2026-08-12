@@ -155,7 +155,7 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 
 | # | 任务 | 背景与目标 |
 |---|---|---|
-| R1 | **ClickHouse 语义层深度研究** | 2026-08-11 调研结论：mymain 的 CH 语义层是「隐性的、代码携带的」——业务→表列映射/单位换算固化在 Python 工具链（connector 模板 + fallbacks 换算 + 工具描述 + skill 文档），数据库层零语义（仓库无 DDL、列无 COMMENT，CH 实例当前不可达未直查 `system.columns`）。已证实的缺口：① `get_market_data` 的 `SELECT *` 泄漏路径（pe_ttm/pb/total_mv 等 ~199 列）无语义标注，契约漂移；② 语义与数据物理分离，任何绕过工具链的直连（含 ClickHouse MCP）立即丢失全部语义。研究方向：a) 语义下沉数据库——CH 列 COMMENT + schema DDL 入仓库；b) 语义视图层——views + COMMENT（Altinity 模式：视图变工具）；c) SELECT * 泄漏路径显式工具化（如 `get_valuation`：pe_ttm/pb/total_mv 固定模板 + tushare daily_basic 兜底）；d) 指标字典——pe_ttm TTM 口径、amount/volume 单位、close vs close_hfq 选择规则；e) 若引入 ClickHouse MCP 供人工探索，语义层必须先库化或包领域工具层（官方 hdx-evals 证明领域工具 > 裸 SQL：准确率 +18%）。相关证据链见 #1062 审计评论与 opencode 会话记录 |
+| R1 ✅ | **ClickHouse 语义层深度研究**（2026-08-12 完成。正式调研结论（英文原文，含全部出处链接/架构图/数据流/场景决策示例）：[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md)；中文决策报告：[`CLICKHOUSE_SEMANTIC_LAYER_REPORT.md`](CLICKHOUSE_SEMANTIC_LAYER_REPORT.md)） | 决策结论：**分层混合 + 语义下沉数据库**——不引入官方 mcp-clickhouse 作主接口（UInt64 损坏 #111 / readonly 可击穿 #131 / 无结果上限）；保留强化 F5 领域工具层为主通道；新增 L0 地基（DDL 入仓库 + COMMENT COLUMN 结构化注释 + llm_role 只读用户）与 L2/L3 分层探索 + 受约束 SQL 逃生舱；暂不引入 dbt SL/Cube（单消费者不满足价值判据）。落地分四阶段（Phase 0 地基 → Phase 1 主通道强化，协同 #1065/#1067 → Phase 2 灵活性通道 → Phase 3 可选演进）。原始调研证据——2026-08-11 调研结论：mymain 的 CH 语义层是「隐性的、代码携带的」——业务→表列映射/单位换算固化在 Python 工具链（connector 模板 + fallbacks 换算 + 工具描述 + skill 文档），数据库层零语义（仓库无 DDL、列无 COMMENT，CH 实例当前不可达未直查 `system.columns`）。已证实的缺口：① `get_market_data` 的 `SELECT *` 泄漏路径（pe_ttm/pb/total_mv 等 ~199 列）无语义标注，契约漂移；② 语义与数据物理分离，任何绕过工具链的直连（含 ClickHouse MCP）立即丢失全部语义。研究方向：a) 语义下沉数据库——CH 列 COMMENT + schema DDL 入仓库；b) 语义视图层——views + COMMENT（Altinity 模式：视图变工具）；c) SELECT * 泄漏路径显式工具化（如 `get_valuation`：pe_ttm/pb/total_mv 固定模板 + tushare daily_basic 兜底）；d) 指标字典——pe_ttm TTM 口径、amount/volume 单位、close vs close_hfq 选择规则；e) 若引入 ClickHouse MCP 供人工探索，语义层必须先库化或包领域工具层（官方 hdx-evals 证明领域工具 > 裸 SQL：准确率 +18%）。相关证据链见 #1062 审计评论与 opencode 会话记录 |
 
 ## 5. 迭代笔记
 
@@ -195,3 +195,40 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 - 验证基线：memory **321/2**、ClickHouse **13/8**、README+manifest 门禁 **54 passed**、env gate **exit 0** —— 与合并前完全一致。
 - **#1062（上游 volume 单位不一致）推进**：完成 Phase 0 全量单位审计（实证矩阵：tencent/eastmoney/akshare/mootdx(暂定)/tushare=手，baostock=股，HK 链全链=股；tencent/eastmoney 市场依赖；akshare 官方文档标注错误——文档写「股」实测为「手」），Phase 1/2 分别以 Draft PR #1065 / #1067 提交上游。详见 §2.4。
 - **新增 §4.6 待办研究任务**：R1 ClickHouse 语义层深度研究（语义下沉数据库 / 视图层 / SELECT * 泄漏路径工具化 / 指标字典 / MCP 引入前置条件）。
+
+### 2026-08-12 ClickHouse 语义层落地（R1 执行：Phase 0–2 全完成，分支 `feat/clickhouse-semantic-layer`）
+
+R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md) / [`CLICKHOUSE_SEMANTIC_LAYER_REPORT.md`](CLICKHOUSE_SEMANTIC_LAYER_REPORT.md) / [`CLICKHOUSE_ITERATION_PLAN.md`](CLICKHOUSE_ITERATION_PLAN.md)）全部落地；同步管道诊断与修复全程见 [`CLICKHOUSE_SYNC_DIAGNOSIS.md`](CLICKHOUSE_SYNC_DIAGNOSIS.md)。
+
+**Phase 0 地基（仓库侧）**
+- `schema/clickhouse/`：56 张表 DDL 快照（`tools/clickhouse_export_ddl.py` 幂等导出、`--check` 漂移检测）+ `comments.yaml`（9 张 Tier-1 表 444 列，约定 `unit=/adjust=/caliber=/source=/desc=/ambiguous_with=`）+ README（真源关系与漂移处理流程）。
+- `tools/`：`ci_clickhouse_comments_gate.py`（CI 门禁，接入 `test.yml`，负向测试通过）、`clickhouse_apply_comments.py`（dry-run/apply/verify）。
+- 生产库 COMMENT 已应用 **444/444**，`system.columns` 空 COMMENT 计数 = 0。
+
+**P0.0 同步管道诊断与修复（宿主 `/opt/qdata/sync`，仓库外）**
+- 双根因：① **状态投毒**——空结果被永久标记已同步（未来日期一并标记）→ 全部 trade_date 表冻结在 2026-07-28；② **None 泄漏**——tushare Arrow-backed `str` dtype 绕过 `dtype==object` 清理 → 非空 String 列插入报 `DataError` → `set -e` 连带中止 snapshot/period 模式。
+- 修复：`_query_with_retry` 页级重试+退避；`_paginate` 末页容错（tushare 在 offset 越过数据末尾时**报错而非返回空页**）；未来日期过滤；空结果 7 天宽限窗口；`set -e` 改模式解耦。
+- 回填追平：trade_date **15 表**（~4000 万行）/ period **8 表** / snapshot **8 表** 全部至 T-1。
+- `idx_weight` 深分页墙：offset ≥ ~102000 被 tushare 拒绝，末页容错兜底；`20260630` 去重（204000→102000，0 重复对）。**注意**：`idx_weight.trade_date` 为 `String` 存 `'YYYYMMDD'`（无连字符），与 `stk_factor_pro` 的 `Date` 类型不同。
+
+**P0.3 安全加固**
+- `llm_role`（SELECT-only on `ashare.*` + `llm_profile`：30s/2GB/100 万行/50MB）；`default` 设密码 + networks 收紧至 `127.0.0.1/::1/172.16.0.0/12`。
+- 踩坑：users.d 用 `password_sha256_hex` 与镜像自带 `users.xml` 的空 `<password>` 合并冲突（Code 36 crash-loop）→ 改用同字段 `<password>` 覆盖。凭据原子分发 `/opt/qdata/.env` + `agent/.env` + `daily_sync.sh` 健康检查。V1–V7 验证通过，cron 已恢复。
+
+**漂移治理（用户指令）**
+- `engine._apply_upstream_drift`：tushare 上游新列 → 自动 `ALTER ADD COLUMN`（Nullable）+ `schema_drift_log` 审计表；上游消失列仅记录绝不删。回填中实战触发 18 条事件（`fin_express`/`fin_forecast` 自动扩列 `update_flag`）。仓库侧闭环见 `schema/clickhouse/README.md`。
+
+**Phase 1 主通道强化（仓库代码）**
+- P1.1 `SELECT *` 消除 → `clickhouse_columns.py` 显式 199 列；P1.2 `_provenance` 单位元数据（`market_data.py`，纯增量）；P1.3 `get_valuation` 工具（固定模板 + COMMENT 口径 + tushare daily_basic 兜底）；P1.4 `clickhouse_units.py` registry（读 `comments.yaml`、fail-soft 内建回退），移除 `clickhouse_fallbacks.py` ×10⁴ 与 `tushare_fallbacks.py` 北向 **×100 硬编码（实测 100 倍缺陷：north_money 原始即万元，2026-08-12 CH 与 tushare 活数据逐位一致）**。
+- 验证：CH 套件 **53 passed / 9 skipped**（基线 13/8 保持）；回测回归单/多标的 **bit-for-bit 一致**；锚点行 600519.SH 2026-07-27（close=1289.5、vol=31990.44 手、amount=4129228.56 千元、total_mv=161198022.32 万元）通过。
+
+**Phase 2 灵活性通道（仓库代码）**
+- `ch_list_tables` / `ch_describe_table` / `ch_query`（仅 `llm_role` 连接，**绝不回退 default**）；sqlglot AST 守卫（单一 SELECT；拒 DDL/DML/Command/UNION/GLOBAL/SETTINGS/INTO/占位符/表函数；表白名单 live→snapshot 降级；LIMIT 500 注入/钳制；~50KB 截断+显式声明；#111 自定义序列化；审计日志）。
+- MCP 镜像 3 工具，计数 **70→73**（5 份 README + `agent/SKILL.md` 同步）。
+- 验证：65 guard 测试 + 17 攻击向量全拒；golden set 经 SSH 隧道 + llm_role 实测 **16/16（100%）**。
+
+**已知边界 / 遗留**
+- `llm_role` 1M 行/50MB 限额限制全表扫描聚合（设计内；探索通道面向键高效查询）。
+- `/opt/qdata/sync` 管道改动在宿主侧、仓库外（Phase 3 纳入 git 后再版本化）。
+- `idx_weight` 月末大日期（~10 万行）受 tushare 深分页墙限制，末页容错保证数据完整但单次抓取封顶 ~102k 行。
+- `stk_cyq_chips`/`stk_cyq_perf` 维持排除（token 无筹码接口权限）。
