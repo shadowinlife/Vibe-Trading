@@ -6,6 +6,13 @@ the full CH data.  For ranges spanning today it federates CH (T-1 and
 earlier) with a network source (today's OHLCV) via outer-join merge,
 where CH columns take priority.
 
+The SELECT never uses ``*``: the column list is the explicit contract in
+``backtest.loaders.clickhouse_columns`` (generated from the DDL snapshot
+``schema/clickhouse/ashare__stk_factor_pro.sql``), so a schema change
+fails loudly instead of silently leaking new columns (Flow-B closure,
+CLICKHOUSE_ITERATION_PLAN.md P1.1).  Returned frames carry additive unit
+metadata under ``df.attrs["_provenance"]`` (P1.2).
+
 Non-A-share symbols and minute intervals return an empty dict so the
 fallback chain continues.
 """
@@ -19,6 +26,7 @@ from typing import TYPE_CHECKING
 import pandas as pd
 
 from backtest.loaders.base import cached_loader_fetch, validate_date_range
+from backtest.loaders.clickhouse_columns import stk_factor_pro_column_sql
 from backtest.loaders.registry import register
 
 if TYPE_CHECKING:
@@ -91,15 +99,16 @@ class DataLoader:
             end_date: End date (YYYY-MM-DD).
             interval: Bar size.  Only ``1D`` is supported; minute
                 intervals return an empty dict.
-            fields: Ignored — CH always returns all ``stk_factor_pro``
-                columns.
+            fields: Ignored — CH returns the full explicit column contract
+                (``clickhouse_columns.STK_FACTOR_PRO_COLUMNS``).
 
         Returns:
             Mapping ``{code: DataFrame}``.  Non-A-share codes and
             minute intervals yield an empty dict so the fallback chain
-            continues.
+            continues.  Frames served (fully or partly) from ClickHouse
+            carry additive unit metadata under ``attrs["_provenance"]``.
         """
-        del fields  # CH always returns all columns
+        del fields  # CH returns the full explicit column contract
         validate_date_range(start_date, end_date)
 
         if interval != "1D":
@@ -126,7 +135,9 @@ class DataLoader:
             # --- 2. Pure historical (no federation) → return CH directly ----
             if not needs_federation:
                 if ch_df is not None and not ch_df.empty:
-                    result[code] = self._normalize_ch_frame(ch_df)
+                    result[code] = self._with_provenance(
+                        self._normalize_ch_frame(ch_df)
+                    )
                 continue
 
             # --- 3. Federation: network today + CH merge ---------------------
@@ -144,14 +155,16 @@ class DataLoader:
                 continue
             if net_empty:
                 if ch_df is not None:
-                    result[code] = self._normalize_ch_frame(ch_df)
+                    result[code] = self._with_provenance(
+                        self._normalize_ch_frame(ch_df)
+                    )
                 continue
 
             # Merge: outer-join on trade_date, CH columns take priority.
             assert ch_df is not None and net_df is not None
             ch_norm = self._normalize_ch_frame(ch_df)
             merged = ch_norm.combine_first(net_df)
-            result[code] = merged
+            result[code] = self._with_provenance(merged)
 
         return result
 
@@ -180,7 +193,7 @@ class DataLoader:
         start_date: str,
         end_date: str,
     ) -> pd.DataFrame | None:
-        """Fetch all ``stk_factor_pro`` columns for *ts_code*, cached."""
+        """Fetch the full ``stk_factor_pro`` column contract for *ts_code*, cached."""
 
         def _fetch() -> pd.DataFrame | None:
             try:
@@ -201,7 +214,7 @@ class DataLoader:
             timeframe="1D",
             start_date=start_date,
             end_date=end_date,
-            fields=None,  # CH returns all columns
+            fields=None,  # CH returns the full explicit column contract
             fetch=_fetch,
         )
 
@@ -211,13 +224,18 @@ class DataLoader:
         start_date: str,
         end_date: str,
     ) -> pd.DataFrame:
-        """Query ``stk_factor_pro`` for all columns, sorted ascending."""
-        sql = """
-            SELECT *
+        """Query ``stk_factor_pro`` for the full column contract, ascending.
+
+        The SELECT lists every column explicitly (no ``SELECT *``) so the
+        loader's output contract is pinned to the DDL snapshot and a schema
+        change surfaces as a query error instead of a silent column leak.
+        """
+        sql = f"""
+            SELECT {stk_factor_pro_column_sql()}
             FROM stk_factor_pro
-            WHERE ts_code = {ts_code:String}
-              AND trade_date >= {start_date:String}
-              AND trade_date <= {end_date:String}
+            WHERE ts_code = {{ts_code:String}}
+              AND trade_date >= {{start_date:String}}
+              AND trade_date <= {{end_date:String}}
             ORDER BY trade_date
         """
         return self._connector.query(
@@ -228,6 +246,22 @@ class DataLoader:
                 "param_end_date": end_date,
             },
         )
+
+    @staticmethod
+    def _with_provenance(df: pd.DataFrame) -> pd.DataFrame:
+        """Attach additive ``_provenance`` unit metadata to a served frame.
+
+        Fail-soft: any problem building the metadata (e.g. the unit registry
+        is unavailable) leaves the frame untouched — provenance is additive
+        only and must never break the bar pipeline (P1.2).
+        """
+        try:
+            from src.clickhouse_units import clickhouse_bar_provenance
+
+            df.attrs["_provenance"] = clickhouse_bar_provenance("stk_factor_pro")
+        except Exception as exc:  # noqa: BLE001 — additive metadata is best-effort
+            logger.debug("clickhouse provenance metadata unavailable: %s", exc)
+        return df
 
     @staticmethod
     def _normalize_ch_frame(df: pd.DataFrame) -> pd.DataFrame:

@@ -29,8 +29,9 @@ def test_fund_flow_maps_moneyflow_buckets_to_existing_schema() -> None:
             }
         ]
     )
-    with patch.object(tf, "_pro_api", return_value=pro), patch.object(
-        tf, "_date_window", return_value=("20240101", "20240103")
+    with (
+        patch.object(tf, "_pro_api", return_value=pro),
+        patch.object(tf, "_date_window", return_value=("20240101", "20240103")),
     ):
         result = tf.fetch_fund_flow("600519.SH", days=5)
 
@@ -60,7 +61,13 @@ def test_dragon_tiger_maps_top_list_and_top_inst() -> None:
             }
         ],
         top_inst=lambda **_: [
-            {"exalter": "Institution", "side": "0", "buy": 2.0e8, "sell": 0.0, "net_buy": 2.0e8}
+            {
+                "exalter": "Institution",
+                "side": "0",
+                "buy": 2.0e8,
+                "sell": 0.0,
+                "net_buy": 2.0e8,
+            }
         ],
     )
     with patch.object(tf, "_pro_api", return_value=pro):
@@ -73,33 +80,58 @@ def test_dragon_tiger_maps_top_list_and_top_inst() -> None:
     assert data["seats"][0]["net"] == 2.0e8
 
 
-def test_northbound_converts_tushare_million_yuan_to_10k_cny() -> None:
+def test_northbound_passes_tushare_10k_cny_through_uncorrected() -> None:
+    """Tushare ``moneyflow_hsgt`` values are already 万元 (10k CNY).
+
+    Regression guard for the P1.4 unit correction: the legacy ×100 rescaling
+    was a confirmed 100x data bug (verified 2026-08-12 against live data —
+    CH north_money == tushare live value, ≈37.5亿元 northbound magnitude) and
+    must never come back. Values pass through unchanged.
+    """
     pro = SimpleNamespace(
         moneyflow_hsgt=lambda **_: [
             {"trade_date": "20240102", "hgt": 12.0, "sgt": -2.0, "north_money": 10.0},
             {"trade_date": "20240103", "hgt": 3.5, "sgt": 1.0, "north_money": 4.5},
         ]
     )
-    with patch.object(tf, "_pro_api", return_value=pro), patch.object(
-        tf, "_date_window", return_value=("20240101", "20240103")
+    with (
+        patch.object(tf, "_pro_api", return_value=pro),
+        patch.object(tf, "_date_window", return_value=("20240101", "20240103")),
     ):
         data = tf.fetch_northbound_flow(lookback_days=2)
 
     assert data["unit"] == "10k CNY"
-    assert data["history"][0]["shanghai_connect"] == 1200.0
-    assert data["history"][0]["total"] == 1000.0
-    assert data["realtime"]["total"] == 450.0
+    assert data["history"][0]["shanghai_connect"] == 12.0
+    assert data["history"][0]["total"] == 10.0
+    assert data["realtime"]["total"] == 4.5
 
 
 def test_margin_trading_maps_and_sorts_most_recent_first() -> None:
     pro = SimpleNamespace(
         margin_detail=lambda **_: [
-            {"trade_date": "20240102", "rzye": 1.0, "rzmre": 2.0, "rzche": 3.0, "rqye": 4.0, "rqyl": 5.0, "rzrqye": 6.0},
-            {"trade_date": "20240103", "rzye": 7.0, "rzmre": 8.0, "rzche": 9.0, "rqye": 10.0, "rqyl": 11.0, "rzrqye": 12.0},
+            {
+                "trade_date": "20240102",
+                "rzye": 1.0,
+                "rzmre": 2.0,
+                "rzche": 3.0,
+                "rqye": 4.0,
+                "rqyl": 5.0,
+                "rzrqye": 6.0,
+            },
+            {
+                "trade_date": "20240103",
+                "rzye": 7.0,
+                "rzmre": 8.0,
+                "rzche": 9.0,
+                "rqye": 10.0,
+                "rqyl": 11.0,
+                "rzrqye": 12.0,
+            },
         ]
     )
-    with patch.object(tf, "_pro_api", return_value=pro), patch.object(
-        tf, "_date_window", return_value=("20240101", "20240103")
+    with (
+        patch.object(tf, "_pro_api", return_value=pro),
+        patch.object(tf, "_date_window", return_value=("20240101", "20240103")),
     ):
         data = tf.fetch_margin_trading("600519.SH", days=5)
 
