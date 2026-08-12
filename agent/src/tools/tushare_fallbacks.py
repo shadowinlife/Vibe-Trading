@@ -46,7 +46,9 @@ def _records(frame: Any) -> list[dict[str, Any]]:
 def _compact_date(value: str) -> str:
     digits = str(value).strip().replace("-", "")
     if len(digits) != 8 or not digits.isdigit():
-        raise TushareFallbackUnavailable(f"invalid date for tushare fallback: {value!r}")
+        raise TushareFallbackUnavailable(
+            f"invalid date for tushare fallback: {value!r}"
+        )
     return digits
 
 
@@ -179,6 +181,16 @@ def fetch_dragon_tiger(trade_date: str, code: str | None) -> dict[str, Any]:
 
 
 def fetch_northbound_flow(*, lookback_days: int) -> dict[str, Any]:
+    """Fetch Stock-Connect northbound net flow via tushare ``moneyflow_hsgt``.
+
+    Unit correction (ClickHouse semantic-layer P1.4): ``hgt`` / ``sgt`` /
+    ``north_money`` are returned by tushare already in 万元 (10k CNY) — the
+    same caliber as the ClickHouse mirror (verified 2026-08-12: CH
+    20260722 north_money=375048.34 equals the tushare live value, ≈37.5亿元,
+    the correct northbound magnitude). The legacy ×100 rescaling was a
+    confirmed 100x data bug and has been removed: values now pass through
+    unchanged so the envelope's ``"10k CNY"`` unit label is truthful.
+    """
     start_date, end_date = _date_window(lookback_days)
     rows = _records(_pro_api().moneyflow_hsgt(start_date=start_date, end_date=end_date))
     history: list[dict[str, Any]] = []
@@ -189,9 +201,9 @@ def fetch_northbound_flow(*, lookback_days: int) -> dict[str, Any]:
         history.append(
             {
                 "trade_date": _dashed_date(row.get("trade_date")),
-                "shanghai_connect": shanghai * 100 if shanghai is not None else None,
-                "shenzhen_connect": shenzhen * 100 if shenzhen is not None else None,
-                "total": total * 100 if total is not None else None,
+                "shanghai_connect": shanghai,
+                "shenzhen_connect": shenzhen,
+                "total": total,
             }
         )
     history.sort(key=lambda item: item.get("trade_date") or "")
@@ -213,7 +225,9 @@ def fetch_margin_trading(code: str, *, days: int) -> dict[str, Any]:
     ts_code = _ts_code(code)
     start_date, end_date = _date_window(days)
     rows = _records(
-        _pro_api().margin_detail(ts_code=ts_code, start_date=start_date, end_date=end_date)
+        _pro_api().margin_detail(
+            ts_code=ts_code, start_date=start_date, end_date=end_date
+        )
     )
     normalized = [
         {
@@ -228,4 +242,8 @@ def fetch_margin_trading(code: str, *, days: int) -> dict[str, Any]:
         for row in rows
     ]
     normalized.sort(key=lambda item: item.get("trade_date") or "", reverse=True)
-    return {"code": ts_code.split(".", 1)[0], "ts_code": ts_code, "rows": normalized[:days]}
+    return {
+        "code": ts_code.split(".", 1)[0],
+        "ts_code": ts_code,
+        "rows": normalized[:days],
+    }
