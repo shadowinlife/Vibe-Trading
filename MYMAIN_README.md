@@ -25,9 +25,60 @@
 
 ---
 
+### release/mymain · 2026-08-17 — 基线：上游 `0713336c`
+
+- **发布 commit**：`release/mymain` tag 所指 commit（即本条发布记录 commit）
+- **上游基线**：`0713336c`（v0.1.13 后第 158 commit；本次对齐覆盖 `1bf1d8b4` 之后的 144 个上游 commit）
+- **差异总量**：124 个文件、+12,981/−105 行（含本文档与 `MYMAIN_DIVERGENCE.md`、`AGENTS.md` 等分支级文档及 ClickHouse 语义层 Phase 0–2；复核命令 `git diff 0713336c release/mymain --shortstat`）
+
+#### 核心差异（相对上游基线的 6 项本地能力，均未被上游取代）
+
+| # | 能力 | Commit | 核心内容 | 规模 |
+|---|------|--------|----------|------|
+| F1 | 反思课程存储 | `c4aa2774` | JSONL append-only 反思存储（`reflections.py`）+ `VT_MEMORY_REFLECTIONS` 等特性开关 | 5 文件 +643 |
+| F2 | MCP 记忆工具 | `c0909374` | 记忆生命周期 5 个工具经 MCP 暴露（`mcp_adapter.py`）+ `memory-lifecycle` SKILL 文档 + 多语言 README 更新 | 11 文件 +870/−42 |
+| F3 | 回测自动反思钩子 | `7291d2d0` | 回测完成后自动触发 memory_save + memory_reflect（`backtest_tool.py`）+ 并发 / 延迟性能测试 | 6 文件 +413 |
+| F4 | MemoryGuard + 存储路径 | `c459eebb` | FastMCP middleware 自动触发 save/reflect（`memory_guard.py`）；`VT_MEMORY_BASE_DIR` 支持项目级存储 | 5 文件 +229/−6 |
+| F5 | ClickHouse A 股数据源 | `0fc4a455` | ClickHouse 作为 A 股主力数据源（T-1 历史 199 列 + 网络源联邦当日 OHLCV），覆盖资金流 / 龙虎榜 / 融资融券 / 北向 4 类 flow 工具 | 16 文件 +2049/−6 |
+| F6 | ClickHouse 语义层 Phase 0–2 | `0620c448`→`3305e8ff`（fork PR #1 `e4ba22df`） | 56 表 DDL 快照 + 9 表 444 列 COMMENT + 单位 registry（`clickhouse_units.py`）+ 显式 199 列消除 SELECT * + `get_valuation` + llm_role 受约束灵活性通道（`ch_list_tables` / `ch_describe_table` / `ch_query`，sqlglot AST 守卫） | 97 文件 +8421/−73 |
+
+> F1–F6 的上游取代核查结论（2026-08-17）：上游本轮新增（tickerall 数据源、Options Lab、
+> tearsheet、factor research panel、Copilot / Novita provider、桌面端加固等）与上述能力
+> **均无重叠**，全部保留；上游对 F1–F4 核心文件零触碰、MCP 面零新增工具注册。
+> 详见 `MYMAIN_DIVERGENCE.md` §2。
+
+#### 核心迭代（本次发布完成的工作）
+
+1. **上游对齐**：merge `1bf1d8b4` 之后的 144 个 commit，仅 1 处真冲突
+   （`agent/SKILL.md` 计数/表述区 2 块：两侧各自 24→25 sources——本地 clickhouse vs 上游 tickerall），
+   合并解决为 26 sources + 90 skills，保留上游 tickerall explicit-only 表述。
+2. **fork 语义层回合**：fork/mymain 上的语义层 Phase 0–2（2026-08-12 经 fork PR #1 合入，
+   本地未拉回）合并回本地，仅 1 处真冲突（`agent/src/market_data.py` provenance 块：
+   上游 #1065 的 `volume_unit` × fork 的 `entry` 变量重构），两者合并保留。
+3. **新 README 同步**：上游本轮新增第六份 README（README_es.md），同步 skills 89→90、Tool 类 10→11。
+4. **计数基线更新**：数据源 25→26（clickhouse + tickerall）；MCP 工具 70/75→73/78
+   （+3 为语义层 ch_* 工具，非上游新增）；skills 维持 90。
+5. **#1062 闭环**：A 股 volume 单位不一致经 shadowinlife PR #1065 / #1067 上游合入
+   （2026-08-11），本次对齐继承；`MYMAIN_DIVERGENCE.md` §2.4 清空、§2.2 登记。
+6. **文档同步**：`MYMAIN_DIVERGENCE.md` 全面更新至新基线；回填上一条记录的发布 commit SHA。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件 | 329 passed / 2 skipped |
+| ClickHouse 套件（F5 + 语义层，10 文件） | 137 passed / 11 skipped |
+| ClickHouse schema 门禁（3 个 tools 单测 + comments gate） | 54 passed / exit 0 |
+| README / SKILL 计数门禁 | 54 passed |
+| env-var AST 门禁（`tools/ci_env_var_gate.py`） | exit 0 |
+| MCP 工具计数 | OFF=73 / ON=78 |
+| 提交规范 | 单一作者 shadowinlife + DCO 签名 + 无 AI 归属行 |
+
+---
+
 ### release/mymain · 2026-08-11 — 基线：上游 v0.1.13（`c33133f4`）
 
-- **发布 commit**：`release/mymain` tag 所指 commit（即首次引入本文档的 commit）
+- **发布 commit**：`9217c701`
 - **上游基线**：`c33133f4`（v0.1.13；本次对齐覆盖 `6c44732` 之后的 120 个上游 commit）
 - **差异总量**：39 个文件、+4,487/−53 行（含本文档与 `MYMAIN_DIVERGENCE.md`、`AGENTS.md` 等分支级文档；复核命令 `git diff c33133f4 release/mymain --shortstat`）
 
