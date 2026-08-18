@@ -58,4 +58,11 @@ RUN playwright install chromium --with-deps 2>/dev/null || true
 # it does not exist yet. Creating /home/opencode beforehand as root leaves the
 # runtime user (USER opencode) unable to write its own home.
 RUN useradd -m -d /home/opencode -s /bin/bash opencode
+# Pre-create the state/cache dirs opencode writes at startup. A bind mount
+# below any of them makes the daemon create missing parents as root, which
+# again locks the runtime user out (EACCES on ~/.local/state, ~/.cache).
+RUN mkdir -p /home/opencode/.local/share/opencode \
+             /home/opencode/.local/state \
+             /home/opencode/.cache && \
+    chown -R opencode:opencode /home/opencode
 RUN mkdir -p /workspace
