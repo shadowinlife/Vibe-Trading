@@ -61,8 +61,10 @@ ENV LANGCHAIN_PROVIDER=dashscope \
 
 EXPOSE 4096
 
+# opencode serve requires HTTP basic auth when OPENCODE_SERVER_PASSWORD is set;
+# an unauthenticated probe gets 401 and the container reports unhealthy.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -sf -o /dev/null http://localhost:4096/health || exit 1
+    CMD curl -sf -u opencode:"$OPENCODE_SERVER_PASSWORD" http://localhost:4096/health || exit 1
 
 USER opencode
 
