@@ -6,7 +6,7 @@
 
 `mymain` 是 shadowinlife 个人维护的**锁定演进分支**，承载记忆系统 T4 迭代与本地 ClickHouse A 股数据源，功能上领先于社区 `main`。本分支作为个人生产/验证环境的稳定基线，所有改动最终以社区 PR 形式回流上游；PR 合入后相应条目从本文档移除，全部合入后本分支回归纯跟踪分支。
 
-相对 `origin/main` 的差异总量：**124 个文件、+12981/−105 行**（含本文档、`MYMAIN_README.md`、分支级 AGENTS.md 扩展与 ClickHouse 语义层 Phase 0–2）。功能历史组织为 **6 个单一功能 commit**（F1→F5 + docs，每个可独立作为社区 PR 候选）+ 语义层 Phase 0–2（fork PR #1，个人部署独有）。
+相对 `origin/main` 的差异总量：**266 个文件、+47478/−105 行**（含本文档、`MYMAIN_README.md`、分支级 AGENTS.md 扩展、ClickHouse 语义层 Phase 0–2 与 `OpencodeAgent/` harness 层）。功能历史组织为 **6 个单一功能 commit**（F1→F5 + docs，每个可独立作为社区 PR 候选）+ 语义层 Phase 0–2（fork PR #1，个人部署独有）+ OpencodeAgent harness（F7，个人部署独有）。
 
 ## 2. 核心功能差异
 
@@ -19,6 +19,7 @@
 | **F3** | 回测反思钩子 | `run_backtest` 成功后 fire-and-forget 提取 run_card 课程（MCP 与 in-process 入口均覆盖，非致命）；附延迟基准（bench marker，p50<200ms / p95<500ms）与 5 会话并发测试 | `agent/src/tools/backtest_tool.py`（钩子段）、`agent/tests/memory/test_latency_bench.py`、`test_concurrent_mcp.py`、`conftest.py`、`pyproject.toml` | 随 F1 联动 | 上游 post-backtest attribution 是 prompt 驱动，机制不同 |
 | **F4** | MemoryGuard + 项目目录存储 | FastMCP middleware：工具调用后自动 memory_save + memory_reflect（零 LLM）；`VT_MEMORY_BASE_DIR` 支持记忆存项目目录；默认路径跟随 `get_runtime_root()`（`VIBE_TRADING_HOME` 感知） | `agent/src/memory/memory_guard.py`（新增）、`agent/src/memory/persistent.py`（`_default_memory_base`）、`agent/src/config/env_schema.py`（`MemoryConfig.base_dir`） | middleware **无条件注册**（债务 D1） | 上游 memory 仍锚定 `~/.vibe-trading`（上游对 persistent.py 的改动——FTS5 排序衰减、FTS5 tokenizer 下限——均不同关注面，两者并存） |
 | **F5** | ClickHouse A 股数据源 + 语义层 | CH HTTP connector + OHLCV loader（DataLoaderProtocol）+ 基本面 Provider（回退 Tushare）+ 四只资金流工具 CH 优先回退；A 股 chain 与路由以 clickhouse 为首选。**语义层 Phase 0–2**（2026-08-12）：56 表 DDL 快照 + 9 表 444 列 COMMENT + 单位 registry（`clickhouse_units.py`）+ 显式 199 列（`clickhouse_columns.py`）+ `get_valuation` + llm_role 受约束灵活性通道（`ch_list_tables` / `ch_describe_table` / `ch_query`，sqlglot AST 守卫） | `agent/src/clickhouse_connector.py`、`agent/backtest/loaders/clickhouse.py`、`agent/src/tools/clickhouse_fallbacks.py`、`schema/clickhouse/`、`agent/src/tools/clickhouse_query_tool.py`、`agent/src/tools/clickhouse_explore_tools.py`、`agent/src/tools/valuation_tool.py` 等 97 文件 | `CLICKHOUSE_*`（DataConfig）；灵活性通道 `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | 个人部署独有，不回流 |
+| **F7** | OpencodeAgent harness 层 | opencode + omo + 本仓库 MCP 的独立部署 harness（Docker 镜像 `opencode-serve`）：问题处理协议（明确/开放/待澄清/宏观四类分流，Least-to-Most 收敛漏斗 + Step-Back 拆分 + 单轮 ≤3 问轮次预算）、防幻觉与诚实拒答纪律（数字溯源三来源、弃权一等公民、五要素拒答模板）、escape-top 微观结构信号（CH 数据层 + 7 门验证框架）、三层选股、VT 联邦行情 scanner、cron + 钉钉通知基础设施、nano-search-mcp（新浪财经/百炼搜索 12 工具） | `OpencodeAgent/`（整目录，源自独立仓库 vibetrading-opencode-instruct，2026-08-17 引入） | 容器 env（`CLICKHOUSE_*` / `CLICKHOUSE_LLM_*` / `DASHSCOPE_API_KEY` 等，见 `OpencodeAgent/.env.example`） | 个人部署独有，不回流；消费 F5/F6 语义层（ch_* 工具）与 F1–F4 记忆能力 |
 
 ### 2.2 已随对齐消除的历史分歧（上游已承接）
 
@@ -245,3 +246,15 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](CLICKHOUSE_SEMANTIC_
 - **取代核查**：F1–F5 与语义层均未被上游取代（上游对 F1–F4 核心文件零触碰、MCP 零新增注册、与 ClickHouse 无重叠）；上游唯一 memory commit `fdb4cdd9`（FTS5 tokenizer 下限）与 F4 不同关注面，自动合并共存。
 - **#1062 闭环**：Phase 1/2（#1065 / #1067）已上游合入（2026-08-11），经本轮对齐继承；§2.4 清空、§2.2 登记。
 - 验证基线：memory **329/2**（+8 为上游新测试）、ClickHouse 全套（F5+语义层 10 文件）**137/11**、schema 门禁 **54 passed + comments gate exit 0**、README+manifest 门禁 **54 passed**、env gate **exit 0**、MCP **OFF=73 / ON=78**、loader 覆盖 pin **8 passed**（A 股 chain 链首仍 clickhouse）。
+
+### 2026-08-17 OpencodeAgent harness 引入（F7）
+
+- 独立仓库 `vibetrading-opencode-instruct`（opencode + omo + VT MCP 的 A 股量化研究 harness，Docker 镜像 `opencode-serve`）整体引入 `OpencodeAgent/` 目录管理，成为 mymain 的个人部署能力（F7，不回流社区）。
+- **引入前的迁移改造**（在 instruct 仓库内完成）：
+  - scripts 库瘦身：删除与 VT 重复的 `backtest/`（VT 回测引擎替代，22 个自研信号构建器迁入 `vibe_bridge/signal_builders/` 经 VT `generate(data_map)` 契约继续可用）、`chanlun/`（VT chanlun skill 替代）、`memory/`（VT F1–F4 替代）、`experiment/`（占位脚手架移除）。
+  - 数据层统一：`microstructure/`（逃顶信号 ~40 文件）与 `screening/`（三层选股）从 DuckDB 迁至 VT `clickhouse_connector`（ashare 库同构 tushare schema，SQL 方言 DuckDB→ClickHouse）；`realtime/quote_adapter` 改走 VT `market_data` 联邦（移除盘中成交量外推）；保留 7 门验证框架、单位换算知识、集成判定等独有方法论。
+  - 补齐 AGENTS.md 已引用但缺失的 `escape-top-microstructure` skill。
+  - harness AGENTS.md 重写（605 行）：新增**问题处理协议**（明确可执行/开放型/待澄清型/宏观型四类分流；开放型走 Least-to-Most 六维收敛漏斗、待澄清型走槽位澄清（工具先行、只问用户私有槽位）、宏观型走 Step-Back 拆分（可解/不可解二分 + 代理问题转译菜单，方法论约束 MacKinlay 1997 / Kothari & Warner 2007）；硬性轮次预算：每意图 1 轮 ≤3 问、绝不复读第二轮）与**防幻觉诚实拒答纪律**（数字溯源三来源、LLM 禁做数学、弃权一等公民、五要素拒答模板、不过度承诺）。调研依据：OpenBB 子问题路由、TradingAgents 角色辩论、ai-hedge-fund 失败契约、Anthropic/ClariQ/Qulac/Abstain-R1 澄清与弃权文献。
+  - 打包适配 mymain：工具计数 59→73/78、CLICKHOUSE_LLM_* 语义层凭据贯通（.env.example / opencode.json.tmpl / entrypoint ctx）、vendoring 重构为 `git archive`（杜绝开发残留混入 vendor）、镜像 tag v2.1.0-mymain。
+- **路径适配**：`OpencodeAgent/build.sh` 的 `VT_SOURCE` 缺省改为 `..`（仓库根），vendoring 时排除 `OpencodeAgent/` 自身防递归；`deploy/ecs-build.sh` 改为单仓库流程（clone Vibe-Trading mymain → `OpencodeAgent/` 内构建）。
+- 原独立仓库保留存档，后续以 `OpencodeAgent/` 为准。
