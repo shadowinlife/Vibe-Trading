@@ -44,16 +44,19 @@ run() {
   fi
 }
 
+# Shared by both modes. The ${arr[@]+"${arr[@]}"} idiom keeps empty-array
+# expansion safe under `set -u` on bash 3.2 (macOS default).
+PLATFORM_ARG=()
+[ -n "$PLATFORM" ] && PLATFORM_ARG=(--platform "$PLATFORM")
+
 # ---------------------------------------------------------------------------
 # Base image build
 # ---------------------------------------------------------------------------
 if [ "$MODE" = "base" ]; then
   BASE_TAG="${IMAGE_TAG:-latest}"
   echo "=== Building base image: opencode-serve-base:${BASE_TAG} ==="
-  PLATFORM_ARG=()
-  [ -n "$PLATFORM" ] && PLATFORM_ARG=(--platform "$PLATFORM")
   run docker build \
-    "${PLATFORM_ARG[@]}" \
+    ${PLATFORM_ARG[@]+"${PLATFORM_ARG[@]}"} \
     -t "opencode-serve-base:${BASE_TAG}" \
     -f "$SCRIPT_DIR/Dockerfile.base" \
     "$SCRIPT_DIR"
@@ -103,7 +106,7 @@ fi
 
 echo "=== Building app image: ${IMAGE_NAME}:${IMAGE_TAG} ==="
 run docker build \
-  "${PLATFORM_ARG[@]}" \
+  ${PLATFORM_ARG[@]+"${PLATFORM_ARG[@]}"} \
   -t "${IMAGE_NAME}:${IMAGE_TAG}" \
   -f "$SCRIPT_DIR/Dockerfile" \
   "$SCRIPT_DIR"
