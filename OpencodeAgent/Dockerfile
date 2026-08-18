@@ -15,7 +15,11 @@ RUN mkdir -p /root/.config/pip && \
 
 RUN npm install -g opencode-ai@latest
 
-RUN opencode plugin oh-my-openagent@latest
+# OMO plugin is NOT installed here: executing the opencode binary at build
+# time SIGILLs under cross-arch QEMU emulation (arm64 host -> amd64 image).
+# entrypoint.sh renders "plugin": ["oh-my-openagent@latest"] into
+# opencode.json, so opencode auto-installs it on first startup (~30s) —
+# the runtime-verified pattern of the previously deployed images.
 
 COPY vendor/Vibe-Trading/ /opt/vibe-trading/
 RUN pip install --no-cache-dir -e /opt/vibe-trading/

@@ -2,8 +2,10 @@
 *.duckdb
 *.duckdb.tmp
 *.duckdb.wal
-__pycache__/
+__pycache__
+**/__pycache__
 *.pyc
+**/*.pyc
 *.pyo
 .DS_Store
 
