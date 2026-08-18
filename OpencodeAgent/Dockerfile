@@ -50,6 +50,10 @@ RUN mkdir -p /workspace/analysis \
              /workspace/cron_jobs/logs \
              /workspace/cron_jobs/state
 
+# The runtime user must be able to create files under the writable
+# workspace subdirectories when they are not volume-mounted.
+RUN chown -R opencode:opencode /workspace
+
 ENV LANGCHAIN_PROVIDER=dashscope \
     LANGCHAIN_MODEL_NAME=qwen3.7-max \
     DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1 \
