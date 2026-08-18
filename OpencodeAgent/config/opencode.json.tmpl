@@ -1,0 +1,36 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "alibaba-cn/qwen3.7-max",
+  "mcp": {
+    "search mcp": {
+      "type": "local",
+      "command": [
+        "/opt/venv/bin/nano-search-mcp",
+        "--transport",
+        "stdio"
+      ]
+    },
+    "vibe-trading": {
+      "type": "local",
+      "command": [
+        "/opt/venv/bin/python",
+        "/opt/vibe-trading/agent/mcp_server.py"
+      ],
+      "env": {
+        "CLICKHOUSE_HOST": "{{ CLICKHOUSE_HOST }}",
+        "CLICKHOUSE_PORT": "{{ CLICKHOUSE_PORT }}",
+        "CLICKHOUSE_USER": "{{ CLICKHOUSE_USER }}",
+        "CLICKHOUSE_PASSWORD": "{{ CLICKHOUSE_PASSWORD }}",
+        "CLICKHOUSE_DATABASE": "{{ CLICKHOUSE_DATABASE }}",
+        "CLICKHOUSE_LLM_USER": "{{ CLICKHOUSE_LLM_USER }}",
+        "CLICKHOUSE_LLM_PASSWORD": "{{ CLICKHOUSE_LLM_PASSWORD }}",
+        "VT_MEMORY": "full",
+        "VT_MEMORY_MCP_TOOLS": "1",
+        "VT_MEMORY_BASE_DIR": "/workspace/.vt-memory"
+      }
+    }
+  },
+  "plugin": [
+    "oh-my-openagent@latest"
+  ]
+}
