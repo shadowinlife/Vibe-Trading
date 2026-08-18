@@ -54,5 +54,8 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers \
     PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright/
 RUN playwright install chromium --with-deps 2>/dev/null || true
 
-RUN mkdir -p /workspace /home/opencode
+# useradd first: `useradd -m` only creates (and owns) the home directory when
+# it does not exist yet. Creating /home/opencode beforehand as root leaves the
+# runtime user (USER opencode) unable to write its own home.
 RUN useradd -m -d /home/opencode -s /bin/bash opencode
+RUN mkdir -p /workspace
