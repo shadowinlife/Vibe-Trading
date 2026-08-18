@@ -28,6 +28,7 @@
 |----------|--------------|------|
 | **数据访问层** | `agent/backtest/loaders/`、`agent/src/market_data.py`、`agent/src/tools/` 中的 flow 工具 | ClickHouse 作为 A 股主力数据源（`clickhouse` 优先于 `tencent`），数据联邦模式（CH 提供 T-1 历史 199 列 + 网络源提供当日 OHLCV） |
 | **记忆管理** | `agent/src/memory/`（reflections、mcp_adapter、lifecycle、hierarchy、persistent、memory_guard） | 反思课程存储（JSONL append-only）、MCP 记忆工具（5 个）、MemoryGuard 中间件（FastMCP middleware，自动触发 memory_save + memory_reflect）、回测自动反思钩子、层级路由文件名修复、`VT_MEMORY_BASE_DIR` 支持项目目录存储 |
+| **Agent harness 层** | `OpencodeAgent/`（2026-08-17 引入，源自 vibetrading-opencode-instruct） | opencode + omo + 本仓库 MCP 的独立部署 harness（Docker 镜像 opencode-serve）：问题处理协议（四类分流 + 轮次预算）、防幻觉与诚实拒答纪律、escape-top 微观结构信号、三层选股、cron 通知基础设施、nano-search-mcp；消费 ch_* 语义层工具与记忆能力，个人部署独有不回流 |
 
 ## 8.3 社区贡献约定
 
