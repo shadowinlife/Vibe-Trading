@@ -133,18 +133,27 @@ if [ -d /workspace/.opencode/node_modules ] && [ ! -e /home/opencode/.opencode/n
 fi
 
 # ── Verify VT MCP server is importable ────────────────────────────────────────
+# FastMCP >=2 no longer exposes the private ``_tool_manager`` attribute, so try
+# the public ``list_tools()`` API first and fall back to import-only reporting.
 VERIFY_VT=$(/opt/venv/bin/python3 -c "
 import sys
 try:
     sys.path.insert(0, '/opt/vibe-trading/agent')
     from mcp_server import mcp
-    print('OK:' + str(len(mcp._tool_manager._tools)))
+    try:
+        import asyncio
+        print('OK:' + str(len(asyncio.run(mcp.list_tools()))))
+    except Exception:
+        print('OK:import-only')
 except Exception as e:
     print('FAIL:' + str(e))
 " 2>/dev/null || echo "FAIL:import_error")
 if echo "$VERIFY_VT" | grep -q "^OK:"; then
     TOOL_COUNT=$(echo "$VERIFY_VT" | cut -d: -f2)
-    echo "[entrypoint] VT MCP server OK — $TOOL_COUNT tools registered"
+    case "$TOOL_COUNT" in
+        ''|*[!0-9]*) echo "[entrypoint] VT MCP server OK (tool count unavailable in this FastMCP version)" ;;
+        *) echo "[entrypoint] VT MCP server OK — $TOOL_COUNT tools registered" ;;
+    esac
     echo "[entrypoint] VT_MEMORY=full, VT_MEMORY_MCP_TOOLS=1 → memory tools enabled"
     echo "[entrypoint] VT_MEMORY_BASE_DIR=$VT_MEMORY_BASE_DIR"
 else
