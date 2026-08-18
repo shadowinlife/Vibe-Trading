@@ -25,9 +25,51 @@
 
 ---
 
-### release/mymain · 2026-08-17 — 基线：上游 `0713336c`
+### release/mymain · 2026-08-17（第二次）— 基线：上游 `0713336c` + OpencodeAgent（F7）
 
 - **发布 commit**：`release/mymain` tag 所指 commit（即本条发布记录 commit）
+- **上游基线**：`0713336c`（与上次发布相同；本次为本地 harness 层引入，无上游变更）
+- **差异总量**：266 个文件、+47,520/−105 行（复核命令 `git diff 0713336c release/mymain --shortstat`）
+
+#### 核心差异（F1–F6 基础上新增 F7，均个人部署独有、不回流）
+
+| # | 能力 | Commit | 核心内容 | 规模 |
+|---|------|--------|----------|------|
+| F7 | OpencodeAgent harness 层 | `35bb27a1` | opencode + omo + 本仓库 MCP 的独立部署 harness（Docker 镜像 `opencode-serve`）：问题处理协议（明确/开放/待澄清/宏观四类分流，Least-to-Most 漏斗 + Step-Back 拆分 + 单轮 ≤3 问轮次预算）、防幻觉与诚实拒答纪律（数字溯源三来源、弃权一等公民、五要素拒答模板）、escape-top 微观结构信号（CH 数据层 + 7 门验证）、三层选股、VT 联邦行情 scanner、cron + 钉钉通知、nano-search-mcp（12 工具） | 144 文件 +34,498 |
+
+> F7 源自独立仓库 `shadowinlife/vibetrading-opencode-instruct`（最终态
+> `ac2d92f` + `1687097`，已存档），2026-08-17 整体引入 `OpencodeAgent/` 管理。
+
+#### 核心迭代（本次发布完成的工作）
+
+1. **scripts 库迁移**：删除与 VT 重复的 backtest/（VT 回测引擎替代，22 个自研信号构建器
+   迁入 vibe_bridge/）、chanlun/（VT chanlun skill）、memory/（VT F1–F4）、experiment/；
+   microstructure（~40 文件）/ screening / realtime 数据层从 DuckDB 迁至 VT
+   clickhouse_connector 与 market_data 联邦（含 DuckDB→ClickHouse SQL 方言转换与
+   优雅降级契约）；7 门验证框架、单位换算知识等独有方法论完整保留。
+2. **AGENTS.md 重写**（605 行）：新增问题处理协议与防幻觉诚实拒答纪律两个 CRITICAL
+   章节；场景 A–F 重构（C 重写、F 新增宏观/事件驱动）；能力索引对齐 mymain。
+3. **补齐 escape-top-microstructure skill**（AGENTS.md 原已引用但缺失）。
+4. **打包适配 mymain**：工具计数 59→73/78、CLICKHOUSE_LLM_* 语义层凭据贯通、
+   vendoring 重构为 git archive（杜绝开发残留）、单仓 ECS 构建流程、tag v2.1.0-mymain。
+5. **文档登记**：`MYMAIN_DIVERGENCE.md` §2.1 F7 行 + §5 引入笔记；根 AGENTS.md §8.2
+   harness 层条目。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| OpencodeAgent scripts compileall | 通过（microstructure 零 duckdb 残留） |
+| CLI 冒烟（escape_top/concentration/margin_buy_vs_sse/joint_escape_top --help） | 全部通过 |
+| 优雅降级（CLICKHOUSE 不可达 → `{"available": false}` + exit 0） | 通过 |
+| shell 语法（build.sh / ecs-build.sh / entrypoint.sh） | 通过 |
+| 上次发布的 VT 门禁（memory 329/2、CH 137/11、计数 54、env gate、MCP 73/78） | 沿用通过（本次未改 VT 代码） |
+
+---
+
+### release/mymain · 2026-08-17 — 基线：上游 `0713336c`
+
+- **发布 commit**：`57bf9563`
 - **上游基线**：`0713336c`（v0.1.13 后第 158 commit；本次对齐覆盖 `1bf1d8b4` 之后的 144 个上游 commit）
 - **差异总量**：124 个文件、+12,981/−105 行（含本文档与 `MYMAIN_DIVERGENCE.md`、`AGENTS.md` 等分支级文档及 ClickHouse 语义层 Phase 0–2；复核命令 `git diff 0713336c release/mymain --shortstat`）
 
