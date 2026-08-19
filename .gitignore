@@ -68,6 +68,9 @@ data/backup/
 docs/
 !wiki/docs/
 !wiki/docs/**
+# OpencodeAgent ships its deploy guides and skill docs inside the image
+!OpencodeAgent/**/docs/
+!OpencodeAgent/**/docs/**
 docs/screenshots/agent-run.png
 docs/screenshots/boot.png
 data/minutes/
@@ -100,6 +103,9 @@ NOTES.md
 
 # Agent tool aliases (auto-generated mirror of CLAUDE.md)
 AGENTS.md
+# OpencodeAgent's AGENTS.md files are harness behavior contracts, copied into
+# the Docker image at build time — they must stay tracked
+!OpencodeAgent/**/AGENTS.md
 
 .DS_Store
 
