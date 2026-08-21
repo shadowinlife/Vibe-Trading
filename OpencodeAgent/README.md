@@ -13,7 +13,7 @@ This project packages the OpenCode Web Server research environment into a reprod
 
 - **OpenCode CLI 1.18.5** + OMO (oh-my-openagent) plugin
 - **nano-search-mcp** — local MCP server for Chinese financial data (新浪财经, 百炼 WebSearch)
-- **4 OpenCode skills**: data-warehouse (ClickHouse heavy queries), html-report (ECharts), periodic-execution (cron), escape-top-microstructure (top-detection signals)
+- **5 OpenCode skills**: data-warehouse (ClickHouse heavy queries), html-report (ECharts), periodic-execution (cron), escape-top-microstructure (top-detection signals), research-scenarios (scenario playbooks A–F, loaded on demand)
 - **Full AGENTS.md** with behavior instructions for 6 scenarios (A through F), a 4-class question-handling protocol and anti-hallucination discipline
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
 - **Cron job infrastructure** with CLI management and DingTalk/email notification
@@ -62,20 +62,25 @@ OpencodeAgent/
 │
 ├── config/                     # OpenCode configuration
 │   ├── opencode.json.tmpl      # Jinja2 template (rendered at runtime with ClickHouse creds)
-│   ├── oh-my-openagent.json    # Agent/category model assignments
+│   ├── render_config.py        # Config renderer: template + tool governance manifest → opencode.json
+│   ├── oh-my-openagent.json    # Agent/category model assignments (uniform qwen3.8-max)
 │   ├── tui.json                # TUI plugin configuration
 │   ├── package.json            # OpenCode plugin dependencies
-│   └── vibe-trading-tools.json # Vibe-Trading tools configuration
+│   └── vibe-trading-tools.json # Tool governance manifest (disabled VT tools → permission denies)
 │
 ├── nano-search-mcp/            # Local MCP server for Chinese financial search
 │   ├── pyproject.toml
 │   ├── src/nano_search_mcp/    # 12 MCP tools (search, reports, announcements, etc.)
 │   └── tests/
 │
-├── skills/                     # OpenCode skills (3)
+├── skills/                     # OpenCode skills (5)
 │   ├── data-warehouse/         # ClickHouse query interface (query_warehouse, list_tables)
 │   ├── html-report/            # Interactive HTML reports with ECharts (7+1 templates)
-│   └── periodic-execution/     # Cron job management (manage.py, notifier)
+│   ├── periodic-execution/     # Cron job management (manage.py, notifier)
+│   ├── escape-top-microstructure/ # A-share top-detection signals
+│   └── research-scenarios/     # Scenario playbooks A–F (on-demand, offloaded from AGENTS.md)
+│
+├── tests/                      # Config assembly tests (render / governance / budget guards)
 │
 └── workspace/                  # Runtime files
     ├── pyproject.toml
