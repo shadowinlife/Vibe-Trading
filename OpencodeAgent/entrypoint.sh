@@ -42,33 +42,15 @@ TEMPLATE="/workspace/.opencode/opencode.json.tmpl"
 TARGET="/home/opencode/.opencode/opencode.json"
 FALLBACK="/workspace/.opencode/opencode.json.fallback"
 
+# Rendering lives in config/render_config.py (single source of truth, covered
+# by OpencodeAgent/tests/test_config_render.py). It also compiles the tool
+# governance manifest (vibe-trading-tools.json) into opencode permission
+# denies, so disabled VT tools never reach the model's tool list.
 render_config() {
-    /opt/venv/bin/python3 -c "
-import os, sys, json
-from jinja2 import Template
-
-try:
-    with open('$TEMPLATE') as f:
-        tmpl = Template(f.read())
-    ctx = {
-        'CLICKHOUSE_HOST':     os.environ.get('CLICKHOUSE_HOST', ''),
-        'CLICKHOUSE_PORT':     os.environ.get('CLICKHOUSE_PORT', '8123'),
-        'CLICKHOUSE_USER':     os.environ.get('CLICKHOUSE_USER', 'default'),
-        'CLICKHOUSE_PASSWORD': os.environ.get('CLICKHOUSE_PASSWORD', ''),
-        'CLICKHOUSE_DATABASE': os.environ.get('CLICKHOUSE_DATABASE', 'ashare'),
-        'CLICKHOUSE_LLM_USER':     os.environ.get('CLICKHOUSE_LLM_USER', ''),
-        'CLICKHOUSE_LLM_PASSWORD': os.environ.get('CLICKHOUSE_LLM_PASSWORD', ''),
-    }
-    rendered = tmpl.render(**ctx)
-    # Validate JSON
-    json.loads(rendered)
-    with open('$TARGET', 'w') as f:
-        f.write(rendered)
-    print('OK')
-except Exception as e:
-    print(f'ERROR: {e}', file=sys.stderr)
-    sys.exit(1)
-"
+    /opt/venv/bin/python3 /workspace/.opencode/render_config.py \
+        --template "$TEMPLATE" \
+        --manifest /workspace/.opencode/vibe-trading-tools.json \
+        --target "$TARGET"
 }
 
 if render_config 2>/tmp/entrypoint_render_err; then
@@ -84,7 +66,7 @@ else
         echo "[entrypoint] ERROR: No fallback config at $FALLBACK, writing minimal config"
         cat > "$TARGET" << 'EOFMIN'
 {
-  "model": "alibaba-cn/qwen3.7-max",
+  "model": "alibaba-cn/qwen3.8-max",
   "plugin": ["oh-my-openagent@latest"]
 }
 EOFMIN

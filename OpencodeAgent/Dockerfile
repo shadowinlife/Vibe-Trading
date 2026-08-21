@@ -32,6 +32,7 @@ COPY config/oh-my-openagent.json /workspace/.opencode/oh-my-openagent.json
 COPY config/tui.json /workspace/.opencode/tui.json
 COPY config/package.json /workspace/.opencode/package.json
 COPY config/vibe-trading-tools.json /workspace/.opencode/vibe-trading-tools.json
+COPY config/render_config.py /workspace/.opencode/render_config.py
 
 COPY AGENTS.md /workspace/AGENTS.md
 
