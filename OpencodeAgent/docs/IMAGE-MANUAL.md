@@ -83,7 +83,7 @@
          ▼                    ▼
    ┌──────────┐       ┌──────────────┐
    │ClickHouse│       │  DashScope    │
-   │(T-1 数据) │       │ (qwen3.7-max) │
+   │(T-1 数据) │       │ (qwen3.8-max) │
    └──────────┘       └──────────────┘
 ```
 
@@ -226,7 +226,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v2.
 | `SMTP_HOST` | ❌ | — | SMTP 服务器 |
 | `SMTP_AUTH_CODE` | ❌ | — | SMTP 授权码 |
 | `LANGCHAIN_PROVIDER` | ❌ | `dashscope` | LLM 提供商 |
-| `LANGCHAIN_MODEL_NAME` | ❌ | `qwen3.7-max` | 模型名称 |
+| `LANGCHAIN_MODEL_NAME` | ❌ | `qwen3.8-max` | 模型名称 |
 | `LANGCHAIN_TEMPERATURE` | ❌ | `0.3` | 生成温度 |
 | `TUSHARE_TOKEN` | ❌ | — | Tushare Pro Token |
 
@@ -267,9 +267,13 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v2.
 
 ### 6.4 VT 工具禁用策略（vibe-trading-tools.json）
 
-`config/vibe-trading-tools.json` 声明 agent 侧禁用的 VT 工具。当前仅禁用 `trading_select_connection`（防止 agent 自行切换交易连接器 profile）。
+`config/vibe-trading-tools.json` 是**工具治理清单**：容器启动时由 `config/render_config.py` 将其 `disabled` 列表编译为 opencode `permission` deny 项（键格式 `vibe-trading_<工具名或 glob>`），**被 deny 的工具不进入模型可见工具列表**——既降低每轮工具 schema 的上下文税，也收窄攻击面。清单本身是声明式单一事实源，改清单 + 重启容器即生效。
 
-> 历史版本中曾列出 `trading_place_order` / `trading_cancel_order` / `trading_modify_order` / `trading_place_bracket` 四个禁用项——但 mymain 的 MCP 面**从未暴露**任何下单/撤单工具（它们仅存在于 agent + CLI 侧），这些条目属于对不存在工具的无效禁用，已在 v2.1.0-mymain 移除。MCP 面的交易类工具仅为 8 个只读工具：`trading_account` / `trading_check` / `trading_connections` / `trading_history` / `trading_orders` / `trading_positions` / `trading_quote` / `trading_select_connection`。
+当前策略：`trading_*` —— 禁用全部 8 个只读交易连接器工具（`trading_account` / `trading_check` / `trading_connections` / `trading_history` / `trading_orders` / `trading_positions` / `trading_quote` / `trading_select_connection`）。本容器为纯研究部署、不配置任何 broker connector，这些工具只产生 schema 成本而无能力收益。
+
+恢复方式：从 `disabled` 移除对应条目后重启容器。
+
+> 历史说明：历史版本曾列出 `trading_place_order` / `trading_cancel_order` / `trading_modify_order` / `trading_place_bracket` 四个禁用项——但 mymain 的 MCP 面**从未暴露**任何下单/撤单工具（它们仅存在于 agent + CLI 侧），这些条目属于对不存在工具的无效禁用，已在 v2.1.0-mymain 移除。另：v2.1.0 期间清单曾被 COPY 进镜像但无消费者（opencode 不读该文件名），2026-08-21 起经 `render_config.py` 真正生效。
 
 ---
 

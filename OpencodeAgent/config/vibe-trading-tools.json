@@ -1,5 +1,5 @@
 {
   "disabled": [
-    "trading_select_connection"
+    "trading_*"
   ]
 }

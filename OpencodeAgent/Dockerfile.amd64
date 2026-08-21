@@ -47,6 +47,7 @@ COPY config/oh-my-openagent.json /workspace/.opencode/oh-my-openagent.json
 COPY config/tui.json /workspace/.opencode/tui.json
 COPY config/package.json /workspace/.opencode/package.json
 COPY config/vibe-trading-tools.json /workspace/.opencode/vibe-trading-tools.json
+COPY config/render_config.py /workspace/.opencode/render_config.py
 
 # 用 npm 安装 OMO 插件依赖 (绕过 opencode plugin 的 Bun 崩溃)
 RUN cd /workspace/.opencode && npm install --production

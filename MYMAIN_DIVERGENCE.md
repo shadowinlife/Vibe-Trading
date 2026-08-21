@@ -258,3 +258,14 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](CLICKHOUSE_SEMANTIC_
   - 打包适配 mymain：工具计数 59→73/78、CLICKHOUSE_LLM_* 语义层凭据贯通（.env.example / opencode.json.tmpl / entrypoint ctx）、vendoring 重构为 `git archive`（杜绝开发残留混入 vendor）、镜像 tag v2.1.0-mymain。
 - **路径适配**：`OpencodeAgent/build.sh` 的 `VT_SOURCE` 缺省改为 `..`（仓库根），vendoring 时排除 `OpencodeAgent/` 自身防递归；`deploy/ecs-build.sh` 改为单仓库流程（clone Vibe-Trading mymain → `OpencodeAgent/` 内构建）。
 - 原独立仓库保留存档，后续以 `OpencodeAgent/` 为准。
+
+### 2026-08-21 OpencodeAgent 接线优化（工具治理 / 上下文瘦身 / 模型统一）
+
+基于 harness 工程调研（MCP 工具面经济学：工具选择准确率在 25-30 个可见工具后退化、~100 个崩塌；schema 披露税每规划轮重付；Anthropic/OpenBB/Harness 的收敛解 = 常驻动词最小化 + 按需激活 + 技能渐进披露）对 F7 接线层做首轮优化，全部改动限于 `OpencodeAgent/`：
+
+- **O1 工具治理清单落地**：`config/vibe-trading-tools.json` 此前被 COPY 进镜像但无消费者（opencode 不读该文件）。新增 `config/render_config.py`（entrypoint 渲染逻辑抽出为单一事实源，含 24 项测试）：启动时把清单 `disabled` 列表编译为 opencode `permission` deny 项（键格式 `vibe-trading_<glob>`），被 deny 工具不进入模型可见工具列表。当前策略 `trading_*`——容器为纯研究部署、无 broker connector，8 个只读 trading_* 工具只有 schema 成本无能力收益。
+- **O2 按 agent 裁剪工具面**：`opencode.json.tmpl` 为 `explore` / `multimodal-looker` 两个非金融取数 agent deny `vibe-trading_*` 与 `search_mcp_*`。
+- **O3 AGENTS.md 瘦身（605→388 行）**：场景 A/B/B2/C/D/E/F 逐步 playbook 与 html-report 细节迁入新技能 `skills/research-scenarios/`（按需加载）；AGENTS.md 保留场景路由表 + 强制"识别场景后先加载 research-scenarios 技能"规则；VT 记忆机制文档收敛为使用规则。常驻纪律层（问题处理协议/防幻觉/回测方法论/风险硬约束）不动。测试设 450 行护栏防回涨。
+- **O4 模型统一**：oh-my-openagent.json 全部 agents/categories 统一 `alibaba-cn/qwen3.8-max`（多模态，multimodal-looker 无需降级）；opencode.json.tmpl 默认模型、entrypoint fallback、`.env.example` LANGCHAIN_MODEL_NAME、IMAGE-MANUAL 同步。
+- **O5 编排纪律**：AGENTS.md OMO 节新增「编排单通道规则」——VT swarm 与 OMO 子代理两通道不得嵌套（token 成本按层复合 + 电话效应）；上下文压缩后必须 re-grounding（重取 research goal / analysis 持久化状态）再继续。
+- 验证：`OpencodeAgent/tests/test_config_render.py` **24 passed**（模板渲染 / 清单编译 / agent scoping / 模型统一 / AGENTS.md 预算 / 技能契约）；nano-search-mcp 回归 **193 passed**；渲染样例人工核对（permission 块 + agent 块 + qwen3.8-max 正确）。

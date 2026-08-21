@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "alibaba-cn/qwen3.7-max",
+  "model": "alibaba-cn/qwen3.8-max",
   "mcp": {
     "search mcp": {
       "type": "local",
@@ -27,6 +27,20 @@
         "VT_MEMORY": "full",
         "VT_MEMORY_MCP_TOOLS": "1",
         "VT_MEMORY_BASE_DIR": "/workspace/.vt-memory"
+      }
+    }
+  },
+  "agent": {
+    "explore": {
+      "permission": {
+        "vibe-trading_*": "deny",
+        "search_mcp_*": "deny"
+      }
+    },
+    "multimodal-looker": {
+      "permission": {
+        "vibe-trading_*": "deny",
+        "search_mcp_*": "deny"
       }
     }
   },
