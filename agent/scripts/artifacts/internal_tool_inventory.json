@@ -1,0 +1,5085 @@
+{
+  "captured_at": null,
+  "env_gates_cleared": [
+    "FRED_API_KEY",
+    "QVERIS_API_KEY",
+    "VIBE_TRADING_IWENCAI_KEY",
+    "VIBE_TW_STOCK_DB"
+  ],
+  "internal_total": 48,
+  "mcp_surface_not_in_keyless_registry": [
+    "analyze_options",
+    "analyze_options_payoff",
+    "get_macro_series",
+    "get_run_result",
+    "get_swarm_status",
+    "iwencai_search",
+    "list_runs",
+    "list_skills",
+    "list_swarm_presets",
+    "pattern_recognition",
+    "qveris_execute",
+    "qveris_inspect",
+    "qveris_search",
+    "reap_stale_runs",
+    "retry_run"
+  ],
+  "mcp_total": 74,
+  "reconciliation": {
+    "audit_document": "HARNESS_EVOLUTION_CAPABILITY_AUDIT.md §2 (VT internal tool rows, lines ~418-433)",
+    "audit_only": [
+      {
+        "audit_name": "bash / background_run / cancel_background",
+        "explanation": "Not registered in the keyless environment: shell tools register only when the entry point enables them (--enable-shell-tools / VIBE_TRADING_ENABLE_SHELL_TOOLS=1); never exposed on MCP by design.",
+        "runtime_name": "background_run"
+      },
+      {
+        "audit_name": "bash / background_run / cancel_background",
+        "explanation": "Not registered in the keyless environment: shell tools register only when the entry point enables them (--enable-shell-tools / VIBE_TRADING_ENABLE_SHELL_TOOLS=1); never exposed on MCP by design.",
+        "runtime_name": "bash"
+      },
+      {
+        "audit_name": "bash / background_run / cancel_background",
+        "explanation": "Not registered in the keyless environment: shell tools register only when the entry point enables them (--enable-shell-tools / VIBE_TRADING_ENABLE_SHELL_TOOLS=1); never exposed on MCP by design.",
+        "runtime_name": "cancel_background"
+      },
+      {
+        "audit_name": "taiwan_stock_data",
+        "explanation": "Not registered in the keyless environment: check_available requires VIBE_TW_STOCK_DB to point at a schema-valid SQLite snapshot; agent-side only, never exposed on MCP.",
+        "runtime_name": "get_taiwan_stock_data"
+      }
+    ],
+    "audit_rows": 14,
+    "audit_runtime_names": [
+      "background_run",
+      "bash",
+      "cancel_background",
+      "create_hypothesis",
+      "delete_skill",
+      "edit_file",
+      "financial_rigor",
+      "get_taiwan_stock_data",
+      "link_autopilot_backtest",
+      "link_backtest",
+      "options_payoff",
+      "options_pricing",
+      "patch_skill",
+      "pattern",
+      "portfolio_risk_xray",
+      "portfolio_summary",
+      "remember",
+      "report_audit",
+      "run_research_autopilot",
+      "save_skill",
+      "scaffold_signal_engine",
+      "scheduled_research",
+      "sdm_decay_scan",
+      "sdm_register",
+      "sdm_status",
+      "search_hypotheses",
+      "skill_file",
+      "update_hypothesis"
+    ],
+    "confirmed": [
+      "create_hypothesis",
+      "delete_skill",
+      "edit_file",
+      "financial_rigor",
+      "link_autopilot_backtest",
+      "link_backtest",
+      "options_payoff",
+      "options_pricing",
+      "patch_skill",
+      "pattern",
+      "portfolio_risk_xray",
+      "portfolio_summary",
+      "remember",
+      "report_audit",
+      "run_research_autopilot",
+      "save_skill",
+      "scaffold_signal_engine",
+      "scheduled_research",
+      "sdm_decay_scan",
+      "sdm_register",
+      "sdm_status",
+      "search_hypotheses",
+      "skill_file",
+      "update_hypothesis"
+    ],
+    "gated_not_registered": [
+      {
+        "gate": "entrypoint flag --enable-shell-tools / env VIBE_TRADING_ENABLE_SHELL_TOOLS=1",
+        "name": "background_run",
+        "note": "Agent-side only; not exposed on the MCP surface.",
+        "on_mcp_surface": false
+      },
+      {
+        "gate": "entrypoint flag --enable-shell-tools / env VIBE_TRADING_ENABLE_SHELL_TOOLS=1",
+        "name": "bash",
+        "note": "Agent-side only; not exposed on the MCP surface.",
+        "on_mcp_surface": false
+      },
+      {
+        "gate": "entrypoint flag --enable-shell-tools / env VIBE_TRADING_ENABLE_SHELL_TOOLS=1",
+        "name": "cancel_background",
+        "note": "Agent-side only; not exposed on the MCP surface.",
+        "on_mcp_surface": false
+      },
+      {
+        "gate": "env FRED_API_KEY",
+        "name": "get_macro_series",
+        "note": "Exposed on the MCP surface; hidden from the keyless agent registry by its gate.",
+        "on_mcp_surface": true
+      },
+      {
+        "gate": "env VIBE_TW_STOCK_DB (schema-valid SQLite snapshot)",
+        "name": "get_taiwan_stock_data",
+        "note": "Agent-side only; not exposed on the MCP surface.",
+        "on_mcp_surface": false
+      },
+      {
+        "gate": "env VIBE_TRADING_IWENCAI_KEY",
+        "name": "iwencai_search",
+        "note": "Exposed on the MCP surface; hidden from the keyless agent registry by its gate.",
+        "on_mcp_surface": true
+      },
+      {
+        "gate": "env QVERIS_API_KEY + paid mode",
+        "name": "qveris_execute",
+        "note": "Exposed on the MCP surface; hidden from the keyless agent registry by its gate.",
+        "on_mcp_surface": true
+      },
+      {
+        "gate": "env QVERIS_API_KEY + paid mode",
+        "name": "qveris_inspect",
+        "note": "Exposed on the MCP surface; hidden from the keyless agent registry by its gate.",
+        "on_mcp_surface": true
+      },
+      {
+        "gate": "env QVERIS_API_KEY + paid mode",
+        "name": "qveris_search",
+        "note": "Exposed on the MCP surface; hidden from the keyless agent registry by its gate.",
+        "on_mcp_surface": true
+      }
+    ],
+    "new_since_audit": [
+      {
+        "name": "alpha_compare",
+        "purpose": "Compare a hand-picked set of Alpha Zoo alphas (alpha_ids, >= 2) head-to-head on a universe over a period."
+      },
+      {
+        "name": "analyze_image",
+        "purpose": "Look at a local image with the multimodal LLM and answer a question about it."
+      },
+      {
+        "name": "check_background",
+        "purpose": "Check background task status, elapsed time, and remaining time before the 300-second automatic timeout."
+      },
+      {
+        "name": "compact",
+        "purpose": "Compress conversation history to free context space."
+      },
+      {
+        "name": "etoro_cancel_close_order",
+        "purpose": "Cancel a pending eToro market close order by order id (paper only; live is fail-closed because this reinstates exposure)."
+      },
+      {
+        "name": "etoro_close_position",
+        "purpose": "Close or partially close an open eToro position by position id."
+      },
+      {
+        "name": "etoro_copy_close",
+        "purpose": "Close or detach an eToro copy relationship by mirror id."
+      },
+      {
+        "name": "etoro_copy_poll",
+        "purpose": "Poll the outcome of an asynchronous eToro copy operation."
+      },
+      {
+        "name": "etoro_copy_precheck",
+        "purpose": "Dry-run whether the account can copy an investor with an account-currency amount."
+      },
+      {
+        "name": "etoro_copy_start",
+        "purpose": "Start copying an investor or adjust an existing copy allocation."
+      },
+      {
+        "name": "etoro_edit_position_stops",
+        "purpose": "Modify or clear stop-loss/take-profit on an open eToro position (paper only; live edits are fail-closed until incremental funding can be quantified)."
+      },
+      {
+        "name": "etoro_search_instruments",
+        "purpose": "Search eToro instruments by ticker (BTC, AAPL), free text, or asset class (crypto, stocks, forex)."
+      },
+      {
+        "name": "generate_backtest_config",
+        "purpose": "Generate a backtest config.json from a saved hypothesis."
+      },
+      {
+        "name": "propose_mandate_profiles",
+        "purpose": "Propose 2-4 numbered bounded-autonomy live-trading mandate profiles for the user to pick from, each clamped to the account's hard ceilings."
+      },
+      {
+        "name": "session_search",
+        "purpose": "Search past conversation sessions by keyword."
+      },
+      {
+        "name": "trading_acc_cash_flow",
+        "purpose": "Read account cash-flow movements for a clearing date (YYYY-MM-DD): deposit, withdrawal, FX, settlement, fees."
+      },
+      {
+        "name": "trading_cancel_order",
+        "purpose": "Cancel an open order on the selected trading connector profile by order id."
+      },
+      {
+        "name": "trading_capital_distribution",
+        "purpose": "Read today's capital in-flow vs out-flow snapshot (super/big/mid/small buckets) for a symbol."
+      },
+      {
+        "name": "trading_capital_flow",
+        "purpose": "Read historical capital flow time series (institutional / retail inflow-outflow) for a symbol."
+      },
+      {
+        "name": "trading_earnings_calendar",
+        "purpose": "Read upcoming earnings calendar (code, name, EPS/revenue forecast, IV, IV rank) for US / HK."
+      },
+      {
+        "name": "trading_financials",
+        "purpose": "Read financial statements (INCOME / BALANCE / CASH_FLOW) for a symbol."
+      },
+      {
+        "name": "trading_history_deals",
+        "purpose": "Read historical FILL records (executed deals) for shadow-account cost-basis reconstruction."
+      },
+      {
+        "name": "trading_place_order",
+        "purpose": "Place an order through the selected trading connector profile."
+      },
+      {
+        "name": "trading_rehab",
+        "purpose": "Read dividend / split / rights-issue adjustment factors for a symbol from the selected trading connector profile."
+      }
+    ]
+  },
+  "registry_total": 107,
+  "tools": [
+    {
+      "audit_status": "new",
+      "class": "AddGoalEvidenceTool",
+      "gate": "none",
+      "mcp_counterpart": "add_goal_evidence",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.goal_tool",
+      "name": "add_goal_evidence",
+      "purpose": "Attach a concise evidence note, artifact reference, or tool result to the current research goal.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "AlphaBenchTool",
+      "gate": "none",
+      "mcp_counterpart": "alpha_bench",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.alpha_bench_tool",
+      "name": "alpha_bench",
+      "purpose": "Bench a single alpha (alpha_id) or a whole zoo (zoo) on a universe over a period; computes IC mean/std/IR/positive-ratio per alpha and writes an HTML report.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "AlphaCompareTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.alpha_compare_tool",
+      "name": "alpha_compare",
+      "purpose": "Compare a hand-picked set of Alpha Zoo alphas (alpha_ids, >= 2) head-to-head on a universe over a period.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "AlphaZooTool",
+      "gate": "none",
+      "mcp_counterpart": "alpha_zoo",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.alpha_zoo_tool",
+      "name": "alpha_zoo",
+      "purpose": "Browse the bundled alpha zoo.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "AnalyzeImageTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.image_vision_tool",
+      "name": "analyze_image",
+      "purpose": "Look at a local image with the multimodal LLM and answer a question about it.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradeJournalTool",
+      "gate": "none",
+      "mcp_counterpart": "analyze_trade_journal",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.trade_journal_tool",
+      "name": "analyze_trade_journal",
+      "purpose": "Analyze a user's trade journal (CSV/Excel broker export).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "execution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Execution Quality Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "audit-only",
+      "class": "BackgroundRunTool",
+      "gate": "entrypoint flag --enable-shell-tools / env VIBE_TRADING_ENABLE_SHELL_TOOLS=1",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.background_tools",
+      "name": "background_run",
+      "purpose": "Run a shell command in a tracked background process group.",
+      "registered_keyless": false,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "BacktestTool",
+      "gate": "none",
+      "mcp_counterpart": "backtest",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.backtest_tool",
+      "name": "backtest",
+      "purpose": "Run backtest: validate config.json + signal_engine.py, invoke built-in engine.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "cycle_strategist",
+          "preset": "commodity_research_team",
+          "role": "Cycle Strategist"
+        },
+        {
+          "agent_id": "cb_strategist",
+          "preset": "convertible_bond_team",
+          "role": "Convertible Bond Strategist"
+        },
+        {
+          "agent_id": "fixed_income_strategist",
+          "preset": "credit_research_team",
+          "role": "Fixed Income Strategist"
+        },
+        {
+          "agent_id": "earnings_strategist",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Desk Strategist"
+        },
+        {
+          "agent_id": "stock_picker",
+          "preset": "equity_research_team",
+          "role": "Stock Analyst"
+        },
+        {
+          "agent_id": "portfolio_optimizer",
+          "preset": "etf_allocation_desk",
+          "role": "Portfolio Optimizer"
+        },
+        {
+          "agent_id": "risk_budgeter",
+          "preset": "etf_allocation_desk",
+          "role": "Risk Budgeter"
+        },
+        {
+          "agent_id": "strategy_builder",
+          "preset": "event_driven_task_force",
+          "role": "Strategy Builder"
+        },
+        {
+          "agent_id": "factor_combiner",
+          "preset": "factor_research_committee",
+          "role": "Factor Combiner"
+        },
+        {
+          "agent_id": "fof_optimizer",
+          "preset": "fund_selection_panel",
+          "role": "FOF Portfolio Optimizer"
+        },
+        {
+          "agent_id": "allocator",
+          "preset": "global_allocation_committee",
+          "role": "Allocation Strategist"
+        },
+        {
+          "agent_id": "global_strategist",
+          "preset": "global_equities_desk",
+          "role": "Global Equity Strategist"
+        },
+        {
+          "agent_id": "portfolio_manager",
+          "preset": "investment_committee",
+          "role": "Portfolio Manager"
+        },
+        {
+          "agent_id": "macro_pm",
+          "preset": "macro_rates_fx_desk",
+          "role": "Macro Portfolio Manager"
+        },
+        {
+          "agent_id": "backtest_engineer",
+          "preset": "ml_quant_lab",
+          "role": "Backtest Engineer"
+        },
+        {
+          "agent_id": "pair_strategist",
+          "preset": "pairs_research_lab",
+          "role": "Pair Strategist"
+        },
+        {
+          "agent_id": "backtester",
+          "preset": "quant_strategy_desk",
+          "role": "Strategy Backtester"
+        },
+        {
+          "agent_id": "rotation_strategist",
+          "preset": "sector_rotation_team",
+          "role": "Sector Rotation Strategist"
+        },
+        {
+          "agent_id": "arb_strategist",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Arbitrage Strategist"
+        }
+      ]
+    },
+    {
+      "audit_status": "audit-only",
+      "class": "BashTool",
+      "gate": "entrypoint flag --enable-shell-tools / env VIBE_TRADING_ENABLE_SHELL_TOOLS=1",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.bash_tool",
+      "name": "bash",
+      "purpose": "Execute a shell command in the working directory.",
+      "registered_keyless": false,
+      "skill_refs": [
+        "ashare-pre-st-filter",
+        "backtest-diagnose",
+        "behavioral-finance",
+        "candlestick",
+        "chanlun",
+        "corporate-events",
+        "correlation-analysis",
+        "correlation-regime",
+        "doc-reader",
+        "elliott-wave",
+        "event-driven",
+        "factor-research",
+        "fund-analysis",
+        "fundamental-filter",
+        "harmonic",
+        "ichimoku",
+        "market-microstructure",
+        "minute-analysis",
+        "ml-strategy",
+        "multi-factor",
+        "okx-market",
+        "options-advanced",
+        "pair-trading",
+        "regulatory-knowledge",
+        "seasonal",
+        "smc",
+        "social-media-intelligence",
+        "strategy-dev-manager",
+        "strategy-generate",
+        "technical-basic",
+        "trade-journal",
+        "tushare",
+        "volatility",
+        "web-reader"
+      ],
+      "swarm_refs": [
+        {
+          "agent_id": "cycle_strategist",
+          "preset": "commodity_research_team",
+          "role": "Cycle Strategist"
+        },
+        {
+          "agent_id": "demand_analyst",
+          "preset": "commodity_research_team",
+          "role": "Demand Analyst"
+        },
+        {
+          "agent_id": "supply_analyst",
+          "preset": "commodity_research_team",
+          "role": "Supply Analyst"
+        },
+        {
+          "agent_id": "bond_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Bond Floor Analyst"
+        },
+        {
+          "agent_id": "cb_strategist",
+          "preset": "convertible_bond_team",
+          "role": "Convertible Bond Strategist"
+        },
+        {
+          "agent_id": "equity_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Underlying Equity Analyst"
+        },
+        {
+          "agent_id": "option_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Embedded Option Analyst"
+        },
+        {
+          "agent_id": "credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Credit Analyst"
+        },
+        {
+          "agent_id": "fixed_income_strategist",
+          "preset": "credit_research_team",
+          "role": "Fixed Income Strategist"
+        },
+        {
+          "agent_id": "rate_analyst",
+          "preset": "credit_research_team",
+          "role": "Interest Rate Analyst"
+        },
+        {
+          "agent_id": "sector_credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Sector Credit Analyst"
+        },
+        {
+          "agent_id": "alpha_synthesizer",
+          "preset": "crypto_research_lab",
+          "role": "Alpha Synthesizer"
+        },
+        {
+          "agent_id": "crypto_sentiment_analyst",
+          "preset": "crypto_research_lab",
+          "role": "Crypto Sentiment Analyst"
+        },
+        {
+          "agent_id": "defi_analyst",
+          "preset": "crypto_research_lab",
+          "role": "DeFi Protocol Analyst"
+        },
+        {
+          "agent_id": "onchain_analyst",
+          "preset": "crypto_research_lab",
+          "role": "On-Chain Data Analyst"
+        },
+        {
+          "agent_id": "desk_risk_manager",
+          "preset": "crypto_trading_desk",
+          "role": "Trading Desk Risk Manager"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "On-Chain & Stablecoin Flow Analyst"
+        },
+        {
+          "agent_id": "funding_basis_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "Funding Rate & Basis Analyst"
+        },
+        {
+          "agent_id": "liquidation_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "Liquidation & Microstructure Analyst"
+        },
+        {
+          "agent_id": "greeks_manager",
+          "preset": "derivatives_strategy_desk",
+          "role": "Greeks Risk Manager"
+        },
+        {
+          "agent_id": "strategy_designer",
+          "preset": "derivatives_strategy_desk",
+          "role": "Strategy Designer"
+        },
+        {
+          "agent_id": "vol_analyst",
+          "preset": "derivatives_strategy_desk",
+          "role": "Volatility Analyst"
+        },
+        {
+          "agent_id": "earnings_strategist",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Desk Strategist"
+        },
+        {
+          "agent_id": "event_options_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Event & Options Analyst"
+        },
+        {
+          "agent_id": "fundamental_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Fundamental & Filing Analyst"
+        },
+        {
+          "agent_id": "revision_tracker",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Revision & Consensus Tracker"
+        },
+        {
+          "agent_id": "aggregator",
+          "preset": "equity_research_team",
+          "role": "Research Report Editor"
+        },
+        {
+          "agent_id": "macro_analyst",
+          "preset": "equity_research_team",
+          "role": "Macro Analyst"
+        },
+        {
+          "agent_id": "sector_analyst",
+          "preset": "equity_research_team",
+          "role": "Sector Analyst"
+        },
+        {
+          "agent_id": "stock_picker",
+          "preset": "equity_research_team",
+          "role": "Stock Analyst"
+        },
+        {
+          "agent_id": "etf_screener",
+          "preset": "etf_allocation_desk",
+          "role": "ETF Screener"
+        },
+        {
+          "agent_id": "macro_allocator",
+          "preset": "etf_allocation_desk",
+          "role": "Macro Allocator"
+        },
+        {
+          "agent_id": "portfolio_optimizer",
+          "preset": "etf_allocation_desk",
+          "role": "Portfolio Optimizer"
+        },
+        {
+          "agent_id": "risk_budgeter",
+          "preset": "etf_allocation_desk",
+          "role": "Risk Budgeter"
+        },
+        {
+          "agent_id": "event_scanner",
+          "preset": "event_driven_task_force",
+          "role": "Event Scout"
+        },
+        {
+          "agent_id": "impact_analyst",
+          "preset": "event_driven_task_force",
+          "role": "Impact Analyst"
+        },
+        {
+          "agent_id": "strategy_builder",
+          "preset": "event_driven_task_force",
+          "role": "Strategy Builder"
+        },
+        {
+          "agent_id": "backtest_reviewer",
+          "preset": "factor_research_committee",
+          "role": "Backtest Reviewer"
+        },
+        {
+          "agent_id": "factor_combiner",
+          "preset": "factor_research_committee",
+          "role": "Factor Combiner"
+        },
+        {
+          "agent_id": "factor_miner",
+          "preset": "factor_research_committee",
+          "role": "Factor Miner"
+        },
+        {
+          "agent_id": "factor_validator",
+          "preset": "factor_research_committee",
+          "role": "Factor Validator"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "fund_selection_panel",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "fof_optimizer",
+          "preset": "fund_selection_panel",
+          "role": "FOF Portfolio Optimizer"
+        },
+        {
+          "agent_id": "fund_screener",
+          "preset": "fund_selection_panel",
+          "role": "Fund Screener"
+        },
+        {
+          "agent_id": "financial_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Financial Analyst"
+        },
+        {
+          "agent_id": "quality_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Quality Analyst"
+        },
+        {
+          "agent_id": "report_editor",
+          "preset": "fundamental_research_team",
+          "role": "Research Report Editor"
+        },
+        {
+          "agent_id": "valuation_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Valuation Analyst"
+        },
+        {
+          "agent_id": "chief_strategist",
+          "preset": "geopolitical_war_room",
+          "role": "Chief Strategist"
+        },
+        {
+          "agent_id": "energy_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Energy Shock Analyst"
+        },
+        {
+          "agent_id": "geopolitical_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Geopolitical Analyst"
+        },
+        {
+          "agent_id": "supply_chain_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Supply Chain Analyst"
+        },
+        {
+          "agent_id": "a_share_analyst",
+          "preset": "global_allocation_committee",
+          "role": "A-Share Analyst"
+        },
+        {
+          "agent_id": "allocator",
+          "preset": "global_allocation_committee",
+          "role": "Allocation Strategist"
+        },
+        {
+          "agent_id": "crypto_analyst",
+          "preset": "global_allocation_committee",
+          "role": "Crypto Analyst"
+        },
+        {
+          "agent_id": "us_hk_analyst",
+          "preset": "global_allocation_committee",
+          "role": "HK / US Analyst"
+        },
+        {
+          "agent_id": "a_share_researcher",
+          "preset": "global_equities_desk",
+          "role": "A-Share Equity Researcher"
+        },
+        {
+          "agent_id": "crypto_researcher",
+          "preset": "global_equities_desk",
+          "role": "Crypto Asset Researcher"
+        },
+        {
+          "agent_id": "global_strategist",
+          "preset": "global_equities_desk",
+          "role": "Global Equity Strategist"
+        },
+        {
+          "agent_id": "us_hk_researcher",
+          "preset": "global_equities_desk",
+          "role": "US & HK Equity Researcher"
+        },
+        {
+          "agent_id": "bear_advocate",
+          "preset": "investment_committee",
+          "role": "Bear-side Researcher"
+        },
+        {
+          "agent_id": "bull_advocate",
+          "preset": "investment_committee",
+          "role": "Bull-side Researcher"
+        },
+        {
+          "agent_id": "portfolio_manager",
+          "preset": "investment_committee",
+          "role": "Portfolio Manager"
+        },
+        {
+          "agent_id": "risk_officer",
+          "preset": "investment_committee",
+          "role": "Chief Risk Officer"
+        },
+        {
+          "agent_id": "commodity_inflation_analyst",
+          "preset": "macro_rates_fx_desk",
+          "role": "Commodity & Inflation Analyst"
+        },
+        {
+          "agent_id": "fx_strategist",
+          "preset": "macro_rates_fx_desk",
+          "role": "FX Strategist"
+        },
+        {
+          "agent_id": "macro_pm",
+          "preset": "macro_rates_fx_desk",
+          "role": "Macro Portfolio Manager"
+        },
+        {
+          "agent_id": "rates_analyst",
+          "preset": "macro_rates_fx_desk",
+          "role": "Global Rates & Yield Curve Analyst"
+        },
+        {
+          "agent_id": "chief_strategist",
+          "preset": "macro_strategy_forum",
+          "role": "Chief Strategist"
+        },
+        {
+          "agent_id": "domestic_economist",
+          "preset": "macro_strategy_forum",
+          "role": "China Economist"
+        },
+        {
+          "agent_id": "global_economist",
+          "preset": "macro_strategy_forum",
+          "role": "Global Economist"
+        },
+        {
+          "agent_id": "policy_analyst",
+          "preset": "macro_strategy_forum",
+          "role": "Policy Analyst"
+        },
+        {
+          "agent_id": "backtest_engineer",
+          "preset": "ml_quant_lab",
+          "role": "Backtest Engineer"
+        },
+        {
+          "agent_id": "data_scientist",
+          "preset": "ml_quant_lab",
+          "role": "Data Scientist"
+        },
+        {
+          "agent_id": "feature_engineer",
+          "preset": "ml_quant_lab",
+          "role": "Feature Engineer"
+        },
+        {
+          "agent_id": "cointegration_tester",
+          "preset": "pairs_research_lab",
+          "role": "Cointegration Tester"
+        },
+        {
+          "agent_id": "correlation_scanner",
+          "preset": "pairs_research_lab",
+          "role": "Correlation Scanner"
+        },
+        {
+          "agent_id": "microstructure_reviewer",
+          "preset": "pairs_research_lab",
+          "role": "Microstructure Reviewer"
+        },
+        {
+          "agent_id": "pair_strategist",
+          "preset": "pairs_research_lab",
+          "role": "Pair Strategist"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "chief_investment_officer",
+          "preset": "portfolio_review_board",
+          "role": "Chief Investment Officer"
+        },
+        {
+          "agent_id": "execution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Execution Quality Analyst"
+        },
+        {
+          "agent_id": "risk_inspector",
+          "preset": "portfolio_review_board",
+          "role": "Risk Inspector"
+        },
+        {
+          "agent_id": "backtester",
+          "preset": "quant_strategy_desk",
+          "role": "Strategy Backtester"
+        },
+        {
+          "agent_id": "factor_miner",
+          "preset": "quant_strategy_desk",
+          "role": "Factor Researcher"
+        },
+        {
+          "agent_id": "report_aggregator",
+          "preset": "quant_strategy_desk",
+          "role": "Report Aggregator"
+        },
+        {
+          "agent_id": "risk_auditor",
+          "preset": "quant_strategy_desk",
+          "role": "Risk Auditor"
+        },
+        {
+          "agent_id": "screener",
+          "preset": "quant_strategy_desk",
+          "role": "Stock Screener"
+        },
+        {
+          "agent_id": "aggregator",
+          "preset": "risk_committee",
+          "role": "Head of Risk"
+        },
+        {
+          "agent_id": "drawdown_analyst",
+          "preset": "risk_committee",
+          "role": "Drawdown Analyst"
+        },
+        {
+          "agent_id": "regime_detector",
+          "preset": "risk_committee",
+          "role": "Market Regime Analyst"
+        },
+        {
+          "agent_id": "tail_risk_analyst",
+          "preset": "risk_committee",
+          "role": "Tail Risk Analyst"
+        },
+        {
+          "agent_id": "cycle_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Economic Cycle Analyst"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Capital Flow Analyst"
+        },
+        {
+          "agent_id": "prosperity_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Sector Prosperity Analyst"
+        },
+        {
+          "agent_id": "rotation_strategist",
+          "preset": "sector_rotation_team",
+          "role": "Sector Rotation Strategist"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "Capital Flow Analyst"
+        },
+        {
+          "agent_id": "news_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "News Intelligence Analyst"
+        },
+        {
+          "agent_id": "signal_synthesizer",
+          "preset": "sentiment_intelligence_team",
+          "role": "Sentiment Signal Synthesizer"
+        },
+        {
+          "agent_id": "social_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "Social Sentiment Analyst"
+        },
+        {
+          "agent_id": "alpha_synthesizer",
+          "preset": "social_alpha_team",
+          "role": "Alpha Synthesizer"
+        },
+        {
+          "agent_id": "reddit_analyst",
+          "preset": "social_alpha_team",
+          "role": "Reddit Analyst"
+        },
+        {
+          "agent_id": "telegram_analyst",
+          "preset": "social_alpha_team",
+          "role": "Telegram Analyst"
+        },
+        {
+          "agent_id": "twitter_analyst",
+          "preset": "social_alpha_team",
+          "role": "Twitter Analyst"
+        },
+        {
+          "agent_id": "arb_strategist",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Arbitrage Strategist"
+        },
+        {
+          "agent_id": "microstructure_analyst",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Microstructure Analyst"
+        },
+        {
+          "agent_id": "pair_scanner",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Pair Scanner"
+        },
+        {
+          "agent_id": "risk_monitor",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Risk Monitor"
+        },
+        {
+          "agent_id": "classic_ta_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Classic Technical Analyst"
+        },
+        {
+          "agent_id": "harmonic_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Harmonic Pattern Analyst"
+        },
+        {
+          "agent_id": "ichimoku_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Ichimoku Analyst"
+        },
+        {
+          "agent_id": "signal_aggregator",
+          "preset": "technical_analysis_panel",
+          "role": "Signal Aggregator (Judge)"
+        },
+        {
+          "agent_id": "smc_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "SMC / Order-Flow Analyst"
+        },
+        {
+          "agent_id": "wave_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Elliott Wave Analyst"
+        },
+        {
+          "agent_id": "buffett",
+          "preset": "value_investing_committee",
+          "role": "Warren Buffett — Moat & Price"
+        },
+        {
+          "agent_id": "chair",
+          "preset": "value_investing_committee",
+          "role": "Committee Chair — Consensus & Contradictions"
+        },
+        {
+          "agent_id": "duan_yongping",
+          "preset": "value_investing_committee",
+          "role": "Duan Yongping — Good Business & Trustworthy People"
+        },
+        {
+          "agent_id": "li_lu",
+          "preset": "value_investing_committee",
+          "role": "Li Lu — 10-Year Certainty & Civilizational Trend"
+        },
+        {
+          "agent_id": "munger",
+          "preset": "value_investing_committee",
+          "role": "Charlie Munger — Inversion & Risk"
+        }
+      ]
+    },
+    {
+      "audit_status": "audit-only",
+      "class": "CancelBackgroundTool",
+      "gate": "entrypoint flag --enable-shell-tools / env VIBE_TRADING_ENABLE_SHELL_TOOLS=1",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.background_tools",
+      "name": "cancel_background",
+      "purpose": "Cancel exactly one background_run task by task_id using its tracked process group/PID.",
+      "registered_keyless": false,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "CashFlowPerformanceTool",
+      "gate": "none",
+      "mcp_counterpart": "cashflow_performance",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.cashflow_analytics_tool",
+      "name": "cashflow_performance",
+      "purpose": "Measure the return of an account that received client contributions or paid out withdrawals mid-period.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "CheckBackgroundTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.background_tools",
+      "name": "check_background",
+      "purpose": "Check background task status, elapsed time, and remaining time before the 300-second automatic timeout.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "CompactTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.compact_tool",
+      "name": "compact",
+      "purpose": "Compress conversation history to free context space.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "correlation-analysis"
+      ],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "CreateHypothesisTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.hypothesis_tool",
+      "name": "create_hypothesis",
+      "purpose": "Create a durable research hypothesis in the local registry.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "strategy-dev-manager"
+      ],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "DeleteSkillTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.skill_writer_tool",
+      "name": "delete_skill",
+      "purpose": "Delete a user-created skill and all its files.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "EditFileTool",
+      "gate": "none",
+      "mcp_counterpart": "write_file",
+      "mcp_counterpart_status": "mapped",
+      "module": "src.tools.edit_file_tool",
+      "name": "edit_file",
+      "purpose": "Find and replace the first occurrence of old_text with new_text in a file.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "backtest-diagnose",
+        "strategy-generate"
+      ],
+      "swarm_refs": [
+        {
+          "agent_id": "data_scientist",
+          "preset": "ml_quant_lab",
+          "role": "Data Scientist"
+        },
+        {
+          "agent_id": "backtester",
+          "preset": "quant_strategy_desk",
+          "role": "Strategy Backtester"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "EtfHoldingsTool",
+      "gate": "none",
+      "mcp_counterpart": "etf_holdings",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.etf_holdings_tool",
+      "name": "etf_holdings",
+      "purpose": "ETF look-through across two markets.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "fund_selection_panel",
+          "role": "Performance Attribution Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "EtoroCancelCloseOrderTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "etoro_cancel_close_order",
+      "purpose": "Cancel a pending eToro market close order by order id (paper only; live is fail-closed because this reinstates exposure).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "EtoroClosePositionTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "etoro_close_position",
+      "purpose": "Close or partially close an open eToro position by position id.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "EtoroCopyCloseTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "etoro_copy_close",
+      "purpose": "Close or detach an eToro copy relationship by mirror id.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "EtoroCopyPollTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "etoro_copy_poll",
+      "purpose": "Poll the outcome of an asynchronous eToro copy operation.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "EtoroCopyPrecheckTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "etoro_copy_precheck",
+      "purpose": "Dry-run whether the account can copy an investor with an account-currency amount.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "EtoroCopyStartTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "etoro_copy_start",
+      "purpose": "Start copying an investor or adjust an existing copy allocation.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "EtoroEditPositionStopsTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "etoro_edit_position_stops",
+      "purpose": "Modify or clear stop-loss/take-profit on an open eToro position (paper only; live edits are fail-closed until incremental funding can be quantified).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "EtoroSearchInstrumentsTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "etoro_search_instruments",
+      "purpose": "Search eToro instruments by ticker (BTC, AAPL), free text, or asset class (crypto, stocks, forex).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "ExtractShadowStrategyTool",
+      "gate": "none",
+      "mcp_counterpart": "extract_shadow_strategy",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.shadow_account_tool",
+      "name": "extract_shadow_strategy",
+      "purpose": "Extract implicit trading rules from the user's profitable roundtrips and produce a Shadow Account profile (3-5 human-readable if-then rules).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "FactorAnalysisTool",
+      "gate": "none",
+      "mcp_counterpart": "factor_analysis",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.factor_analysis_tool",
+      "name": "factor_analysis",
+      "purpose": "Factor analysis: compute IC/IR/layered NAV.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "equity_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Underlying Equity Analyst"
+        },
+        {
+          "agent_id": "credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Credit Analyst"
+        },
+        {
+          "agent_id": "sector_analyst",
+          "preset": "equity_research_team",
+          "role": "Sector Analyst"
+        },
+        {
+          "agent_id": "stock_picker",
+          "preset": "equity_research_team",
+          "role": "Stock Analyst"
+        },
+        {
+          "agent_id": "etf_screener",
+          "preset": "etf_allocation_desk",
+          "role": "ETF Screener"
+        },
+        {
+          "agent_id": "impact_analyst",
+          "preset": "event_driven_task_force",
+          "role": "Impact Analyst"
+        },
+        {
+          "agent_id": "factor_combiner",
+          "preset": "factor_research_committee",
+          "role": "Factor Combiner"
+        },
+        {
+          "agent_id": "factor_miner",
+          "preset": "factor_research_committee",
+          "role": "Factor Miner"
+        },
+        {
+          "agent_id": "factor_validator",
+          "preset": "factor_research_committee",
+          "role": "Factor Validator"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "fund_selection_panel",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "fund_screener",
+          "preset": "fund_selection_panel",
+          "role": "Fund Screener"
+        },
+        {
+          "agent_id": "a_share_analyst",
+          "preset": "global_allocation_committee",
+          "role": "A-Share Analyst"
+        },
+        {
+          "agent_id": "a_share_researcher",
+          "preset": "global_equities_desk",
+          "role": "A-Share Equity Researcher"
+        },
+        {
+          "agent_id": "bear_advocate",
+          "preset": "investment_committee",
+          "role": "Bear-side Researcher"
+        },
+        {
+          "agent_id": "bull_advocate",
+          "preset": "investment_committee",
+          "role": "Bull-side Researcher"
+        },
+        {
+          "agent_id": "feature_engineer",
+          "preset": "ml_quant_lab",
+          "role": "Feature Engineer"
+        },
+        {
+          "agent_id": "cointegration_tester",
+          "preset": "pairs_research_lab",
+          "role": "Cointegration Tester"
+        },
+        {
+          "agent_id": "correlation_scanner",
+          "preset": "pairs_research_lab",
+          "role": "Correlation Scanner"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "factor_miner",
+          "preset": "quant_strategy_desk",
+          "role": "Factor Researcher"
+        },
+        {
+          "agent_id": "screener",
+          "preset": "quant_strategy_desk",
+          "role": "Stock Screener"
+        },
+        {
+          "agent_id": "prosperity_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Sector Prosperity Analyst"
+        },
+        {
+          "agent_id": "alpha_synthesizer",
+          "preset": "social_alpha_team",
+          "role": "Alpha Synthesizer"
+        },
+        {
+          "agent_id": "pair_scanner",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Pair Scanner"
+        }
+      ]
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "FinancialRigorTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.financial_rigor_tool",
+      "name": "financial_rigor",
+      "purpose": "Verify financial-data accuracy with exact decimal arithmetic (no float drift).",
+      "registered_keyless": true,
+      "skill_refs": [
+        "bottleneck-hunter",
+        "data-routing",
+        "deep-company-series",
+        "management-deep-dive",
+        "research-discipline",
+        "thesis-tracker"
+      ],
+      "swarm_refs": [
+        {
+          "agent_id": "financial_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Financial Analyst"
+        },
+        {
+          "agent_id": "valuation_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Valuation Analyst"
+        },
+        {
+          "agent_id": "buffett",
+          "preset": "value_investing_committee",
+          "role": "Warren Buffett — Moat & Price"
+        },
+        {
+          "agent_id": "duan_yongping",
+          "preset": "value_investing_committee",
+          "role": "Duan Yongping — Good Business & Trustworthy People"
+        },
+        {
+          "agent_id": "li_lu",
+          "preset": "value_investing_committee",
+          "role": "Li Lu — 10-Year Certainty & Civilizational Trend"
+        },
+        {
+          "agent_id": "munger",
+          "preset": "value_investing_committee",
+          "role": "Charlie Munger — Inversion & Risk"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "GenerateBacktestConfigTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.autopilot_tool",
+      "name": "generate_backtest_config",
+      "purpose": "Generate a backtest config.json from a saved hypothesis.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "strategy-dev-manager"
+      ],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "BlockTradesTool",
+      "gate": "none",
+      "mcp_counterpart": "get_block_trades",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.block_trades_tool",
+      "name": "get_block_trades",
+      "purpose": "Fetch recent A-share block trades (大宗交易) for one symbol from the Eastmoney datacenter: per-deal price, volume, amount, the premium/discount versus that day's close, and the buyer/seller broker seats (营业部).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "DragonTigerTool",
+      "gate": "none",
+      "mcp_counterpart": "get_dragon_tiger",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.dragon_tiger_tool",
+      "name": "get_dragon_tiger",
+      "purpose": "Fetch the A-share dragon-tiger board (龙虎榜) for a given trade date from Eastmoney's free datacenter API.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "FinancialStatementsTool",
+      "gate": "none",
+      "mcp_counterpart": "get_financial_statements",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.financial_statements_tool",
+      "name": "get_financial_statements",
+      "purpose": "Fetch a single stock's financial statements: balance sheet, income statement, cash-flow statement, or key per-period indicators (margins, ROE, EPS, etc.).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "bond_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Bond Floor Analyst"
+        },
+        {
+          "agent_id": "credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Credit Analyst"
+        },
+        {
+          "agent_id": "financial_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Financial Analyst"
+        },
+        {
+          "agent_id": "valuation_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Valuation Analyst"
+        },
+        {
+          "agent_id": "buffett",
+          "preset": "value_investing_committee",
+          "role": "Warren Buffett — Moat & Price"
+        },
+        {
+          "agent_id": "duan_yongping",
+          "preset": "value_investing_committee",
+          "role": "Duan Yongping — Good Business & Trustworthy People"
+        },
+        {
+          "agent_id": "li_lu",
+          "preset": "value_investing_committee",
+          "role": "Li Lu — 10-Year Certainty & Civilizational Trend"
+        },
+        {
+          "agent_id": "munger",
+          "preset": "value_investing_committee",
+          "role": "Charlie Munger — Inversion & Risk"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "FundFlowTool",
+      "gate": "none",
+      "mcp_counterpart": "get_fund_flow",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.fund_flow_tool",
+      "name": "get_fund_flow",
+      "purpose": "PER-STOCK order-level net inflow for a GIVEN symbol: for each requested ticker, the main / super-large / large / medium / small-order net inflow (in CNY), as daily history or the current session's per-minute line.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "GetFundamentalsTool",
+      "gate": "none",
+      "mcp_counterpart": "get_fundamentals",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.get_fundamentals_tool",
+      "name": "get_fundamentals",
+      "purpose": "Fetch PIT-safe fundamental fields as daily wide panels aligned by filed date.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "fund_selection_panel",
+          "role": "Performance Attribution Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "InstitutionalHoldingsTool",
+      "gate": "none",
+      "mcp_counterpart": "get_institutional_holdings",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.institutional_holdings_tool",
+      "name": "get_institutional_holdings",
+      "purpose": "U.S.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "LockupExpiryTool",
+      "gate": "none",
+      "mcp_counterpart": "get_lockup_expiry",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.lockup_expiry_tool",
+      "name": "get_lockup_expiry",
+      "purpose": "Fetch Chinese A-share lockup-expiry (restricted-share unlock, 限售解禁) data from Eastmoney.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "MarginTradingTool",
+      "gate": "none",
+      "mcp_counterpart": "get_margin_trading",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.margin_trading_tool",
+      "name": "get_margin_trading",
+      "purpose": "Fetch an A-share stock's daily margin-trading (融资融券) balances from Eastmoney's public datacenter: outstanding financing balance, financing buy amount, securities-lending balance, and combined RZRQ balance, one row per trading day (most recent first).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "MarketDataTool",
+      "gate": "none",
+      "mcp_counterpart": "get_market_data",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.market_data_tool",
+      "name": "get_market_data",
+      "purpose": "Fetch normalized OHLCV market data through the repository loader layer.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "bond_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Bond Floor Analyst"
+        },
+        {
+          "agent_id": "credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Credit Analyst"
+        },
+        {
+          "agent_id": "crypto_sentiment_analyst",
+          "preset": "crypto_research_lab",
+          "role": "Crypto Sentiment Analyst"
+        },
+        {
+          "agent_id": "onchain_analyst",
+          "preset": "crypto_research_lab",
+          "role": "On-Chain Data Analyst"
+        },
+        {
+          "agent_id": "desk_risk_manager",
+          "preset": "crypto_trading_desk",
+          "role": "Trading Desk Risk Manager"
+        },
+        {
+          "agent_id": "funding_basis_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "Funding Rate & Basis Analyst"
+        },
+        {
+          "agent_id": "greeks_manager",
+          "preset": "derivatives_strategy_desk",
+          "role": "Greeks Risk Manager"
+        },
+        {
+          "agent_id": "strategy_designer",
+          "preset": "derivatives_strategy_desk",
+          "role": "Strategy Designer"
+        },
+        {
+          "agent_id": "vol_analyst",
+          "preset": "derivatives_strategy_desk",
+          "role": "Volatility Analyst"
+        },
+        {
+          "agent_id": "event_options_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Event & Options Analyst"
+        },
+        {
+          "agent_id": "fundamental_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Fundamental & Filing Analyst"
+        },
+        {
+          "agent_id": "macro_analyst",
+          "preset": "equity_research_team",
+          "role": "Macro Analyst"
+        },
+        {
+          "agent_id": "sector_analyst",
+          "preset": "equity_research_team",
+          "role": "Sector Analyst"
+        },
+        {
+          "agent_id": "stock_picker",
+          "preset": "equity_research_team",
+          "role": "Stock Analyst"
+        },
+        {
+          "agent_id": "etf_screener",
+          "preset": "etf_allocation_desk",
+          "role": "ETF Screener"
+        },
+        {
+          "agent_id": "risk_budgeter",
+          "preset": "etf_allocation_desk",
+          "role": "Risk Budgeter"
+        },
+        {
+          "agent_id": "impact_analyst",
+          "preset": "event_driven_task_force",
+          "role": "Impact Analyst"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "fund_selection_panel",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "a_share_analyst",
+          "preset": "global_allocation_committee",
+          "role": "A-Share Analyst"
+        },
+        {
+          "agent_id": "crypto_analyst",
+          "preset": "global_allocation_committee",
+          "role": "Crypto Analyst"
+        },
+        {
+          "agent_id": "us_hk_analyst",
+          "preset": "global_allocation_committee",
+          "role": "HK / US Analyst"
+        },
+        {
+          "agent_id": "a_share_researcher",
+          "preset": "global_equities_desk",
+          "role": "A-Share Equity Researcher"
+        },
+        {
+          "agent_id": "crypto_researcher",
+          "preset": "global_equities_desk",
+          "role": "Crypto Asset Researcher"
+        },
+        {
+          "agent_id": "us_hk_researcher",
+          "preset": "global_equities_desk",
+          "role": "US & HK Equity Researcher"
+        },
+        {
+          "agent_id": "bear_advocate",
+          "preset": "investment_committee",
+          "role": "Bear-side Researcher"
+        },
+        {
+          "agent_id": "bull_advocate",
+          "preset": "investment_committee",
+          "role": "Bull-side Researcher"
+        },
+        {
+          "agent_id": "risk_officer",
+          "preset": "investment_committee",
+          "role": "Chief Risk Officer"
+        },
+        {
+          "agent_id": "fx_strategist",
+          "preset": "macro_rates_fx_desk",
+          "role": "FX Strategist"
+        },
+        {
+          "agent_id": "domestic_economist",
+          "preset": "macro_strategy_forum",
+          "role": "China Economist"
+        },
+        {
+          "agent_id": "cointegration_tester",
+          "preset": "pairs_research_lab",
+          "role": "Cointegration Tester"
+        },
+        {
+          "agent_id": "correlation_scanner",
+          "preset": "pairs_research_lab",
+          "role": "Correlation Scanner"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "execution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Execution Quality Analyst"
+        },
+        {
+          "agent_id": "risk_inspector",
+          "preset": "portfolio_review_board",
+          "role": "Risk Inspector"
+        },
+        {
+          "agent_id": "screener",
+          "preset": "quant_strategy_desk",
+          "role": "Stock Screener"
+        },
+        {
+          "agent_id": "drawdown_analyst",
+          "preset": "risk_committee",
+          "role": "Drawdown Analyst"
+        },
+        {
+          "agent_id": "regime_detector",
+          "preset": "risk_committee",
+          "role": "Market Regime Analyst"
+        },
+        {
+          "agent_id": "tail_risk_analyst",
+          "preset": "risk_committee",
+          "role": "Tail Risk Analyst"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Capital Flow Analyst"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "Capital Flow Analyst"
+        },
+        {
+          "agent_id": "microstructure_analyst",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Microstructure Analyst"
+        },
+        {
+          "agent_id": "pair_scanner",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Pair Scanner"
+        },
+        {
+          "agent_id": "risk_monitor",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Risk Monitor"
+        },
+        {
+          "agent_id": "classic_ta_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Classic Technical Analyst"
+        },
+        {
+          "agent_id": "ichimoku_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Ichimoku Analyst"
+        },
+        {
+          "agent_id": "smc_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "SMC / Order-Flow Analyst"
+        },
+        {
+          "agent_id": "buffett",
+          "preset": "value_investing_committee",
+          "role": "Warren Buffett — Moat & Price"
+        },
+        {
+          "agent_id": "duan_yongping",
+          "preset": "value_investing_committee",
+          "role": "Duan Yongping — Good Business & Trustworthy People"
+        },
+        {
+          "agent_id": "li_lu",
+          "preset": "value_investing_committee",
+          "role": "Li Lu — 10-Year Certainty & Civilizational Trend"
+        },
+        {
+          "agent_id": "munger",
+          "preset": "value_investing_committee",
+          "role": "Charlie Munger — Inversion & Risk"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "NorthboundFlowTool",
+      "gate": "none",
+      "mcp_counterpart": "get_northbound_flow",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.northbound_tool",
+      "name": "get_northbound_flow",
+      "purpose": "MARKET-WIDE Northbound (Stock-Connect / 北向) net capital flow for the whole mainland China A-share market: the aggregate net inflow from Hong Kong, split into Shanghai-Connect (沪股通) and Shenzhen-Connect (深股通) channels (units: 10k CNY), as the latest realtime figure plus a recent daily history.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "OptionsChainTool",
+      "gate": "none",
+      "mcp_counterpart": "get_options_chain",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.options_chain_tool",
+      "name": "get_options_chain",
+      "purpose": "Fetch the US-listed options chain (calls and puts) for one expiration via Yahoo Finance: per-contract strike, bid/ask, last price, volume, open interest, implied volatility, and in-the-money flag, plus the list of available expirations (epoch seconds).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "greeks_manager",
+          "preset": "derivatives_strategy_desk",
+          "role": "Greeks Risk Manager"
+        },
+        {
+          "agent_id": "strategy_designer",
+          "preset": "derivatives_strategy_desk",
+          "role": "Strategy Designer"
+        },
+        {
+          "agent_id": "vol_analyst",
+          "preset": "derivatives_strategy_desk",
+          "role": "Volatility Analyst"
+        },
+        {
+          "agent_id": "event_options_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Event & Options Analyst"
+        },
+        {
+          "agent_id": "bear_advocate",
+          "preset": "investment_committee",
+          "role": "Bear-side Researcher"
+        },
+        {
+          "agent_id": "risk_officer",
+          "preset": "investment_committee",
+          "role": "Chief Risk Officer"
+        },
+        {
+          "agent_id": "tail_risk_analyst",
+          "preset": "risk_committee",
+          "role": "Tail Risk Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "GetResearchGoalTool",
+      "gate": "none",
+      "mcp_counterpart": "get_research_goal",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.goal_tool",
+      "name": "get_research_goal",
+      "purpose": "Read the current finance research goal, criteria, claims, and latest evidence.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "ResearchReportsTool",
+      "gate": "none",
+      "mcp_counterpart": "get_research_reports",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.research_reports_tool",
+      "name": "get_research_reports",
+      "purpose": "Fetch mainland A-share sell-side research coverage: recent broker research reports (title, brokerage, analyst, publish date, rating) with each broker's per-year EPS and PE forecasts from Eastmoney, plus the market consensus (mean) EPS forecast per forward fiscal year from THS (同花顺).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "SecFilingsTool",
+      "gate": "none",
+      "mcp_counterpart": "get_sec_filings",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.sec_filings_tool",
+      "name": "get_sec_filings",
+      "purpose": "Fetch U.S.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "SectorInfoTool",
+      "gate": "none",
+      "mcp_counterpart": "get_sector_info",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.sector_tool",
+      "name": "get_sector_info",
+      "purpose": "Look up Chinese A-share sector / concept board info via Eastmoney (free, no auth).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "ShareholderCountTool",
+      "gate": "none",
+      "mcp_counterpart": "get_shareholder_count",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.shareholder_count_tool",
+      "name": "get_shareholder_count",
+      "purpose": "Fetch mainland A-share quarterly shareholder count (股东户数) from the Eastmoney datacenter: holder count per report period, quarter-over-quarter change (absolute and percent), and average holding (shares and market value) per account.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "StockNewsTool",
+      "gate": "none",
+      "mcp_counterpart": "get_stock_news",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.stock_news_tool",
+      "name": "get_stock_news",
+      "purpose": "Fetch recent financial news headlines, read-only and no auth.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "impact_analyst",
+          "preset": "event_driven_task_force",
+          "role": "Impact Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "StockProfileTool",
+      "gate": "none",
+      "mcp_counterpart": "get_stock_profile",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.stock_profile_tool",
+      "name": "get_stock_profile",
+      "purpose": "Fetch a read-only company profile for a US or Hong Kong listing from Yahoo Finance: valuation key statistics, analyst price targets and earnings/revenue estimates, institutional and insider ownership, and the analyst recommendation trend.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Credit Analyst"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "fund_selection_panel",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "financial_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Financial Analyst"
+        },
+        {
+          "agent_id": "valuation_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Valuation Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "GetStrategyEvidenceTool",
+      "gate": "none",
+      "mcp_counterpart": "get_strategy_evidence",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.strategy_discovery_tool",
+      "name": "get_strategy_evidence",
+      "purpose": "Return the computed per-regime evidence rows for one strategy.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "audit-only",
+      "class": "TaiwanStockDataTool",
+      "gate": "env VIBE_TW_STOCK_DB (schema-valid SQLite snapshot)",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.taiwan_stock_data_tool",
+      "name": "get_taiwan_stock_data",
+      "purpose": "Query the local read-only Taiwan stock snapshot for TWSE and TPEx stocks.",
+      "registered_keyless": false,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "LinkAutopilotBacktestTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.autopilot_tool",
+      "name": "link_autopilot_backtest",
+      "purpose": "Read run_card.json from a completed backtest run directory, extract its metrics, and link the run to a research hypothesis.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "strategy-dev-manager"
+      ],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "LinkBacktestTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.hypothesis_tool",
+      "name": "link_backtest",
+      "purpose": "Attach a run card or backtest run directory to a research hypothesis.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "ListStrategiesTool",
+      "gate": "none",
+      "mcp_counterpart": "list_strategies",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.strategy_discovery_tool",
+      "name": "list_strategies",
+      "purpose": "List discoverable strategies across the Alpha Zoo registry and the SDM strategy store.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "LoadSkillTool",
+      "gate": "none",
+      "mcp_counterpart": "load_skill",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.load_skill_tool",
+      "name": "load_skill",
+      "purpose": "Load documentation for a named skill.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "cycle_strategist",
+          "preset": "commodity_research_team",
+          "role": "Cycle Strategist"
+        },
+        {
+          "agent_id": "demand_analyst",
+          "preset": "commodity_research_team",
+          "role": "Demand Analyst"
+        },
+        {
+          "agent_id": "supply_analyst",
+          "preset": "commodity_research_team",
+          "role": "Supply Analyst"
+        },
+        {
+          "agent_id": "bond_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Bond Floor Analyst"
+        },
+        {
+          "agent_id": "cb_strategist",
+          "preset": "convertible_bond_team",
+          "role": "Convertible Bond Strategist"
+        },
+        {
+          "agent_id": "equity_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Underlying Equity Analyst"
+        },
+        {
+          "agent_id": "option_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Embedded Option Analyst"
+        },
+        {
+          "agent_id": "credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Credit Analyst"
+        },
+        {
+          "agent_id": "fixed_income_strategist",
+          "preset": "credit_research_team",
+          "role": "Fixed Income Strategist"
+        },
+        {
+          "agent_id": "rate_analyst",
+          "preset": "credit_research_team",
+          "role": "Interest Rate Analyst"
+        },
+        {
+          "agent_id": "sector_credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Sector Credit Analyst"
+        },
+        {
+          "agent_id": "alpha_synthesizer",
+          "preset": "crypto_research_lab",
+          "role": "Alpha Synthesizer"
+        },
+        {
+          "agent_id": "crypto_sentiment_analyst",
+          "preset": "crypto_research_lab",
+          "role": "Crypto Sentiment Analyst"
+        },
+        {
+          "agent_id": "defi_analyst",
+          "preset": "crypto_research_lab",
+          "role": "DeFi Protocol Analyst"
+        },
+        {
+          "agent_id": "onchain_analyst",
+          "preset": "crypto_research_lab",
+          "role": "On-Chain Data Analyst"
+        },
+        {
+          "agent_id": "desk_risk_manager",
+          "preset": "crypto_trading_desk",
+          "role": "Trading Desk Risk Manager"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "On-Chain & Stablecoin Flow Analyst"
+        },
+        {
+          "agent_id": "funding_basis_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "Funding Rate & Basis Analyst"
+        },
+        {
+          "agent_id": "liquidation_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "Liquidation & Microstructure Analyst"
+        },
+        {
+          "agent_id": "greeks_manager",
+          "preset": "derivatives_strategy_desk",
+          "role": "Greeks Risk Manager"
+        },
+        {
+          "agent_id": "strategy_designer",
+          "preset": "derivatives_strategy_desk",
+          "role": "Strategy Designer"
+        },
+        {
+          "agent_id": "vol_analyst",
+          "preset": "derivatives_strategy_desk",
+          "role": "Volatility Analyst"
+        },
+        {
+          "agent_id": "earnings_strategist",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Desk Strategist"
+        },
+        {
+          "agent_id": "event_options_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Event & Options Analyst"
+        },
+        {
+          "agent_id": "fundamental_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Fundamental & Filing Analyst"
+        },
+        {
+          "agent_id": "revision_tracker",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Revision & Consensus Tracker"
+        },
+        {
+          "agent_id": "aggregator",
+          "preset": "equity_research_team",
+          "role": "Research Report Editor"
+        },
+        {
+          "agent_id": "macro_analyst",
+          "preset": "equity_research_team",
+          "role": "Macro Analyst"
+        },
+        {
+          "agent_id": "sector_analyst",
+          "preset": "equity_research_team",
+          "role": "Sector Analyst"
+        },
+        {
+          "agent_id": "stock_picker",
+          "preset": "equity_research_team",
+          "role": "Stock Analyst"
+        },
+        {
+          "agent_id": "etf_screener",
+          "preset": "etf_allocation_desk",
+          "role": "ETF Screener"
+        },
+        {
+          "agent_id": "macro_allocator",
+          "preset": "etf_allocation_desk",
+          "role": "Macro Allocator"
+        },
+        {
+          "agent_id": "portfolio_optimizer",
+          "preset": "etf_allocation_desk",
+          "role": "Portfolio Optimizer"
+        },
+        {
+          "agent_id": "risk_budgeter",
+          "preset": "etf_allocation_desk",
+          "role": "Risk Budgeter"
+        },
+        {
+          "agent_id": "event_scanner",
+          "preset": "event_driven_task_force",
+          "role": "Event Scout"
+        },
+        {
+          "agent_id": "impact_analyst",
+          "preset": "event_driven_task_force",
+          "role": "Impact Analyst"
+        },
+        {
+          "agent_id": "strategy_builder",
+          "preset": "event_driven_task_force",
+          "role": "Strategy Builder"
+        },
+        {
+          "agent_id": "backtest_reviewer",
+          "preset": "factor_research_committee",
+          "role": "Backtest Reviewer"
+        },
+        {
+          "agent_id": "factor_combiner",
+          "preset": "factor_research_committee",
+          "role": "Factor Combiner"
+        },
+        {
+          "agent_id": "factor_miner",
+          "preset": "factor_research_committee",
+          "role": "Factor Miner"
+        },
+        {
+          "agent_id": "factor_validator",
+          "preset": "factor_research_committee",
+          "role": "Factor Validator"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "fund_selection_panel",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "fof_optimizer",
+          "preset": "fund_selection_panel",
+          "role": "FOF Portfolio Optimizer"
+        },
+        {
+          "agent_id": "fund_screener",
+          "preset": "fund_selection_panel",
+          "role": "Fund Screener"
+        },
+        {
+          "agent_id": "financial_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Financial Analyst"
+        },
+        {
+          "agent_id": "quality_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Quality Analyst"
+        },
+        {
+          "agent_id": "report_editor",
+          "preset": "fundamental_research_team",
+          "role": "Research Report Editor"
+        },
+        {
+          "agent_id": "valuation_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Valuation Analyst"
+        },
+        {
+          "agent_id": "chief_strategist",
+          "preset": "geopolitical_war_room",
+          "role": "Chief Strategist"
+        },
+        {
+          "agent_id": "energy_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Energy Shock Analyst"
+        },
+        {
+          "agent_id": "geopolitical_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Geopolitical Analyst"
+        },
+        {
+          "agent_id": "supply_chain_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Supply Chain Analyst"
+        },
+        {
+          "agent_id": "a_share_analyst",
+          "preset": "global_allocation_committee",
+          "role": "A-Share Analyst"
+        },
+        {
+          "agent_id": "allocator",
+          "preset": "global_allocation_committee",
+          "role": "Allocation Strategist"
+        },
+        {
+          "agent_id": "crypto_analyst",
+          "preset": "global_allocation_committee",
+          "role": "Crypto Analyst"
+        },
+        {
+          "agent_id": "us_hk_analyst",
+          "preset": "global_allocation_committee",
+          "role": "HK / US Analyst"
+        },
+        {
+          "agent_id": "a_share_researcher",
+          "preset": "global_equities_desk",
+          "role": "A-Share Equity Researcher"
+        },
+        {
+          "agent_id": "crypto_researcher",
+          "preset": "global_equities_desk",
+          "role": "Crypto Asset Researcher"
+        },
+        {
+          "agent_id": "global_strategist",
+          "preset": "global_equities_desk",
+          "role": "Global Equity Strategist"
+        },
+        {
+          "agent_id": "us_hk_researcher",
+          "preset": "global_equities_desk",
+          "role": "US & HK Equity Researcher"
+        },
+        {
+          "agent_id": "bear_advocate",
+          "preset": "investment_committee",
+          "role": "Bear-side Researcher"
+        },
+        {
+          "agent_id": "bull_advocate",
+          "preset": "investment_committee",
+          "role": "Bull-side Researcher"
+        },
+        {
+          "agent_id": "portfolio_manager",
+          "preset": "investment_committee",
+          "role": "Portfolio Manager"
+        },
+        {
+          "agent_id": "risk_officer",
+          "preset": "investment_committee",
+          "role": "Chief Risk Officer"
+        },
+        {
+          "agent_id": "commodity_inflation_analyst",
+          "preset": "macro_rates_fx_desk",
+          "role": "Commodity & Inflation Analyst"
+        },
+        {
+          "agent_id": "fx_strategist",
+          "preset": "macro_rates_fx_desk",
+          "role": "FX Strategist"
+        },
+        {
+          "agent_id": "macro_pm",
+          "preset": "macro_rates_fx_desk",
+          "role": "Macro Portfolio Manager"
+        },
+        {
+          "agent_id": "rates_analyst",
+          "preset": "macro_rates_fx_desk",
+          "role": "Global Rates & Yield Curve Analyst"
+        },
+        {
+          "agent_id": "chief_strategist",
+          "preset": "macro_strategy_forum",
+          "role": "Chief Strategist"
+        },
+        {
+          "agent_id": "domestic_economist",
+          "preset": "macro_strategy_forum",
+          "role": "China Economist"
+        },
+        {
+          "agent_id": "global_economist",
+          "preset": "macro_strategy_forum",
+          "role": "Global Economist"
+        },
+        {
+          "agent_id": "policy_analyst",
+          "preset": "macro_strategy_forum",
+          "role": "Policy Analyst"
+        },
+        {
+          "agent_id": "backtest_engineer",
+          "preset": "ml_quant_lab",
+          "role": "Backtest Engineer"
+        },
+        {
+          "agent_id": "data_scientist",
+          "preset": "ml_quant_lab",
+          "role": "Data Scientist"
+        },
+        {
+          "agent_id": "feature_engineer",
+          "preset": "ml_quant_lab",
+          "role": "Feature Engineer"
+        },
+        {
+          "agent_id": "cointegration_tester",
+          "preset": "pairs_research_lab",
+          "role": "Cointegration Tester"
+        },
+        {
+          "agent_id": "correlation_scanner",
+          "preset": "pairs_research_lab",
+          "role": "Correlation Scanner"
+        },
+        {
+          "agent_id": "microstructure_reviewer",
+          "preset": "pairs_research_lab",
+          "role": "Microstructure Reviewer"
+        },
+        {
+          "agent_id": "pair_strategist",
+          "preset": "pairs_research_lab",
+          "role": "Pair Strategist"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "chief_investment_officer",
+          "preset": "portfolio_review_board",
+          "role": "Chief Investment Officer"
+        },
+        {
+          "agent_id": "execution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Execution Quality Analyst"
+        },
+        {
+          "agent_id": "risk_inspector",
+          "preset": "portfolio_review_board",
+          "role": "Risk Inspector"
+        },
+        {
+          "agent_id": "backtester",
+          "preset": "quant_strategy_desk",
+          "role": "Strategy Backtester"
+        },
+        {
+          "agent_id": "factor_miner",
+          "preset": "quant_strategy_desk",
+          "role": "Factor Researcher"
+        },
+        {
+          "agent_id": "report_aggregator",
+          "preset": "quant_strategy_desk",
+          "role": "Report Aggregator"
+        },
+        {
+          "agent_id": "risk_auditor",
+          "preset": "quant_strategy_desk",
+          "role": "Risk Auditor"
+        },
+        {
+          "agent_id": "screener",
+          "preset": "quant_strategy_desk",
+          "role": "Stock Screener"
+        },
+        {
+          "agent_id": "drawdown_analyst",
+          "preset": "risk_committee",
+          "role": "Drawdown Analyst"
+        },
+        {
+          "agent_id": "regime_detector",
+          "preset": "risk_committee",
+          "role": "Market Regime Analyst"
+        },
+        {
+          "agent_id": "tail_risk_analyst",
+          "preset": "risk_committee",
+          "role": "Tail Risk Analyst"
+        },
+        {
+          "agent_id": "cycle_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Economic Cycle Analyst"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Capital Flow Analyst"
+        },
+        {
+          "agent_id": "prosperity_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Sector Prosperity Analyst"
+        },
+        {
+          "agent_id": "rotation_strategist",
+          "preset": "sector_rotation_team",
+          "role": "Sector Rotation Strategist"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "Capital Flow Analyst"
+        },
+        {
+          "agent_id": "news_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "News Intelligence Analyst"
+        },
+        {
+          "agent_id": "signal_synthesizer",
+          "preset": "sentiment_intelligence_team",
+          "role": "Sentiment Signal Synthesizer"
+        },
+        {
+          "agent_id": "social_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "Social Sentiment Analyst"
+        },
+        {
+          "agent_id": "alpha_synthesizer",
+          "preset": "social_alpha_team",
+          "role": "Alpha Synthesizer"
+        },
+        {
+          "agent_id": "reddit_analyst",
+          "preset": "social_alpha_team",
+          "role": "Reddit Analyst"
+        },
+        {
+          "agent_id": "telegram_analyst",
+          "preset": "social_alpha_team",
+          "role": "Telegram Analyst"
+        },
+        {
+          "agent_id": "twitter_analyst",
+          "preset": "social_alpha_team",
+          "role": "Twitter Analyst"
+        },
+        {
+          "agent_id": "arb_strategist",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Arbitrage Strategist"
+        },
+        {
+          "agent_id": "microstructure_analyst",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Microstructure Analyst"
+        },
+        {
+          "agent_id": "pair_scanner",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Pair Scanner"
+        },
+        {
+          "agent_id": "risk_monitor",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Risk Monitor"
+        },
+        {
+          "agent_id": "classic_ta_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Classic Technical Analyst"
+        },
+        {
+          "agent_id": "harmonic_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Harmonic Pattern Analyst"
+        },
+        {
+          "agent_id": "ichimoku_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Ichimoku Analyst"
+        },
+        {
+          "agent_id": "smc_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "SMC / Order-Flow Analyst"
+        },
+        {
+          "agent_id": "wave_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Elliott Wave Analyst"
+        },
+        {
+          "agent_id": "buffett",
+          "preset": "value_investing_committee",
+          "role": "Warren Buffett — Moat & Price"
+        },
+        {
+          "agent_id": "chair",
+          "preset": "value_investing_committee",
+          "role": "Committee Chair — Consensus & Contradictions"
+        },
+        {
+          "agent_id": "duan_yongping",
+          "preset": "value_investing_committee",
+          "role": "Duan Yongping — Good Business & Trustworthy People"
+        },
+        {
+          "agent_id": "li_lu",
+          "preset": "value_investing_committee",
+          "role": "Li Lu — 10-Year Certainty & Civilizational Trend"
+        },
+        {
+          "agent_id": "munger",
+          "preset": "value_investing_committee",
+          "role": "Charlie Munger — Inversion & Risk"
+        }
+      ]
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "OptionsPayoffTool",
+      "gate": "none",
+      "mcp_counterpart": "analyze_options_payoff",
+      "mcp_counterpart_status": "mapped",
+      "module": "src.tools.options_payoff_tool",
+      "name": "options_payoff",
+      "purpose": "Analyze a European multi-leg option strategy using deterministic piecewise-linear expiry math and Black-Scholes spot/IV scenarios.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "options-payoff"
+      ],
+      "swarm_refs": [
+        {
+          "agent_id": "risk_officer",
+          "preset": "investment_committee",
+          "role": "Chief Risk Officer"
+        },
+        {
+          "agent_id": "tail_risk_analyst",
+          "preset": "risk_committee",
+          "role": "Tail Risk Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "OptionsPricingTool",
+      "gate": "none",
+      "mcp_counterpart": "analyze_options",
+      "mcp_counterpart_status": "mapped",
+      "module": "src.tools.options_pricing_tool",
+      "name": "options_pricing",
+      "purpose": "Options pricing: compute theoretical price and Greeks using the Black-Scholes model.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "options-strategy"
+      ],
+      "swarm_refs": [
+        {
+          "agent_id": "option_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Embedded Option Analyst"
+        },
+        {
+          "agent_id": "greeks_manager",
+          "preset": "derivatives_strategy_desk",
+          "role": "Greeks Risk Manager"
+        },
+        {
+          "agent_id": "strategy_designer",
+          "preset": "derivatives_strategy_desk",
+          "role": "Strategy Designer"
+        },
+        {
+          "agent_id": "vol_analyst",
+          "preset": "derivatives_strategy_desk",
+          "role": "Volatility Analyst"
+        },
+        {
+          "agent_id": "event_options_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Event & Options Analyst"
+        },
+        {
+          "agent_id": "risk_officer",
+          "preset": "investment_committee",
+          "role": "Chief Risk Officer"
+        },
+        {
+          "agent_id": "tail_risk_analyst",
+          "preset": "risk_committee",
+          "role": "Tail Risk Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "OrderBookDepthTool",
+      "gate": "none",
+      "mcp_counterpart": "orderbook_depth",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.orderbook_depth_tool",
+      "name": "orderbook_depth",
+      "purpose": "READ-ONLY crypto L2 order-book snapshot from OKX or Binance spot public REST (via ccxt) — the depth/quote feed equity sources here cannot provide.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "microstructure_analyst",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Microstructure Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "PatchSkillTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.skill_writer_tool",
+      "name": "patch_skill",
+      "purpose": "Fix or update an existing skill by replacing specific text.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "PatternTool",
+      "gate": "none",
+      "mcp_counterpart": "pattern_recognition",
+      "mcp_counterpart_status": "mapped",
+      "module": "src.tools.pattern_tool",
+      "name": "pattern",
+      "purpose": "Run chart pattern detection on backtest data (head-and-shoulders, double top/bottom, candlestick, support/resistance, etc.).",
+      "registered_keyless": true,
+      "skill_refs": [
+        "candlestick",
+        "data-routing",
+        "earnings-revision",
+        "factor-research",
+        "geopolitical-risk",
+        "harmonic",
+        "perp-funding-basis",
+        "quant-statistics",
+        "social-media-intelligence",
+        "trade-journal",
+        "us-etf-flow"
+      ],
+      "swarm_refs": [
+        {
+          "agent_id": "harmonic_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Harmonic Pattern Analyst"
+        },
+        {
+          "agent_id": "wave_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Elliott Wave Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "PortfolioRiskXrayTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.portfolio_risk_tool",
+      "name": "portfolio_risk_xray",
+      "purpose": "Portfolio risk x-ray: given symbols (and optional weights), fetch recent daily closes through the data fallback chain and compute concentration (HHI/effective N), annualized volatility, max drawdown, historical VaR/expected shortfall, diversification ratio, and correlation/beta.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "PortfolioSummaryTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.portfolio_tool",
+      "name": "portfolio_summary",
+      "purpose": "Read the latest sanitized snapshot of the user's locally configured read-only brokerage accounts.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "PredictionMarketTool",
+      "gate": "none",
+      "mcp_counterpart": "prediction_market",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.prediction_market_tool",
+      "name": "prediction_market",
+      "purpose": "READ-ONLY prediction-market (event-contract) data from Polymarket's public endpoints — alternative data for event-driven research.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "ProposeMandateProfilesTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.propose_mandate_tool",
+      "name": "propose_mandate_profiles",
+      "purpose": "Propose 2-4 numbered bounded-autonomy live-trading mandate profiles for the user to pick from, each clamped to the account's hard ceilings.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "QuantlibCallTool",
+      "gate": "none",
+      "mcp_counterpart": "quantlib_call",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.quantlib_tool",
+      "name": "quantlib_call",
+      "purpose": "Run a function from the tested finance-math library (src/quantlib): Black-Scholes and implied vol, bond math and curve fitting, Altman Z and Merton/KMV, stationarity/cointegration/GARCH/regime switching, VaR/CVaR/EVT and VaR backtesting (Kupiec/Christoffersen/Basel), Brinson-Fachler attribution, market impact, fund maths (XIRR/MOIC/DPI/TVPI/PME/waterfalls), TWR/Dietz/MWR, event studies (CAR/CAAR/Patell/BMP), style factor models, deflated Sharpe and PBO, purged cross-validation, and the valuation engine (DCF / comps / three-statement).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "QueryStrategiesTool",
+      "gate": "none",
+      "mcp_counterpart": "query_strategies",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.strategy_discovery_tool",
+      "name": "query_strategies",
+      "purpose": "Query the strategy store for strategies whose computed evidence passes the given filters.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "DocReaderTool",
+      "gate": "none",
+      "mcp_counterpart": "read_document",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.doc_reader_tool",
+      "name": "read_document",
+      "purpose": "Read a document of any common format: PDF, Word (.docx), Excel (.xlsx/.xls), PowerPoint (.pptx), images (OCR), or plain text (txt/md/json/yaml/csv/html/code files).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "ReadFileTool",
+      "gate": "none",
+      "mcp_counterpart": "read_file",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.read_file_tool",
+      "name": "read_file",
+      "purpose": "Read a file from the workspace.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "cycle_strategist",
+          "preset": "commodity_research_team",
+          "role": "Cycle Strategist"
+        },
+        {
+          "agent_id": "demand_analyst",
+          "preset": "commodity_research_team",
+          "role": "Demand Analyst"
+        },
+        {
+          "agent_id": "supply_analyst",
+          "preset": "commodity_research_team",
+          "role": "Supply Analyst"
+        },
+        {
+          "agent_id": "bond_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Bond Floor Analyst"
+        },
+        {
+          "agent_id": "cb_strategist",
+          "preset": "convertible_bond_team",
+          "role": "Convertible Bond Strategist"
+        },
+        {
+          "agent_id": "equity_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Underlying Equity Analyst"
+        },
+        {
+          "agent_id": "option_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Embedded Option Analyst"
+        },
+        {
+          "agent_id": "credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Credit Analyst"
+        },
+        {
+          "agent_id": "fixed_income_strategist",
+          "preset": "credit_research_team",
+          "role": "Fixed Income Strategist"
+        },
+        {
+          "agent_id": "rate_analyst",
+          "preset": "credit_research_team",
+          "role": "Interest Rate Analyst"
+        },
+        {
+          "agent_id": "sector_credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Sector Credit Analyst"
+        },
+        {
+          "agent_id": "alpha_synthesizer",
+          "preset": "crypto_research_lab",
+          "role": "Alpha Synthesizer"
+        },
+        {
+          "agent_id": "crypto_sentiment_analyst",
+          "preset": "crypto_research_lab",
+          "role": "Crypto Sentiment Analyst"
+        },
+        {
+          "agent_id": "defi_analyst",
+          "preset": "crypto_research_lab",
+          "role": "DeFi Protocol Analyst"
+        },
+        {
+          "agent_id": "onchain_analyst",
+          "preset": "crypto_research_lab",
+          "role": "On-Chain Data Analyst"
+        },
+        {
+          "agent_id": "desk_risk_manager",
+          "preset": "crypto_trading_desk",
+          "role": "Trading Desk Risk Manager"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "On-Chain & Stablecoin Flow Analyst"
+        },
+        {
+          "agent_id": "funding_basis_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "Funding Rate & Basis Analyst"
+        },
+        {
+          "agent_id": "liquidation_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "Liquidation & Microstructure Analyst"
+        },
+        {
+          "agent_id": "greeks_manager",
+          "preset": "derivatives_strategy_desk",
+          "role": "Greeks Risk Manager"
+        },
+        {
+          "agent_id": "strategy_designer",
+          "preset": "derivatives_strategy_desk",
+          "role": "Strategy Designer"
+        },
+        {
+          "agent_id": "vol_analyst",
+          "preset": "derivatives_strategy_desk",
+          "role": "Volatility Analyst"
+        },
+        {
+          "agent_id": "earnings_strategist",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Desk Strategist"
+        },
+        {
+          "agent_id": "event_options_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Event & Options Analyst"
+        },
+        {
+          "agent_id": "fundamental_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Fundamental & Filing Analyst"
+        },
+        {
+          "agent_id": "revision_tracker",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Revision & Consensus Tracker"
+        },
+        {
+          "agent_id": "aggregator",
+          "preset": "equity_research_team",
+          "role": "Research Report Editor"
+        },
+        {
+          "agent_id": "macro_analyst",
+          "preset": "equity_research_team",
+          "role": "Macro Analyst"
+        },
+        {
+          "agent_id": "sector_analyst",
+          "preset": "equity_research_team",
+          "role": "Sector Analyst"
+        },
+        {
+          "agent_id": "stock_picker",
+          "preset": "equity_research_team",
+          "role": "Stock Analyst"
+        },
+        {
+          "agent_id": "etf_screener",
+          "preset": "etf_allocation_desk",
+          "role": "ETF Screener"
+        },
+        {
+          "agent_id": "macro_allocator",
+          "preset": "etf_allocation_desk",
+          "role": "Macro Allocator"
+        },
+        {
+          "agent_id": "portfolio_optimizer",
+          "preset": "etf_allocation_desk",
+          "role": "Portfolio Optimizer"
+        },
+        {
+          "agent_id": "risk_budgeter",
+          "preset": "etf_allocation_desk",
+          "role": "Risk Budgeter"
+        },
+        {
+          "agent_id": "event_scanner",
+          "preset": "event_driven_task_force",
+          "role": "Event Scout"
+        },
+        {
+          "agent_id": "impact_analyst",
+          "preset": "event_driven_task_force",
+          "role": "Impact Analyst"
+        },
+        {
+          "agent_id": "strategy_builder",
+          "preset": "event_driven_task_force",
+          "role": "Strategy Builder"
+        },
+        {
+          "agent_id": "backtest_reviewer",
+          "preset": "factor_research_committee",
+          "role": "Backtest Reviewer"
+        },
+        {
+          "agent_id": "factor_combiner",
+          "preset": "factor_research_committee",
+          "role": "Factor Combiner"
+        },
+        {
+          "agent_id": "factor_miner",
+          "preset": "factor_research_committee",
+          "role": "Factor Miner"
+        },
+        {
+          "agent_id": "factor_validator",
+          "preset": "factor_research_committee",
+          "role": "Factor Validator"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "fund_selection_panel",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "fof_optimizer",
+          "preset": "fund_selection_panel",
+          "role": "FOF Portfolio Optimizer"
+        },
+        {
+          "agent_id": "fund_screener",
+          "preset": "fund_selection_panel",
+          "role": "Fund Screener"
+        },
+        {
+          "agent_id": "financial_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Financial Analyst"
+        },
+        {
+          "agent_id": "quality_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Quality Analyst"
+        },
+        {
+          "agent_id": "report_editor",
+          "preset": "fundamental_research_team",
+          "role": "Research Report Editor"
+        },
+        {
+          "agent_id": "valuation_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Valuation Analyst"
+        },
+        {
+          "agent_id": "chief_strategist",
+          "preset": "geopolitical_war_room",
+          "role": "Chief Strategist"
+        },
+        {
+          "agent_id": "energy_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Energy Shock Analyst"
+        },
+        {
+          "agent_id": "geopolitical_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Geopolitical Analyst"
+        },
+        {
+          "agent_id": "supply_chain_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Supply Chain Analyst"
+        },
+        {
+          "agent_id": "a_share_analyst",
+          "preset": "global_allocation_committee",
+          "role": "A-Share Analyst"
+        },
+        {
+          "agent_id": "allocator",
+          "preset": "global_allocation_committee",
+          "role": "Allocation Strategist"
+        },
+        {
+          "agent_id": "crypto_analyst",
+          "preset": "global_allocation_committee",
+          "role": "Crypto Analyst"
+        },
+        {
+          "agent_id": "us_hk_analyst",
+          "preset": "global_allocation_committee",
+          "role": "HK / US Analyst"
+        },
+        {
+          "agent_id": "a_share_researcher",
+          "preset": "global_equities_desk",
+          "role": "A-Share Equity Researcher"
+        },
+        {
+          "agent_id": "crypto_researcher",
+          "preset": "global_equities_desk",
+          "role": "Crypto Asset Researcher"
+        },
+        {
+          "agent_id": "global_strategist",
+          "preset": "global_equities_desk",
+          "role": "Global Equity Strategist"
+        },
+        {
+          "agent_id": "us_hk_researcher",
+          "preset": "global_equities_desk",
+          "role": "US & HK Equity Researcher"
+        },
+        {
+          "agent_id": "bear_advocate",
+          "preset": "investment_committee",
+          "role": "Bear-side Researcher"
+        },
+        {
+          "agent_id": "bull_advocate",
+          "preset": "investment_committee",
+          "role": "Bull-side Researcher"
+        },
+        {
+          "agent_id": "portfolio_manager",
+          "preset": "investment_committee",
+          "role": "Portfolio Manager"
+        },
+        {
+          "agent_id": "risk_officer",
+          "preset": "investment_committee",
+          "role": "Chief Risk Officer"
+        },
+        {
+          "agent_id": "commodity_inflation_analyst",
+          "preset": "macro_rates_fx_desk",
+          "role": "Commodity & Inflation Analyst"
+        },
+        {
+          "agent_id": "fx_strategist",
+          "preset": "macro_rates_fx_desk",
+          "role": "FX Strategist"
+        },
+        {
+          "agent_id": "macro_pm",
+          "preset": "macro_rates_fx_desk",
+          "role": "Macro Portfolio Manager"
+        },
+        {
+          "agent_id": "rates_analyst",
+          "preset": "macro_rates_fx_desk",
+          "role": "Global Rates & Yield Curve Analyst"
+        },
+        {
+          "agent_id": "chief_strategist",
+          "preset": "macro_strategy_forum",
+          "role": "Chief Strategist"
+        },
+        {
+          "agent_id": "domestic_economist",
+          "preset": "macro_strategy_forum",
+          "role": "China Economist"
+        },
+        {
+          "agent_id": "global_economist",
+          "preset": "macro_strategy_forum",
+          "role": "Global Economist"
+        },
+        {
+          "agent_id": "policy_analyst",
+          "preset": "macro_strategy_forum",
+          "role": "Policy Analyst"
+        },
+        {
+          "agent_id": "backtest_engineer",
+          "preset": "ml_quant_lab",
+          "role": "Backtest Engineer"
+        },
+        {
+          "agent_id": "data_scientist",
+          "preset": "ml_quant_lab",
+          "role": "Data Scientist"
+        },
+        {
+          "agent_id": "feature_engineer",
+          "preset": "ml_quant_lab",
+          "role": "Feature Engineer"
+        },
+        {
+          "agent_id": "cointegration_tester",
+          "preset": "pairs_research_lab",
+          "role": "Cointegration Tester"
+        },
+        {
+          "agent_id": "correlation_scanner",
+          "preset": "pairs_research_lab",
+          "role": "Correlation Scanner"
+        },
+        {
+          "agent_id": "microstructure_reviewer",
+          "preset": "pairs_research_lab",
+          "role": "Microstructure Reviewer"
+        },
+        {
+          "agent_id": "pair_strategist",
+          "preset": "pairs_research_lab",
+          "role": "Pair Strategist"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "chief_investment_officer",
+          "preset": "portfolio_review_board",
+          "role": "Chief Investment Officer"
+        },
+        {
+          "agent_id": "execution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Execution Quality Analyst"
+        },
+        {
+          "agent_id": "risk_inspector",
+          "preset": "portfolio_review_board",
+          "role": "Risk Inspector"
+        },
+        {
+          "agent_id": "backtester",
+          "preset": "quant_strategy_desk",
+          "role": "Strategy Backtester"
+        },
+        {
+          "agent_id": "factor_miner",
+          "preset": "quant_strategy_desk",
+          "role": "Factor Researcher"
+        },
+        {
+          "agent_id": "report_aggregator",
+          "preset": "quant_strategy_desk",
+          "role": "Report Aggregator"
+        },
+        {
+          "agent_id": "risk_auditor",
+          "preset": "quant_strategy_desk",
+          "role": "Risk Auditor"
+        },
+        {
+          "agent_id": "screener",
+          "preset": "quant_strategy_desk",
+          "role": "Stock Screener"
+        },
+        {
+          "agent_id": "aggregator",
+          "preset": "risk_committee",
+          "role": "Head of Risk"
+        },
+        {
+          "agent_id": "drawdown_analyst",
+          "preset": "risk_committee",
+          "role": "Drawdown Analyst"
+        },
+        {
+          "agent_id": "regime_detector",
+          "preset": "risk_committee",
+          "role": "Market Regime Analyst"
+        },
+        {
+          "agent_id": "tail_risk_analyst",
+          "preset": "risk_committee",
+          "role": "Tail Risk Analyst"
+        },
+        {
+          "agent_id": "cycle_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Economic Cycle Analyst"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Capital Flow Analyst"
+        },
+        {
+          "agent_id": "prosperity_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Sector Prosperity Analyst"
+        },
+        {
+          "agent_id": "rotation_strategist",
+          "preset": "sector_rotation_team",
+          "role": "Sector Rotation Strategist"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "Capital Flow Analyst"
+        },
+        {
+          "agent_id": "news_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "News Intelligence Analyst"
+        },
+        {
+          "agent_id": "signal_synthesizer",
+          "preset": "sentiment_intelligence_team",
+          "role": "Sentiment Signal Synthesizer"
+        },
+        {
+          "agent_id": "social_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "Social Sentiment Analyst"
+        },
+        {
+          "agent_id": "alpha_synthesizer",
+          "preset": "social_alpha_team",
+          "role": "Alpha Synthesizer"
+        },
+        {
+          "agent_id": "reddit_analyst",
+          "preset": "social_alpha_team",
+          "role": "Reddit Analyst"
+        },
+        {
+          "agent_id": "telegram_analyst",
+          "preset": "social_alpha_team",
+          "role": "Telegram Analyst"
+        },
+        {
+          "agent_id": "twitter_analyst",
+          "preset": "social_alpha_team",
+          "role": "Twitter Analyst"
+        },
+        {
+          "agent_id": "arb_strategist",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Arbitrage Strategist"
+        },
+        {
+          "agent_id": "microstructure_analyst",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Microstructure Analyst"
+        },
+        {
+          "agent_id": "pair_scanner",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Pair Scanner"
+        },
+        {
+          "agent_id": "risk_monitor",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Risk Monitor"
+        },
+        {
+          "agent_id": "classic_ta_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Classic Technical Analyst"
+        },
+        {
+          "agent_id": "harmonic_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Harmonic Pattern Analyst"
+        },
+        {
+          "agent_id": "ichimoku_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Ichimoku Analyst"
+        },
+        {
+          "agent_id": "signal_aggregator",
+          "preset": "technical_analysis_panel",
+          "role": "Signal Aggregator (Judge)"
+        },
+        {
+          "agent_id": "smc_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "SMC / Order-Flow Analyst"
+        },
+        {
+          "agent_id": "wave_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Elliott Wave Analyst"
+        },
+        {
+          "agent_id": "buffett",
+          "preset": "value_investing_committee",
+          "role": "Warren Buffett — Moat & Price"
+        },
+        {
+          "agent_id": "chair",
+          "preset": "value_investing_committee",
+          "role": "Committee Chair — Consensus & Contradictions"
+        },
+        {
+          "agent_id": "duan_yongping",
+          "preset": "value_investing_committee",
+          "role": "Duan Yongping — Good Business & Trustworthy People"
+        },
+        {
+          "agent_id": "li_lu",
+          "preset": "value_investing_committee",
+          "role": "Li Lu — 10-Year Certainty & Civilizational Trend"
+        },
+        {
+          "agent_id": "munger",
+          "preset": "value_investing_committee",
+          "role": "Charlie Munger — Inversion & Risk"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "WebReaderTool",
+      "gate": "none",
+      "mcp_counterpart": "read_url",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.web_reader_tool",
+      "name": "read_url",
+      "purpose": "Fetch web page content: provide a URL and receive the page as Markdown text.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "demand_analyst",
+          "preset": "commodity_research_team",
+          "role": "Demand Analyst"
+        },
+        {
+          "agent_id": "supply_analyst",
+          "preset": "commodity_research_team",
+          "role": "Supply Analyst"
+        },
+        {
+          "agent_id": "bond_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Bond Floor Analyst"
+        },
+        {
+          "agent_id": "credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Credit Analyst"
+        },
+        {
+          "agent_id": "rate_analyst",
+          "preset": "credit_research_team",
+          "role": "Interest Rate Analyst"
+        },
+        {
+          "agent_id": "sector_credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Sector Credit Analyst"
+        },
+        {
+          "agent_id": "crypto_sentiment_analyst",
+          "preset": "crypto_research_lab",
+          "role": "Crypto Sentiment Analyst"
+        },
+        {
+          "agent_id": "defi_analyst",
+          "preset": "crypto_research_lab",
+          "role": "DeFi Protocol Analyst"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "On-Chain & Stablecoin Flow Analyst"
+        },
+        {
+          "agent_id": "liquidation_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "Liquidation & Microstructure Analyst"
+        },
+        {
+          "agent_id": "fundamental_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Fundamental & Filing Analyst"
+        },
+        {
+          "agent_id": "revision_tracker",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Revision & Consensus Tracker"
+        },
+        {
+          "agent_id": "macro_analyst",
+          "preset": "equity_research_team",
+          "role": "Macro Analyst"
+        },
+        {
+          "agent_id": "macro_allocator",
+          "preset": "etf_allocation_desk",
+          "role": "Macro Allocator"
+        },
+        {
+          "agent_id": "event_scanner",
+          "preset": "event_driven_task_force",
+          "role": "Event Scout"
+        },
+        {
+          "agent_id": "impact_analyst",
+          "preset": "event_driven_task_force",
+          "role": "Impact Analyst"
+        },
+        {
+          "agent_id": "quality_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Quality Analyst"
+        },
+        {
+          "agent_id": "energy_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Energy Shock Analyst"
+        },
+        {
+          "agent_id": "geopolitical_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Geopolitical Analyst"
+        },
+        {
+          "agent_id": "supply_chain_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Supply Chain Analyst"
+        },
+        {
+          "agent_id": "us_hk_analyst",
+          "preset": "global_allocation_committee",
+          "role": "HK / US Analyst"
+        },
+        {
+          "agent_id": "us_hk_researcher",
+          "preset": "global_equities_desk",
+          "role": "US & HK Equity Researcher"
+        },
+        {
+          "agent_id": "commodity_inflation_analyst",
+          "preset": "macro_rates_fx_desk",
+          "role": "Commodity & Inflation Analyst"
+        },
+        {
+          "agent_id": "fx_strategist",
+          "preset": "macro_rates_fx_desk",
+          "role": "FX Strategist"
+        },
+        {
+          "agent_id": "rates_analyst",
+          "preset": "macro_rates_fx_desk",
+          "role": "Global Rates & Yield Curve Analyst"
+        },
+        {
+          "agent_id": "domestic_economist",
+          "preset": "macro_strategy_forum",
+          "role": "China Economist"
+        },
+        {
+          "agent_id": "global_economist",
+          "preset": "macro_strategy_forum",
+          "role": "Global Economist"
+        },
+        {
+          "agent_id": "policy_analyst",
+          "preset": "macro_strategy_forum",
+          "role": "Policy Analyst"
+        },
+        {
+          "agent_id": "news_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "News Intelligence Analyst"
+        },
+        {
+          "agent_id": "social_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "Social Sentiment Analyst"
+        },
+        {
+          "agent_id": "reddit_analyst",
+          "preset": "social_alpha_team",
+          "role": "Reddit Analyst"
+        },
+        {
+          "agent_id": "telegram_analyst",
+          "preset": "social_alpha_team",
+          "role": "Telegram Analyst"
+        },
+        {
+          "agent_id": "twitter_analyst",
+          "preset": "social_alpha_team",
+          "role": "Twitter Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "RefreshStrategyEvidenceTool",
+      "gate": "none",
+      "mcp_counterpart": "refresh_strategy_evidence",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.strategy_discovery_tool",
+      "name": "refresh_strategy_evidence",
+      "purpose": "Rebuild the strategy-discovery evidence cache from real backtest run artifacts.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "RememberTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.remember_tool",
+      "name": "remember",
+      "purpose": "Persistent cross-session memory.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "asset-allocation"
+      ],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "RenderShadowReportTool",
+      "gate": "none",
+      "mcp_counterpart": "render_shadow_report",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.shadow_account_tool",
+      "name": "render_shadow_report",
+      "purpose": "Generate the Shadow Account PDF (8 sections + charts) for a shadow_id.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "ReportAuditTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.report_audit_tool",
+      "name": "report_audit",
+      "purpose": "Audit a research report's numeric data points for accuracy before publishing.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "bottleneck-hunter",
+        "deep-company-series",
+        "management-deep-dive",
+        "private-company-research",
+        "research-discipline"
+      ],
+      "swarm_refs": [
+        {
+          "agent_id": "chair",
+          "preset": "value_investing_committee",
+          "role": "Committee Chair — Consensus & Contradictions"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "ResearchPapersTool",
+      "gate": "none",
+      "mcp_counterpart": "research_papers",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.research_papers_tool",
+      "name": "research_papers",
+      "purpose": "Search academic finance/ML papers and turn a paper into a FACTOR BRIEF that feeds our own factor loop.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "RunResearchAutopilotTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.autopilot_tool",
+      "name": "run_research_autopilot",
+      "purpose": "Start a research goal from a saved hypothesis.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "RunShadowBacktestTool",
+      "gate": "none",
+      "mcp_counterpart": "run_shadow_backtest",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.shadow_account_tool",
+      "name": "run_shadow_backtest",
+      "purpose": "Run a multi-market backtest (A股/港股/美股/crypto) on a Shadow Account profile and compute delta-PnL attribution vs the user's realized trades.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "SwarmTool",
+      "gate": "none",
+      "mcp_counterpart": "run_swarm",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.swarm_tool",
+      "name": "run_swarm",
+      "purpose": "Run a multi-agent swarm team for complex analysis tasks.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "SaveSkillTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.skill_writer_tool",
+      "name": "save_skill",
+      "purpose": "Save a successful workflow or strategy template as a reusable skill.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "ScaffoldSignalEngineTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.autopilot_tool",
+      "name": "scaffold_signal_engine",
+      "purpose": "Write a contract-correct code/signal_engine.py stub into a backtest run directory for a saved hypothesis.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "strategy-dev-manager"
+      ],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "ScanShadowSignalsTool",
+      "gate": "none",
+      "mcp_counterpart": "scan_shadow_signals",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.shadow_account_tool",
+      "name": "scan_shadow_signals",
+      "purpose": "List today's symbols that fall within the Shadow Account's entry cadence (research use only — not a trade recommendation).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "ScheduledResearchTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.scheduled_research_tool",
+      "name": "scheduled_research",
+      "purpose": "Inspect scheduled research and prepare create/cancel proposals.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "MarketScreenerTool",
+      "gate": "none",
+      "mcp_counterpart": "screen_market",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.market_screener_tool",
+      "name": "screen_market",
+      "purpose": "Screen a whole market's listed instruments and return the top names ranked by a chosen metric: percent change, traded volume, turnover value (amount) or turnover rate.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "correlation_scanner",
+          "preset": "pairs_research_lab",
+          "role": "Correlation Scanner"
+        },
+        {
+          "agent_id": "pair_scanner",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Pair Scanner"
+        }
+      ]
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "SdmDecayScanTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.sdm_decay_scan_tool",
+      "name": "sdm_decay_scan",
+      "purpose": "Run decay monitoring scan on active factors/strategies.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "strategy-dev-manager"
+      ],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "SdmRegisterTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.sdm_register_tool",
+      "name": "sdm_register",
+      "purpose": "Register a new factor or strategy extracted from a paper into the strategy store.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "strategy-dev-manager"
+      ],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "SdmStatusTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.sdm_status_tool",
+      "name": "sdm_status",
+      "purpose": "Query or update factor/strategy status in the strategy store.",
+      "registered_keyless": true,
+      "skill_refs": [
+        "strategy-dev-manager"
+      ],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "SearchHypothesesTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.hypothesis_tool",
+      "name": "search_hypotheses",
+      "purpose": "Search hypotheses by text query and/or lifecycle status.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "SymbolSearchTool",
+      "gate": "none",
+      "mcp_counterpart": "search_symbol",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.symbol_search_tool",
+      "name": "search_symbol",
+      "purpose": "Resolve a company name or ticker fragment to candidate trading symbols with their market, in the project's symbol convention (A-shares 600519.SH, Hong Kong 00700.HK, U.S.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "SentimentTool",
+      "gate": "none",
+      "mcp_counterpart": "sentiment",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.sentiment_tool",
+      "name": "sentiment",
+      "purpose": "Analyze market sentiment.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "SessionSearchTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.session_search_tool",
+      "name": "session_search",
+      "purpose": "Search past conversation sessions by keyword.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "SkillFileTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.skill_writer_tool",
+      "name": "skill_file",
+      "purpose": "Manage auxiliary files in a skill directory.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "StartResearchGoalTool",
+      "gate": "none",
+      "mcp_counterpart": "start_research_goal",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.goal_tool",
+      "name": "start_research_goal",
+      "purpose": "Start or replace the current finance research goal for this session.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TechnicalIndicatorTool",
+      "gate": "none",
+      "mcp_counterpart": "technical_indicators",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.technical_indicator_tool",
+      "name": "technical_indicators",
+      "purpose": "Compute common technical indicators (RSI, MACD, Bollinger Bands, SMA, EMA) for a trading symbol.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "regime_detector",
+          "preset": "risk_committee",
+          "role": "Market Regime Analyst"
+        },
+        {
+          "agent_id": "classic_ta_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Classic Technical Analyst"
+        },
+        {
+          "agent_id": "ichimoku_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Ichimoku Analyst"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingAccCashFlowTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_acc_cash_flow",
+      "purpose": "Read account cash-flow movements for a clearing date (YYYY-MM-DD): deposit, withdrawal, FX, settlement, fees.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingAccountTool",
+      "gate": "none",
+      "mcp_counterpart": "trading_account",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_account",
+      "purpose": "Read account summary from the selected trading connector profile.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingCancelOrderTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_cancel_order",
+      "purpose": "Cancel an open order on the selected trading connector profile by order id.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingCapitalDistributionTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_capital_distribution",
+      "purpose": "Read today's capital in-flow vs out-flow snapshot (super/big/mid/small buckets) for a symbol.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingCapitalFlowTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_capital_flow",
+      "purpose": "Read historical capital flow time series (institutional / retail inflow-outflow) for a symbol.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingCheckTool",
+      "gate": "none",
+      "mcp_counterpart": "trading_check",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_check",
+      "purpose": "Check whether a trading connector profile is configured and reachable.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingConnectionsTool",
+      "gate": "none",
+      "mcp_counterpart": "trading_connections",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_connections",
+      "purpose": "List selectable trading connector profiles.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingEarningsCalendarTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_earnings_calendar",
+      "purpose": "Read upcoming earnings calendar (code, name, EPS/revenue forecast, IV, IV rank) for US / HK.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingFinancialsTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_financials",
+      "purpose": "Read financial statements (INCOME / BALANCE / CASH_FLOW) for a symbol.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingHistoryTool",
+      "gate": "none",
+      "mcp_counterpart": "trading_history",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_history",
+      "purpose": "Read historical bars from the selected trading connector profile.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingHistoryDealsTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_history_deals",
+      "purpose": "Read historical FILL records (executed deals) for shadow-account cost-basis reconstruction.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingOrdersTool",
+      "gate": "none",
+      "mcp_counterpart": "trading_orders",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_orders",
+      "purpose": "Read open orders from the selected trading connector profile.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingPlaceOrderTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_place_order",
+      "purpose": "Place an order through the selected trading connector profile.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingPositionsTool",
+      "gate": "none",
+      "mcp_counterpart": "trading_positions",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_positions",
+      "purpose": "Read positions from the selected trading connector profile.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingQuoteTool",
+      "gate": "none",
+      "mcp_counterpart": "trading_quote",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_quote",
+      "purpose": "Read a quote snapshot from the selected trading connector profile.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingRehabTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_rehab",
+      "purpose": "Read dividend / split / rights-issue adjustment factors for a symbol from the selected trading connector profile.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "TradingSelectConnectionTool",
+      "gate": "none",
+      "mcp_counterpart": "trading_select_connection",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.trading_connector_tool",
+      "name": "trading_select_connection",
+      "purpose": "Select the default trading connector profile for subsequent trading_* tool calls.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "confirmed",
+      "class": "UpdateHypothesisTool",
+      "gate": "none",
+      "mcp_counterpart": null,
+      "mcp_counterpart_status": "no-equivalent",
+      "module": "src.tools.hypothesis_tool",
+      "name": "update_hypothesis",
+      "purpose": "Update a hypothesis, including lifecycle status and invalidation notes.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "UpdateResearchGoalStatusTool",
+      "gate": "none",
+      "mcp_counterpart": "update_research_goal_status",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.goal_tool",
+      "name": "update_research_goal_status",
+      "purpose": "Update the current finance research goal status.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": []
+    },
+    {
+      "audit_status": "new",
+      "class": "WebSearchTool",
+      "gate": "none",
+      "mcp_counterpart": "web_search",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.web_search_tool",
+      "name": "web_search",
+      "purpose": "Search the web across free engines (DuckDuckGo, Google, Bing, Brave, Mojeek, Yahoo).",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "buffett",
+          "preset": "value_investing_committee",
+          "role": "Warren Buffett — Moat & Price"
+        },
+        {
+          "agent_id": "duan_yongping",
+          "preset": "value_investing_committee",
+          "role": "Duan Yongping — Good Business & Trustworthy People"
+        },
+        {
+          "agent_id": "li_lu",
+          "preset": "value_investing_committee",
+          "role": "Li Lu — 10-Year Certainty & Civilizational Trend"
+        },
+        {
+          "agent_id": "munger",
+          "preset": "value_investing_committee",
+          "role": "Charlie Munger — Inversion & Risk"
+        }
+      ]
+    },
+    {
+      "audit_status": "new",
+      "class": "WriteFileTool",
+      "gate": "none",
+      "mcp_counterpart": "write_file",
+      "mcp_counterpart_status": "is-mcp-tool",
+      "module": "src.tools.write_file_tool",
+      "name": "write_file",
+      "purpose": "Write content to a file in the workspace.",
+      "registered_keyless": true,
+      "skill_refs": [],
+      "swarm_refs": [
+        {
+          "agent_id": "cycle_strategist",
+          "preset": "commodity_research_team",
+          "role": "Cycle Strategist"
+        },
+        {
+          "agent_id": "demand_analyst",
+          "preset": "commodity_research_team",
+          "role": "Demand Analyst"
+        },
+        {
+          "agent_id": "supply_analyst",
+          "preset": "commodity_research_team",
+          "role": "Supply Analyst"
+        },
+        {
+          "agent_id": "bond_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Bond Floor Analyst"
+        },
+        {
+          "agent_id": "cb_strategist",
+          "preset": "convertible_bond_team",
+          "role": "Convertible Bond Strategist"
+        },
+        {
+          "agent_id": "equity_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Underlying Equity Analyst"
+        },
+        {
+          "agent_id": "option_analyst",
+          "preset": "convertible_bond_team",
+          "role": "Embedded Option Analyst"
+        },
+        {
+          "agent_id": "credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Credit Analyst"
+        },
+        {
+          "agent_id": "fixed_income_strategist",
+          "preset": "credit_research_team",
+          "role": "Fixed Income Strategist"
+        },
+        {
+          "agent_id": "rate_analyst",
+          "preset": "credit_research_team",
+          "role": "Interest Rate Analyst"
+        },
+        {
+          "agent_id": "sector_credit_analyst",
+          "preset": "credit_research_team",
+          "role": "Sector Credit Analyst"
+        },
+        {
+          "agent_id": "alpha_synthesizer",
+          "preset": "crypto_research_lab",
+          "role": "Alpha Synthesizer"
+        },
+        {
+          "agent_id": "crypto_sentiment_analyst",
+          "preset": "crypto_research_lab",
+          "role": "Crypto Sentiment Analyst"
+        },
+        {
+          "agent_id": "defi_analyst",
+          "preset": "crypto_research_lab",
+          "role": "DeFi Protocol Analyst"
+        },
+        {
+          "agent_id": "onchain_analyst",
+          "preset": "crypto_research_lab",
+          "role": "On-Chain Data Analyst"
+        },
+        {
+          "agent_id": "desk_risk_manager",
+          "preset": "crypto_trading_desk",
+          "role": "Trading Desk Risk Manager"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "On-Chain & Stablecoin Flow Analyst"
+        },
+        {
+          "agent_id": "funding_basis_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "Funding Rate & Basis Analyst"
+        },
+        {
+          "agent_id": "liquidation_analyst",
+          "preset": "crypto_trading_desk",
+          "role": "Liquidation & Microstructure Analyst"
+        },
+        {
+          "agent_id": "greeks_manager",
+          "preset": "derivatives_strategy_desk",
+          "role": "Greeks Risk Manager"
+        },
+        {
+          "agent_id": "strategy_designer",
+          "preset": "derivatives_strategy_desk",
+          "role": "Strategy Designer"
+        },
+        {
+          "agent_id": "vol_analyst",
+          "preset": "derivatives_strategy_desk",
+          "role": "Volatility Analyst"
+        },
+        {
+          "agent_id": "earnings_strategist",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Desk Strategist"
+        },
+        {
+          "agent_id": "event_options_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Event & Options Analyst"
+        },
+        {
+          "agent_id": "fundamental_analyst",
+          "preset": "earnings_research_desk",
+          "role": "Fundamental & Filing Analyst"
+        },
+        {
+          "agent_id": "revision_tracker",
+          "preset": "earnings_research_desk",
+          "role": "Earnings Revision & Consensus Tracker"
+        },
+        {
+          "agent_id": "aggregator",
+          "preset": "equity_research_team",
+          "role": "Research Report Editor"
+        },
+        {
+          "agent_id": "macro_analyst",
+          "preset": "equity_research_team",
+          "role": "Macro Analyst"
+        },
+        {
+          "agent_id": "sector_analyst",
+          "preset": "equity_research_team",
+          "role": "Sector Analyst"
+        },
+        {
+          "agent_id": "stock_picker",
+          "preset": "equity_research_team",
+          "role": "Stock Analyst"
+        },
+        {
+          "agent_id": "etf_screener",
+          "preset": "etf_allocation_desk",
+          "role": "ETF Screener"
+        },
+        {
+          "agent_id": "macro_allocator",
+          "preset": "etf_allocation_desk",
+          "role": "Macro Allocator"
+        },
+        {
+          "agent_id": "portfolio_optimizer",
+          "preset": "etf_allocation_desk",
+          "role": "Portfolio Optimizer"
+        },
+        {
+          "agent_id": "risk_budgeter",
+          "preset": "etf_allocation_desk",
+          "role": "Risk Budgeter"
+        },
+        {
+          "agent_id": "event_scanner",
+          "preset": "event_driven_task_force",
+          "role": "Event Scout"
+        },
+        {
+          "agent_id": "impact_analyst",
+          "preset": "event_driven_task_force",
+          "role": "Impact Analyst"
+        },
+        {
+          "agent_id": "strategy_builder",
+          "preset": "event_driven_task_force",
+          "role": "Strategy Builder"
+        },
+        {
+          "agent_id": "backtest_reviewer",
+          "preset": "factor_research_committee",
+          "role": "Backtest Reviewer"
+        },
+        {
+          "agent_id": "factor_combiner",
+          "preset": "factor_research_committee",
+          "role": "Factor Combiner"
+        },
+        {
+          "agent_id": "factor_miner",
+          "preset": "factor_research_committee",
+          "role": "Factor Miner"
+        },
+        {
+          "agent_id": "factor_validator",
+          "preset": "factor_research_committee",
+          "role": "Factor Validator"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "fund_selection_panel",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "fof_optimizer",
+          "preset": "fund_selection_panel",
+          "role": "FOF Portfolio Optimizer"
+        },
+        {
+          "agent_id": "fund_screener",
+          "preset": "fund_selection_panel",
+          "role": "Fund Screener"
+        },
+        {
+          "agent_id": "financial_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Financial Analyst"
+        },
+        {
+          "agent_id": "quality_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Quality Analyst"
+        },
+        {
+          "agent_id": "report_editor",
+          "preset": "fundamental_research_team",
+          "role": "Research Report Editor"
+        },
+        {
+          "agent_id": "valuation_analyst",
+          "preset": "fundamental_research_team",
+          "role": "Valuation Analyst"
+        },
+        {
+          "agent_id": "chief_strategist",
+          "preset": "geopolitical_war_room",
+          "role": "Chief Strategist"
+        },
+        {
+          "agent_id": "energy_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Energy Shock Analyst"
+        },
+        {
+          "agent_id": "geopolitical_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Geopolitical Analyst"
+        },
+        {
+          "agent_id": "supply_chain_analyst",
+          "preset": "geopolitical_war_room",
+          "role": "Supply Chain Analyst"
+        },
+        {
+          "agent_id": "a_share_analyst",
+          "preset": "global_allocation_committee",
+          "role": "A-Share Analyst"
+        },
+        {
+          "agent_id": "allocator",
+          "preset": "global_allocation_committee",
+          "role": "Allocation Strategist"
+        },
+        {
+          "agent_id": "crypto_analyst",
+          "preset": "global_allocation_committee",
+          "role": "Crypto Analyst"
+        },
+        {
+          "agent_id": "us_hk_analyst",
+          "preset": "global_allocation_committee",
+          "role": "HK / US Analyst"
+        },
+        {
+          "agent_id": "a_share_researcher",
+          "preset": "global_equities_desk",
+          "role": "A-Share Equity Researcher"
+        },
+        {
+          "agent_id": "crypto_researcher",
+          "preset": "global_equities_desk",
+          "role": "Crypto Asset Researcher"
+        },
+        {
+          "agent_id": "global_strategist",
+          "preset": "global_equities_desk",
+          "role": "Global Equity Strategist"
+        },
+        {
+          "agent_id": "us_hk_researcher",
+          "preset": "global_equities_desk",
+          "role": "US & HK Equity Researcher"
+        },
+        {
+          "agent_id": "bear_advocate",
+          "preset": "investment_committee",
+          "role": "Bear-side Researcher"
+        },
+        {
+          "agent_id": "bull_advocate",
+          "preset": "investment_committee",
+          "role": "Bull-side Researcher"
+        },
+        {
+          "agent_id": "portfolio_manager",
+          "preset": "investment_committee",
+          "role": "Portfolio Manager"
+        },
+        {
+          "agent_id": "risk_officer",
+          "preset": "investment_committee",
+          "role": "Chief Risk Officer"
+        },
+        {
+          "agent_id": "commodity_inflation_analyst",
+          "preset": "macro_rates_fx_desk",
+          "role": "Commodity & Inflation Analyst"
+        },
+        {
+          "agent_id": "fx_strategist",
+          "preset": "macro_rates_fx_desk",
+          "role": "FX Strategist"
+        },
+        {
+          "agent_id": "macro_pm",
+          "preset": "macro_rates_fx_desk",
+          "role": "Macro Portfolio Manager"
+        },
+        {
+          "agent_id": "rates_analyst",
+          "preset": "macro_rates_fx_desk",
+          "role": "Global Rates & Yield Curve Analyst"
+        },
+        {
+          "agent_id": "chief_strategist",
+          "preset": "macro_strategy_forum",
+          "role": "Chief Strategist"
+        },
+        {
+          "agent_id": "domestic_economist",
+          "preset": "macro_strategy_forum",
+          "role": "China Economist"
+        },
+        {
+          "agent_id": "global_economist",
+          "preset": "macro_strategy_forum",
+          "role": "Global Economist"
+        },
+        {
+          "agent_id": "policy_analyst",
+          "preset": "macro_strategy_forum",
+          "role": "Policy Analyst"
+        },
+        {
+          "agent_id": "backtest_engineer",
+          "preset": "ml_quant_lab",
+          "role": "Backtest Engineer"
+        },
+        {
+          "agent_id": "data_scientist",
+          "preset": "ml_quant_lab",
+          "role": "Data Scientist"
+        },
+        {
+          "agent_id": "feature_engineer",
+          "preset": "ml_quant_lab",
+          "role": "Feature Engineer"
+        },
+        {
+          "agent_id": "cointegration_tester",
+          "preset": "pairs_research_lab",
+          "role": "Cointegration Tester"
+        },
+        {
+          "agent_id": "correlation_scanner",
+          "preset": "pairs_research_lab",
+          "role": "Correlation Scanner"
+        },
+        {
+          "agent_id": "microstructure_reviewer",
+          "preset": "pairs_research_lab",
+          "role": "Microstructure Reviewer"
+        },
+        {
+          "agent_id": "pair_strategist",
+          "preset": "pairs_research_lab",
+          "role": "Pair Strategist"
+        },
+        {
+          "agent_id": "attribution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Performance Attribution Analyst"
+        },
+        {
+          "agent_id": "chief_investment_officer",
+          "preset": "portfolio_review_board",
+          "role": "Chief Investment Officer"
+        },
+        {
+          "agent_id": "execution_analyst",
+          "preset": "portfolio_review_board",
+          "role": "Execution Quality Analyst"
+        },
+        {
+          "agent_id": "risk_inspector",
+          "preset": "portfolio_review_board",
+          "role": "Risk Inspector"
+        },
+        {
+          "agent_id": "backtester",
+          "preset": "quant_strategy_desk",
+          "role": "Strategy Backtester"
+        },
+        {
+          "agent_id": "factor_miner",
+          "preset": "quant_strategy_desk",
+          "role": "Factor Researcher"
+        },
+        {
+          "agent_id": "report_aggregator",
+          "preset": "quant_strategy_desk",
+          "role": "Report Aggregator"
+        },
+        {
+          "agent_id": "risk_auditor",
+          "preset": "quant_strategy_desk",
+          "role": "Risk Auditor"
+        },
+        {
+          "agent_id": "screener",
+          "preset": "quant_strategy_desk",
+          "role": "Stock Screener"
+        },
+        {
+          "agent_id": "aggregator",
+          "preset": "risk_committee",
+          "role": "Head of Risk"
+        },
+        {
+          "agent_id": "drawdown_analyst",
+          "preset": "risk_committee",
+          "role": "Drawdown Analyst"
+        },
+        {
+          "agent_id": "regime_detector",
+          "preset": "risk_committee",
+          "role": "Market Regime Analyst"
+        },
+        {
+          "agent_id": "tail_risk_analyst",
+          "preset": "risk_committee",
+          "role": "Tail Risk Analyst"
+        },
+        {
+          "agent_id": "cycle_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Economic Cycle Analyst"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Capital Flow Analyst"
+        },
+        {
+          "agent_id": "prosperity_analyst",
+          "preset": "sector_rotation_team",
+          "role": "Sector Prosperity Analyst"
+        },
+        {
+          "agent_id": "rotation_strategist",
+          "preset": "sector_rotation_team",
+          "role": "Sector Rotation Strategist"
+        },
+        {
+          "agent_id": "flow_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "Capital Flow Analyst"
+        },
+        {
+          "agent_id": "news_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "News Intelligence Analyst"
+        },
+        {
+          "agent_id": "signal_synthesizer",
+          "preset": "sentiment_intelligence_team",
+          "role": "Sentiment Signal Synthesizer"
+        },
+        {
+          "agent_id": "social_analyst",
+          "preset": "sentiment_intelligence_team",
+          "role": "Social Sentiment Analyst"
+        },
+        {
+          "agent_id": "alpha_synthesizer",
+          "preset": "social_alpha_team",
+          "role": "Alpha Synthesizer"
+        },
+        {
+          "agent_id": "reddit_analyst",
+          "preset": "social_alpha_team",
+          "role": "Reddit Analyst"
+        },
+        {
+          "agent_id": "telegram_analyst",
+          "preset": "social_alpha_team",
+          "role": "Telegram Analyst"
+        },
+        {
+          "agent_id": "twitter_analyst",
+          "preset": "social_alpha_team",
+          "role": "Twitter Analyst"
+        },
+        {
+          "agent_id": "arb_strategist",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Arbitrage Strategist"
+        },
+        {
+          "agent_id": "microstructure_analyst",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Microstructure Analyst"
+        },
+        {
+          "agent_id": "pair_scanner",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Pair Scanner"
+        },
+        {
+          "agent_id": "risk_monitor",
+          "preset": "statistical_arbitrage_desk",
+          "role": "Risk Monitor"
+        },
+        {
+          "agent_id": "classic_ta_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Classic Technical Analyst"
+        },
+        {
+          "agent_id": "harmonic_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Harmonic Pattern Analyst"
+        },
+        {
+          "agent_id": "ichimoku_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Ichimoku Analyst"
+        },
+        {
+          "agent_id": "signal_aggregator",
+          "preset": "technical_analysis_panel",
+          "role": "Signal Aggregator (Judge)"
+        },
+        {
+          "agent_id": "smc_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "SMC / Order-Flow Analyst"
+        },
+        {
+          "agent_id": "wave_analyst",
+          "preset": "technical_analysis_panel",
+          "role": "Elliott Wave Analyst"
+        },
+        {
+          "agent_id": "buffett",
+          "preset": "value_investing_committee",
+          "role": "Warren Buffett — Moat & Price"
+        },
+        {
+          "agent_id": "chair",
+          "preset": "value_investing_committee",
+          "role": "Committee Chair — Consensus & Contradictions"
+        },
+        {
+          "agent_id": "duan_yongping",
+          "preset": "value_investing_committee",
+          "role": "Duan Yongping — Good Business & Trustworthy People"
+        },
+        {
+          "agent_id": "li_lu",
+          "preset": "value_investing_committee",
+          "role": "Li Lu — 10-Year Certainty & Civilizational Trend"
+        },
+        {
+          "agent_id": "munger",
+          "preset": "value_investing_committee",
+          "role": "Charlie Munger — Inversion & Risk"
+        }
+      ]
+    }
+  ]
+}
