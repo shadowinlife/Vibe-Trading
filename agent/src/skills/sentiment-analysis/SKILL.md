@@ -1,6 +1,6 @@
 ---
 name: sentiment-analysis
-description: 市场情绪分析——恐贪指数/Put-Call Ratio/融资融券/北向资金信号解读、社交媒体舆情量化框架
+description: 市场情绪分析——恐贪指数/Put-Call Ratio/融资融券/北向资金信号解读、社交媒体舆情量化框架。单文本情绪打分或获取加密恐贪指数数值请用 sentiment 工具（sentiment_score / fear_greed_index 模式）；本技能提供市场层面情绪分析框架。
 category: analysis
 ---
 

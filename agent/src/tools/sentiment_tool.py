@@ -92,18 +92,22 @@ def _fetch_fear_greed() -> dict[str, Any] | None:
 
 
 class SentimentTool(BaseTool):
-    """Analyze market sentiment from text and external indices.
+    """Dual-mode sentiment tool: single-text scoring and the crypto Fear & Greed index.
 
-    Two modes:
-    - ``sentiment_score``: score any free-text (news headline, tweet, etc.) on [-1, 1]
-    - ``fear_greed_index``: fetch the crypto Fear & Greed Index (0-100, lower = more fear)
+    Market-level sentiment frameworks (margin trading / northbound flow /
+    put-call ratio analysis) live in the sentiment-analysis skill, not here.
     """
 
     name = "sentiment"
     description = (
-        "Analyze market sentiment. Two modes: (1) 'sentiment_score' scores "
-        "arbitrary text on -1 (bearish) to 1 (bullish); (2) 'fear_greed_index' "
-        "returns the crypto Fear & Greed Index (0-100, lower = more fear). "
+        "Score ONE text's sentiment, or fetch the crypto Fear & Greed index — "
+        "a dual-mode tool, not a market-sentiment framework. "
+        "Mode 'sentiment_score': score arbitrary text (news headline, tweet, "
+        "announcement) on -1 (bearish) to 1 (bullish). "
+        "Mode 'fear_greed_index': fetch the crypto Fear & Greed Index (0-100, "
+        "lower = more fear). "
+        "For market-level sentiment frameworks (margin trading / northbound "
+        "flow / put-call ratio), load the sentiment-analysis skill instead. "
         'Example: {"mode": "sentiment_score", "text": "Tesla beats earnings estimates"}'
     )
     parameters = {
