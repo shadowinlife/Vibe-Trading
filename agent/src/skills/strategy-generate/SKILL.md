@@ -12,7 +12,7 @@ category: strategy
 4. **Syntax check**: `bash("python -c \"import ast; ast.parse(open('code/signal_engine.py').read()); print('OK')\"")`
 5. **Run backtest**: call the `backtest` tool (built into the engine; no need to write `run_backtest.py`)
 6. **Evaluate results**: read `artifacts/metrics.csv` and judge by the review criteria
-7. **Iterative fixing**: if results are poor, modify with `edit_file` → run `backtest` → re-evaluate
+7. **Iterative fixing**: if results are poor, modify with `write_file`（内部名 `edit_file`，查找-替换语义）→ run `backtest` → re-evaluate
 
 **You only need to write `signal_engine.py` and `config.json`. The `backtest` tool automatically handles data loading and backtest execution.**
 

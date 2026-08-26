@@ -26,6 +26,6 @@ Run this at the **start** of any research task (screening, sector study, company
 4. After research, before writing conclusions, re-check: did I cite any disconfirming evidence? did I miss a non-English player? is any key figure stale?
 
 This pairs with:
-- `financial_rigor` `cross_validate` — verify the **numbers** (data layer)
-- `report_audit` — verify the **final report** (output layer)
+- `financial_rigor`（内部工具，不在 MCP 面；替代：`quantlib_call` + 提示词约束）`cross_validate` — verify the **numbers** (data layer)
+- `report_audit`（内部工具，不在 MCP 面；替代：提示词自检）— verify the **final report** (output layer)
 - this skill — verify the **reasoning** (thinking layer)

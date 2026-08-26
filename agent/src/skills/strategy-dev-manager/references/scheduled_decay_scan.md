@@ -1,5 +1,7 @@
 # Scheduled Decay Scan Configuration
 
+> **可达性说明**：`sdm_decay_scan` / `sdm_status` 仅在内置 agent 运行时可用，MCP 客户端不可达（详见 `HARNESS_EVOLUTION_TOOL_MAPPING.md` 表 B）。本文的定时方案依赖内置 agent 会话执行器（`ScheduledResearchExecutor`），与 MCP 面无关。
+
 ## Overview
 
 Periodic decay scanning ensures that factor performance degradation is detected early, before it silently erodes strategy returns. The `ScheduledResearchExecutor` provides a background polling loop that fires research prompts on a cron or interval schedule. By configuring a scheduled job with a decay-scan prompt, operators automate the `sdm_decay_scan` workflow without manual intervention.

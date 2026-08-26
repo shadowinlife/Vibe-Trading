@@ -1,5 +1,7 @@
 # Strategy Development Manager: Example Workflows
 
+> **可达性说明**：以下示例中的 `sdm_register` / `sdm_status` / `sdm_decay_scan` 及假设栈工具仅在内置 agent 运行时可用，MCP 客户端不可达（详见 `HARNESS_EVOLUTION_TOOL_MAPPING.md` 表 B）。
+
 ## Example 1: Paper to Factor
 
 **Scenario**: Extracting a momentum factor from Jegadeesh and Titman (1993), "Returns to Buying Winners and Selling Losers."

@@ -1,7 +1,7 @@
 ---
 name: bottleneck-hunter
 category: strategy
-description: "Supply-chain bottleneck arbitrage. Given a super-trend (AI infra, energy transition, defense, semiconductor reshoring, space economy), decompose its physical supply chain down to Layer 2/3 choke points (optics, lasers, InP/SOI substrates, IC substrates, probe cards, specialty fiberglass...) and surface under-the-radar listed companies sitting on each bottleneck. Scores each link on 6 scarcity criteria, applies mandatory valuation gates (PS/PE/safety-margin) via the financial_rigor tool, and Munger-style reverse-validates. Outputs a ranked bottleneck opportunity board. Use when the user wants hidden beneficiaries of a structural trend rather than already-priced leaders."
+description: "Supply-chain bottleneck arbitrage. Given a super-trend (AI infra, energy transition, defense, semiconductor reshoring, space economy), decompose its physical supply chain down to Layer 2/3 choke points (optics, lasers, InP/SOI substrates, IC substrates, probe cards, specialty fiberglass...) and surface under-the-radar listed companies sitting on each bottleneck. Scores each link on 6 scarcity criteria, applies mandatory valuation gates (PS/PE/safety-margin) via the financial_rigor tool（内部工具，不在 MCP 面）, and Munger-style reverse-validates. Outputs a ranked bottleneck opportunity board. Use when the user wants hidden beneficiaries of a structural trend rather than already-priced leaders."
 ---
 
 # Supply-Chain Bottleneck Hunter
@@ -91,13 +91,13 @@ For each S/A-grade bottleneck, use `web_search` / `screen_market` to find listed
 
 ### Valuation Gate (mandatory, never skip)
 
-**A real bottleneck ≠ an investment opportunity.** For every company, compute PE/PB/ROE/FCF yield with `financial_rigor` (`command=verify_valuation`), and run `financial_rigor` (`command=three_scenario`) for scenario valuation:
+**A real bottleneck ≠ an investment opportunity.** For every company, compute PE/PB/ROE/FCF yield with `financial_rigor`（内部工具，不在 MCP 面；替代：`quantlib_call` + 提示词约束）(`command=verify_valuation`), and run `financial_rigor` (`command=three_scenario`) for scenario valuation:
 
 - **Red light** (any one → signal strength capped at ★★, flag "valuation stretched"): market cap >20% of TAM; PS>30x with revenue growth <100%; market cap >10× 5-year optimistic revenue forecast; stock doubled within 60 days of a follow-on offering.
 - **Yellow light** (needs extra justification, else downgrade): loss-making + PS>15x; PS >5× a profitable peer; PE>80x (compute PEG).
 - **Green light** (bonus): PS<10x with revenue growing; PE<30x with a moat (flag "margin of safety").
 
-**Sanity check (mandatory)**: with `financial_rigor` (`command=three_scenario`), answer — "buying at current market cap, if the most optimistic scenario fully plays out and I exit at 25× PE in 10 years, what's the annualized return?" <10%/yr → flag "no margin of safety at current price".
+**Sanity check (mandatory)**: with `financial_rigor`（内部工具，不在 MCP 面）(`command=three_scenario`), answer — "buying at current market cap, if the most optimistic scenario fully plays out and I exit at 25× PE in 10 years, what's the annualized return?" <10%/yr → flag "no margin of safety at current price".
 
 ## Step 5: Cross-Validation — Don't Trust a Single Story
 
@@ -138,7 +138,7 @@ Signal strength (valuation gate directly affects):
 - ★★ early signal, or logic holds but valuation red
 - ★ pure concept, unverified
 
-After drafting, run `report_audit` (`command=extract` → verify each point → `command=verdict`) as a quality gate to ensure no hallucinated numbers.
+After drafting, run `report_audit`（内部工具，不在 MCP 面；替代：提示词自检）(`command=extract` → verify each point → `command=verdict`) as a quality gate to ensure no hallucinated numbers.
 
 ### One-Pager Template
 

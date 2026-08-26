@@ -18,7 +18,7 @@ This skill is designed for option strategy analysis scenarios within the Vibe-Tr
 
 ### Built-in execution tool
 
-Load this skill for methodology, then call `options_payoff` for production
+Load this skill for methodology, then call `analyze_options_payoff`（内部名 `options_payoff`）for production
 calculations. Pass signed `legs` (`qty > 0` long, `qty < 0` short),
 `entry_spot`, and `expiry_days`; optionally pass actual per-share premiums,
 multiplier, commission, chart bounds, and IV scenarios. The tool returns an

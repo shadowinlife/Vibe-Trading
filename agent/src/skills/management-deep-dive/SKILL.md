@@ -98,7 +98,7 @@ Search past 5 years of capital decisions (`web_search` / `get_financial_statemen
 
 **M&A record**: time / target / amount / strategic logic / after-the-fact return / score(1-5)
 
-**Buybacks** (use `financial_rigor` `command=verify_valuation` to check PE at buyback time vs now): time / amount / avg price / PE then / retrospective / score(1-5)
+**Buybacks** (use `financial_rigor`（内部工具，不在 MCP 面；替代：`quantlib_call` + 提示词约束）`command=verify_valuation` to check PE at buyback time vs now): time / amount / avg price / PE then / retrospective / score(1-5)
 
 **Dividends**: year / amount / payout ratio / vs FCF / sustainable
 
@@ -180,7 +180,7 @@ All three "yes" = ★★★★★; first two "yes" = ★★★★; only the firs
 
 ## Step 9: Save
 
-Use `write_file` to `reports/{company}-management-{YYYYMMDD}.md`. Then `report_audit` (`extract` → verify → `verdict`) as a quality gate on the numbers.
+Use `write_file` to `reports/{company}-management-{YYYYMMDD}.md`. Then `report_audit`（内部工具，不在 MCP 面；替代：提示词自检）(`extract` → verify → `verdict`) as a quality gate on the numbers.
 
 ## Key Principles
 

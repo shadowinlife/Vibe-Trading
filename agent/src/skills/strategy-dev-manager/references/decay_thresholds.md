@@ -1,5 +1,7 @@
 # Decay Monitoring Thresholds
 
+> **可达性说明**：本文引用的 `sdm_decay_scan` / `sdm_status` 仅在内置 agent 运行时可用，MCP 客户端不可达（详见 `HARNESS_EVOLUTION_TOOL_MAPPING.md` 表 B）。
+
 ## State Machine
 
 ```

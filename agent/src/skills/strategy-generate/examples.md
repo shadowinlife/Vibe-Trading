@@ -14,7 +14,7 @@ Tool call sequence:
 4. bash("python -c \"import ast; ast.parse(open('code/signal_engine.py').read()); print('OK')\"") → AST 语法检查
 5. backtest(run_dir=...) → 执行回测（引擎内置）
 6. read_file("artifacts/metrics.csv") → 查看结果，按评审标准判断
-7. (如需修复) edit_file("code/signal_engine.py", ...) → backtest → read_file
+7. (如需修复) write_file("code/signal_engine.py", ...)（内部名 `edit_file`，查找-替换语义）→ backtest → read_file
 
 ## Example 2: US stock RSI strategy (yfinance)
 
@@ -30,7 +30,7 @@ Tool call sequence:
 4. bash("python -c \"import ast; ast.parse(open('code/signal_engine.py').read()); print('OK')\"") → AST 检查
 5. backtest(run_dir=...) → 执行回测（引擎内置）
 6. read_file("artifacts/metrics.csv") → 查看结果
-7. (如需修复) edit_file → backtest → read_file
+7. (如需修复) write_file（内部名 `edit_file`，查找-替换语义）→ backtest → read_file
 
 ## Example 3: Crypto trend strategy (okx)
 
@@ -46,4 +46,4 @@ Tool call sequence:
 4. bash("python -c \"import ast; ast.parse(open('code/signal_engine.py').read()); print('OK')\"") → AST 检查
 5. backtest(run_dir=...) → 执行回测（引擎内置）
 6. read_file("artifacts/metrics.csv") → 查看结果
-7. (如需修复) edit_file → backtest → read_file
+7. (如需修复) write_file（内部名 `edit_file`，查找-替换语义）→ backtest → read_file

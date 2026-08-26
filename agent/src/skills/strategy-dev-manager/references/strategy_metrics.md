@@ -1,5 +1,7 @@
 # Strategy Evaluation Metrics
 
+> **可达性说明**：本文引用的 `sdm_register` / `sdm_status` 仅在内置 agent 运行时可用，MCP 客户端不可达（详见 `HARNESS_EVOLUTION_TOOL_MAPPING.md` 表 B）。
+
 This document defines strategy-specific evaluation metrics that supplement the factor-focused IC/IR metrics in `decay_thresholds.md`. Factor-type artifacts use IC ratio, IR, and IC positive ratio as primary metrics. Strategy-type artifacts use risk-adjusted return metrics as defined below.
 
 ## 1. Strategy Evaluation Metrics

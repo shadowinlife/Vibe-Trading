@@ -6,6 +6,8 @@ category: research
 
 # Strategy Development Manager
 
+> **可达性说明**：本技能依赖的 `sdm_register` / `sdm_status` / `sdm_decay_scan` 工具**仅在内置 agent 运行时可用**（注册于 agent 内部注册表），**MCP 客户端不可达**（MCP 面无等价工具）；假设/自动驾驶栈（`create_hypothesis` / `generate_backtest_config` / `scaffold_signal_engine` / `link_autopilot_backtest`）同为内部注册表工具。内外名称与可达性详见仓库根目录 `HARNESS_EVOLUTION_TOOL_MAPPING.md`（表 B / 表 C）。
+
 ## Purpose
 
 SDM orchestrates the full lifecycle from academic paper or research report to validated factor or strategy. It ingests documents, extracts quantitative signals, implements and backtests them through the existing tool chain, evaluates results against statistical thresholds, and monitors long-term decay. SDM does not reinvent any step. It delegates to the tools already available (read_document, factor_analysis, backtest, alpha_bench, and the hypothesis/autopilot stack) and adds a thin coordination layer with persistent artifact tracking.
@@ -151,6 +153,8 @@ Track artifact health over time and handle decay.
 | `link_autopilot_backtest` | 3 | Link backtest results to hypothesis |
 | `factor_analysis` | 4 | IC/IR analysis for factor artifacts |
 | `sdm_decay_scan` | 5 | Batch decay monitoring |
+
+> 表中标注：`sdm_register` / `sdm_status` / `sdm_decay_scan` 与假设/自动驾驶栈工具（`create_hypothesis` / `generate_backtest_config` / `scaffold_signal_engine` / `link_autopilot_backtest`）**仅在内置 agent 运行时可用，MCP 客户端不可达**；`read_document` / `alpha_bench` / `backtest` / `factor_analysis` 在 MCP 面同名可用。
 
 ## SignalEngine Contract
 

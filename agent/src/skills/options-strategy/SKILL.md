@@ -164,10 +164,10 @@ After backtesting, the following files are generated in the `artifacts/` directo
 
 ## Pricing Tool
 
-The Agent can call the `options_pricing` tool for one-off pricing:
+The Agent can call the `analyze_options`（内部名 `options_pricing`）tool for one-off pricing:
 
 ```
-Call the options_pricing tool with:
+Call the analyze_options tool (internal name: options_pricing) with:
   spot: 50000
   strike: 52000
   expiry_days: 30

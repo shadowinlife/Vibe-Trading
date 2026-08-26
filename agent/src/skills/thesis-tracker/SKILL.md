@@ -30,7 +30,7 @@ Check whether a thesis file already exists (use `read_file` on `reports/{company
 
 ### A0: Data Collection
 
-Use `web_search` to get the current price, valuation (PE/PB/dividend yield), and latest financials. If a research report exists, `read_file` it first. Use `financial_rigor` (`command=verify_valuation`) to verify valuation, `financial_rigor` (`command=verify_market_cap`) to sanity-check market cap.
+Use `web_search` to get the current price, valuation (PE/PB/dividend yield), and latest financials. If a research report exists, `read_file` it first. Use `financial_rigor`（内部工具，不在 MCP 面；替代：`quantlib_call` + 提示词约束）(`command=verify_valuation`) to verify valuation, `financial_rigor` (`command=verify_market_cap`) to sanity-check market cap.
 
 ### A1: Core Thesis (must be writable in ≤200 words)
 
@@ -115,7 +115,7 @@ Check each red line; any triggered → flag prominently in the report + clear ac
 
 ### B5: Valuation Update
 
-Use `financial_rigor` (`command=verify_valuation`) to recompute PE/PB/ROE; compare against buy-time and last check:
+Use `financial_rigor`（内部工具，不在 MCP 面）(`command=verify_valuation`) to recompute PE/PB/ROE; compare against buy-time and last check:
 
 | Metric | At buy | Last check | Current | Change |
 |--------|--------|------------|---------|--------|

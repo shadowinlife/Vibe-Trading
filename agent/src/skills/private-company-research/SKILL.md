@@ -137,7 +137,7 @@ Before synthesis, the team-lead must:
 13. **Tracking checklist** (item / frequency / source / metric / alert threshold).
 14. **Summary paragraph** (150-250 words).
 
-Save via `write_file` to `reports/{company}/{company}-private-{YYYYMMDD}.md`. Run `report_audit` on the numbers as a quality gate.
+Save via `write_file` to `reports/{company}/{company}-private-{YYYYMMDD}.md`. Run `report_audit`（内部工具，不在 MCP 面；替代：提示词自检）on the numbers as a quality gate.
 
 ## Data Labeling Standard (strict)
 

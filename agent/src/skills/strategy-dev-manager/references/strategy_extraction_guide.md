@@ -1,5 +1,7 @@
 # Strategy Extraction Guide
 
+> **可达性说明**：本文引用的 `sdm_register` / `sdm_status` 仅在内置 agent 运行时可用，MCP 客户端不可达（详见 `HARNESS_EVOLUTION_TOOL_MAPPING.md` 表 B）。
+
 This guide supplements SKILL.md Phase 2 (EXTRACT) for strategy-type artifacts. It provides a structured methodology for extracting complete, implementable trading strategies from academic papers and research reports.
 
 ## 1. Strategy Components to Extract

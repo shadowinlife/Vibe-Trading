@@ -15,7 +15,7 @@ Use this skill when a user reports that a backtest failed, raised an error, or p
 1. **Read existing artifacts**: use `read_file` to inspect `artifacts/metrics.csv`, `equity.csv`, and `trades.csv`
 2. **Read the code**: use `read_file` to inspect `code/signal_engine.py` and `config.json`
 3. **Classify the issue**: determine the root cause using the error taxonomy below
-4. **Apply the fix**: use `edit_file` to modify the code, then rerun the backtest
+4. **Apply the fix**: use `write_file`（内部名 `edit_file`，查找-替换语义）to modify the code, then rerun the backtest
 5. **Verify the fix**: use `read_file` to inspect the new `metrics.csv`
 
 ## Error Taxonomy
@@ -68,7 +68,7 @@ This Hard-Gate Checklist is also the evidence ingestion gate for Strategy Discov
 
 ## Fixing Principles
 
-- Use **edit_file** to make precise code fixes instead of rewriting the entire file with `write_file`, unless the structure is fundamentally broken
+- Prefer precise, localized code fixes over rewriting the entire file: in the built-in agent runtime use the internal `edit_file` find-and-replace semantics（MCP 名 `write_file`）; on the MCP surface `write_file` is whole-file write, so read first, modify locally, then write the full file back. Only rewrite the whole file when the structure is fundamentally broken
 - Fix the bug only, do not change strategy logic unless the user explicitly asks
 - Fix one issue at a time, and rerun the backtest immediately after each fix
 - Limit yourself to at most 3 repair iterations

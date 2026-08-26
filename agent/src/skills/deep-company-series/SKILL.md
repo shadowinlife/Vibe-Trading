@@ -104,14 +104,14 @@ Plus `00-series-overview.md` as an index (unpublished).
 
 This is the key differentiator. Use tools to scan:
 
-1. `read_file` each part + `report_audit` (`command=extract`) to pull numbers (market cap, net income, holding %, PE) from each
-2. **Cross-check the same number across parts** — use `financial_rigor` (`command=cross_validate`) to cross-validate the same metric's values across articles; flag >1% deviation as a caliber mismatch
+1. `read_file` each part + `report_audit`（内部工具，不在 MCP 面；替代：提示词自检）(`command=extract`) to pull numbers (market cap, net income, holding %, PE) from each
+2. **Cross-check the same number across parts** — use `financial_rigor`（内部工具，不在 MCP 面；替代：`quantlib_call` + 提示词约束）(`command=cross_validate`) to cross-validate the same metric's values across articles; flag >1% deviation as a caliber mismatch
 3. `read_file` checks: is each term (FBS, SBC, Non-IFRS) defined at first use; do "see part 06" references actually resolve; do recaps match body numbers
 4. Absolute-language scan: grep "obviously|inevitably|severely|perfect" and soften each
 
 ### Phase 4: Pre-publish Final Check
 
-- `report_audit` (`command=verdict`) as a gate on each part: extract numbers → verify → PASS/FAIL
+- `report_audit`（内部工具，不在 MCP 面）(`command=verdict`) as a gate on each part: extract numbers → verify → PASS/FAIL
 - Confirm all numbers are traceable, no pseudo-precision, no absolutism
 
 ## 6. Revision-Feedback Handling
@@ -144,4 +144,4 @@ Before fixing one spot, think "where else is this number/concept referenced":
 
 ---
 
-**One-liner**: writing an "Understanding X" series is about **revising strictly, not writing well** — most finance long-form dies from pseudo-precise numbers, subjective weighted expectations, and absolute language. This skill exists to flag all those traps before writing and sweep them clean after (`report_audit` + `financial_rigor.cross_validate`).
+**One-liner**: writing an "Understanding X" series is about **revising strictly, not writing well** — most finance long-form dies from pseudo-precise numbers, subjective weighted expectations, and absolute language. This skill exists to flag all those traps before writing and sweep them clean after (`report_audit` + `financial_rigor.cross_validate`，二者均为内部工具、不在 MCP 面).

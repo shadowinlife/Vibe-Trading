@@ -144,7 +144,7 @@ single source. Cross-check it:
 - **Flag any deviation >1%** between sources as a ⚠️ caliber mismatch — usually a
   definition difference (GAAP vs Non-GAAP, consolidated vs parent-only, currency,
   TTM vs annual). Do not silently pick one; state both and which you adopt.
-- **Use the `financial_rigor` tool's `cross_validate` command** to do this exactly:
+- **Use the `financial_rigor`（内部工具，不在 MCP 面；替代：`quantlib_call` + 提示词约束）tool's `cross_validate` command** to do this exactly:
   pass `{source: value, ...}` and it returns the median consensus + per-source
   deviation + an `all_consistent` flag at a configurable tolerance (default 2%).
 - **Mark unverified numbers** as "single-source" or "estimate" — never present an
