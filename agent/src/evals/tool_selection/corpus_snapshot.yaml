@@ -1,5 +1,5 @@
 schema_version: 1
-captured_at: '2026-08-26T01:18:43+00:00'
+captured_at: '2026-08-26T02:07:13+00:00'
 source:
   tools: mcp_server.mcp.list_tools() (registration order)
   skills: src.agent.skills.SkillsLoader bundled skills (loader order)
@@ -128,11 +128,23 @@ tools:
 
     from any result URL. Free, no API key required.'
 - name: write_file
-  description: 'Write content to a file. Used to create config.json and signal_engine.py
+  description: 'Write content to a file in the Vibe-Trading backtest workspace (run_dir).
 
-    for backtesting workflows.'
+
+    Relative paths resolve against the active run directory. Used to create
+
+    config.json and signal_engine.py for backtesting workflows. Host files and
+
+    source code belong to the host''s own file tools, not this one.'
 - name: read_file
-  description: Read the contents of a file.
+  description: 'Read a file from the Vibe-Trading backtest workspace (run_dir).
+
+
+    Relative paths resolve against the active run directory. Use it to inspect
+
+    backtest artifacts such as config.json, signal_engine.py, and result CSVs.
+
+    Host files and source code belong to the host''s own read tool, not this one.'
 - name: list_strategies
   description: 'List discoverable strategies across the Alpha Zoo and the SDM strategy store.
 
@@ -587,15 +599,12 @@ tools:
     the PAPER''s claim, not our backtest result. Example: {"mode": "search", "source": "arxiv", "query":
     "cross-sectional momentum", "categories": ["q-fin.PM"], "start_date": "2024-01-01"}.'
 - name: quantlib_call
-  description: 'Run a function from the tested finance-math library (src/quantlib): Black-Scholes and
-    implied vol, bond math and curve fitting, Altman Z and Merton/KMV, stationarity/cointegration/GARCH/regime
-    switching, VaR/CVaR/EVT and VaR backtesting (Kupiec/Christoffersen/Basel), Brinson-Fachler attribution,
-    market impact, fund maths (XIRR/MOIC/DPI/TVPI/PME/waterfalls), TWR/Dietz/MWR, event studies (CAR/CAAR/Patell/BMP),
-    style factor models, deflated Sharpe and PBO, purged cross-validation, and the valuation engine (DCF
-    / comps / three-statement). Read-only and pure-compute: it fetches no data and writes no files. Start
-    with action=''list'' to see modules, then action=''list'' with a module to see its functions, then
-    action=''describe'' for a signature. Example: quantlib_call(action="call", module="risk", function="historical_var",
-    kwargs={"returns": [0.01, -0.02], "confidence": 0.95}).'
+  description: 'Compute VaR/CVaR, Black-Scholes prices and Greeks, deflated Sharpe, purged cross-validation,
+    DCF / comps valuation — the single entry point to the tested finance-math library (src/quantlib).
+    Read-only and pure-compute: it fetches no data and writes no files. Discovery: start with action=''list''
+    to see modules, then action=''list'' with a module to see its functions, then action=''describe''
+    for a signature. Example: quantlib_call(action="call", module="risk", function="historical_var", kwargs={"returns":
+    [0.01, -0.02], "confidence": 0.95}).'
 - name: cashflow_performance
   description: Measure the return of an account that received client contributions or paid out withdrawals
     mid-period. Takes a dated valuation series plus irregular cash flows (inline records or a CSV path)
@@ -618,9 +627,12 @@ tools:
     no perpetuals. Example: {"symbol": "BTC-USDT", "exchange": "okx", "levels": 10, "notional_quote":
     10000}.'
 - name: sentiment
-  description: 'Analyze market sentiment. Two modes: (1) ''sentiment_score'' scores arbitrary text on
-    -1 (bearish) to 1 (bullish); (2) ''fear_greed_index'' returns the crypto Fear & Greed Index (0-100,
-    lower = more fear). Example: {"mode": "sentiment_score", "text": "Tesla beats earnings estimates"}'
+  description: 'Score ONE text''s sentiment, or fetch the crypto Fear & Greed index — a dual-mode tool,
+    not a market-sentiment framework. Mode ''sentiment_score'': score arbitrary text (news headline, tweet,
+    announcement) on -1 (bearish) to 1 (bullish). Mode ''fear_greed_index'': fetch the crypto Fear & Greed
+    Index (0-100, lower = more fear). For market-level sentiment frameworks (margin trading / northbound
+    flow / put-call ratio), load the sentiment-analysis skill instead. Example: {"mode": "sentiment_score",
+    "text": "Tesla beats earnings estimates"}'
 - name: technical_indicators
   description: Compute common technical indicators (RSI, MACD, Bollinger Bands, SMA, EMA) for a trading
     symbol. Uses the project's data loaders to fetch price history, then computes indicators locally.
@@ -750,9 +762,9 @@ skills:
     defense, semiconductor reshoring, space economy), decompose its physical supply chain down to Layer
     2/3 choke points (optics, lasers, InP/SOI substrates, IC substrates, probe cards, specialty fiberglass...)
     and surface under-the-radar listed companies sitting on each bottleneck. Scores each link on 6 scarcity
-    criteria, applies mandatory valuation gates (PS/PE/safety-margin) via the financial_rigor tool, and
-    Munger-style reverse-validates. Outputs a ranked bottleneck opportunity board. Use when the user wants
-    hidden beneficiaries of a structural trend rather than already-priced leaders."'
+    criteria, applies mandatory valuation gates (PS/PE/safety-margin) via the financial_rigor tool（内部工具，不在
+    MCP 面）, and Munger-style reverse-validates. Outputs a ranked bottleneck opportunity board. Use when
+    the user wants hidden beneficiaries of a structural trend rather than already-priced leaders."'
 - name: candlestick
   description: Candlestick pattern recognition engine, pure pandas vectorized implementation of 15 classic
     candlestick patterns (5 single-candle + 5 double-candle + 4 triple-candle + 1 trend confirmation),
@@ -968,7 +980,7 @@ skills:
 - name: seasonal
   description: Seasonal/calendar-effect strategy. Generates trading signals from time-based patterns such
     as month-of-year effects and day-of-week effects. Suitable for any OHLCV data.
-- name: sec-edgar
+- name: sec-edgar-fetch
   description: U.S. SEC EDGAR fetch interface — resolve a ticker to its CIK, list recent filings (10-K
     / 10-Q / 8-K and friends) with primary-document URLs, and pull XBRL companyfacts financial series.
     Free, no API key; rate-limited by IP so every request is throttled and carries a contact User-Agent.
@@ -976,7 +988,8 @@ skills:
 - name: sector-rotation
   description: 行业轮动分析——申万行业景气度评分、行业动量排名、产业链传导、估值/盈利/资金流多维比较框架
 - name: sentiment-analysis
-  description: 市场情绪分析——恐贪指数/Put-Call Ratio/融资融券/北向资金信号解读、社交媒体舆情量化框架
+  description: 市场情绪分析——恐贪指数/Put-Call Ratio/融资融券/北向资金信号解读、社交媒体舆情量化框架。单文本情绪打分或获取加密恐贪指数数值请用 sentiment 工具（sentiment_score
+    / fear_greed_index 模式）；本技能提供市场层面情绪分析框架。
 - name: shadow-account
   description: '"Shadow Account — 从用户交割单提炼盈利模式（3-5 条人话规则）→ 跨 A股/港股/美股/crypto 多市场回测 → 差值归因 → 8-section
     PDF 报告。叙事：你的影子，没有情绪噪音。"'
