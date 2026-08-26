@@ -1146,8 +1146,11 @@ def web_search(query: str, max_results: int = 5) -> str:
 
 @mcp.tool
 def write_file(path: str, content: str) -> str:
-    """Write content to a file. Used to create config.json and signal_engine.py
-    for backtesting workflows.
+    """Write content to a file in the Vibe-Trading backtest workspace (run_dir).
+
+    Relative paths resolve against the active run directory. Used to create
+    config.json and signal_engine.py for backtesting workflows. Host files and
+    source code belong to the host's own file tools, not this one.
 
     Args:
         path: File path (relative to workspace or absolute).
@@ -1159,7 +1162,11 @@ def write_file(path: str, content: str) -> str:
 
 @mcp.tool
 def read_file(path: str) -> str:
-    """Read the contents of a file.
+    """Read a file from the Vibe-Trading backtest workspace (run_dir).
+
+    Relative paths resolve against the active run directory. Use it to inspect
+    backtest artifacts such as config.json, signal_engine.py, and result CSVs.
+    Host files and source code belong to the host's own read tool, not this one.
 
     Args:
         path: File path to read.

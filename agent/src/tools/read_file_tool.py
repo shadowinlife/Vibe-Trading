@@ -19,7 +19,7 @@ class ReadFileTool(BaseTool):
     """Read file contents with optional line limit."""
 
     name = "read_file"
-    description = "Read a file from the workspace. Returns file contents with optional line limit."
+    description = "Read a file from the Vibe-Trading backtest workspace (run_dir); relative paths resolve against the active run directory. Returns file contents with optional line limit. Use it to inspect backtest artifacts such as config.json, signal_engine.py, and result CSVs. Host files and source code belong to the host's own read tool, not this one."
     parameters = {
         "type": "object",
         "properties": {

@@ -15,7 +15,7 @@ class WriteFileTool(BaseTool):
     """Create or overwrite a workspace file, creating parent directories as needed."""
 
     name = "write_file"
-    description = "Write content to a file in the workspace. Creates parent directories automatically."
+    description = "Write content to a file in the Vibe-Trading backtest workspace (run_dir); relative paths resolve against the active run directory. Creates parent directories automatically. Used to create config.json and signal_engine.py for backtesting workflows. Host files and source code belong to the host's own file tools, not this one."
     is_readonly = False
     parameters = {
         "type": "object",
