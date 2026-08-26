@@ -246,18 +246,12 @@ class QuantlibCallTool(BaseTool):
 
     name = "quantlib_call"
     description = (
-        "Run a function from the tested finance-math library (src/quantlib): "
-        "Black-Scholes and implied vol, bond math and curve fitting, Altman Z "
-        "and Merton/KMV, stationarity/cointegration/GARCH/regime switching, "
-        "VaR/CVaR/EVT and VaR backtesting (Kupiec/Christoffersen/Basel), "
-        "Brinson-Fachler attribution, market impact, fund maths "
-        "(XIRR/MOIC/DPI/TVPI/PME/waterfalls), TWR/Dietz/MWR, event studies "
-        "(CAR/CAAR/Patell/BMP), style factor models, deflated Sharpe and PBO, "
-        "purged cross-validation, and the valuation engine (DCF / comps / "
-        "three-statement). Read-only and pure-compute: it fetches no data and "
-        "writes no files. Start with action='list' to see modules, then "
-        "action='list' with a module to see its functions, then "
-        "action='describe' for a signature. "
+        "Compute VaR/CVaR, Black-Scholes prices and Greeks, deflated Sharpe, "
+        "purged cross-validation, DCF / comps valuation — the single entry "
+        "point to the tested finance-math library (src/quantlib). Read-only "
+        "and pure-compute: it fetches no data and writes no files. Discovery: "
+        "start with action='list' to see modules, then action='list' with a "
+        "module to see its functions, then action='describe' for a signature. "
         'Example: quantlib_call(action="call", module="risk", '
         'function="historical_var", kwargs={"returns": [0.01, -0.02], "confidence": 0.95}).'
     )
