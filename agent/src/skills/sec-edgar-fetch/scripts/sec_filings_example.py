@@ -8,9 +8,9 @@ bundled, IP-throttled ``sec_edgar_client`` transport (no API key required).
 
 Run from the ``agent/`` directory so that ``backtest`` resolves on the path::
 
-    python -m src.skills.sec-edgar.scripts.sec_filings_example
+    python -m src.skills.sec-edgar-fetch.scripts.sec_filings_example
     # or
-    python src/skills/sec-edgar/scripts/sec_filings_example.py
+    python src/skills/sec-edgar-fetch/scripts/sec_filings_example.py
 """
 
 from typing import Any, Dict, List, Optional

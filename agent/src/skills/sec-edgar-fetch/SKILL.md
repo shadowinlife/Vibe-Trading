@@ -1,5 +1,5 @@
 ---
-name: sec-edgar
+name: sec-edgar-fetch
 description: U.S. SEC EDGAR fetch interface — resolve a ticker to its CIK, list recent filings (10-K / 10-Q / 8-K and friends) with primary-document URLs, and pull XBRL companyfacts financial series. Free, no API key; rate-limited by IP so every request is throttled and carries a contact User-Agent. United States only.
 category: data-source
 ---
@@ -13,7 +13,7 @@ This is the **fetch** skill — it covers how to get filing-index rows, document
 
 Scope is the United States only. EDGAR has no coverage of A-shares, HK, or other non-U.S. markets — route those through `tushare` / `yfinance` / `akshare` instead.
 
-> Link convention: every link below that points into `references/` is written with the **skill-name prefix** (`sec-edgar/references/...`). The `read_file` tool resolves paths with `skills/` as the root; dropping the prefix breaks the read. Keep the `<skill-name>/references/...` form when adding new docs.
+> Link convention: every link below that points into `references/` is written with the **skill-name prefix** (`sec-edgar-fetch/references/...`). The `read_file` tool resolves paths with `skills/` as the root; dropping the prefix breaks the read. Keep the `<skill-name>/references/...` form when adding new docs.
 
 ## Quick Start
 
@@ -27,7 +27,7 @@ Preferred path — the `get_sec_filings` tool (read-only, throttled, returns str
 { "ticker": "MSFT", "metric": "Revenues", "limit": 8 }
 ```
 
-The tool resolves the ticker to a CIK, fetches the filing index (optionally filtered by `form`), and — when `metric` is set — also pulls the XBRL series for that us-gaap concept. See `sec-edgar/references/get_sec_filings_tool.md` for the full parameter and envelope contract.
+The tool resolves the ticker to a CIK, fetches the filing index (optionally filtered by `form`), and — when `metric` is set — also pulls the XBRL series for that us-gaap concept. See `sec-edgar-fetch/references/get_sec_filings_tool.md` for the full parameter and envelope contract.
 
 Script path — call the `sec_edgar_client` transport directly when you need raw JSON the tool does not surface (e.g. company address, all units of a concept):
 
@@ -39,7 +39,7 @@ submissions = get_submissions(cik)   # recent-filings index + company metadata
 facts = get_company_facts(cik)       # all reported XBRL concepts
 ```
 
-A runnable end-to-end example lives at `sec-edgar/scripts/sec_filings_example.py`.
+A runnable end-to-end example lives at `sec-edgar-fetch/scripts/sec_filings_example.py`.
 
 ## Parameter & Format Notes
 
@@ -52,14 +52,14 @@ A runnable end-to-end example lives at `sec-edgar/scripts/sec_filings_example.py
 
 ## Reference Docs
 
-- [sec_edgar_client transport](sec-edgar/references/sec_edgar_client.md) — `cik_for`, `get_submissions`, `get_company_facts`, CIK padding, throttle bucket, contact User-Agent.
-- [get_sec_filings tool](sec-edgar/references/get_sec_filings_tool.md) — parameters, success/error envelope, `filings[]` and `metric` field shapes.
-- [Endpoints & rate limits](sec-edgar/references/endpoints_and_limits.md) — the three public endpoints, secid/CIK rules, fair-access policy, env overrides.
-- [Common forms & XBRL concepts](sec-edgar/references/forms_and_concepts.md) — frequently used form types and us-gaap concept names.
+- [sec_edgar_client transport](sec-edgar-fetch/references/sec_edgar_client.md) — `cik_for`, `get_submissions`, `get_company_facts`, CIK padding, throttle bucket, contact User-Agent.
+- [get_sec_filings tool](sec-edgar-fetch/references/get_sec_filings_tool.md) — parameters, success/error envelope, `filings[]` and `metric` field shapes.
+- [Endpoints & rate limits](sec-edgar-fetch/references/endpoints_and_limits.md) — the three public endpoints, secid/CIK rules, fair-access policy, env overrides.
+- [Common forms & XBRL concepts](sec-edgar-fetch/references/forms_and_concepts.md) — frequently used form types and us-gaap concept names.
 
 ## Scripts
 
-- [End-to-end fetch example](sec-edgar/scripts/sec_filings_example.py) — ticker → CIK → recent 10-Ks → a metric series, using the bundled client.
+- [End-to-end fetch example](sec-edgar-fetch/scripts/sec_filings_example.py) — ticker → CIK → recent 10-Ks → a metric series, using the bundled client.
 
 ## Notes
 
