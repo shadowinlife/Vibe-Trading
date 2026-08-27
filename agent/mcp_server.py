@@ -6,15 +6,17 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 74 tools: skills, research goals, strategy discovery,
+Surfaces 59 tools, with thirteen more registering once their preconditions are
+configured — five on credentials (get_macro_series / iwencai_search /
+qveris_search / qveris_inspect / qveris_execute) and eight trading_* tools on
+a configured trading connector: skills, research goals, strategy discovery,
 backtest/factor/options/pattern
 analysis, market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_margin_trading /
 get_block_trades / get_shareholder_count / get_lockup_expiry / get_sector_info /
 get_research_reports / get_stock_news / get_sec_filings /
 get_financial_statements / get_options_chain / get_stock_profile /
-screen_market / search_symbol / get_macro_series / iwencai_search /
-qveris_search / qveris_inspect / qveris_execute),
+screen_market / search_symbol),
 institutional-research and alternative data (get_institutional_holdings /
 etf_holdings / prediction_market / research_papers), read-only finance math and
 market analytics (quantlib_call / cashflow_performance / orderbook_depth /
@@ -515,11 +517,14 @@ def _risk_tier_from_text(value: str):
 def list_skills() -> str:
     """List all available finance skills with names and descriptions.
 
-    Returns a JSON array of {name, description} for all loaded skills.
-    Use load_skill(name) to get the full documentation for any skill.
+    Returns a JSON array of {name, description, category} for all loaded
+    skills. Use load_skill(name) to get the full documentation for any skill.
+    When your host already provides these skills natively (e.g. an opencode
+    workspace with .opencode/skills), prefer the host's skill path; this tool
+    serves pure MCP clients.
     """
     loader = _get_skills_loader()
-    skills = [{"name": s.name, "description": s.description} for s in loader.skills]
+    skills = [{"name": s.name, "description": s.description, "category": s.category} for s in loader.skills]
     return json.dumps(skills, ensure_ascii=False, indent=2)
 
 
@@ -530,7 +535,10 @@ def load_skill(name: str, section: str | None = None, offset: int | None = None)
     A skill over the tool-result cap is returned as a skeleton (outline plus
     per-section summaries) instead of being silently cut off. Request a
     specific section by name, or page through one with offset, to read the
-    rest. Use list_skills() first to discover available skills.
+    rest. Use list_skills() first to discover available skills. When your
+    host already provides these skills natively (e.g. an opencode workspace
+    with .opencode/skills), prefer the host's skill path; this tool serves
+    pure MCP clients.
 
     Args:
         name: Skill name (e.g. 'strategy-generate', 'risk-analysis', 'technical-basic').
@@ -2984,6 +2992,121 @@ def scan_shadow_signals(
     if date:
         params["date"] = date
     return registry.execute("scan_shadow_signals", params)
+
+
+# ---------------------------------------------------------------------------
+# Exposure gates — registration-time availability (AUDIT Q10/Q12/Q13)
+#
+# The agent registry gates unavailable tools at registration time:
+# ``build_registry`` skips any class whose ``check_available()`` is False, so
+# a deployment without the credential (or without any trading connector) never
+# sees the tool. The MCP surface historically registered the same tools
+# unconditionally and failed at call time (``_execute_key_gated`` error
+# envelope) — the only gating asymmetry between the two surfaces, and pure
+# disclosure tax in keyless sessions. Applying the SAME gates here aligns the
+# surfaces: a capability that cannot serve this deployment is not disclosed in
+# ``tools/list`` at all.
+# ---------------------------------------------------------------------------
+
+#: trading_* wrappers exposed on MCP; the agent surface carries more family
+#: members, but these eight are the MCP-visible ones. All of them gate on the
+#: same connector-availability probe as their tool classes (B2).
+_TRADING_MCP_TOOLS = (
+    "trading_connections",
+    "trading_select_connection",
+    "trading_check",
+    "trading_account",
+    "trading_positions",
+    "trading_orders",
+    "trading_quote",
+    "trading_history",
+)
+
+#: Maintenance tools that serve swarm hygiene, not research queries. They stay
+#: reachable on the agent/CLI surface but leave the default MCP research
+#: surface (B3); the lazy-recall path that restores them to MCP lands with the
+#: search_tools meta-tool (PLAN-C1).
+_OPS_TOOLS_OFF_DEFAULT_SURFACE = (
+    "reap_stale_runs",
+    "refresh_strategy_evidence",
+)
+
+
+def _unregister_mcp_tool(name: str) -> bool:
+    """Remove one tool from the MCP surface, across fastmcp major versions.
+
+    fastmcp 3.x deprecates ``FastMCP.remove_tool`` in favor of the
+    provider-scoped ``local_provider.remove_tool``; fastmcp 2.x (the
+    pyproject floor) only has the former. Prefer the 3.x path and fall back.
+
+    Args:
+        name: Registered MCP tool name.
+
+    Returns:
+        True when the tool was removed; False otherwise (logged).
+    """
+    try:
+        remover = getattr(getattr(mcp, "local_provider", None), "remove_tool", None)
+        if remover is not None:
+            remover(name)
+        else:
+            mcp.remove_tool(name)
+        return True
+    except Exception:  # noqa: BLE001 - removal is best-effort
+        logger.exception("Failed to remove unavailable tool %s from MCP surface", name)
+        return False
+
+
+def _apply_exposure_gates() -> None:
+    """Remove MCP tools whose availability precondition is absent at startup.
+
+    Uses the same gating sources of truth the agent registry applies — each
+    key-gated tool class's ``check_available()`` and the shared
+    connector-availability probe behind the trading tools' ``check_available``
+    — so the two surfaces can never drift into different detection logic.
+
+    A probe that raises keeps the tool registered (fail toward visibility):
+    hiding a working tool is a routing regression, disclosing one that fails
+    at call time is only a tax. Removals are logged at INFO. The call path
+    keeps its defense-in-depth handler (``_execute_key_gated``) for tools that
+    remain registered.
+    """
+    try:
+        gated = _key_gated_tool_classes()
+    except Exception:  # noqa: BLE001 - broken module must not break startup
+        logger.exception("Key-gated tool classes unavailable; exposure gate skipped")
+        gated = {}
+
+    for name, tool_cls in gated.items():
+        try:
+            available = tool_cls.check_available()
+        except Exception:  # noqa: BLE001 - probe failure never hides a tool
+            logger.exception("Availability probe failed for %s; keeping it registered", name)
+            continue
+        if not available and _unregister_mcp_tool(name):
+            logger.info(
+                "MCP tool %s not registered: required credentials are not configured",
+                name,
+            )
+
+    try:
+        from src.trading.availability import has_configured_connector
+
+        connector_configured = has_configured_connector()
+    except Exception:  # noqa: BLE001 - probe failure never hides a tool
+        logger.exception("Connector availability probe failed; keeping trading tools registered")
+        connector_configured = True
+    if not connector_configured:
+        for name in _TRADING_MCP_TOOLS:
+            if _unregister_mcp_tool(name):
+                logger.info("MCP tool %s not registered: no trading connector is configured", name)
+
+    for name in _OPS_TOOLS_OFF_DEFAULT_SURFACE:
+        if _unregister_mcp_tool(name):
+            logger.info("MCP tool %s moved off the default research surface (ops tool)", name)
+
+
+_apply_exposure_gates()
 
 
 # ---------------------------------------------------------------------------

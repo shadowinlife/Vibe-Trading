@@ -1,10 +1,11 @@
 """Contract tests for issue #964 — QVeris tools exposed over MCP.
 
 The three QVeris agent tools (``qveris_search`` / ``qveris_inspect`` /
-``qveris_execute``) must be registered on the FastMCP server and follow the
-key-gated contract of ``get_macro_series`` / ``iwencai_search``: an
-unconfigured install receives an actionable, setup-naming JSON envelope from
-the tool's own ``execute()`` — never the registry's generic "Tool not found".
+``qveris_execute``) follow the key-gated contract of ``get_macro_series`` /
+``iwencai_search``, registration-time gated since the B1 exposure work: an
+unconfigured install never sees them in ``tools/list``, and a call-path
+misfire still receives an actionable, setup-naming JSON envelope from the
+tool's own ``execute()`` — never the registry's generic "Tool not found".
 
 The cached ``mcp_server._registry`` bakes in ``check_available()`` results, so
 every behavioral test resets it to ``None`` before and after the call to force
@@ -13,15 +14,19 @@ a rebuild against the monkeypatched config path.
 
 from __future__ import annotations
 
-import asyncio
 import json
+import os
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 import mcp_server
 from src.tools import qveris_tool as qt
+
+AGENT_DIR = Path(__file__).resolve().parents[1]
 
 # fastmcp wraps the tool; reach the raw callable.
 _qveris_search = getattr(mcp_server.qveris_search, "fn", None) or getattr(
@@ -53,26 +58,47 @@ def fresh_mcp_registry():
     mcp_server._registry = None
 
 
-def test_mcp_server_registers_qveris_tools() -> None:
-    """All three qveris wrappers must be registered on the FastMCP instance."""
-    tools = asyncio.run(mcp_server.mcp.list_tools())
-    registered = {t.name for t in tools}
+_KEYLESS_SURFACE_SNIPPET = (
+    "import asyncio, json, os, sys, tempfile; sys.path.insert(0, '.');\n"
+    "_tmp = tempfile.mkdtemp(prefix='vibe-qveris-anchor-');\n"
+    "os.environ['VIBE_TRADING_HOME'] = _tmp; os.environ['HOME'] = _tmp;\n"
+    "import mcp_server as m;\n"
+    "print(json.dumps([t.name for t in asyncio.run(m.mcp.list_tools())]))"
+)
 
-    expected = {"qveris_search", "qveris_inspect", "qveris_execute"}
-    missing = expected - registered
-    assert not missing, (
-        f"MCP server is missing qveris tools: {missing}. "
-        "Issue #964 requires all three QVeris tools on the MCP surface."
+
+def test_mcp_server_gates_qveris_tools_at_registration() -> None:
+    """B1: without paid routing the qveris wrappers are not disclosed at all.
+
+    Measured in a keyless child interpreter: the gate is applied at module
+    import time against the process environment, so an in-process assertion
+    would depend on the host machine's credentials. The configured branch is
+    covered deterministically by tests/test_mcp_exposure_gates.py.
+    """
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if k not in ("QVERIS_API_KEY", "FRED_API_KEY", "VIBE_TRADING_IWENCAI_KEY", "VIBE_TW_STOCK_DB")
+    }
+    proc = subprocess.run(
+        [sys.executable, "-c", _KEYLESS_SURFACE_SNIPPET],
+        cwd=AGENT_DIR,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=300,
     )
-    # Read the claim out of the docstring instead of hardcoding it a third
-    # time. A literal here is a number nobody updates: it was written as 55,
-    # shipped as 58, and the surface was 59 before these three landed. This
-    # asserts the docstring and the surface agree, whatever they say.
+    tools = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert not {"qveris_search", "qveris_inspect", "qveris_execute"} & set(tools)
+
+    # The module docstring states the keyless surface count; it must agree
+    # with the surface a fresh install sees, whatever they say.
     claimed = re.search(r"Surfaces (\d+) tools", mcp_server.__doc__ or "")
     assert claimed, "mcp_server's module docstring no longer states a tool count"
-    assert len(tools) == int(claimed.group(1)), (
-        f"Module docstring says {claimed.group(1)} tools, surface has {len(tools)}."
-    )
+    assert len(tools) == int(
+        claimed.group(1)
+    ), f"Module docstring says {claimed.group(1)} tools, keyless surface has {len(tools)}."
 
 
 def test_qveris_search_unconfigured_returns_actionable_error(

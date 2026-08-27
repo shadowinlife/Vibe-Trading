@@ -392,6 +392,7 @@ def register_system_routes(
             {
                 "name": s.name,
                 "description": s.description,
+                "category": s.category,
             }
             for s in loader.skills
         ]

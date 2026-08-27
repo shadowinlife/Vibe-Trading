@@ -141,6 +141,10 @@ def test_mcp_server_exposes_well_known_tool_names() -> None:
     """Well-known tool names must be registered on the MCP server instance.
 
     Uses the public async list_tools() API for stability across fastmcp upgrades.
+    Credential-gated, connector-gated (trading_*) and ops tools are not listed:
+    they register only when their precondition is configured (PLAN-B1/B2) or
+    stay off the default MCP surface (PLAN-B3); their gating is covered by
+    tests/test_mcp_exposure_gates.py.
     """
     import asyncio
 
@@ -166,14 +170,6 @@ def test_mcp_server_exposes_well_known_tool_names() -> None:
         "get_research_goal",
         "add_goal_evidence",
         "update_research_goal_status",
-        "trading_connections",
-        "trading_select_connection",
-        "trading_check",
-        "trading_account",
-        "trading_positions",
-        "trading_orders",
-        "trading_quote",
-        "trading_history",
     }
     missing = expected - registered
     assert not missing, (

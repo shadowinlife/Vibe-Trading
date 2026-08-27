@@ -27,7 +27,6 @@ DataFrame which we convert with ``to_dict("records")`` before field mapping.
 from __future__ import annotations
 
 import json
-import os
 import socket
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -217,6 +216,27 @@ def futu_available() -> bool:
         _require_futu()
         return True
     except FutuDependencyError:
+        return False
+
+
+def is_configured() -> bool:
+    """Report config completeness only — no network, no SDK import.
+
+    This connector has no API credentials: its completeness notion is the
+    saved OpenD gateway endpoint (``futu.json`` written by ``connector
+    configure``). Gateway reachability is deliberately NOT probed here.
+
+    Returns:
+        ``True`` when ``futu.json`` exists and carries a usable ``host`` and
+        ``port``; ``False`` when the file is absent, incomplete, or
+        unreadable. Never raises: any probe error reports ``False``.
+    """
+    try:
+        if not config_path().exists():
+            return False
+        cfg = load_config()
+        return bool(str(cfg.host).strip()) and int(cfg.port) > 0
+    except Exception:  # noqa: BLE001 - availability probe must never raise
         return False
 
 

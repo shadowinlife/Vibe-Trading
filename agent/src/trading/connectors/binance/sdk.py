@@ -215,6 +215,21 @@ def ccxt_available() -> bool:
         return False
 
 
+def is_configured() -> bool:
+    """Report config/credential completeness only — no network, no SDK import.
+
+    Returns:
+        ``True`` when the saved config carries every credential this
+        connector needs (``api_key``, ``api_secret``); ``False`` when any is
+        missing or the config cannot be read. Never raises: any probe error
+        reports ``False``.
+    """
+    try:
+        return not _missing_fields(load_config())
+    except Exception:  # noqa: BLE001 - availability probe must never raise
+        return False
+
+
 def check_status(config: BinanceConfig | None = None) -> dict[str, Any]:
     """Check SDK readiness, config completeness, and host separation.
 

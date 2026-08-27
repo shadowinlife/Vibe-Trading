@@ -258,6 +258,24 @@ def alpaca_available() -> bool:
         return False
 
 
+def is_configured() -> bool:
+    """Report config/credential completeness only — no network, no SDK import.
+
+    Mirrors this connector's own readiness notion: on the TAP path the local
+    key pair is not required (the secret lives in TAP), otherwise ``api_key``
+    and ``secret_key`` must be present.
+
+    Returns:
+        ``True`` when the saved config is credential-complete; ``False`` when
+        any required field is missing or the config cannot be read. Never
+        raises: any probe error reports ``False``.
+    """
+    try:
+        return not _missing_fields(load_config())
+    except Exception:  # noqa: BLE001 - availability probe must never raise
+        return False
+
+
 def check_status(config: AlpacaConfig | None = None) -> dict[str, Any]:
     """Check SDK readiness and config completeness without mutating broker state."""
     cfg = config or load_config()

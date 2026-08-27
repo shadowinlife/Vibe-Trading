@@ -31,9 +31,8 @@ code count moves, which is what this file is for.
 
 from __future__ import annotations
 
-import asyncio
 import functools
-import importlib
+import json
 import os
 import re
 import subprocess
@@ -85,16 +84,44 @@ def _read(name: str) -> str:
     return (REPO_ROOT / name).read_text(encoding="utf-8")
 
 
+_MCP_TOOL_NAMES_SNIPPET = """
+import asyncio, json, os, sys, tempfile
+sys.path.insert(0, '.')
+_tmp = tempfile.mkdtemp(prefix="vibe-readme-anchor-")
+os.environ["VIBE_TRADING_HOME"] = _tmp
+os.environ["HOME"] = _tmp
+import mcp_server as m
+print(json.dumps([t.name for t in asyncio.run(m.mcp.list_tools())]))
+"""
+
+
+@functools.lru_cache(maxsize=1)
 def _mcp_tool_names() -> list[str]:
-    """Return the MCP tool names in registration order.
+    """Return the keyless MCP tool names in registration order.
+
+    Measured in a child interpreter, not in-process: exposure gates are
+    applied at module import time against the process environment and the
+    runtime root's connector state, so the measured surface must not depend
+    on which API keys or connector configs happen to exist on the machine
+    running the suite. Credential gates are cleared and HOME / the runtime
+    root are pointed at an empty temp dir — the count a fresh install sees.
 
     Returns:
-        Tool names exactly as the MCP server exposes them.
+        Tool names exactly as the keyless MCP server exposes them.
     """
-    if str(AGENT_DIR) not in sys.path:
-        sys.path.insert(0, str(AGENT_DIR))
-    mod = sys.modules.get("mcp_server") or importlib.import_module("mcp_server")
-    return [tool.name for tool in asyncio.run(mod.mcp.list_tools())]
+    env = dict(os.environ)
+    for name in _CREDENTIAL_GATES:
+        env.pop(name, None)
+    proc = subprocess.run(
+        [sys.executable, "-c", _MCP_TOOL_NAMES_SNIPPET],
+        cwd=AGENT_DIR,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=300,
+    )
+    return json.loads(proc.stdout.strip().splitlines()[-1])
 
 
 def _bundled_skill_count() -> int:

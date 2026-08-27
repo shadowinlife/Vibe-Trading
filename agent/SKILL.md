@@ -133,7 +133,9 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (74)
+## Available MCP Tools (59)
+
+Five more tools register once their credentials are configured: `get_macro_series` (`FRED_API_KEY`), `iwencai_search` (`VIBE_TRADING_IWENCAI_KEY`), and `qveris_search` / `qveris_inspect` / `qveris_execute` (`QVERIS_API_KEY` + paid mode via `vibe-trading data mode paid`). Eight `trading_*` connector tools register once a trading connector profile is configured (`vibe-trading connector use <profile>`); the `reap_stale_runs` and `refresh_strategy_evidence` maintenance tools stay available on the agent/CLI surface.
 
 | Tool | Description | API Key |
 |------|-------------|---------|
@@ -167,11 +169,6 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `get_stock_profile` | Valuation, analyst estimates & institutional holdings (US/HK) | None |
 | `screen_market` | Market screener with fundamental/technical filters | None* |
 | `search_symbol` | Symbol / ticker search across markets | None |
-| `get_macro_series` | FRED macroeconomic series | FRED_API_KEY |
-| `iwencai_search` | A-share natural-language research search | IWENCAI_KEY |
-| `qveris_search` | Search QVeris premium data/tool marketplace (free discovery) | QVERIS_API_KEY + paid mode |
-| `qveris_inspect` | Inspect QVeris tool schemas before executing (free) | QVERIS_API_KEY + paid mode |
-| `qveris_execute` | Execute a QVeris capability; budget-bounded, may be billable | QVERIS_API_KEY + paid mode |
 | `web_search` | Search the web via DuckDuckGo | None |
 | `read_url` | Fetch web page as Markdown | None |
 | `read_document` | Extract text from PDF/DOCX/XLSX/PPTX/images | None |
@@ -180,7 +177,6 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `list_strategies` | Browse discoverable strategies (Alpha Zoo + SDM store) | None |
 | `query_strategies` | Evidence-gated query: regime / Sharpe / quality / cost filters | None |
 | `get_strategy_evidence` | Per-regime evidence rows for one strategy | None |
-| `refresh_strategy_evidence` | Rebuild the disposable strategy-evidence cache from run artifacts | None |
 | `analyze_trade_journal` | Parse broker CSV → profile + behavior diagnostics | None |
 | `extract_shadow_strategy` | Distill 3-5 if-then rules from profitable roundtrips | None |
 | `run_shadow_backtest` | Multi-market backtest + delta-PnL attribution | None* |
@@ -191,16 +187,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `get_swarm_status` | Poll swarm run status without blocking | None |
 | `get_run_result` | Get final report and task summaries | None |
 | `list_runs` | List recent swarm runs with metadata | None |
-| `reap_stale_runs` | Finalize stale swarm runs | None |
 | `retry_run` | Re-run a failed/stale swarm run | LLM key |
-| `trading_connections` | List selectable connector profiles | None |
-| `trading_select_connection` | Select the default connector profile | None |
-| `trading_check` | Check connector readiness | Connector app/OAuth |
-| `trading_account` | Read account summary from selected connector | Connector app/OAuth |
-| `trading_positions` | Read positions from selected connector | Connector app/OAuth |
-| `trading_orders` | Read open orders from selected connector | Connector app/OAuth |
-| `trading_quote` | Read a quote snapshot from selected connector | Connector app/OAuth |
-| `trading_history` | Read historical bars from selected connector | Connector app/OAuth |
 | `get_institutional_holdings` | SEC 13F-HR holdings by manager/ticker + quarter-over-quarter position diffs | None |
 | `etf_holdings` | ETF look-through — SEC N-PORT (US) and full-book A-share fund reports | None |
 | `prediction_market` | Event-contract search/market/history as labelled implied probability | None |

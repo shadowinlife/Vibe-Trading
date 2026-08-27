@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import ast
+import os
 import re
+import subprocess
+import sys
 from pathlib import Path
-
 
 AGENT_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = AGENT_ROOT / "SKILL.md"
@@ -23,11 +25,7 @@ def _manifest_text() -> str:
 def _literal_assignment(path: Path, name: str) -> object:
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     for node in tree.body:
-        if (
-            isinstance(node, ast.AnnAssign)
-            and isinstance(node.target, ast.Name)
-            and node.target.id == name
-        ):
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id == name:
             return ast.literal_eval(node.value)
         if isinstance(node, ast.Assign) and any(
             isinstance(target, ast.Name) and target.id == name for target in node.targets
@@ -37,37 +35,49 @@ def _literal_assignment(path: Path, name: str) -> object:
 
 
 def _live_mcp_tool_count() -> int:
-    """Return how many tools the MCP server actually serves.
+    """Return how many tools the keyless MCP server actually serves.
+
+    Measured in a child interpreter with credential gates cleared and HOME /
+    the runtime root pointed at an empty temp dir: exposure gates are applied
+    at module import time, so the count must not depend on which API keys or
+    connector configs happen to exist on the machine running the suite.
 
     Returns:
-        Length of ``mcp.list_tools()`` — decorator-registered wrappers plus
-        every mirrored tool.
+        Length of ``mcp.list_tools()`` a fresh install sees — decorator
+        wrappers plus every mirrored tool, minus credential-gated ones.
     """
-    import asyncio
-    import sys
-
-    if str(AGENT_ROOT) not in sys.path:
-        sys.path.insert(0, str(AGENT_ROOT))
-    import mcp_server
-
-    return len(asyncio.run(mcp_server.mcp.list_tools()))
+    env = dict(os.environ)
+    for name in ("FRED_API_KEY", "VIBE_TRADING_IWENCAI_KEY", "QVERIS_API_KEY", "VIBE_TW_STOCK_DB"):
+        env.pop(name, None)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import asyncio, os, sys, tempfile; sys.path.insert(0, '.');\n"
+                "_tmp = tempfile.mkdtemp(prefix='vibe-manifest-anchor-');\n"
+                "os.environ['VIBE_TRADING_HOME'] = _tmp; os.environ['HOME'] = _tmp;\n"
+                "import mcp_server as m; print(len(asyncio.run(m.mcp.list_tools())))"
+            ),
+        ],
+        cwd=AGENT_ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=300,
+    )
+    return int(proc.stdout.strip().splitlines()[-1])
 
 
 def _assert_all_counts(pattern: str, expected: int) -> None:
-    counts = [
-        int(value)
-        for value in re.findall(pattern, _manifest_text(), flags=re.IGNORECASE)
-    ]
+    counts = [int(value) for value in re.findall(pattern, _manifest_text(), flags=re.IGNORECASE)]
     assert counts, f"No manifest count matched {pattern!r}"
     assert set(counts) == {expected}, f"Manifest counts {counts} do not match source count {expected}"
 
 
 def test_finance_skill_count_matches_bundled_skill_directories() -> None:
-    expected = sum(
-        1
-        for path in SKILLS_DIR.iterdir()
-        if path.is_dir() and (path / "SKILL.md").is_file()
-    )
+    expected = sum(1 for path in SKILLS_DIR.iterdir() if path.is_dir() and (path / "SKILL.md").is_file())
     _assert_all_counts(r"\b(\d+)\s+(?:finance\s+|specialized\s+)?skills\b", expected)
 
 
@@ -131,17 +141,10 @@ def test_manifest_python_requirement_matches_pyproject() -> None:
     """
     import tomllib
 
-    pyproject = tomllib.loads(
-        (AGENT_ROOT.parent / "pyproject.toml").read_text(encoding="utf-8")
-    )
+    pyproject = tomllib.loads((AGENT_ROOT.parent / "pyproject.toml").read_text(encoding="utf-8"))
     packaged = pyproject["project"]["requires-python"].replace(" ", "")
-    declared = re.search(
-        r'^\s*python:\s*"([^"]+)"', MANIFEST_PATH.read_text(encoding="utf-8"), re.M
-    )
+    declared = re.search(r'^\s*python:\s*"([^"]+)"', MANIFEST_PATH.read_text(encoding="utf-8"), re.M)
     assert declared is not None, "SKILL.md declares no python requirement"
-    assert set(declared.group(1).replace(" ", "").split(",")) == set(
-        packaged.split(",")
-    ), (
-        f"SKILL.md says python {declared.group(1)!r} but pyproject.toml "
-        f"requires {packaged!r}"
+    assert set(declared.group(1).replace(" ", "").split(",")) == set(packaged.split(",")), (
+        f"SKILL.md says python {declared.group(1)!r} but pyproject.toml " f"requires {packaged!r}"
     )

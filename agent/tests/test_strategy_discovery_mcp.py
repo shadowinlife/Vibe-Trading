@@ -73,15 +73,22 @@ class TestRegistration:
     def test_all_three_tools_registered_with_descriptions(self) -> None:
         tools = asyncio.run(mcp_server.mcp.list_tools())
         registered = {t.name for t in tools}
-        missing = set(SD_TOOLS) - registered
+        # PLAN-B3: refresh_strategy_evidence is a maintenance tool and stays
+        # off the default MCP research surface; the other three register.
+        surface_expected = set(SD_TOOLS) - {"refresh_strategy_evidence"}
+        missing = surface_expected - registered
         assert not missing, (
             f"MCP server is missing Strategy Discovery tools: {missing}. "
             "Issue #969 requires all three registered AND callable (AC1)."
         )
+        assert "refresh_strategy_evidence" not in registered, (
+            "PLAN-B3: refresh_strategy_evidence must stay off the default MCP surface"
+        )
         by_name = {t.name: t for t in tools}
-        for name in SD_TOOLS:
+        for name in surface_expected:
             description = getattr(by_name[name], "description", "") or ""
             assert description.strip(), f"{name} must carry an MCP description"
+        for name in SD_TOOLS:
             assert callable(_unwrapped(name)), f"mcp_server.{name} is not callable"
 
 

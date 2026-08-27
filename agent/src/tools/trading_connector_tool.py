@@ -212,7 +212,24 @@ def _etoro_overrides(kwargs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-class TradingConnectionsTool(BaseTool):
+class _ConnectorGatedTradingTool(BaseTool):
+    """Base for trading_* tools: register only when a connector is configured.
+
+    With no configured connector every trading_* tool can only answer "not
+    configured", so the whole family gates out of the exposure surface. The
+    probe (``src.trading.availability``) is the single source of truth both
+    the agent registry and the MCP exposure gate consult.
+    """
+
+    @classmethod
+    def check_available(cls) -> bool:
+        """Available only when the user has configured a trading connector."""
+        from src.trading.availability import has_configured_connector
+
+        return has_configured_connector()
+
+
+class TradingConnectionsTool(_ConnectorGatedTradingTool):
     """List available trading connector profiles."""
 
     name = "trading_connections"
@@ -239,7 +256,7 @@ class TradingConnectionsTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingSelectConnectionTool(BaseTool):
+class TradingSelectConnectionTool(_ConnectorGatedTradingTool):
     """Select the default trading connector profile."""
 
     name = "trading_select_connection"
@@ -270,7 +287,7 @@ class TradingSelectConnectionTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingCheckTool(BaseTool):
+class TradingCheckTool(_ConnectorGatedTradingTool):
     """Check a trading connector profile."""
 
     name = "trading_check"
@@ -294,7 +311,7 @@ class TradingCheckTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingAccountTool(BaseTool):
+class TradingAccountTool(_ConnectorGatedTradingTool):
     """Read account summary from a trading connector profile."""
 
     name = "trading_account"
@@ -314,7 +331,7 @@ class TradingAccountTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingPositionsTool(BaseTool):
+class TradingPositionsTool(_ConnectorGatedTradingTool):
     """Read positions from a trading connector profile."""
 
     name = "trading_positions"
@@ -334,7 +351,7 @@ class TradingPositionsTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingOrdersTool(BaseTool):
+class TradingOrdersTool(_ConnectorGatedTradingTool):
     """Read open orders from a trading connector profile."""
 
     name = "trading_orders"
@@ -367,7 +384,7 @@ class TradingOrdersTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingQuoteTool(BaseTool):
+class TradingQuoteTool(_ConnectorGatedTradingTool):
     """Read a quote from a trading connector profile."""
 
     name = "trading_quote"
@@ -406,7 +423,7 @@ class TradingQuoteTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingHistoryTool(BaseTool):
+class TradingHistoryTool(_ConnectorGatedTradingTool):
     """Read historical bars from a trading connector profile."""
 
     name = "trading_history"
@@ -457,7 +474,7 @@ class TradingHistoryTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingRehabTool(BaseTool):
+class TradingRehabTool(_ConnectorGatedTradingTool):
     """Read dividend / split adjustment factors for a symbol.
 
     Use the returned adjustment factors to compute forward-adjusted close prices
@@ -490,7 +507,7 @@ class TradingRehabTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingCapitalFlowTool(BaseTool):
+class TradingCapitalFlowTool(_ConnectorGatedTradingTool):
     """Read historical main-flow (super/big/mid/small) time series for a symbol.
 
     Tracks institutional vs retail capital inflow / outflow across
@@ -529,7 +546,7 @@ class TradingCapitalFlowTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingCapitalDistributionTool(BaseTool):
+class TradingCapitalDistributionTool(_ConnectorGatedTradingTool):
     """Read the LATEST capital in-flow vs out-flow snapshot for a symbol.
 
     Today's running tally of super/big/mid/small buys vs sells. Use it to spot
@@ -562,7 +579,7 @@ class TradingCapitalDistributionTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingHistoryDealsTool(BaseTool):
+class TradingHistoryDealsTool(_ConnectorGatedTradingTool):
     """Read historical FILL records (executed deals) for shadow-account analysis.
 
     Unlike history_order_list_query (returns intent), this returns only orders
@@ -605,7 +622,7 @@ class TradingHistoryDealsTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingAccCashFlowTool(BaseTool):
+class TradingAccCashFlowTool(_ConnectorGatedTradingTool):
     """Read account cash-flow movements for a clearing date.
 
     Tracks deposit / withdrawal / FX conversion / buy-sell settlement /
@@ -642,7 +659,7 @@ class TradingAccCashFlowTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingFinancialsTool(BaseTool):
+class TradingFinancialsTool(_ConnectorGatedTradingTool):
     """Read financial statements (income / balance / cash flow) for a symbol.
 
     Returns structure_list (field definitions) + report_list (period values).
@@ -683,7 +700,7 @@ class TradingFinancialsTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingEarningsCalendarTool(BaseTool):
+class TradingEarningsCalendarTool(_ConnectorGatedTradingTool):
     """Read upcoming earnings-release dates with EPS / revenue consensus.
 
     Used to plan earnings-season trades (vol crush, surprise, IV rank).
@@ -720,7 +737,7 @@ class TradingEarningsCalendarTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingPlaceOrderTool(BaseTool):
+class TradingPlaceOrderTool(_ConnectorGatedTradingTool):
     """Place an order through a trading connector profile.
 
     Paper profiles place against the broker's sandbox account. Live profiles
@@ -796,7 +813,7 @@ class TradingPlaceOrderTool(BaseTool):
             return _json_result({"status": "error", "error": str(exc)})
 
 
-class TradingCancelOrderTool(BaseTool):
+class TradingCancelOrderTool(_ConnectorGatedTradingTool):
     """Cancel an order through a trading connector profile (risk-reducing)."""
 
     name = "trading_cancel_order"

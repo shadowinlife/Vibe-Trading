@@ -179,6 +179,21 @@ def mt5_available() -> bool:
         return False
 
 
+def is_configured() -> bool:
+    """Report config/credential completeness only — no network, no SDK import.
+
+    Returns:
+        ``True`` when the saved config carries every credential this
+        connector needs (``login``, ``password``, ``server``); ``False``
+        when any is missing or the config cannot be read. Never raises: any
+        probe error reports ``False``.
+    """
+    try:
+        return not _missing_fields(load_config())
+    except Exception:  # noqa: BLE001 - availability probe must never raise
+        return False
+
+
 def _require_mt5() -> ModuleType:
     """Import the Windows-only ``MetaTrader5`` package or fail with an install hint."""
     try:
@@ -295,8 +310,8 @@ def _assert_profile(cfg: MT5Config, account: Any, mt5: Any) -> None:
     terminal_login = getattr(account, "login", None)
     if cfg.login and terminal_login is not None and int(terminal_login) != cfg.login:
         raise MT5ProfileMismatchError(
-            f"login pin mismatch: profile is configured for a different account than "
-            f"the terminal's — refusing (fail-closed)."
+            "login pin mismatch: profile is configured for a different account than "
+            "the terminal's — refusing (fail-closed)."
         )
 
 

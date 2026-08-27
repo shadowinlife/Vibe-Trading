@@ -40,9 +40,12 @@ INIT_TIMEOUT = 30.0
 # safe lower bound that still flags the deadlock quickly.
 CALL_TIMEOUT = 15.0
 
-# Tools we rely on as a baseline. The repo currently ships 35 tools; we
+# Tools we rely on as a baseline. The keyless surface ships 59 tools; we
 # assert ``>= 30`` so unrelated tool additions / removals don't break the
 # test, but a regression that drops half the catalogue still fires.
+# Credential-gated, connector-gated (trading_*) and ops tools are NOT listed
+# here: they register only when their precondition is configured (PLAN-B1/B2)
+# or stay off the default MCP surface (PLAN-B3).
 EXPECTED_MIN_TOOL_COUNT = 30
 REQUIRED_TOOL_NAMES = {
     "analyze_options",
@@ -52,14 +55,6 @@ REQUIRED_TOOL_NAMES = {
     "get_research_goal",
     "add_goal_evidence",
     "update_research_goal_status",
-    "trading_connections",
-    "trading_select_connection",
-    "trading_check",
-    "trading_account",
-    "trading_positions",
-    "trading_orders",
-    "trading_quote",
-    "trading_history",
     "alpha_zoo",
     "alpha_bench",
 }

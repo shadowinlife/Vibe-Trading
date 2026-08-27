@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -155,8 +156,20 @@ def test_place_order_tool_treats_zero_unused_sizing_field_as_absent(
     assert calls[1]["notional"] == 50.0
 
 
-def test_live_broker_mcp_wrappers_are_hidden_from_agent_registry(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_live_broker_mcp_wrappers_are_hidden_from_agent_registry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: "Path"
+) -> None:
     """Connector-first registry must not expose broker-specific mcp_* tools."""
+    # trading_* tools register only when a connector is configured (PLAN-B2);
+    # give the sentinel one via the selection marker in a temp runtime root.
+    from src.trading import availability
+
+    monkeypatch.setenv("VIBE_TRADING_HOME", str(tmp_path))
+    (tmp_path / "trading-connections.json").write_text(
+        json.dumps({"selected_profile": "ibkr-paper-local"}), encoding="utf-8"
+    )
+    monkeypatch.setattr(availability, "_CACHE", None)
+
     server = SimpleNamespace(
         url="https://agent.robinhood.com/mcp/trading",
         enabled_tools=["get_positions"],
