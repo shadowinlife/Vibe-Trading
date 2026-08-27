@@ -123,6 +123,77 @@ estimated after the fact.
 Both surfaces are scored with identical template, pins and query set, so
 the paired delta is attributable to the description changes alone.
 
+## A5-A8 targeted extension (2026-08-26)
+
+The A5-A8 quantitative test plan (`HARNESS_EVOLUTION_A5_A8_TEST_PLAN.md`)
+reused this protocol with four documented extensions. The judge panel narrowed
+to `judge_config_a5a8.yaml` — qwen3.8-max (primary, cap 500) + kimi-k3
+(sensitivity, cap 1000), both DashScope under one key, temperature 0.0. This
+is a deliberate subset of the E2 4-family panel (user constraint: the target
+environment is always head-tier SOTA open-source models); `judge_config.yaml`
+stays untouched for E2 reproducibility.
+
+### Format-tolerant (lenient) scoring
+
+`score_response_lenient` layers over the strict contract: it forgives ONLY a
+missing `kind:` prefix — a bare-name pick equal to the expected bare name —
+and never a wrong-kind pick (`tool:x` vs expected `skill:x` is NOT forgiven).
+Introduced because E2 found kimi-k3 (and severely deepseek-v4-flash-0731)
+emitting bare capability names — a format artifact, not a routing mistake.
+Strict stays the primary caliber; lenient is the parallel caliber that stops
+format-only flips polluting the paired comparison. The frozen prompt template
+is unchanged (template sha256 unchanged), so pre-existing traces stay valid —
+but a reused baseline recorded before this field existed has no lenient
+column, and its lenient view is suppressed rather than misread as all-miss.
+
+### Tagged traces, subset filtering, corpus capture
+
+`run_llm_judge` gained `--queries-file` / `--refs` (subset filtering),
+`--tag` (namespaced traces `llm_judge_trace_<model>_<surface>_<tag>.jsonl`),
+and explicit `--corpus` / `--baseline-corpus` / `--post-corpus` overrides.
+`capture_corpus.py` snapshots the full surface with a `captured_at` stamp.
+Target corpora: `queries_A7_target.yaml` (60), `queries_A8_target.yaml` (70);
+the full regression guard stays `queries.yaml` (158). Paired statistics +
+recovery rate + the §6.1 pre-registered verdict live in `a7a8_stats.py`.
+
+### Baseline reuse (sequential isolation)
+
+Order isolation: A7 baseline = pre-A7, A8 baseline = post-A7. The full-158
+baselines reuse prior-stage post traces instead of re-running: **A7 full
+baseline = E2 post traces** (byte-identical copy; strict-only, no lenient
+field, so the A7-full lenient view is suppressed), **A8 full baseline = A7
+full post traces**. This is valid because the corpus surface is byte-identical
+across each reuse and the template hash is unchanged; both reuses are
+disclosed in `a6_a8_verdict.md` and the per-set stats reports.
+
+### A6-A8 verdicts — DO NOT RE-TEST
+
+Final verdicts in `a6_a8_verdict.md`; golden traces preserved in this
+directory. Under the SOTA-open-source target environment, description-wording
+changes do NOT improve routing:
+
+- **T-A7** — weak/localized effect. Only 2/4 pre-registered criteria passed
+  (recovery 50% ✅, full-set non-inferior ✅; target McNemar p=0.629 ❌,
+  target Δ+2.5pp ❌). The full-set +3.48pp p=0.027 is a safety-guard metric,
+  not an efficacy metric, and partly includes bare-name→prefix format flips.
+  Struck as **no improvement** (changes reverted).
+- **T-A8** — REJECTED. Full-set significant regression (lenient pooled
+  p=0.012 / qwen strict p=0.039), regressions spilling into unrelated domains
+  (D06/D16/D17/D19). Struck as **no improvement** (changes reverted).
+- **T-A6** — complete. Non-routing verification: the internal↔MCP mapping
+  table exists and skill-doc internal-name references were already unified
+  (refined metric counts 0 unannotated backticked tool refs).
+
+These conclusions are **final for the A batch**. Combined with E2 (A1-A4
+routing-neutral, pooled McNemar p=0.885), the evidence is that polishing
+description wording does not move routing accuracy at the SOTA ceiling. **Do
+not re-run A1-A8 description tests.** The real routing lever is reducing the
+number of tools presented per decision (B/C/D batches). The next legitimate
+re-test is an E2-style full-surface comparison AFTER the B batch changes the
+exposure surface — and it must first fix the methodology gaps logged in the
+2026-08-27 review (power-aligned thresholds, a margin-based non-inferiority
+criterion, a named primary caliber, and a judge test-retest noise floor).
+
 ## Panel change log
 
 - 2026-08-26 (user-directed expanded protocol): panel is qwen3.8-max

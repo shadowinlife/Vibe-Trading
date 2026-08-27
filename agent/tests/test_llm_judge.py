@@ -171,10 +171,10 @@ def test_config_pins_match_the_spec() -> None:
     config = judge.load_config(judge.CONFIG_PATH)
     by_id = {m["id"]: m for m in config["models"]}
     assert set(by_id) == {
-        "qwen3.8-max", "deepseek-v4-flash-0731", "kimi-k2.6", "glm-5.1",
+        "qwen3.8-max", "deepseek-v4-flash-0731", "kimi-k3", "glm-5.2",
     }
     assert by_id["qwen3.8-max"]["role"] == "primary"
-    for model_id in ("deepseek-v4-flash-0731", "kimi-k2.6", "glm-5.1"):
+    for model_id in ("deepseek-v4-flash-0731", "kimi-k3", "glm-5.2"):
         assert by_id[model_id]["role"] == "sensitivity"
     for model in by_id.values():
         # Whole panel is DashScope-hosted under the same key.
@@ -182,12 +182,37 @@ def test_config_pins_match_the_spec() -> None:
         assert model["api_key_env"] == "DASHSCOPE_API_KEY"
         assert model["base_url_env"] == "DASHSCOPE_BASE_URL"
         assert model["temperature"] == 0.0
-    # 80 for the visible answer everywhere except the documented deviation:
-    # deepseek-v4-flash-0731 spends its max_tokens budget on reasoning before
-    # answering (empty content on 24/24 probe calls at 80), so it runs at 500.
-    assert by_id["deepseek-v4-flash-0731"]["max_response_tokens"] == 500
-    for model_id in ("qwen3.8-max", "kimi-k2.6", "glm-5.1"):
-        assert by_id[model_id]["max_response_tokens"] == 80
+    # Reasoning-model caps are empirical — see DOCUMENTED DEVIATIONS in
+    # judge_config.yaml: deepseek-v4-flash-0731 and glm-5.2 spend their
+    # max_tokens budget on reasoning before answering (empty content below
+    # ~2000), kimi-k3 finishes within ~200 completion tokens but needs
+    # headroom for the 164-candidate prompt, qwen3.8-max probed consistent
+    # at 80 with 500 headroom.
+    assert by_id["qwen3.8-max"]["max_response_tokens"] == 500
+    assert by_id["deepseek-v4-flash-0731"]["max_response_tokens"] == 2000
+    assert by_id["kimi-k3"]["max_response_tokens"] == 1000
+    assert by_id["glm-5.2"]["max_response_tokens"] == 2000
+    assert config["budget"]["max_input_tokens_per_model_run"] == 25_000_000
+    assert config["budget"]["max_calls_per_model_run"] == 700
+    assert config["determinism_probe"] == {"sample_queries": 8, "repeats": 3}
+    assert config["prices"]["estimate"] is True
+    assert set(config["prices"]["per_million_tokens"]) == set(by_id)
+
+
+def test_a5a8_config_pins_the_two_model_panel() -> None:
+    """The A5-A8 plan restricts the panel to two SOTA open-source models."""
+    config = judge.load_config(judge.HERE / "judge_config_a5a8.yaml")
+    by_id = {m["id"]: m for m in config["models"]}
+    assert set(by_id) == {"qwen3.8-max", "kimi-k3"}
+    assert by_id["qwen3.8-max"]["role"] == "primary"
+    assert by_id["kimi-k3"]["role"] == "sensitivity"
+    for model in by_id.values():
+        assert model["provider"] == "dashscope"
+        assert model["api_key_env"] == "DASHSCOPE_API_KEY"
+        assert model["base_url_env"] == "DASHSCOPE_BASE_URL"
+        assert model["temperature"] == 0.0
+    assert by_id["qwen3.8-max"]["max_response_tokens"] == 500
+    assert by_id["kimi-k3"]["max_response_tokens"] == 1000
     assert config["budget"]["max_input_tokens_per_model_run"] == 25_000_000
     assert config["budget"]["max_calls_per_model_run"] == 700
     assert config["determinism_probe"] == {"sample_queries": 8, "repeats": 3}
@@ -295,6 +320,70 @@ def test_scoring_invalid_response_is_a_clean_miss() -> None:
     assert scores["top1_hit"] is False
     assert scores["top3_hit"] is False
     assert scores["neg_false_recall"] is False
+
+
+# --------------------------------------------------------------------------- #
+# Format-tolerant (lenient) scoring — forgives the missing 'kind:' prefix only.
+# --------------------------------------------------------------------------- #
+def test_lenient_scoring_forgives_bare_name_pick() -> None:
+    # The kimi-k3 format artifact: right capability, missing 'kind:' prefix.
+    parsed = {"first": "get_market_data", "second": None, "third": None}
+    lenient = protocol.score_response_lenient(parsed, _ENTRY, _NAME_KINDS)
+    assert lenient["top1_hit_lenient"] is True
+    # Strict scoring still counts it a miss (the prefix is part of the id).
+    strict = protocol.score_response(parsed, _ENTRY, _NAME_KINDS)
+    assert strict["top1_hit"] is False
+
+
+def test_lenient_scoring_does_not_forgive_wrong_kind() -> None:
+    # 'skill:get_market_data' carries a prefix, so it is a real wrong-kind
+    # pick, not a format artifact — the lenient score must not forgive it.
+    parsed = {"first": "skill:get_market_data", "second": None, "third": None}
+    lenient = protocol.score_response_lenient(parsed, _ENTRY, _NAME_KINDS)
+    assert lenient["top1_hit_lenient"] is False
+
+
+def test_lenient_scoring_exact_id_still_hits() -> None:
+    parsed = {"first": "tool:get_market_data", "second": None, "third": None}
+    lenient = protocol.score_response_lenient(parsed, _ENTRY, _NAME_KINDS)
+    assert lenient["top1_hit_lenient"] is True
+
+
+def test_lenient_scoring_top3_bare_name() -> None:
+    parsed = {"first": "tool:other", "second": "get_market_data", "third": None}
+    lenient = protocol.score_response_lenient(parsed, _ENTRY, _NAME_KINDS)
+    assert lenient["top1_hit_lenient"] is False
+    assert lenient["top3_hit_lenient"] is True
+
+
+def test_lenient_scoring_invalid_is_a_clean_miss() -> None:
+    lenient = protocol.score_response_lenient(None, _ENTRY, _NAME_KINDS)
+    assert lenient["top1_hit_lenient"] is False
+    assert lenient["top3_hit_lenient"] is False
+
+
+# --------------------------------------------------------------------------- #
+# Targeted-subset selection + run tagging (A7/A8 infra).
+# --------------------------------------------------------------------------- #
+def test_filter_entries_by_refs_keeps_matching_and_order() -> None:
+    entries = [
+        {"id": "A", "arbitration_ref": "Q5"},
+        {"id": "B", "arbitration_ref": "Q6"},
+        {"id": "C", "arbitration_ref": "K1"},
+        {"id": "D"},
+    ]
+    kept = judge.filter_entries_by_refs(entries, "Q5,Q6")
+    assert [e["id"] for e in kept] == ["A", "B"]
+    assert judge.filter_entries_by_refs(entries, "Q5, K6") == [entries[0]]
+    assert judge.filter_entries_by_refs(entries, None) == entries
+    assert judge.filter_entries_by_refs(entries, "") == entries
+
+
+def test_trace_path_tag_namespaces_artifacts(tmp_path: Path) -> None:
+    untagged = judge.trace_path_for(tmp_path, "m", "post")
+    tagged = judge.trace_path_for(tmp_path, "m", "post", "a7target")
+    assert untagged.name == "llm_judge_trace_m_post.jsonl"
+    assert tagged.name == "llm_judge_trace_m_post_a7target.jsonl"
 
 
 # --------------------------------------------------------------------------- #

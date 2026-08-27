@@ -60,6 +60,7 @@ from src.evals.tool_selection.llm_judge_protocol import (
     parse_response,
     prompt_template_sha256,
     score_response,
+    score_response_lenient,
 )
 from src.evals.tool_selection.llm_judge_report import (
     aggregate_lines,
@@ -81,6 +82,24 @@ EXIT_OK = 0
 EXIT_ERROR = 1
 EXIT_CONFIG = 2
 EXIT_BUDGET = 3
+
+
+def _resolve_asset_path(raw: str) -> Path:
+    """Resolve a CLI-supplied asset path, defaulting to the suite directory.
+
+    A bare filename (e.g. ``judge_config_a5a8.yaml``) is looked up next to
+    this module; an absolute path or one that already exists is used as-is.
+
+    Args:
+        raw: The path string from the CLI.
+
+    Returns:
+        The resolved Path (existence is not guaranteed here).
+    """
+    path = Path(raw)
+    if path.is_absolute() or path.exists():
+        return path
+    return HERE / raw
 
 
 class JudgeCallError(RuntimeError):
@@ -143,43 +162,74 @@ def load_config(path: Path) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
-def load_corpus(surface: str) -> dict:
+def load_corpus(surface: str, override: str | None = None) -> dict:
     """Load one corpus snapshot.
 
     Args:
         surface: ``post`` (current descriptions) or ``baseline`` (frozen
             pre-change descriptions).
+        override: Optional explicit snapshot path; supersedes the default
+            ``corpus_<surface>_snapshot.yaml`` so a targeted run (e.g. A7/A8)
+            can compare its own frozen before/after captures.
 
     Returns:
         The parsed corpus snapshot.
     """
-    return yaml.safe_load(CORPUS_PATHS[surface].read_text(encoding="utf-8"))
+    path = Path(override) if override else CORPUS_PATHS[surface]
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
-def load_queries() -> list[dict]:
+def load_queries(path: Path | None = None) -> list[dict]:
     """Load the versioned query entries in file order.
 
+    Args:
+        path: Queries file; defaults to ``queries.yaml``. Pass a dedicated
+            file to score a targeted subset (e.g. the A7/A8 target sets).
+
     Returns:
-        Entry dicts from ``queries.yaml``.
+        Entry dicts from the queries file.
     """
-    return yaml.safe_load(QUERIES_PATH.read_text(encoding="utf-8"))["entries"]
+    source = QUERIES_PATH if path is None else path
+    return yaml.safe_load(source.read_text(encoding="utf-8"))["entries"]
+
+
+def filter_entries_by_refs(entries: list[dict], refs: str | None) -> list[dict]:
+    """Keep only entries whose arbitration_ref is in a comma-separated list.
+
+    Args:
+        entries: Query entries in file order.
+        refs: Comma-separated arbitration refs (e.g. ``Q5,Q6``); None or an
+            empty string keeps every entry.
+
+    Returns:
+        The filtered entries, original order preserved.
+    """
+    if not refs:
+        return entries
+    wanted = {ref.strip() for ref in refs.split(",") if ref.strip()}
+    return [entry for entry in entries if entry.get("arbitration_ref") in wanted]
 
 
 # --------------------------------------------------------------------------- #
 # Golden trace I/O + resume accounting.
 # --------------------------------------------------------------------------- #
-def trace_path_for(artifacts_dir: Path, model_id: str, surface: str) -> Path:
+def trace_path_for(
+    artifacts_dir: Path, model_id: str, surface: str, tag: str | None = None
+) -> Path:
     """Return the golden-trace path for one (model, surface) run.
 
     Args:
         artifacts_dir: Artifact directory.
         model_id: Judge model id.
         surface: ``baseline`` or ``post``.
+        tag: Optional run tag; namespaces the trace so a targeted-subset run
+            never mixes with the full-surface run in one golden trace.
 
     Returns:
         The JSONL trace path.
     """
-    return artifacts_dir / f"llm_judge_trace_{model_id}_{surface}.jsonl"
+    suffix = f"_{tag}" if tag else ""
+    return artifacts_dir / f"llm_judge_trace_{model_id}_{surface}{suffix}.jsonl"
 
 
 def load_trace(path: Path) -> tuple[dict | None, list[dict]]:
@@ -424,6 +474,7 @@ def run_surface(
     artifacts_dir: Path,
     prices: dict,
     limit: int | None = None,
+    tag: str | None = None,
     client_factory=build_client,
 ) -> int:
     """Score one (model, surface) run with resume and budget enforcement.
@@ -438,6 +489,8 @@ def run_surface(
         artifacts_dir: Artifact directory for trace + report.
         prices: The ``prices`` block of ``judge_config.yaml``.
         limit: Score only the first N entries (None = all).
+        tag: Optional run tag; namespaces trace + report artifacts so a
+            targeted-subset run stays separate from the full-surface run.
         client_factory: Callable (model_cfg, env) -> judge client;
             injectable for offline tests.
 
@@ -445,7 +498,7 @@ def run_surface(
         Exit code: 0 ok, 1 non-transient API error, 2 template drift,
         3 budget cap reached.
     """
-    trace_path = trace_path_for(artifacts_dir, model_cfg["id"], surface)
+    trace_path = trace_path_for(artifacts_dir, model_cfg["id"], surface, tag)
     template_sha = prompt_template_sha256()
     header, lines = load_trace(trace_path)
     if header is not None and header.get("prompt_template_sha256") != template_sha:
@@ -507,6 +560,7 @@ def run_surface(
             return EXIT_ERROR
         parsed = parse_response(outcome["raw"]) if outcome["error"] is None else None
         scores = score_response(parsed, entry, name_kinds)
+        lenient = score_response_lenient(parsed, entry, name_kinds)
         record = {
             "query_id": entry["id"],
             "model": model_cfg["id"],
@@ -520,6 +574,8 @@ def run_surface(
             "top1_hit": scores["top1_hit"],
             "top3_hit": scores["top3_hit"],
             "neg_false_recall": scores["neg_false_recall"],
+            "top1_hit_lenient": lenient["top1_hit_lenient"],
+            "top3_hit_lenient": lenient["top3_hit_lenient"],
             "latency_ms": outcome["latency_ms"],
             "prompt_tokens": outcome["prompt_tokens"],
             "completion_tokens": outcome["completion_tokens"],
@@ -545,7 +601,10 @@ def run_surface(
         print(f"{entry['id']}: {mark} (first={picked})")
 
     aggregates = aggregate_lines(lines, entries)
-    report_path = artifacts_dir / f"llm_judge_report_{model_cfg['id']}_{surface}.md"
+    suffix = f"_{tag}" if tag else ""
+    report_path = artifacts_dir / (
+        f"llm_judge_report_{model_cfg['id']}_{surface}{suffix}.md"
+    )
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(
         render_report(
@@ -582,6 +641,7 @@ def run_probe(
     env: dict[str, str],
     artifacts_dir: Path,
     limit: int | None = None,
+    tag: str | None = None,
     client_factory=build_client,
 ) -> int:
     """Run the determinism probe: repeat the first N queries R times.
@@ -600,13 +660,18 @@ def run_probe(
         artifacts_dir: Artifact directory.
         limit: Unused by the probe (sample size comes from the config);
             accepted for CLI symmetry.
+        tag: Optional run tag; namespaces the probe artifact for symmetry
+            with the tagged main run.
         client_factory: Callable (model_cfg, env) -> judge client.
 
     Returns:
         Exit code: 0 ok, 1 non-transient API error, 3 budget cap reached.
     """
     del limit  # probe sample size is pinned in judge_config.yaml
-    probe_path = artifacts_dir / f"llm_judge_probe_{model_cfg['id']}_{surface}.jsonl"
+    suffix = f"_{tag}" if tag else ""
+    probe_path = artifacts_dir / (
+        f"llm_judge_probe_{model_cfg['id']}_{surface}{suffix}.jsonl"
+    )
     sample = entries[: int(probe_cfg.get("sample_queries", 8))]
     repeats = int(probe_cfg.get("repeats", 3))
     _, lines = load_trace(probe_path)
@@ -700,9 +765,24 @@ def main(argv: list[str] | None = None) -> int:
     Returns:
         Process exit code (0 ok, 1 API error, 2 config error, 3 budget).
     """
-    config = load_config(CONFIG_PATH)
+    argv = sys.argv[1:] if argv is None else list(argv)
+    # Pre-parse --config so the --model choices reflect the selected panel.
+    pre_parser = argparse.ArgumentParser(add_help=False)
+    pre_parser.add_argument("--config", default=str(CONFIG_PATH))
+    pre_args, _ = pre_parser.parse_known_args(argv)
+    config_path = _resolve_asset_path(pre_args.config)
+    if not config_path.exists():
+        print(f"error: config file not found: {config_path}", file=sys.stderr)
+        return EXIT_CONFIG
+    config = load_config(config_path)
     known_ids = [model["id"] for model in config["models"]]
+
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--config", default=str(CONFIG_PATH),
+        help="judge panel config (default: judge_config.yaml; use "
+             "judge_config_a5a8.yaml for the 2-model A5-A8 panel)",
+    )
     parser.add_argument(
         "--surface", choices=("baseline", "post"), default="post",
         help="corpus surface to score (default: post)",
@@ -718,6 +798,31 @@ def main(argv: list[str] | None = None) -> int:
         help="score only the first N query entries",
     )
     parser.add_argument(
+        "--queries-file", default=None,
+        help="alternative queries YAML (e.g. a targeted A7/A8 subset); "
+             "defaults to queries.yaml",
+    )
+    parser.add_argument(
+        "--refs", default=None,
+        help="comma-separated arbitration_refs to keep (e.g. Q5,Q6); "
+             "filters the loaded entries",
+    )
+    parser.add_argument(
+        "--tag", default=None,
+        help="run tag; namespaces trace/report/probe artifacts so a "
+             "targeted-subset run stays separate from the full run",
+    )
+    parser.add_argument(
+        "--baseline-corpus", default=None,
+        help="explicit baseline corpus snapshot path (overrides "
+             "corpus_baseline_snapshot.yaml)",
+    )
+    parser.add_argument(
+        "--post-corpus", default=None,
+        help="explicit post corpus snapshot path (overrides "
+             "corpus_snapshot.yaml)",
+    )
+    parser.add_argument(
         "--probe-only", action="store_true",
         help="run the determinism probe instead of the main evaluation",
     )
@@ -728,15 +833,31 @@ def main(argv: list[str] | None = None) -> int:
     if args.model != "all-available":
         models = [m for m in models if m["id"] == args.model]
         if not models:
-            print(f"error: model {args.model} not found in judge_config.yaml",
+            print(f"error: model {args.model} not found in {config_path.name}",
                   file=sys.stderr)
             return EXIT_CONFIG
     caps = BudgetCaps(
         max_tokens=int(config["budget"]["max_input_tokens_per_model_run"]),
         max_calls=int(config["budget"]["max_calls_per_model_run"]),
     )
-    corpus = load_corpus(args.surface)
-    entries = load_queries()
+    corpus_override = (
+        args.post_corpus if args.surface == "post" else args.baseline_corpus
+    )
+    if corpus_override:
+        corpus_override = str(_resolve_asset_path(corpus_override))
+        if not Path(corpus_override).exists():
+            print(f"error: corpus file not found: {corpus_override}",
+                  file=sys.stderr)
+            return EXIT_CONFIG
+    corpus = load_corpus(args.surface, corpus_override)
+    queries_path = _resolve_asset_path(args.queries_file) if args.queries_file else None
+    if queries_path is not None and not queries_path.exists():
+        print(f"error: queries file not found: {queries_path}", file=sys.stderr)
+        return EXIT_CONFIG
+    entries = filter_entries_by_refs(load_queries(queries_path), args.refs)
+    if not entries:
+        print("error: no query entries matched the selection", file=sys.stderr)
+        return EXIT_CONFIG
 
     exit_code = EXIT_OK
     for model_cfg in models:
@@ -754,14 +875,14 @@ def main(argv: list[str] | None = None) -> int:
                 model_cfg=model_cfg, surface=args.surface, caps=caps,
                 probe_cfg=config["determinism_probe"], corpus=corpus,
                 entries=entries, env=env, artifacts_dir=ARTIFACTS_DIR,
-                limit=args.limit,
+                limit=args.limit, tag=args.tag,
             )
         else:
             code = run_surface(
                 model_cfg=model_cfg, surface=args.surface, caps=caps,
                 corpus=corpus, entries=entries, env=env,
                 artifacts_dir=ARTIFACTS_DIR, prices=config.get("prices", {}),
-                limit=args.limit,
+                limit=args.limit, tag=args.tag,
             )
         exit_code = max(exit_code, code)
     return exit_code

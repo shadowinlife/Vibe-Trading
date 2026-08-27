@@ -188,3 +188,66 @@ def score_response(
         "top3_hit": top3_hit,
         "neg_false_recall": neg_false_recall,
     }
+
+
+def _is_bare_name_pick(pick: str | None, expected_name: str) -> bool:
+    """True when ``pick`` is a kind-less bare name equal to ``expected_name``.
+
+    Forgives ONLY the missing ``kind:`` prefix — the documented format
+    artifact where a SOTA judge names the right capability but omits the
+    ``tool:``/``skill:`` prefix. A pick that carries a prefix is never a
+    bare-name match, so a wrong-kind pick (``tool:x`` vs expected
+    ``skill:x``) is NOT forgiven here.
+
+    Args:
+        pick: One judge pick id (may be None).
+        expected_name: The expected capability's bare name.
+
+    Returns:
+        True for an unprefixed pick equal to the expected bare name.
+    """
+    if not pick or ":" in pick:
+        return False
+    return pick == expected_name
+
+
+def score_response_lenient(
+    parsed: dict | None, entry: dict, name_kinds: dict[str, tuple[str, ...]]
+) -> dict:
+    """Format-tolerant scoring layered over the strict definitions.
+
+    The strict ``score_response`` requires the exact ``kind:name`` id. SOTA
+    judges sometimes emit the bare capability name without the ``kind:``
+    prefix — a format artifact, not a routing mistake (observed on kimi-k3 in
+    E2, where such flips masqueraded as a nominal McNemar signal). The
+    lenient score counts a bare-name pick as a hit when the name matches, so
+    format-only flips stop polluting the routing comparison. It never forgives
+    a wrong-kind pick, and it leaves the strict contract untouched.
+
+    Args:
+        parsed: Parsed response ({first, second, third}, values may be None)
+            or None for an unparseable reply.
+        entry: Query entry dict from ``queries.yaml``.
+        name_kinds: Corpus name -> kinds mapping; unused by the lenient rule,
+            kept for signature symmetry with ``score_response``.
+
+    Returns:
+        Dict with ``top1_hit_lenient`` and ``top3_hit_lenient``.
+    """
+    del name_kinds  # signature symmetry only; the lenient rule matches names
+    expected_name = entry["expected"]["name"]
+    expected_id = f"{entry['expected']['kind']}:{expected_name}"
+    if parsed:
+        first = parsed.get("first")
+        top3_picks = [
+            parsed.get(key)
+            for key in ("first", "second", "third")
+            if isinstance(parsed.get(key), str) and parsed.get(key)
+        ]
+    else:
+        first, top3_picks = None, []
+    top1_hit_lenient = (first == expected_id) or _is_bare_name_pick(first, expected_name)
+    top3_hit_lenient = (expected_id in top3_picks) or any(
+        _is_bare_name_pick(pick, expected_name) for pick in top3_picks
+    )
+    return {"top1_hit_lenient": top1_hit_lenient, "top3_hit_lenient": top3_hit_lenient}
