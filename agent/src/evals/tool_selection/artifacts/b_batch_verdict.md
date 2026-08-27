@@ -144,3 +144,37 @@ worth upstreaming is a user decision between (a) holding the literal
 pre-registration (local-only) and (b) an explicitly-adjudicated recalibration
 of C6 to the measured reality (the 8k bar was anchored to a falsified
 estimate).
+
+## User adjudication (2026-08-27): judged on the measured data — BENEFIT HOLDS
+
+The user directed the verdict to be decided on the measured data rather than
+the falsified-estimate-anchored bar (option (b) above). This is an explicit
+user adjudication per pre-registration discipline (A7/A8 precedent) — the
+8k threshold is NOT silently moved; the literal pre-registered outcome above
+stands as written and is overridden here by recorded adjudication.
+
+Measured-data judgment:
+
+1. **Deterministic benefit, measured not estimated.** MCP surface −5,100
+   tok/round (−17.9%; 74→59 tools, −20.3%); agent registry 107→90 tools
+   (−15.9%) with −812 description-tokens as a schemas-excluded lower bound.
+   The keyless/connectorless state is the FRESH-INSTALL default, so every
+   new deployment pays zero disclosure tax on the 15 removed tools in every
+   planning round.
+2. **Cost side measured at zero.** Routing proven non-inferior (95% CI lower
+   bound −2.03pp against a −5pp margin); point delta inside the judge
+   test-retest noise band (honest null); zero hallucinated calls of removed
+   tools (C5).
+3. **Structural quality benefit, measured in behavior.** K21 arbitration is
+   enforced by surface structure (absent trading_quote/trading_history
+   queries fall back to get_market_data); the keyless call-time-failure mode
+   (tool disclosed → called → error envelope → wasted round) is structurally
+   eliminated because tools that can only fail are no longer disclosed.
+4. **Calibration lesson recorded.** The AUDIT mechanism (gating → disclosure
+   tax removed) is confirmed by measurement; only its per-tool constant was
+   wrong (~340 measured vs ~700 assumed). Future benefit bars must anchor to
+   measured per-tool constants, not audit estimates.
+
+**Adjudicated outcome: 收益成立 — C1 PASS + C6 recalibrated to measured
+reality → B 批放行，转为上游 PR 候选**（与 E1/E2 评测基建旗舰 PR 并列，
+PR 拆分遵循 HARNESS_EVOLUTION_P0_PLAN.md §8.3 约定）。
