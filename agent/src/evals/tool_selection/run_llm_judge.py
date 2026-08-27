@@ -28,7 +28,10 @@ Artifacts (under ``artifacts/`` next to this file):
 
 * ``llm_judge_trace_<model>_<surface>.jsonl`` — append-only golden trace.
 * ``llm_judge_report_<model>_<surface>.md`` — accuracy + cost report.
-* ``llm_judge_probe_<model>_<surface>.jsonl`` — determinism probe records.
+* ``llm_judge_probe_<model>_<surface>[_<probe-tag>].jsonl`` — determinism
+  probe records; ``--probe-tag`` namespaces independent probe
+  administrations (test-retest noise floor) so they never clobber
+  each other via resume.
 
 Usage:
     cd agent
@@ -826,6 +829,14 @@ def main(argv: list[str] | None = None) -> int:
         "--probe-only", action="store_true",
         help="run the determinism probe instead of the main evaluation",
     )
+    parser.add_argument(
+        "--probe-tag", default=None,
+        help="probe administration tag (--probe-only): namespaces the probe "
+             "JSONL so two independent administrations (test-retest noise "
+             "floor, B test plan §5.2) land in distinct files and never "
+             "clobber each other via resume; takes precedence over --tag "
+             "for the probe artifact",
+    )
     args = parser.parse_args(argv)
 
     env = load_env_file(ENV_PATH)
@@ -875,7 +886,8 @@ def main(argv: list[str] | None = None) -> int:
                 model_cfg=model_cfg, surface=args.surface, caps=caps,
                 probe_cfg=config["determinism_probe"], corpus=corpus,
                 entries=entries, env=env, artifacts_dir=ARTIFACTS_DIR,
-                limit=args.limit, tag=args.tag,
+                limit=args.limit,
+                tag=args.probe_tag if args.probe_tag is not None else args.tag,
             )
         else:
             code = run_surface(

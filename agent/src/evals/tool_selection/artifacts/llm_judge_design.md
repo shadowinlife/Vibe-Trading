@@ -256,3 +256,54 @@ first, or it will repeat the same weaknesses.
   were deleted; the stale stats report is preserved as
   llm_judge_stats_report.stale-old-panel.md. Final probes + matrix rerun
   under schema_version 3.
+
+## B-batch round: gaps closed (2026-08-27)
+
+The four methodology gaps above are closed for the B-batch exposure-surface
+round, exactly as pre-registered in `HARNESS_EVOLUTION_B_TEST_PLAN.md` §5
+(criteria frozen before the experiment; thresholds are never adjusted
+post-hoc). Implementation lives in `b_batch_stats.py` (verdict statistics +
+CLI), `b_batch_report.py` (markdown rendering), and `retest_noise.py`
+(test-retest agreement); the frozen prompt template and strict scoring
+contract are unchanged (template sha256 unchanged).
+
+1. **Power-aligned thresholds (gap 1).** `b_batch_stats` pre-designates the
+   full query set minus the absent set as the primary efficacy surface and
+   pools it across the two panel models; no target-set efficacy criteria
+   exist. The non-inferiority margin is a CLI argument (`--margin`, default
+   0.05 per §5.1) and is never relaxed after the fact.
+2. **Margin-based non-inferiority (gap 2).** C1 passes iff the exact 95% CI
+   lower bound of the pooled paired difference Δ is > −δ. The CI is the
+   exact Clopper-Pearson binomial interval on the discordant-direction
+   proportion q = b/(b+c) (conditional on the observed discordant count),
+   transformed to the Δ scale by Δ = d(2q − 1)/n — the construction is
+   pinned in the `b_batch_stats` module docstring. The exact McNemar p is
+   reported alongside and never enters the verdict.
+3. **Named primary caliber (gap 3).** Strict top-1 is the single primary
+   caliber, enforced structurally: the verdict functions receive strict
+   rows only (`StrictPair`), and the lenient caliber is computed by a
+   separate function and rendered as a clearly-labeled C4 sensitivity
+   section that cannot flip C1. Traces recorded before the lenient field
+   existed suppress the lenient view (never read as all-miss), mirroring
+   `a7a8_stats`.
+4. **Judge test-retest noise floor (gap 4).** `run_llm_judge --probe-only`
+   gained `--probe-tag TAG` so two independent probe administrations land
+   in distinct files (`llm_judge_probe_<model>_<surface>_<probe-tag>.jsonl`)
+   and never clobber each other via resume; `retest_noise.py` compares the
+   two administrations and reports first-pick agreement ρ (overall +
+   per-query). `b_batch_stats --noise-band X` applies the §5.2 rule: pooled
+   |Δtop-1| ≤ X reads "within noise band — uninterpretable, recorded as no
+   effect", a verdict state distinct from PASS/FAIL.
+
+Expected-absent handling (§5.3): `--absent-ids` excludes queries whose
+expected capability is absent from the post surface from the primary
+efficacy set and reports them as a descriptive absent-behavior probe
+(pick distribution only, no accuracy claim), with a structural guard
+counting any top-3 pick of a removed capability (C5). The 15 absent ids
+verified against `queries.yaml` expected names (iwencai_search×1,
+get_macro_series×2, trading_*×8, qveris_*×4 tools) are: D01-007, D11-001,
+D11-002, D16-001…D16-008, D18-001, D18-002, D18-003, D18-005. (Note: this
+differs from the id list sketched in the tasking for this work —
+D01-008/D11-003 expect mootdx/get_sector_info and D18-004 expects the
+qveris *skill*, none of which are gated; the ids above are the ones whose
+expected capability is actually removed from the keyless surface.)
