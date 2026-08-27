@@ -190,9 +190,43 @@ description wording does not move routing accuracy at the SOTA ceiling. **Do
 not re-run A1-A8 description tests.** The real routing lever is reducing the
 number of tools presented per decision (B/C/D batches). The next legitimate
 re-test is an E2-style full-surface comparison AFTER the B batch changes the
-exposure surface — and it must first fix the methodology gaps logged in the
-2026-08-27 review (power-aligned thresholds, a margin-based non-inferiority
-criterion, a named primary caliber, and a judge test-retest noise floor).
+exposure surface — and it must first close the four methodology gaps in the
+next section.
+
+## Known methodology gaps (2026-08-27 review) — close before the next test round
+
+The five-lane review of the A6-A8 runs passed data integrity and
+reproducibility but FAILED the statistical methodology. The A-batch
+conclusions above stand, but the next test round must fix these four gaps
+first, or it will repeat the same weaknesses.
+
+1. **Power-aligned thresholds.** The target-set tests were severely
+   underpowered for the pre-registered +3pp bar: at n=120 (A7 target) power
+   for a true Δ=3pp is only ~25-47% (best case zero-regression), and the
+   minimum detectable effect at 80% power is ~6.5-9pp. Criteria 1+2 jointly
+   only clear for true effects of ~7pp+. Fix before the next round: raise the
+   target N to ~300+ (for 80% power at 3pp), OR raise the Δ threshold to match
+   the achieved MDE, OR pre-designate the full set as the primary efficacy
+   surface with its own threshold.
+
+2. **Margin-based non-inferiority.** "Non-inferior = no significant
+   regression" is statistically invalid (absence of evidence is not evidence
+   of absence). Fix: pre-specify a non-inferiority margin δ (e.g. 3pp on the
+   full set) and pass only when the paired-difference CI lower bound > −δ.
+   (Illustration: A8 full strict Δ=−2.53pp had CI ≈ [−5.3, +0.2]pp, which
+   fails non-inferiority at δ=3pp even though p=0.115 read "non-significant.")
+
+3. **Named primary caliber.** Both strict and lenient were reported, inviting
+   post-hoc selection of the favorable one. Fix: pre-designate strict as the
+   single primary caliber and lenient as a sensitivity-only analysis; the
+   verdict must be driven by the primary caliber.
+
+4. **Judge test-retest noise floor.** No determinism probe was re-run for
+   A7/A8 (E2's was reused by inference). E2 measured qwen3.8-max post-surface
+   first-pick agreement at 0.9167 (REDUCED CONFIDENCE, <0.95), so small deltas
+   cannot be cleanly separated from judge run-to-run noise. Fix: run a
+   test-retest probe (same corpus, same model, two administrations) and report
+   the noise floor; treat any delta within that band as uninterpretable.
 
 ## Panel change log
 
