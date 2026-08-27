@@ -497,3 +497,59 @@
 > 存档（`eval(tool-selection)` 提交），方法学与 DO-NOT-RE-TEST 声明见
 > `agent/src/evals/tool_selection/artifacts/llm_judge_design.md` 与
 > `a6_a8_verdict.md`。
+
+---
+
+## 8. B 批执行结果（2026-08-27，已验证）
+
+> 工作计划 + 测试计划 + 改进阈值：`HARNESS_EVOLUTION_B_TEST_PLAN.md`（预注册判据
+> §5.5，实验前冻结）。4 个方法学缺口已在 `b_batch_stats.py` /
+> `retest_noise.py` / `--probe-tag` 闭合（`eval(tool-selection)` 提交 325732df）。
+> B1-B5 实现于提交 41d805a7。
+
+### 8.1 实施（B1-B5 全部落地）
+
+| 项 | 内容 | 表面变化 |
+|---|---|---|
+| B1 | 5 个 key 门控工具（get_macro_series / iwencai_search / qveris_*×3）改 MCP 注册时门控，复用工具类 `check_available()` 判定源 | MCP keyless 74→69 |
+| B2 | 17 个 trading_* 工具类统一 `_ConnectorGatedTradingTool` 门控基类；`src/trading/availability.py` 五分支并集探针（选择标记 / IBKR 本地配置 / 任一 SDK 凭据完备 / 远程 MCP OAuth / 本地插件），无网络、缓存、fail-toward-visibility；11 个 broker_sdk 连接器各发布无网络 `is_configured()`；MCP 注册尊重同一门控 | MCP 69→61；AGENT keyless 107→90 |
+| B3 | reap_stale_runs / refresh_strategy_evidence 移出 MCP 默认面（agent/CLI 面保留；MCP 可达性待 C1 懒加载恢复） | MCP 61→59 |
+| B4 | list_skills 输出补 category（MCP 工具 + API /skills 路由），90/90 技能 × 9 类 | 输出形状 |
+| B5 | 按 DEC-1 方案甲：list_skills/load_skill 保留（纯 MCP 客户端路径）+ 描述追加宿主优先指引；宿主探测评估成文（不实施注册时自动降权——分发态信号不可靠） | 描述追加 |
+
+锚点机制代码化：`test_readme_counts.py` / 分发 manifest 测试改子进程 keyless
+测量（计数不再依赖宿主机凭据）；6 份 README + 分发 SKILL.md 同步 + 条件工具
+说明行。全量测试 12072 通过（4 个 src/providers/ 既有失败已在 HEAD 复现，与 B 批无关）。
+
+### 8.2 L2 实测（opencode + omo + 本仓库 vibe-trading MCP，CLI 并发）
+
+注册指向核实 = 直接执行本仓库 `agent/mcp_server.py`（非 pip 包）。4 场景：
+- **S1** 无 key：活动会话实测 **59 个工具**，5 个门控工具全部缺席，CPI 研究自动改道 web_search（无幻觉调用）；
+- **S2** 无连接器：AAPL 行情走 `get_market_data`（不误入 trading_quote，K21 结构性成立）；
+- **S3** 有配置（选择标记）：trading_connections/trading_check 恢复可用；
+- **S4** 技能：宿主面优先加载内容，MCP list_skills 仅作目录（category 可见），引用了 B5 宿主优先句。
+- 附带观察（非 B 批引入）：S1 长任务中 read_url 对 JS 重页面连续 30s 超时后 opencode 侧断开 MCP 连接——客户端超时级联，服务端进程未崩溃，与门控无关。
+
+### 8.3 L3 LLM-judge E2 式对比（改进阈值后首轮）
+
+- 语料：`corpus_b_baseline.yaml`（74 工具，B 前冻结）vs `corpus_b_post.yaml`（59 工具）；
+- 面板：qwen3.8-max + kimi-k3（temp 0，frozen template 不变）；规模：2×2×158 = 632 主调用 + 48 探针；
+- 噪声地板（test-retest，8 query×3 repeat×2 施测）：qwen ρ=0.875、kimi ρ=1.000 → 带宽 0.125；
+- 缺席集：15 条实测 ID（D01-007、D11-001/002、D16-001..008、D18-001/002/003/005）移出主效力集。
+
+**对照 §5.5 预注册判据：**
+
+| 判据 | 结果 |
+|---|---|
+| C1 池化 strict 非劣（主门槛） | **PASS**：Δ=+1.05pp（n=286），确切 95% CI [−2.03pp, +3.75pp]，下界 > −5pp |
+| C2 噪声带规则 | \|Δ\|=1.05pp ≤ 12.5pp → **噪声带内不可解释，记为无效应** |
+| C3 分模型（报告项） | qwen −1.40pp（CI [−5.85, +3.75]，FAIL）；kimi +3.50pp（PASS）——无放行权 |
+| C4 lenient 敏感性 | Δ=+0.35pp，结构性不得翻转 C1 |
+| C5 缺席探针 | 0 次"调用已移除工具"事件；回退分布正是预期仲裁（trading_quote/history→get_market_data、macro→web_search、qveris→qveris 技能） |
+| C6 披露税降幅 | **未达**：MCP 面实测 −5,100 tok/轮（−17.9%，wire-format 含 schema；agent 面另 −812 描述 token）< 8k 阈值（该阈值锚定 AUDIT ~10.5k 粗估，实测证伪了"每工具 ~700 token"假设，实际 ~340） |
+
+**裁决（按预注册决策树字面）**：路由侧**证明非劣**（95% 置信无超过 2pp 的损失，
+点估计在判官噪声带内 = 诚实 null）；C6 未达 → **"收益不成立，即使 C1 过亦不上游"**。
+C6 阈值系对被证伪估算的锚定，是否按实测重校准（−5.1k/−17.9% 是否值得上游）
+**留待用户裁决**（先例：A7/A8 阈值变更均需用户拍板）。证据：
+`agent/src/evals/tool_selection/artifacts/b_batch_verdict.md` + 4 黄金 trace + 4 探针记录。
