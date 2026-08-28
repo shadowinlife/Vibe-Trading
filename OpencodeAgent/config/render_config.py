@@ -9,7 +9,12 @@ Single source of truth for the container's opencode config assembly
    opencode ``permission`` deny entries, so disabled VT tools are removed
    from the model's visible tool surface instead of sitting in a file that
    opencode never reads.
-3. Validate the final JSON before writing. Fail loud — ``entrypoint.sh``
+3. Compile ``subagents.json`` (domain subagent manifests) into ``agent.<name>``
+   sections: each subagent gets a deny-all permission gate across EVERY MCP
+   namespace present in the rendered template (not just vibe-trading — a
+   deny scoped to one namespace leaks sibling servers), then an explicit
+   whitelist of allowed VT tools.
+4. Validate the final JSON before writing. Fail loud — ``entrypoint.sh``
    owns the fallback path when rendering fails.
 
 Rationale for trimming the visible tool surface: MCP tool definitions are
@@ -33,10 +38,24 @@ from jinja2 import Template
 CONFIG_DIR = Path(__file__).resolve().parent
 DEFAULT_TEMPLATE = CONFIG_DIR / "opencode.json.tmpl"
 DEFAULT_MANIFEST = CONFIG_DIR / "vibe-trading-tools.json"
+DEFAULT_SUBAGENTS = CONFIG_DIR / "subagents.json"
 
 #: opencode namespaces MCP tools as ``<server>_<tool>``; the vibe-trading
 #: server keeps its hyphen (see the rendered tool names in any session).
 VT_SERVER = "vibe-trading"
+
+#: VT infrastructure tools every domain subagent needs so it can load its
+#: whitelisted skills at runtime (the skill whitelist itself is enforced at
+#: the prompt layer, matching the D-batch L2-validated configuration).
+SKILL_LOADER_TOOLS = ("list_skills", "load_skill")
+
+#: MCP namespaces injected by the oh-my-openagent plugin at runtime (see
+#: createBuiltinMcps in the plugin bundle). They never appear in the
+#: template's ``mcp`` section, so namespace derivation from the template
+#: alone would leave them reachable from a subagent — the exact
+#: cross-namespace leak the D-batch L2 runs exposed with
+#: ``websearch_web_search_exa``. Keep in sync when the plugin is upgraded.
+OMO_BUILTIN_NAMESPACES = ("websearch", "context7", "grep_app", "lsp")
 
 
 def load_manifest(path: Path) -> dict:
@@ -80,6 +99,88 @@ def build_permission_denies(manifest: dict) -> dict:
     return {f"{VT_SERVER}_{entry}": "deny" for entry in manifest.get("disabled", [])}
 
 
+def load_subagents(path: Path) -> list[dict]:
+    """Load and validate the domain subagent manifest.
+
+    Args:
+        path: Path to ``subagents.json``.
+
+    Returns:
+        Validated list of subagent entries, each with ``name``,
+        ``description``, ``prompt`` and ``tools``.
+
+    Raises:
+        ValueError: If the structure or any entry field is invalid.
+    """
+    with open(path, encoding="utf-8") as f:
+        manifest = json.load(f)
+    subagents = manifest.get("subagents") if isinstance(manifest, dict) else None
+    if not isinstance(subagents, list) or not subagents:
+        raise ValueError("subagents manifest must carry a non-empty 'subagents' list")
+    for entry in subagents:
+        if not isinstance(entry, dict):
+            raise ValueError("each subagent entry must be a JSON object")
+        if not isinstance(entry.get("name"), str) or not entry["name"]:
+            raise ValueError("subagent 'name' must be a non-empty string")
+        if not isinstance(entry.get("description"), str) or not entry["description"]:
+            raise ValueError(f"subagent {entry.get('name')!r}: 'description' must be a non-empty string")
+        prompt = entry.get("prompt")
+        if not isinstance(prompt, str) or not prompt.startswith("{file:"):
+            raise ValueError(f"subagent {entry['name']!r}: 'prompt' must be a {{file:...}} reference")
+        tools = entry.get("tools")
+        if not isinstance(tools, list) or not all(isinstance(t, str) and t for t in tools):
+            raise ValueError(f"subagent {entry['name']!r}: 'tools' must be a list of non-empty strings")
+    return subagents
+
+
+def mcp_namespaces(config: dict) -> list[str]:
+    """Derive opencode tool namespaces from the rendered MCP server map.
+
+    opencode namespaces MCP tools as ``<server>_<tool>`` with spaces in the
+    server name folded to underscores (``search mcp`` → ``search_mcp``);
+    hyphens are kept (``vibe-trading`` → ``vibe-trading``).
+
+    Args:
+        config: Rendered template config containing an ``mcp`` object.
+
+    Returns:
+        One namespace per configured MCP server.
+    """
+    mcp = config.get("mcp", {})
+    return [server.replace(" ", "_") for server in mcp]
+
+
+def build_agent_entries(subagents: list[dict], namespaces: list[str]) -> dict:
+    """Compile subagent manifests into opencode ``agent.<name>`` sections.
+
+    Each subagent is permission-gated deny-first: a wildcard deny for EVERY
+    MCP namespace in the deployment — the template-derived ones plus the
+    oh-my-openagent plugin builtins — followed by the whitelist allows.
+    opencode permission evaluation is last-match-wins, so the allow entries
+    must come after the wildcard denies.
+
+    Args:
+        subagents: Validated entries from ``load_subagents``.
+        namespaces: MCP namespaces from ``mcp_namespaces``.
+
+    Returns:
+        Mapping of subagent name to its opencode agent section.
+    """
+    agents = {}
+    denied = list(namespaces) + [ns for ns in OMO_BUILTIN_NAMESPACES if ns not in namespaces]
+    for entry in subagents:
+        permission = {f"{ns}_*": "deny" for ns in denied}
+        for tool in list(entry["tools"]) + list(SKILL_LOADER_TOOLS):
+            permission[f"{VT_SERVER}_{tool}"] = "allow"
+        agents[entry["name"]] = {
+            "description": entry["description"],
+            "mode": "subagent",
+            "prompt": entry["prompt"],
+            "permission": permission,
+        }
+    return agents
+
+
 def build_context() -> dict:
     """Collect template variables from the environment with defaults.
 
@@ -97,12 +198,19 @@ def build_context() -> dict:
     }
 
 
-def render(template_path: Path, manifest_path: Path) -> str:
+def render(
+    template_path: Path,
+    manifest_path: Path,
+    subagents_path: Path | None = DEFAULT_SUBAGENTS,
+) -> str:
     """Render the final opencode.json content.
 
     Args:
         template_path: Path to ``opencode.json.tmpl``.
         manifest_path: Path to ``vibe-trading-tools.json``.
+        subagents_path: Path to ``subagents.json``; defaults to the file
+            next to ``render_config.py``. Pass ``None`` to skip subagent
+            rendering.
 
     Returns:
         Serialized JSON document (valid JSON, trailing newline).
@@ -122,6 +230,11 @@ def render(template_path: Path, manifest_path: Path) -> str:
     if not isinstance(permission, dict):
         raise ValueError("opencode.json.tmpl 'permission' must be a JSON object")
     permission.update(build_permission_denies(load_manifest(manifest_path)))
+    if subagents_path is not None:
+        agent = config.setdefault("agent", {})
+        if not isinstance(agent, dict):
+            raise ValueError("opencode.json.tmpl 'agent' must be a JSON object")
+        agent.update(build_agent_entries(load_subagents(subagents_path), mcp_namespaces(config)))
     return json.dumps(config, ensure_ascii=False, indent=2) + "\n"
 
 
@@ -136,11 +249,12 @@ def main() -> int:
     )
     parser.add_argument("--template", default=str(DEFAULT_TEMPLATE))
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
+    parser.add_argument("--subagents", default=str(DEFAULT_SUBAGENTS))
     parser.add_argument("--target", required=True)
     args = parser.parse_args()
 
     try:
-        rendered = render(Path(args.template), Path(args.manifest))
+        rendered = render(Path(args.template), Path(args.manifest), Path(args.subagents))
         json.loads(rendered)  # final validation gate
     except Exception as exc:  # fail loud; entrypoint.sh owns the fallback
         print(f"ERROR: {exc}", file=sys.stderr)
