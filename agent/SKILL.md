@@ -53,7 +53,7 @@ Add to your agent's MCP config:
 
 ### API Key Requirements
 
-Core research MCP tools work with zero API keys for HK/US/Canada/crypto. After `pip install`, backtesting, market data, factor analysis, options pricing, chart patterns, web search, document reading, trade journal analysis, shadow-account extraction/backtest/report, the Alpha Zoo (462 pre-built alphas), and all 90 skills are ready to use. IBKR tools require a local TWS / IB Gateway session; `run_swarm` requires an LLM key.
+Core research MCP tools work with zero API keys for HK/US/Canada/crypto. After `pip install`, backtesting, market data, factor analysis, options pricing, chart patterns, web search, document reading, trade journal analysis, shadow-account extraction/backtest/report, the Alpha Zoo (462 pre-built alphas), and all 91 skills are ready to use. IBKR tools require a local TWS / IB Gateway session; `run_swarm` requires an LLM key.
 
 | Feature | Key needed | When |
 |---------|-----------|------|
@@ -120,7 +120,7 @@ One-line cross-sectional IC / IR / alive-reversed-dead categorisation across fiv
 
 Each alpha ships with `__alpha_meta__` (formula LaTeX + theme + universe + warmup + columns required), guarded by an AST purity gate + 300-row lookahead sentinel test. Use the `vibe-trading alpha {list,show,bench,compare,export-manifest}` CLI, the `/alpha/*` REST routes (browser at `/alpha-zoo`), or compose multi-factor signals via `ZooSignalEngine.from_zoo(...)`.
 
-### Finance Skills (90)
+### Finance Skills (91)
 Comprehensive knowledge base covering:
 - Technical analysis (candlestick, Elliott wave, Ichimoku, SMC, harmonic, chanlun)
 - Quantitative methods (factor research, ML strategy, pair trading, multi-factor)
@@ -137,7 +137,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 
 | Tool | Description | API Key |
 |------|-------------|---------|
-| `list_skills` | List all 90 finance skills | None |
+| `list_skills` | List all 91 finance skills | None |
 | `load_skill` | Load full skill documentation | None |
 | `start_research_goal` | Create an auditable research goal | None |
 | `get_research_goal` | Read the current research goal | None |
@@ -150,7 +150,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `analyze_options` | Black-Scholes price + Greeks | None |
 | `analyze_options_payoff` | Multi-leg expiry payoff + spot/IV scenarios | None |
 | `pattern_recognition` | Detect chart patterns (H&S, double top, etc.) | None |
-| `get_market_data` | Fetch OHLCV data (auto-detect + ordered fallback across 25 sources) | None* |
+| `get_market_data` | Fetch OHLCV data (auto-detect + ordered fallback across 26 sources) | None* |
 | `get_fund_flow` | Capital fund-flow (main/retail net inflow) | None* |
 | `get_dragon_tiger` | Dragon-tiger list (龙虎榜) top buyer/seller seats | None* |
 | `get_northbound_flow` | Northbound (Stock Connect) net flow | None* |
@@ -223,7 +223,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 pip install vibe-trading-ai
 ```
 
-That's it — no API keys needed for HK/US/Canada/crypto markets. Start using `backtest`, `get_market_data`, `analyze_options`, `analyze_trade_journal`, `extract_shadow_strategy`, `web_search`, the **Alpha Zoo** (`vibe-trading alpha bench --zoo gtja191 --universe csi300 --period 2018-2025`), and all 90 skills immediately.
+That's it — no API keys needed for HK/US/Canada/crypto markets. Start using `backtest`, `get_market_data`, `analyze_options`, `analyze_trade_journal`, `extract_shadow_strategy`, `web_search`, the **Alpha Zoo** (`vibe-trading alpha bench --zoo gtja191 --universe csi300 --period 2018-2025`), and all 91 skills immediately.
 
 ## Loading Tools from External MCP Servers
 
