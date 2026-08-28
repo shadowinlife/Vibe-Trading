@@ -93,7 +93,7 @@ set -a && source /opt/my-vibe-trading/.env && set +a
     --target   /opt/my-vibe-trading/.opencode/opencode.json
 ```
 
-渲染动作：Jinja2 注入 CH 连接参数 → 合并工具治理清单为 permission deny（`trading_*` 不下发模型）→ JSON 校验后原子写入。
+渲染动作：Jinja2 注入 CH 连接参数 → 合并工具治理清单为 permission deny（`trading_*` 不下发模型）→ 由 `subagents.json` 生成领域子代理节（`agent.quant-agent` / `agent.web-docs-agent`：deny 全 MCP 命名空间 + 白名单 allow）→ JSON 校验后原子写入，并把 `prompts/` 复制到渲染产物旁（opencode 的 `{file:}` 只接受配置文件目录内的引用，探针实测于 1.18.23）。
 
 ### repo → 宿主机适配清单（重新部署时必须重做）
 
@@ -101,6 +101,7 @@ set -a && source /opt/my-vibe-trading/.env && set +a
 |------|---------|
 | `AGENTS.md` | `/opt/venv` → legonanobot conda；`/workspace` → `/opt/my-vibe-trading`；`/opt/vibe-trading` → `repo/`；容器/compose 措辞 → systemd/宿主机目录 |
 | `config/opencode.json.tmpl` | `/opt/venv/bin/*` → `/opt/miniconda3/envs/legonanobot/bin/*`；`/opt/vibe-trading/agent/mcp_server.py` → `repo/agent/mcp_server.py`；`VT_MEMORY_BASE_DIR` `/workspace/.vt-memory` → `/opt/my-vibe-trading/.vt-memory` |
+| `config/subagents.json` + `config/prompts/` | 原样同步到 `.opencode/`（prompt 引用为配置目录相对路径，渲染器自动落位，无需改路径） |
 | `cron_jobs/trigger.sh`、`cron_jobs/manage.py` | `OPENCODE_API` 默认端口 `4096` → `4097`（repo 内 4096 是容器内端口，勿改 repo） |
 | `OpencodeAgent/AGENTS.md`（repo 侧） | 计数口径随 mymain 演进同步（当前 MCP OFF=77 / ON=82、技能 91） |
 

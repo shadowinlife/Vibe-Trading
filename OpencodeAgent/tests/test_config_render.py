@@ -155,7 +155,7 @@ class TestDomainSubagents:
             assert name in agents, name
             assert agents[name]["mode"] == "subagent"
             assert agents[name]["description"].strip()
-            assert agents[name]["prompt"].startswith("{file:/workspace/.opencode/prompts/")
+            assert agents[name]["prompt"].startswith("{file:./prompts/")
 
     def test_deny_gate_covers_every_mcp_namespace(self):
         config = _rendered()
@@ -204,8 +204,23 @@ class TestDomainSubagents:
     def test_prompt_files_exist_in_repo(self):
         for name in self.EXPECTED:
             prompt_ref = _rendered()["agent"][name]["prompt"]
-            filename = prompt_ref.removeprefix("{file:").removesuffix("}").rsplit("/", 1)[-1]
-            assert (CONFIG_DIR / "prompts" / filename).is_file(), filename
+            rel = prompt_ref.removeprefix("{file:").removesuffix("}")
+            assert (CONFIG_DIR / rel).resolve().is_file(), prompt_ref
+
+    def test_prompts_materialized_next_to_rendered_config(self, tmp_path):
+        # opencode's {file:} loader only accepts references inside the
+        # rendered config's directory subtree (probed on 1.18.23: ../ and
+        # outside-absolute paths are silently dropped), so rendering must
+        # colocate the prompt files with the output.
+        target = tmp_path / "rendered" / "opencode.json"
+        subagents = render_config.load_subagents(SUBAGENTS_PATH)
+        written = render_config.materialize_prompts(subagents, CONFIG_DIR, target)
+        assert len(written) == len(self.EXPECTED)
+        for path in written:
+            assert path.parent == target.parent / "prompts"
+            assert path.read_text(encoding="utf-8") == (
+                CONFIG_DIR / "prompts" / path.name
+            ).read_text(encoding="utf-8")
 
     def test_invalid_subagents_manifest_fails_loud(self, tmp_path):
         bad = tmp_path / "bad-subagents.json"
