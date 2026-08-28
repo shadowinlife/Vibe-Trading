@@ -14,6 +14,7 @@ This project packages the OpenCode Web Server research environment into a reprod
 - **OpenCode CLI 1.18.5** + OMO (oh-my-openagent) plugin
 - **nano-search-mcp** — local MCP server for Chinese financial data (新浪财经, 百炼 WebSearch)
 - **5 OpenCode skills**: data-warehouse (ClickHouse heavy queries), html-report (ECharts), periodic-execution (cron), escape-top-microstructure (top-detection signals), research-scenarios (scenario playbooks A–F, loaded on demand)
+- **2 domain subagents**: `quant-agent` (strategy research + backtesting, 11-tool whitelist) and `web-docs-agent` (web/document reading, 3-tool whitelist) — the orchestrator delegates via the AGENTS.md routing policy; each subagent sees only its whitelist (every other MCP namespace is permission-denied), cutting its per-decision tool surface by ~86%
 - **Full AGENTS.md** with behavior instructions for 6 scenarios (A through F), a 4-class question-handling protocol and anti-hallucination discipline
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
 - **Cron job infrastructure** with CLI management and DingTalk/email notification
@@ -62,11 +63,13 @@ OpencodeAgent/
 │
 ├── config/                     # OpenCode configuration
 │   ├── opencode.json.tmpl      # Jinja2 template (rendered at runtime with ClickHouse creds)
-│   ├── render_config.py        # Config renderer: template + tool governance manifest → opencode.json
+│   ├── render_config.py        # Config renderer: template + manifests → opencode.json (+ prompts colocated)
 │   ├── oh-my-openagent.json    # Agent/category model assignments (uniform qwen3.8-max)
 │   ├── tui.json                # TUI plugin configuration
 │   ├── package.json            # OpenCode plugin dependencies
-│   └── vibe-trading-tools.json # Tool governance manifest (disabled VT tools → permission denies)
+│   ├── vibe-trading-tools.json # Tool governance manifest (disabled VT tools → permission denies)
+│   ├── subagents.json          # Domain subagent manifest (quant-agent / web-docs-agent whitelists)
+│   └── prompts/                # Subagent system prompts (materialized next to the rendered config)
 │
 ├── nano-search-mcp/            # Local MCP server for Chinese financial search
 │   ├── pyproject.toml
