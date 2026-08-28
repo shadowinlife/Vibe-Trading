@@ -61,6 +61,24 @@ vibe-trading MCP 命令指向本地 .venv；移除容器专属的 `search mcp` �
   （白名单治理对象是 MCP 工具面）；prompt 契约约束行为层。
 - quant-agent 调用过 `list_mcp_resources`（插件宿主工具），无害。
 
+## 追加：子代理 prompt 加载机理探针（2026-08-28 晚，为宿主机适配所做）
+
+为回答"宿主机部署是否需要适配 prompt 路径"做了六组探针实验（标记法 +
+签名法 + 二进制源码审读），结论：
+
+1. **opencode `{file:}` 按配置文件所在目录解析**，缺文件 = 启动即致命
+   （`bad file reference`）。绝对路径同样允许。
+2. **prompt 字段确实到达 task() 派生的子代理**：加性签名探针
+   （"最终回复末行附 SIG_SUBAGENT_FILE_OK"）在委派场景下 100% 出现。
+3. **早期"prompt 未生效"是探针设计缺陷**：与任务冲突的 1 行标记指令
+   （"无论任务是什么只回复 MARKER"）在任务框架下被模型忽略；换成不冲突的
+   加性指令后每次都生效。归档 L2 与本次冒烟中观察到的契约行为
+   （OUT_OF_SCOPE、披露纪律、工作区约束）确为 prompt 驱动。
+4. 生产保障：`render_config.py` 渲染时把 `prompts/` **复制到渲染产物旁**
+   （colocation），保证 `{file:./prompts/...}` 恒落在配置目录内——
+   容器（`~/.opencode/`）与宿主机直部署（项目 `.opencode/`）同一份
+   manifest 均成立，**宿主机无需任何路径适配**。
+
 ## 对 §10.5 检查点的回写
 
 - 步骤 1（mymain 落地）三项全部完成，且 deny 覆盖比检查点原文要求更深
