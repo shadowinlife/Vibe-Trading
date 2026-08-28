@@ -178,3 +178,22 @@ Measured-data judgment:
 **Adjudicated outcome: 收益成立 — C1 PASS + C6 recalibrated to measured
 reality → B 批放行，转为上游 PR 候选**（与 E1/E2 评测基建旗舰 PR 并列，
 PR 拆分遵循 HARNESS_EVOLUTION_P0_PLAN.md §8.3 约定）。
+
+## Final disposition (2026-08-27): upstream contribution deferred
+
+Following the benefit adjudication above, the user made the final disposition
+decision on 2026-08-27: **暂时不对上游贡献 (no upstream contribution for
+now)**. The B batch stays local together with the rest of the branch
+(including the E1/E2 eval-infrastructure flagship PR); the "转为上游 PR 候选"
+status recorded above is deferred. The benefit finding itself (C1 PASS + C6
+recalibration → 收益成立) stands unchanged — this is a disposition decision,
+not an overturning of the adjudication. Re-consideration timing is a future
+user decision.
+
+A third-party adversarial review preceded the disposition (2026-08-27,
+isolated process + differentiated model glm-5.2, 5 parallel lanes):
+**all lanes PASS, zero blocking issues**. The single real finding —
+`agent/tests/test_trading_availability.py` (14 probe tests) missed from
+commit 41d805a7 — was verified green and committed as 5d22be39. See
+HARNESS_EVOLUTION_ROADMAP.md §8.4, HARNESS_EVOLUTION_P0_PLAN.md §8.2/§8.3,
+and the local review brief B_BATCH_REVIEW_BRIEF.md §10 (git-excluded).

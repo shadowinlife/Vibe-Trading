@@ -296,6 +296,12 @@ python -m src.evals.tool_selection.run_eval --report artifacts/baseline_report.m
 | A2 | ✅ 普遍 | **本地保留（暂缓上游）** | 撞名客观存在但 E2 未测得收益，且更名属 breaking——无测量收益不做 breaking 变更 |
 | F1 | 🟡 可选 | **本地保留，暂缓** | 脚本自包含有上游价值，产物服务本地治理；待上游有兴趣再提 |
 | A5 | ❌ 本地 | **本地保留** | 决策依赖本仓库 `.opencode` symlink 形态，非普遍 |
+| B1-B5 | ✅ 普遍 | **本地保留（暂缓上游）** | 收益成立（确定性披露税免税 −5,100 tok/轮 −17.9%、路由成本实测为零、对抗评审 5 通道 PASS 零阻塞）；2026-08-27 用户决定：暂缓上游贡献（ROADMAP §8.4） |
+
+> **2026-08-27 用户处置：暂缓上游贡献。** 本表中所有裁为"PR 候选"的项
+> （E1+E2 旗舰、A6 注记）与 B1-B5（上表补行）一律暂缓提交；裁决结论本身
+> （普遍适用性、收益成立）不变——这是处置决定，不推翻裁决。PR 拆分方案
+> 同步见 §8.3 第 5 条。
 
 ### 8.3 PR 拆分方案（2026-08-26 修订，fork → origin，关联 #1218）
 
@@ -305,7 +311,12 @@ python -m src.evals.tool_selection.run_eval --report artifacts/baseline_report.m
 2. **PR-2** `docs(skills): reachability notes`：A6 技能文档注记部分（小 PR）；
 3. **暂缓**：A1/A3/A4/A2 描述类改动留本地——待 B 批暴露面工程后复测
    （PAPERS §F：呈现数量是主导变量，描述治理的收益可能在裁剪后的表面上才显形）；
-4. 已在本分支的 43b3f485（A7④ trading_* 提示）同样暂缓——E2 未覆盖其收益证明。
+4. 已在本分支的 43b3f485（A7④ trading_* 提示）同样暂缓——E2 未覆盖其收益证明；
+5. **2026-08-27 更新：暂缓上游贡献（用户决定）**——PR-1（旗舰）、PR-2 与
+   B 批 PR 全部暂不提交，分支 `fix/trading-tool-routing-hints` 的工作一律
+   留本地。未来若重启上游：以 B 批暴露门控为主打（确定性收益 + 对抗评审
+   5 通道 PASS），A 批路由提示降级为"未证实、供进一步评测"；详见本地文档
+   `B_BATCH_REVIEW_BRIEF.md` §10（git-excluded）。
 
 提交规范：DCO `Signed-off-by`（CONTRIBUTING.md 强制）+ 关联 #1218。
 （2026-08-26 修正：CONTRIBUTING.md §Attribution 明文禁止 `Co-Authored-By:` 与
