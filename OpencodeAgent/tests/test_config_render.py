@@ -7,6 +7,8 @@ inlined in ``entrypoint.sh``:
 - ``vibe-trading-tools.json`` (tool governance manifest) entries compile
   into opencode ``permission`` deny entries, so disabled VT tools are
   removed from the model's visible tool surface.
+- ``subagents.json`` (domain subagent manifest) entries compile into
+  ``agent.<name>`` sections gated deny-first across every MCP namespace.
 - Per-agent tool scoping keeps finance MCP tools away from agents that do
   not need them (explore / multimodal-looker).
 - ``oh-my-openagent.json`` model tiering invariants (cheap agents stay
@@ -28,6 +30,7 @@ OPENCODE_AGENT_DIR = Path(__file__).resolve().parents[1]
 CONFIG_DIR = OPENCODE_AGENT_DIR / "config"
 TEMPLATE_PATH = CONFIG_DIR / "opencode.json.tmpl"
 MANIFEST_PATH = CONFIG_DIR / "vibe-trading-tools.json"
+SUBAGENTS_PATH = CONFIG_DIR / "subagents.json"
 AGENTS_MD_PATH = OPENCODE_AGENT_DIR / "AGENTS.md"
 SCENARIOS_SKILL_PATH = OPENCODE_AGENT_DIR / "skills" / "research-scenarios" / "SKILL.md"
 
@@ -126,6 +129,94 @@ class TestPerAgentToolScoping:
         permission = _rendered()["agent"][agent_name]["permission"]
         assert permission["vibe-trading_*"] == "deny"
         assert permission["search_mcp_*"] == "deny"
+
+
+class TestDomainSubagents:
+    """Domain subagents (D-batch pilots) get a small whitelisted tool surface.
+
+    The routing descriptions and whitelists are the L2-validated D-batch v2
+    artifacts; the deny gate must cover every MCP namespace in the
+    deployment, not just vibe-trading (cross-namespace leakage was a live
+    L2 finding).
+    """
+
+    EXPECTED = {
+        "quant-agent": {
+            "alpha_zoo", "alpha_bench", "factor_analysis", "list_strategies",
+            "query_strategies", "get_strategy_evidence", "backtest",
+            "write_file", "read_file", "pattern_recognition", "quantlib_call",
+        },
+        "web-docs-agent": {"web_search", "read_url", "read_document"},
+    }
+
+    def test_subagent_sections_rendered(self):
+        agents = _rendered()["agent"]
+        for name in self.EXPECTED:
+            assert name in agents, name
+            assert agents[name]["mode"] == "subagent"
+            assert agents[name]["description"].strip()
+            assert agents[name]["prompt"].startswith("{file:/workspace/.opencode/prompts/")
+
+    def test_deny_gate_covers_every_mcp_namespace(self):
+        config = _rendered()
+        namespaces = [server.replace(" ", "_") for server in config["mcp"]]
+        assert namespaces, "template must configure at least one MCP server"
+        for name in self.EXPECTED:
+            permission = config["agent"][name]["permission"]
+            for ns in namespaces:
+                assert permission[f"{ns}_*"] == "deny", f"{name}: {ns}_*"
+
+    def test_deny_gate_covers_omo_builtin_namespaces(self):
+        # The oh-my-openagent plugin injects websearch/context7/grep_app/lsp
+        # MCP servers at runtime; they never appear in the template, and the
+        # D-batch L2 runs caught a subagent escaping its whitelist through
+        # websearch_web_search_exa. The deny gate must cover them.
+        config = _rendered()
+        for name in self.EXPECTED:
+            permission = config["agent"][name]["permission"]
+            for ns in render_config.OMO_BUILTIN_NAMESPACES:
+                assert permission[f"{ns}_*"] == "deny", f"{name}: {ns}_*"
+
+    def test_whitelists_match_manifest(self):
+        config = _rendered()
+        manifest = {s["name"]: s for s in render_config.load_subagents(SUBAGENTS_PATH)}
+        for name, tools in self.EXPECTED.items():
+            permission = config["agent"][name]["permission"]
+            allowed = {
+                key[len("vibe-trading_"):]
+                for key, value in permission.items()
+                if value == "allow"
+            }
+            assert allowed == tools | {"list_skills", "load_skill"}, name
+            assert set(manifest[name]["tools"]) == tools, name
+
+    def test_deny_entries_precede_allow_entries(self):
+        # opencode permission evaluation is last-match-wins; an allow listed
+        # before the wildcard deny would be silently dead.
+        config = _rendered()
+        for name in self.EXPECTED:
+            keys = list(config["agent"][name]["permission"].keys())
+            deny_at = [i for i, k in enumerate(keys) if k.endswith("_*")]
+            allow_at = [i for i, k in enumerate(keys) if not k.endswith("_*")]
+            assert deny_at and allow_at, name
+            assert max(deny_at) < min(allow_at), name
+
+    def test_prompt_files_exist_in_repo(self):
+        for name in self.EXPECTED:
+            prompt_ref = _rendered()["agent"][name]["prompt"]
+            filename = prompt_ref.removeprefix("{file:").removesuffix("}").rsplit("/", 1)[-1]
+            assert (CONFIG_DIR / "prompts" / filename).is_file(), filename
+
+    def test_invalid_subagents_manifest_fails_loud(self, tmp_path):
+        bad = tmp_path / "bad-subagents.json"
+        bad.write_text(json.dumps({"subagents": [{"name": "x"}]}), encoding="utf-8")
+        with pytest.raises(ValueError):
+            render_config.render(TEMPLATE_PATH, MANIFEST_PATH, bad)
+
+    def test_template_agents_not_clobbered(self):
+        agents = _rendered()["agent"]
+        assert agents["explore"]["permission"]["vibe-trading_*"] == "deny"
+        assert agents["multimodal-looker"]["permission"]["vibe-trading_*"] == "deny"
 
 
 class TestOmoModelConfig:
