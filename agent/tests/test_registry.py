@@ -234,8 +234,14 @@ class TestFallbackChains:
 
     def test_chains_ordered_by_ip_ban_risk(self) -> None:
         """Equity chains lead with throttle-tolerant public sources and trail
-        with key-gated REST fallbacks, in the exact reviewed order."""
+        with key-gated REST fallbacks, in the exact reviewed order.
+
+        mymain divergence (F5): the a_share chain leads with the local
+        ClickHouse warehouse (T-1 full history, no IP exposure); the reviewed
+        network order follows it unchanged.
+        """
         assert FALLBACK_CHAINS["a_share"] == [
+            "clickhouse",
             "tencent",
             "mootdx",
             "eastmoney",
