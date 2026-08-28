@@ -1,9 +1,9 @@
 # 环境
 1. Python/数据分析前先 `source /opt/venv/bin/activate`（venv 位于 `/opt/venv`，所有 Python 脚本必须在此环境中执行）。
 2. 容器运行 opencode serve（端口 :4096），agent 工作目录为 `/workspace`。
-3. **Vibe-Trading 来源**: 镜像使用 `shadowinlife/Vibe-Trading` 的 `mymain` 分支（@ 57bf9563，非 PyPI 版本），以 editable install 方式安装于 `/opt/vibe-trading`。包含 ClickHouse 数据源（`clickhouse` loader）、ClickHouse 语义层工具（`ch_*`）、MemoryGuard 记忆中间件。
-4. **VT MCP 工具规模**: 默认 **73 个**；`VT_MEMORY_MCP_TOOLS=1` 时为 **78 个**（多出的 5 个为 `memory_save` / `memory_recall` / `memory_reinforce` / `memory_reflect` / `memory_status`）。镜像已预置记忆工具开关。
-5. **VT 内置技能**: 90 个金融技能（`vibe-trading_list_skills` 查看，`vibe-trading_load_skill` 加载）；**Swarm 团队预设**: 30 个（`vibe-trading_list_swarm_presets` 查看）。
+3. **Vibe-Trading 来源**: 镜像使用 `shadowinlife/Vibe-Trading` 的 `mymain` 分支（@ fc41c949，非 PyPI 版本），以 editable install 方式安装于 `/opt/vibe-trading`。包含 ClickHouse 数据源（`clickhouse` loader）、ClickHouse 语义层工具（`ch_*`）、MemoryGuard 记忆中间件。
+4. **VT MCP 工具规模**: 默认 **77 个**；`VT_MEMORY_MCP_TOOLS=1` 时为 **82 个**（多出的 5 个为 `memory_save` / `memory_recall` / `memory_reinforce` / `memory_reflect` / `memory_status`）。镜像已预置记忆工具开关。
+5. **VT 内置技能**: 91 个金融技能（`vibe-trading_list_skills` 查看，`vibe-trading_load_skill` 加载）；**Swarm 团队预设**: 30 个（`vibe-trading_list_swarm_presets` 查看）。
 6. **记忆存储**: `/workspace/.vt-memory/`（由 `VT_MEMORY_BASE_DIR` 指定），通过 `docker-compose.yml` 挂载 `volumes/vt-memory` 持久化，容器重启不丢失。
 7. 可复用 ClickHouse SQL 查询放 `./sql/`，视图定义文档放 `./docs/views/`。
 8. 临时脚本、中间文件、下载材料放 `./tmp/<session-id>_*`。
@@ -256,7 +256,7 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
 | 宏观/地缘/商品 | `macro-analysis` / `geopolitical-risk` / `commodity-analysis` (VT) | 宏观、战争、制裁、厄尔尼诺、油价、金价 |
 | SWARM 团队 | `vibe-trading_run_swarm`（30 预设） | investment_committee、quant_strategy_desk、risk_committee、sector_rotation_team |
 | 跨市场数据 | `vibe-trading_get_market_data` | clickhouse、tencent、akshare、yfinance、tushare、okx、auto |
-| Finance Skills | `vibe-trading_list_skills/load_skill`（90 个） | factor、strategy、risk、technical |
+| Finance Skills | `vibe-trading_list_skills/load_skill`（91 个） | factor、strategy、risk、technical |
 | **选股策略** | **fundamental-filter + multi-factor + 场景 E** | **选股、筛选、选美、资金流选股、多因子选股** |
 | 技术分析 | `technical-basic` / `candlestick` / `ichimoku` / `elliott-wave` / `harmonic` / `smc` / `chanlun` (VT) | 技术面、K线形态、缠论 |
 | 风险管理 | `risk-analysis` (VT) | VaR、CVaR、最大回撤、压力测试 |
