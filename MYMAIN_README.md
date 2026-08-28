@@ -25,9 +25,43 @@
 
 ---
 
-### release/mymain · 2026-08-17（第二次）— 基线：上游 `0713336c` + OpencodeAgent（F7）
+### release/mymain · 2026-08-28 — 基线：上游 `80ffdda4`
 
 - **发布 commit**：`release/mymain` tag 所指 commit（即本条发布记录 commit）
+- **上游基线**：`80ffdda4`（v0.1.14 后第 117 commit；本轮对齐覆盖 `1907e47d` 之后的全部上游 commit）
+- **差异总量**：282 个文件、+49,714/−140 行（复核命令 `git diff origin/main release/mymain --shortstat`）
+- **对齐方式**：**rebase**（22 个本地 commit 重放；回退点 `backup/mymain-2026-08-28`）
+
+#### 核心差异（F1–F7 不变，均未被上游取代）
+
+详见 `MYMAIN_DIVERGENCE.md` §2.1。本轮取代核查结论：上游 117 commit（live 交易安全批次、`MARKET_DATA_ORDER_*` 数据源优先级覆盖、Portfolio 只读面板、Binance USD-M 对账、swarm 取消/重试等）与本地七项能力**均无重叠**；其中数据源优先级覆盖机制与 F5 **互补**——其 override 校验基于本地默认链快照，A 股 clickhouse-first 顺序自动成为被重排的基准。
+
+#### 核心迭代（本次发布完成的工作）
+
+1. **rebase 对齐**：4 处真冲突（F2/Phase 2 的六 README + SKILL.md + mcp_server.py 计数区；F5 的 SKILL.md 表述；Phase 1 的 market_data.py `_emit` 重构叠加），按「上游内容 + 本地增量」逐一解决。
+2. **merge 解法回收**：上轮 merge commit 承载的解法（clickhouse-first 测试 pin、README_es ch_* 清单、MCP 计数）经 reconciliation commit 重新落地；新增上游测试（`test_source_order_overrides.py` / `test_settings_api.py` / `test_market_data.py` 的 override 系列）适配本地链全排列约束。
+3. **计数基线**：MCP **OFF=77 / ON=82**、skills **91**、数据源 **26**（SKILL.md 口径）、引擎 **10**、agent 工具 **111**。
+4. **文档同步**：`MYMAIN_DIVERGENCE.md` 更新至新基线（含本轮迭代笔记）；回填上一条记录的发布 commit SHA。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件 | 309 passed / 3 skipped |
+| ClickHouse 套件（F5 + 语义层，10 文件） | 137 passed / 11 skipped |
+| ClickHouse schema 门禁 | 53 passed / 1 skipped + comments gate exit 0 |
+| README / SKILL 计数门禁（六 README 集合级校验） | 70 passed |
+| env-var AST 门禁 | exit 0 |
+| market_data / registry / source_order / settings_api | 132 passed |
+| OpencodeAgent config render | 24 passed |
+| MCP 工具计数 | OFF=77 / ON=82 |
+| 提交规范 | 单一作者 shadowinlife + DCO 签名 + 无 AI 归属行 |
+
+---
+
+### release/mymain · 2026-08-17（第二次）— 基线：上游 `0713336c` + OpencodeAgent（F7）
+
+- **发布 commit**：`8b89d1b3`（rebase 前 SHA；2026-08-28 对齐后该 commit 已被重写）
 - **上游基线**：`0713336c`（与上次发布相同；本次为本地 harness 层引入，无上游变更）
 - **差异总量**：266 个文件、+47,520/−105 行（复核命令 `git diff 0713336c release/mymain --shortstat`）
 
