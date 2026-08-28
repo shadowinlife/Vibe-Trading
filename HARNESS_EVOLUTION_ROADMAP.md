@@ -726,24 +726,26 @@ commits），结论由门控/测试证据主导。非阻塞建议 4 项：门控
   该动作会把"未证非劣"变成生产路由的硬依赖。
 - D3（swarm 白名单移植映射）不受本批结论阻塞，可独立推进。
 
-### 10.5 续作检查点（2026-08-28 挂起，待 mymain 分支稳定后恢复）
+### 10.5 续作检查点（2026-08-28 挂起 → **步骤 1 已完成**）
 
-**恢复触发条件**：用户通知 mymain 分支稳定（生产部署基线确定）。
+**恢复触发条件**：用户通知 mymain 分支稳定（生产部署基线确定）。✅ 2026-08-28 达成。
 
 **届时按序执行（每步依赖前步结论）：**
 
-1. **mymain 落地（生产集成）**——输入物全部在 `fix/trading-tool-routing-hints`
-   分支 `agent/src/evals/tool_selection/d_batch/`：
-   - `render_config.py` 扩展：子代理 manifest → opencode.json `agent.<name>` 节
-     （description 用 v2 定稿、prompt 走 `{file:...}`、permission =
-     deny 通配在前 + 白名单 allow 在后，**deny 须覆盖全部非白名单 MCP
-     命名空间**——§10.3 发现 3 的跨命名空间泄漏修复点）；
-   - 编排侧路由政策写入工作区 AGENTS.md（§10.3 发现 2：无政策则主代理
-     不委派——政策模板存于 `artifacts/d_l2/AGENTS.md`，可直接移植）；
-   - 模板冒烟：L2 五场景（artifacts/d_l2/s1c-s5）在新渲染配置下复跑。
+1. **mymain 落地（生产集成）** ✅ **已完成（2026-08-28，mymain `43cf7624`）**：
+   - `render_config.py` 扩展落地，且 deny 覆盖比本检查点原文要求**更深一层**：
+     冒烟复跑发现 `websearch` 等命名空间来自 oh-my-openagent 插件内建 MCP
+     （运行时注入，不出现在模板 `mcp` 节），仅从模板派生无法覆盖——
+     新增 `OMO_BUILTIN_NAMESPACES`（websearch/context7/grep_app/lsp）一并 deny；
+   - 编排侧路由政策已写入 `OpencodeAgent/AGENTS.md`（398/450 行预算内）；
+   - 模板冒烟完成：L2 场景在新渲染配置下复跑 5/5 行为正确，修复后对抗
+     场景子代理 49 次调用零越权、能力不可用显式披露（"caveat, not silent
+     substitution"）。证据：`artifacts/d_l2_rendered/`（SMOKE_NOTES.md +
+     全部轨迹）。
 2. **孪生仲裁证据补强**（D4 的前置门槛）：生产遥测或扩大样本验证
    prompt 层孪生仲裁句的效果（Level-W 协议看不到子代理 prompt，此缺口
    只能靠真实会话证据闭合）；未闭合前**不执行主循环收敛**。
+   进展：落地冒烟中未出现孪生误用，但样本不足以关闭——门槛维持开放。
 3. **D4 铺开评审**：以上两步完成后，按 §8.1 全表评审其余 10+1 子代理
    （market-data / fundamentals-text / derivatives / risk-portfolio /
    valuation / macro-sector / altdata / funds-fi / user-analytics /
@@ -752,4 +754,8 @@ commits），结论由门控/测试证据主导。非阻塞建议 4 项：门控
 
 **状态快照**：D1/D2 有条件通过（判据对照见 `artifacts/d_batch_verdict.md`）；
 judge 轨迹与 L2 轨迹已归档（`artifacts/d_routing_*`、`artifacts/d_l2/`）；
-全部产物在 `fix/trading-tool-routing-hints` 分支工作区，未提交。
+生产落地证据在 `artifacts/d_l2_rendered/`；生产配置在 mymain 分支
+`OpencodeAgent/config/{subagents.json,prompts/}` + 编排政策
+`OpencodeAgent/AGENTS.md`。新增运行观察项（非阻塞，详见 SMOKE_NOTES 事件 2）：
+主循环 qwen3.8-max 曾把直连工具 `vibe-trading_sentiment` 误走 `skill_mcp`
+通道死循环——与本次落地无关，但影响主循环稳定性，值得在 mymain 侧跟踪。
