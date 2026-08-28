@@ -13,7 +13,10 @@ Single source of truth for the container's opencode config assembly
    sections: each subagent gets a deny-all permission gate across EVERY MCP
    namespace present in the rendered template (not just vibe-trading — a
    deny scoped to one namespace leaks sibling servers), then an explicit
-   whitelist of allowed VT tools.
+   whitelist of allowed VT tools. ``main()`` additionally copies the
+   referenced prompt files next to the rendered config, because opencode's
+   ``{file:}`` loader silently drops references escaping the config
+   directory's subtree.
 4. Validate the final JSON before writing. Fail loud — ``entrypoint.sh``
    owns the fallback path when rendering fails.
 
@@ -125,8 +128,8 @@ def load_subagents(path: Path) -> list[dict]:
         if not isinstance(entry.get("description"), str) or not entry["description"]:
             raise ValueError(f"subagent {entry.get('name')!r}: 'description' must be a non-empty string")
         prompt = entry.get("prompt")
-        if not isinstance(prompt, str) or not prompt.startswith("{file:"):
-            raise ValueError(f"subagent {entry['name']!r}: 'prompt' must be a {{file:...}} reference")
+        if not isinstance(prompt, str) or not prompt.startswith("{file:./"):
+            raise ValueError(f"subagent {entry['name']!r}: 'prompt' must be a {{file:./...}} reference")
         tools = entry.get("tools")
         if not isinstance(tools, list) or not all(isinstance(t, str) and t for t in tools):
             raise ValueError(f"subagent {entry['name']!r}: 'tools' must be a list of non-empty strings")
@@ -150,7 +153,12 @@ def mcp_namespaces(config: dict) -> list[str]:
     return [server.replace(" ", "_") for server in mcp]
 
 
-def build_agent_entries(subagents: list[dict], namespaces: list[str]) -> dict:
+def build_agent_entries(
+    subagents: list[dict],
+    namespaces: list[str],
+    prompt_base: Path | None = None,
+    target_dir: Path | None = None,
+) -> dict:
     """Compile subagent manifests into opencode ``agent.<name>`` sections.
 
     Each subagent is permission-gated deny-first: a wildcard deny for EVERY
@@ -158,6 +166,15 @@ def build_agent_entries(subagents: list[dict], namespaces: list[str]) -> dict:
     oh-my-openagent plugin builtins — followed by the whitelist allows.
     opencode permission evaluation is last-match-wins, so the allow entries
     must come after the wildcard denies.
+
+    opencode resolves ``{file:...}`` prompt references relative to the
+    directory holding the final config file, and silently refuses any
+    reference escaping that directory's subtree (probed on 1.18.23:
+    ``./prompts/x.md`` loads, ``../`` and outside-absolute paths are
+    dropped). ``main()`` therefore materializes the referenced prompt files
+    next to the rendered config, keeping every ``{file:./prompts/...}``
+    reference inside the subtree in both layouts (container renders into
+    ``~/.opencode/``; host-direct renders in place).
 
     Args:
         subagents: Validated entries from ``load_subagents``.
@@ -179,6 +196,38 @@ def build_agent_entries(subagents: list[dict], namespaces: list[str]) -> dict:
             "permission": permission,
         }
     return agents
+
+
+def materialize_prompts(subagents: list[dict], prompt_base: Path, target_path: Path) -> list[Path]:
+    """Copy referenced prompt files next to the rendered config.
+
+    Keeps every subagent ``{file:./prompts/...}`` reference inside the
+    rendered config's directory subtree, which is the only location
+    opencode's ``{file:}`` loader accepts.
+
+    Args:
+        subagents: Validated entries from ``load_subagents``.
+        prompt_base: Directory the manifest references are relative to
+            (the subagents.json directory).
+        target_path: Where the rendered opencode.json is written.
+
+    Returns:
+        The written prompt file paths.
+
+    Raises:
+        ValueError: If a reference escapes ``prompt_base``.
+    """
+    written = []
+    for entry in subagents:
+        ref = entry["prompt"].removeprefix("{file:").removesuffix("}")
+        src = (prompt_base / ref).resolve()
+        if prompt_base.resolve() not in src.parents:
+            raise ValueError(f"subagent {entry['name']!r}: prompt reference escapes config dir: {ref}")
+        dest = target_path.parent / "prompts" / src.name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        written.append(dest)
+    return written
 
 
 def build_context() -> dict:
@@ -255,6 +304,7 @@ def main() -> int:
 
     try:
         rendered = render(Path(args.template), Path(args.manifest), Path(args.subagents))
+        subagents = load_subagents(Path(args.subagents))
         json.loads(rendered)  # final validation gate
     except Exception as exc:  # fail loud; entrypoint.sh owns the fallback
         print(f"ERROR: {exc}", file=sys.stderr)
@@ -265,6 +315,7 @@ def main() -> int:
     tmp = target.with_suffix(target.suffix + ".tmp")
     tmp.write_text(rendered, encoding="utf-8")
     tmp.replace(target)
+    materialize_prompts(subagents, Path(args.subagents).parent, target)
     print("OK")
     return 0
 
