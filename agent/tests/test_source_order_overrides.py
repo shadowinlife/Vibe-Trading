@@ -190,7 +190,8 @@ def test_empty_string_resets_to_default(
 ) -> None:
     monkeypatch.setenv(
         "MARKET_DATA_ORDER_A_SHARE",
-        "tushare,tencent,mootdx,eastmoney,baostock,akshare,local",
+        # mymain divergence (F5): permutation of the local clickhouse-led chain
+        "tushare,clickhouse,tencent,mootdx,eastmoney,baostock,akshare,local",
     )
     refresh_source_order_overrides()
     assert registry.FALLBACK_CHAINS["a_share"][0] == "tushare"

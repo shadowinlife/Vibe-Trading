@@ -34,9 +34,11 @@ from src.market_data import (
 @pytest.mark.parametrize(
     "code,expected",
     [
-        ("600519.SH", "tencent"),
-        ("000001.SZ", "tencent"),
-        ("430139.BJ", "tencent"),
+        # mymain divergence (F5): A-share detection leads with the ClickHouse
+        # warehouse loader; network sources are the fallback chain behind it.
+        ("600519.SH", "clickhouse"),
+        ("000001.SZ", "clickhouse"),
+        ("430139.BJ", "clickhouse"),
         ("AAPL.US", "yahoo"),
         ("700.HK", "tencent"),
         ("00700.HK", "tencent"),
@@ -552,8 +554,10 @@ def a_share_tushare_first():
     """
     from backtest.loaders import registry
 
+    # mymain divergence (F5): the override must be a permutation of the local
+    # default chain, which leads with clickhouse.
     os.environ["MARKET_DATA_ORDER_A_SHARE"] = (
-        "tushare,tencent,mootdx,eastmoney,baostock,akshare,local"
+        "tushare,clickhouse,tencent,mootdx,eastmoney,baostock,akshare,local"
     )
     registry.refresh_source_order_overrides()
     try:
@@ -584,7 +588,7 @@ def test_fetch_auto_respects_source_order_override_head(
         source="auto",
         loader_resolver=resolver,
     )
-    assert attempts[0] == "tushare"  # default head would be tencent
+    assert attempts[0] == "tushare"  # default head would be clickhouse
     assert "_unresolved" not in out
     assert "600519.SH" in out
 
@@ -661,7 +665,8 @@ def test_fetch_chain_provider_hook_wins_over_override(
         fallback_chain_provider=lambda src: ["eastmoney"],
     )
     # Detected source first, then the hook's chain — never the override order.
-    assert attempts[:2] == ["tencent", "eastmoney"]
+    # mymain divergence (F5): A-share detection leads with clickhouse.
+    assert attempts[:2] == ["clickhouse", "eastmoney"]
     assert "tushare" not in attempts
     assert "600519.SH" in out
 
