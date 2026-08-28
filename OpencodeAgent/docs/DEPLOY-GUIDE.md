@@ -1,6 +1,6 @@
-# opencode-serve 部署指南（宿主机直部署）
+# opencode-web 部署指南（宿主机直部署 + nginx 串码网关）
 
-> 当前线上形态（2026-08-28 起）：**宿主机 systemd 直部署**，取代此前的 Docker 容器方案。
+> 当前线上形态（2026-08-28 晚起）：**宿主机 systemd 直部署 `opencode web`**，对外由 **nginx :4096 固定串码网关**代理，取代此前的 `opencode serve` 直出方案与更早的 Docker 容器方案。
 > 容器化构建文件（`Dockerfile` / `build.sh` / `docker-compose.yml`）仍保留在仓库中，见附录 B。
 
 ## 0. 部署架构
@@ -8,12 +8,15 @@
 | 角色 | 地址 | 说明 |
 |------|------|------|
 | 部署目标机 | `120.26.181.156`（公网） | 阿里云 ECS，Alibaba Cloud Linux 8，systemd 托管 |
+| ├ 对外入口 | `http://120.26.181.156:4096` | **nginx**（`conf.d/opencode-web.conf`）：固定串码 Basic Auth（用户 `vibe`），注入后端凭证后反代 |
+| └ 内部服务 | `127.0.0.1:4097` | `opencode-web.service`：`opencode web`，**仅监听回环**，不直接暴露公网 |
 | ClickHouse 数据仓库 | `47.98.53.40`（公网）/ `172.24.165.51`（VPC 内网） | Docker 容器 `clickhouse`（clickhouse-server:24.8），HTTP `:8123` / native `:9000`，库 `ashare`（57 张表） |
 
-访问链路：客户端 → `http://120.26.181.156:4097`（HTTP Basic Auth）→ opencode serve → VT MCP server（`ch_*` 语义层工具经 `llm_role` 只读账户走 VPC 内网访问 `172.24.165.51:8123`）。
+访问链路：浏览器/CLI → `http://120.26.181.156:4096`（nginx 校验串码，注入 `Authorization: Basic <opencode 后端凭证>`）→ `127.0.0.1:4097` opencode web → VT MCP server（`ch_*` 语义层工具经 `llm_role` 只读账户走 VPC 内网访问 `172.24.165.51:8123`）。
 
 > **凭证管理**：本仓库为 public fork，所有密钥/口令**不写入本文档、不提交入库**。
 > 全部凭证存放于目标机 `/opt/my-vibe-trading/.env`（`chmod 600`），本文以 `<见服务器 .env>` 引用。
+> 网关串码为 `OPENCODE_WEB_GATE_CODE`（同样存于该 `.env`，nginx htpasswd 文件 `/etc/nginx/opencode-web.htpasswd` 属 `root:nginx 640`）。
 
 ## 1. 目录布局
 
@@ -120,11 +123,11 @@ set -a && source /opt/my-vibe-trading/.env && set +a
 
 ## 7. systemd 服务
 
-`/etc/systemd/system/opencode-serve.service`：
+`/etc/systemd/system/opencode-web.service`：
 
 ```ini
 [Unit]
-Description=opencode-serve (my-vibe-trading host deployment)
+Description=opencode-web (my-vibe-trading host deployment, web mode)
 After=network-online.target
 Wants=network-online.target
 
@@ -134,7 +137,7 @@ User=root
 WorkingDirectory=/opt/my-vibe-trading
 EnvironmentFile=-/opt/my-vibe-trading/.env
 Environment=OPENCODE_CONFIG=/opt/my-vibe-trading/.opencode/opencode.json
-ExecStart=/usr/bin/opencode serve --port 4097 --hostname 0.0.0.0
+ExecStart=/usr/bin/opencode web --port 4097 --hostname 127.0.0.1
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=65536
@@ -145,18 +148,55 @@ WantedBy=multi-user.target
 
 ```bash
 systemctl daemon-reload
-systemctl enable --now opencode-serve
+systemctl enable --now opencode-web
 ```
+
+> 注意：web 进程**只绑 127.0.0.1**——对外流量一律由 nginx :4096 进入（见 §7.1）；cron_jobs 的 `OPENCODE_API=http://127.0.0.1:4097` 不受影响，零改动。
+> 旧 `opencode-serve.service`（serve 模式、监听 `0.0.0.0:4097`）已 stop+disable，unit 文件保留作回滚，见 §10。
+
+### 7.1 nginx 串码网关（:4096）
+
+`/etc/nginx/conf.d/opencode-web.conf` 要点（完整文件在服务器上）：
+
+```nginx
+map $http_upgrade $ocw_connection { default upgrade; '' ""; }
+
+server {
+    listen 4096;
+    server_name _;
+    auth_basic "opencode-web gate";
+    auth_basic_user_file /etc/nginx/opencode-web.htpasswd;   # 用户 vibe + 串码(apr1)
+    client_max_body_size 50m;
+
+    location / {
+        proxy_pass http://127.0.0.1:4097;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;              # WebSocket/SSE
+        proxy_set_header Connection $ocw_connection;
+        proxy_read_timeout 3600s;                            # SSE 长连接
+        proxy_buffering off;
+        proxy_set_header Authorization "Basic <base64(opencode:OPENCODE_SERVER_PASSWORD)>";
+        # ↑ 浏览器只需过 nginx 串码；后端自身密码由 nginx 注入，双层不互相干扰
+    }
+}
+```
+
+改串码：`printf 'vibe:%s\n' "$(openssl passwd -apr1 '新串码')" > /etc/nginx/opencode-web.htpasswd && chown root:nginx !$ && chmod 640 !$ && systemctl reload nginx`（同时更新 `.env` 的 `OPENCODE_WEB_GATE_CODE`）。
 
 ## 8. 验证清单
 
 ```bash
 # 1) 服务活性
-systemctl is-active opencode-serve          # → active
-ss -tlnp | grep 4097                        # → opencode 进程监听
+systemctl is-active opencode-web           # → active
+ss -tlnp | grep 4097                       # → 仅 127.0.0.1:4097（opencode web）
+ss -tlnp | grep 4096                       # → 0.0.0.0:4096（nginx）
 
-# 2) 健康检查（无凭证应 401，有凭证应 200）
-curl -u "opencode:$OPENCODE_SERVER_PASSWORD" http://localhost:4097/health
+# 2) 网关三重检查（串码见 .env 的 OPENCODE_WEB_GATE_CODE）
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:4096/                       # → 401（无串码）
+curl -s -o /dev/null -w '%{http_code}\n' -u "vibe:$OPENCODE_WEB_GATE_CODE" http://127.0.0.1:4096/   # → 200
+curl -s -o /dev/null -w '%{http_code}\n' --connect-timeout 8 http://120.26.181.156:4097/health    # → 000/拒绝（4097 不公网）
 
 # 3) MCP 工具计数（记忆全开应为 82）
 cd /opt/my-vibe-trading/repo
@@ -167,17 +207,19 @@ from mcp_server import mcp
 print('tools:', len(asyncio.run(mcp.list_tools())))"
 
 # 4) 端到端（agent 实跑：记忆 + ClickHouse 双链路）
-opencode run --attach "http://opencode:$OPENCODE_SERVER_PASSWORD@localhost:4097" \
+opencode run --attach "http://opencode:$OPENCODE_SERVER_PASSWORD@127.0.0.1:4097" \
   "请依次调用 vibe-trading 的 memory_status 和 ch_list_tables 两个工具，各用一句话报告结果。"
 ```
 
 端到端预期：`memory_status` 返回 `status: ok`；`ch_list_tables` 返回 `ok: true, database: ashare, count: 57`。
+从外部机器访问：浏览器开 `http://120.26.181.156:4096`（用户 `vibe` + 串码）；CLI 用 `opencode run --attach "http://vibe:$OPENCODE_WEB_GATE_CODE@120.26.181.156:4096"`（nginx 代为注入后端凭证）。
 
 ## 9. 日常运维
 
 ```bash
-journalctl -u opencode-serve -f            # 日志
-systemctl restart opencode-serve           # 重启
+journalctl -u opencode-web -f              # 日志
+systemctl restart opencode-web             # 重启
+nginx -t && systemctl reload nginx         # 改网关配置后
 docker exec clickhouse ...                 # （在 47.98.53.40 上）CH 运维
 ```
 
@@ -190,14 +232,15 @@ docker exec clickhouse ...                 # （在 47.98.53.40 上）CH 运维
 
 | 旧部署 | 处置 | 回滚方式 |
 |--------|------|---------|
+| 宿主机 `opencode-serve.service`（serve 模式，`0.0.0.0:4097` 直出公网） | `systemctl stop` + `disable`，unit 文件保留；被 `opencode-web.service`（web 模式，`127.0.0.1:4097`）+ nginx :4096 串码网关取代 | `systemctl disable --now opencode-web` 后 `systemctl enable --now opencode-serve`，并摘除 `conf.d/opencode-web.conf` reload nginx |
 | 容器 `opencode-serve`（镜像 v2.1.1-mymain，端口 4097→4096） | `docker stop` + `restart=no`，容器与命名卷保留 | `docker start opencode-serve` |
-| 宿主机 `opencode-web.service`（:4096，2026-07-02 旧代码 `/opt/Vibe-Trading`） | `systemctl stop` + `disable` | `systemctl enable --now opencode-web` |
+| 宿主机 `opencode-web.service`（:4096，2026-07-02 旧代码 `/opt/Vibe-Trading`） | `systemctl stop` + `disable`；unit 文件已于 2026-08-28 晚被同名新 unit（web 模式，`/opt/my-vibe-trading`）覆盖 | 需重建 unit 指向旧代码目录 |
 | 宿主机 `ocwatch.service`（活动面板） | `systemctl stop` + `disable` | 同上 |
 
 ## 附录 A：安全注意
 
-1. **:4097 公网监听**，认证仅有 HTTP Basic 单密码——务必在阿里云安全组按源 IP 收敛 4097 的入方向。
-2. 全部凭证仅存 `/opt/my-vibe-trading/.env`（0600）；本仓库（public fork）中不得出现任何密钥/口令。
+1. **:4096 公网监听**，前置 nginx 固定串码 Basic Auth（用户 `vibe`），后端 `opencode web` 只绑 `127.0.0.1:4097` 且自带 `OPENCODE_SERVER_PASSWORD` 由 nginx 注入——双层认证；务必在阿里云安全组按源 IP 收敛 4096 的入方向。4097 已不再监听公网（收敛前若有安全组规则可一并移除）。
+2. 全部凭证仅存 `/opt/my-vibe-trading/.env`（0600），含 `OPENCODE_WEB_GATE_CODE` 串码备份；htpasswd 文件 `/etc/nginx/opencode-web.htpasswd` 为 `root:nginx 640`（nginx worker 需可读，过严会出现 401→500）。本仓库（public fork）中不得出现任何密钥/口令/串码。
 3. `ch_*` 工具强制使用 `llm_role` 只读账户，与读写账户隔离；不要为图方便把 default 账户填进 `CLICKHOUSE_LLM_*`。
 4. CH 实例（47.98.53.40）8123/9000 监听 `0.0.0.0`，同样建议安全组收敛至 VPC 内网 + 运维 IP。
 
