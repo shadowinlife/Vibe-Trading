@@ -158,9 +158,13 @@ D08-006/007、D09-002/007、D12-008、BND-003×2——均为"策略/文档"语�
 4. 生产落地前置条件（D4 配套）：编排侧路由政策入配置 + render_config 的
    deny glob 扩展为全命名空间。
 
-**处置建议（待用户裁决）**：D1/D2 定义文件 + 提示词作为生产候选配置留存
-本分支；mymain 落地（render_config 扩展 + AGENTS.md 政策 + opencode.json
-子代理节）作为独立后续任务；D4 铺开暂缓，待孪生仲裁补强证据。
+**处置（已执行，2026-08-28）**：D1/D2 定义文件 + 提示词已落地生产
+（mymain `43cf7624` + `6f61a2c5`：`OpencodeAgent/config/subagents.json` +
+`prompts/` + render_config 扩展 + 编排侧路由政策入生产 AGENTS.md；
+落地冒烟证据见 `d_l2_rendered/`）。落地时两处深化：deny 覆盖扩展到 OMO
+插件内建命名空间（websearch/context7/grep_app/lsp）；prompt 引用改为渲染时
+colocation（`{file:}` 按配置文件目录解析，探针实证）。D4 铺开仍暂缓，
+待孪生仲裁补强证据（生产遥测）。
 
 ## 7. 产物索引
 

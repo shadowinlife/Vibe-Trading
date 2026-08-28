@@ -68,16 +68,20 @@ Live testing surfaced two issues invisible to the lab harness: the main agent
 **won't triage on its own** — its operating instructions must explicitly say
 "send this kind of work to the specialist"; and the tool whitelist only fenced
 off our own MCP server, leaving a sibling server's search tool reachable. Fixes
-for both are prepared.
+for both were prepared — and shipped with the landing.
 
 ## Where things stand
 
 - Approach B is live in production (−17.9% disclosure tax per planning turn);
-- Approach D's two pilot agents are stored as production-ready candidate
-  configs, waiting for the production branch to stabilize; one residual
+- **Approach D's two pilot agents are live in production (2026-08-28)** — the
+  landing itself caught and closed one deeper hole: the plugin runtime quietly
+  injects four extra tool namespaces (websearch & friends) that no template
+  scan can see, so the deny gate now covers those too; in the post-fix
+  adversarial run the quant room made 49 tool calls with zero escapes and
+  honestly disclosed "I couldn't fetch this live — the news list is curated,
+  not scraped." The remaining eleven rooms stay closed until one residual
   question (occasionally grabbing the "manual" instead of the "tool" for
-  similarly-named pairs) must be confirmed fixed before the remaining eleven
-  rooms open;
+  similarly-named pairs) is confirmed fixed by production telemetry;
 - Approaches A and C are archived with full failure evidence and are
   explicitly marked **do not retry**.
 

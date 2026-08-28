@@ -1,6 +1,6 @@
 # HARNESS 演进工程 · 总结（Summary）
 
-> 周期：2026-08-21 ~ 2026-08-28 ｜ 状态：**收官快照**
+> 周期：2026-08-21 ~ 2026-08-28 ｜ 状态：**收官快照（D 批已于同日落地生产，见 §5）**
 > 本文是 `HARNESS_EVOLUTION_*` 文档族的总收口：问题 → 调研 → 方案 → 实测 → 裁决。
 > 各方案的过程证据见文末引用清单；本文数字均可在对应裁决文档中复核。
 
@@ -91,7 +91,7 @@ K1-K25 / G1-G10 / Q1-Q19 问题编号体系与 §7.2 路由决策表。
 | **A8** P2 描述批量修订 ×7 | 长尾改善 | 同上 | 全集**显著回归**（lenient 池化 p=0.012） | ❌ **否决，已回滚** |
 | **B1-B5** 暴露面工程（注册时门控） | 裁掉无用工具面不损路由 | C1 池化非劣 CI 下界 >−5pp；C6 披露税降幅 | C1 **PASS**：Δ=+1.05pp，CI [−2.03,+3.75]；C6 实测 −5,100 tok/轮（**−17.9%**，74→59 工具），幻觉调用 0 起 | ✅ **放行**（经用户按实测数据裁决；暂缓上游） |
 | **C1-C3** 路由层（search_tools 元工具 + 披露层级 + 路由元规则） | 懒加载砍掉 79% 披露税且端到端不降 | R1 池化非劣 CI 下界 >−5pp | 检索本身达标（recall@7 **0.937**、披露税 **−79%**），但端到端 4 种配置**全部显著更差**（Δ −11.5pp ~ −33.6pp）——"何时该搜索"决策不可靠 | ❌ **全部回滚**，思路标记失败 |
-| **D1/D2** 领域子代理试点（quant-agent / web-docs-agent） | 固定小白名单落在舒适区，无需搜索决策 | R1 路由召回 ≥0.85；R2 误委派 ≤5%；R3 边界 ≥8/10；W1/R4 非劣 CI 下界 >−10pp | **R1 99.1% ✅、R2 3.57% ✅、R3 85% ✅**、噪声地板≈0 ✅；W1/R4 **未证得非劣**（Δ=−3.75/−5.0pp，CI 跨 0，功效不足，未证有害） | ⚠️ **有条件通过**（生产候选配置留存；D4 铺开与主循环收敛暂缓） |
+| **D1/D2** 领域子代理试点（quant-agent / web-docs-agent） | 固定小白名单落在舒适区，无需搜索决策 | R1 路由召回 ≥0.85；R2 误委派 ≤5%；R3 边界 ≥8/10；W1/R4 非劣 CI 下界 >−10pp | **R1 99.1% ✅、R2 3.57% ✅、R3 85% ✅**、噪声地板≈0 ✅；W1/R4 **未证得非劣**（Δ=−3.75/−5.0pp，CI 跨 0，功效不足，未证有害） | ⚠️ **有条件通过**；**已落地生产**（mymain，见 §5），D4 铺开待孪生仲裁遥测 |
 
 ### 3.2 基础设施与辅助项（E/F 流）
 
@@ -132,10 +132,16 @@ p90 46s → 29s。委派本身增加一次路由决策（5-7s）+ 任务书生�
 
 - **生产面**：MCP keyless 74→59 工具（−17.9% 披露税），路由非劣，
   幻觉调用 0——B 批为唯一全量准入的改动（暂缓上游贡献，本地部署有效）。
-- **D 批挂起检查点**（ROADMAP §10.5）：待 mymain 稳定后按序恢复——
-  ① render_config 扩展（deny 覆盖全部非白名单 MCP 命名空间）+
-  编排侧路由政策入 AGENTS.md + L2 复跑；② 孪生仲裁证据补强（未闭合前
-  不执行主循环收敛）；③ D4 铺开评审（复用 d_batch 评测协议）。
+- **D 批生产落地 ✅（2026-08-28，mymain `43cf7624` + `6f61a2c5`）**：
+  §10.5 步骤 1 完成——`OpencodeAgent/config/subagents.json` + `prompts/` +
+  render_config 扩展 + 编排侧路由政策入生产 AGENTS.md + 部署文档同步。
+  落地冒烟比检查点原要求多修两处：① deny 覆盖扩展至 OMO 插件运行时注入的
+  内建命名空间（websearch/context7/grep_app/lsp，模板外不可见，实测复现泄漏
+  后闭合）；② prompt 引用改为渲染时 colocation（探针实测 `{file:}` 按配置
+  文件目录解析，原容器绝对路径方案会静默失效）。证据：
+  `artifacts/d_l2_rendered/`（SMOKE_NOTES.md + 轨迹）。
+- **仍开放**：② 孪生仲裁证据补强（生产遥测，未闭合前不执行主循环收敛）；
+  ③ D4 铺开评审（复用 `d_batch/` 评测协议，待②闭合）。
 - **D3**（swarm 白名单移植映射）不受阻塞，可独立推进。
 
 ## 6. 引用清单
@@ -148,5 +154,6 @@ p90 46s → 29s。委派本身增加一次路由决策（5-7s）+ 任务书生�
 | `HARNESS_EVOLUTION_BENCHMARKS.md` | 评测基准调研 |
 | `HARNESS_EVOLUTION_P0_PLAN.md` | Wave 1 执行与 A 批 E2 终局 |
 | `HARNESS_EVOLUTION_B_TEST_PLAN.md` / `HARNESS_EVOLUTION_C_PLAN.md` / `HARNESS_EVOLUTION_D_PLAN.md` | 三批工作计划 + 预注册判据 |
-| `agent/src/evals/tool_selection/artifacts/` | a6_a8_verdict / b_batch_verdict / c_batch_verdict / d_batch_verdict + 黄金 traces |
+| `agent/src/evals/tool_selection/artifacts/` | a6_a8_verdict / b_batch_verdict / c_batch_verdict / d_batch_verdict + 黄金 traces + `d_l2_rendered/`（生产渲染配置冒烟证据） |
 | `agent/src/evals/tool_selection/`（含 `d_batch/`） | E1/E2 评测基建与 D 批资产 |
+| mymain 分支 `OpencodeAgent/`（`43cf7624` + `6f61a2c5`） | D 批生产落地：subagents.json、prompts/、render_config 扩展、AGENTS.md 路由政策、部署文档 |
