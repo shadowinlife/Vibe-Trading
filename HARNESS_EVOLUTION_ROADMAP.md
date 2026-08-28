@@ -667,3 +667,89 @@ commits），结论由门控/测试证据主导。非阻塞建议 4 项：门控
    天然在舒适区，无需搜索决策）。
 3. 若未来重试"按需召回"，前置条件是先把"何时该搜索"做可靠（如召回时把工具 schema
    直接注入下一轮、短名单内嵌仲裁提示、在多轮真实会话而非单轮判官里验证）。
+
+---
+
+## 10. D 批（领域子代理试点）执行结果 —— 有条件通过（2026-08-28）
+
+> 计划 + 预注册判据：`HARNESS_EVOLUTION_D_PLAN.md`；裁决：
+> `agent/src/evals/tool_selection/artifacts/d_batch_verdict.md`；证据：
+> 同目录 `d_routing_trace_*`（v1/v2）、`d_routing_probe_*_v2r1`、
+> Level-W `llm_judge_trace_*_d-*`、L2 实测 `artifacts/d_l2/`。
+> 判官面板 qwen3.8-max + kimi-k3（temp 0），协议与 B/C 批同族冻结。
+
+### 10.1 做了什么
+
+- **D1 quant-agent / D2 web-docs-agent 试点定义**：白名单取自 AUDIT §8.1 草案，
+  经确定性覆盖审计修订一轮（v0→v1：补 alpha-zoo/pine-script/vnpy-export 三技能，
+  消除 3/20 死角）；子代理决策面 quant 11T+12S（描述 token −88%）、
+  webdocs 3T+2S（−98%）。
+- **提示词工程基于双源调研**（论文 + OSS 一手源码）：DecisionBench（路由须直接测、
+  投递通道主导）、EARS（结构化交回协议）、MAST（正确编号 arXiv 2503.13657）、
+  opencode schema 核实（permission 后匹配胜出、agent.<name> 字段面）、
+  omo keyTrigger/avoidWhen 机制、30 个 swarm preset 的 prompt 解剖（反捏造原句复用）。
+- **三级评测**：确定性审计（C/T 组）+ 两级 LLM-judge（Level-W 代理内选择 /
+  Level-R 路由委派，新路由模板独立钉 hash）+ L2 真实 opencode 环境 5 场景。
+
+### 10.2 结果（v2 为裁决依据；v1→v2 为预注册的唯一修订轮，已披露）
+
+| 判据 | 阈值 | 实测 | 裁决 |
+|---|---|---|---|
+| R1 目标域路由召回 | ≥0.85 | **99.1%**（quant 79/80、webdocs 36/36） | ✅ |
+| R2 误委派率 | ≤5% | **3.57%**（v1 6.07% → 修订后收敛） | ✅ |
+| R3 边界仲裁 | ≥8/10 | 17/20 | ✅ |
+| R6 噪声地板 | 探针 | 一致率 1.0000/1.0000 | ✅ |
+| W1 代理内非劣 | CI 下界 >−10pp | Δ=−3.75pp，CI [−12.0,+4.1] | ⚠️ 未证得（功效不足，未证有害） |
+| R4 端到端合成非劣 | CI 下界 >−10pp | Δ=−5.0pp，CI [−13.6,+3.1] | ⚠️ 未证得（同上） |
+
+### 10.3 关键发现（超出原问题域）
+
+1. **小面孪生突显**：子代理面缩小后 tool/skill 孪生对（alpha_zoo×alpha-zoo、
+   read_url×web-reader 等）选择错误集中——webdocs 域在全表面上同样只有 59%
+   （基础语料既有孪生歧义），子代理化既不放大也不解决；修法 = prompt 层仲裁句
+   （v2 已补），Level-W 判官协议看不到 prompt，效果归 L2/生产遥测验证。
+2. **委派需要编排侧政策**（L2 实测）：仅有子代理 description 时生产主代理
+   对域内多步任务也自行执行；加入 AGENTS.md 路由规则后 4/4 场景符合设计。
+   judge 协议的 99% 召回是"强制二选一"下的 description 质量，生产委派倾向
+   须由编排侧显式激活——description 是必要非充分条件。
+3. **白名单按命名空间生效**：quant-agent 调不到 vibe-trading_web_search（生效），
+   但可改用另一 MCP 服务器的搜索工具（permission 未覆盖该命名空间）——生产
+   落地时 deny glob 须扩展到全部非白名单 MCP 命名空间。
+
+### 10.4 处置
+
+- **D1/D2 有条件通过**：定义文件 + 提示词 + 编排政策模板留存本分支
+  （`d_batch/`），为生产候选配置；mymain 落地（render_config 扩展 +
+  AGENTS.md 政策 + opencode.json 子代理节）为独立后续任务。
+- **D4（铺开 10+1）暂缓**：W1/R4 的代理内残余风险未闭合（孪生仲裁需更大
+  样本或遥测证据）；**主循环收敛（撤下域工具）在闭合前不执行**——
+  该动作会把"未证非劣"变成生产路由的硬依赖。
+- D3（swarm 白名单移植映射）不受本批结论阻塞，可独立推进。
+
+### 10.5 续作检查点（2026-08-28 挂起，待 mymain 分支稳定后恢复）
+
+**恢复触发条件**：用户通知 mymain 分支稳定（生产部署基线确定）。
+
+**届时按序执行（每步依赖前步结论）：**
+
+1. **mymain 落地（生产集成）**——输入物全部在 `fix/trading-tool-routing-hints`
+   分支 `agent/src/evals/tool_selection/d_batch/`：
+   - `render_config.py` 扩展：子代理 manifest → opencode.json `agent.<name>` 节
+     （description 用 v2 定稿、prompt 走 `{file:...}`、permission =
+     deny 通配在前 + 白名单 allow 在后，**deny 须覆盖全部非白名单 MCP
+     命名空间**——§10.3 发现 3 的跨命名空间泄漏修复点）；
+   - 编排侧路由政策写入工作区 AGENTS.md（§10.3 发现 2：无政策则主代理
+     不委派——政策模板存于 `artifacts/d_l2/AGENTS.md`，可直接移植）；
+   - 模板冒烟：L2 五场景（artifacts/d_l2/s1c-s5）在新渲染配置下复跑。
+2. **孪生仲裁证据补强**（D4 的前置门槛）：生产遥测或扩大样本验证
+   prompt 层孪生仲裁句的效果（Level-W 协议看不到子代理 prompt，此缺口
+   只能靠真实会话证据闭合）；未闭合前**不执行主循环收敛**。
+3. **D4 铺开评审**：以上两步完成后，按 §8.1 全表评审其余 10+1 子代理
+   （market-data / fundamentals-text / derivatives / risk-portfolio /
+   valuation / macro-sector / altdata / funds-fi / user-analytics /
+   trading-connector / orchestrator），评测协议直接复用
+   `d_batch/`（路由模板 + 语料构建器，换定义文件即可）。
+
+**状态快照**：D1/D2 有条件通过（判据对照见 `artifacts/d_batch_verdict.md`）；
+judge 轨迹与 L2 轨迹已归档（`artifacts/d_routing_*`、`artifacts/d_l2/`）；
+全部产物在 `fix/trading-tool-routing-hints` 分支工作区，未提交。
