@@ -21,8 +21,8 @@
 | ID | 工作项 | 依赖 | 状态 |
 |---|---|---|---|
 | D2-1 | 孪生仲裁门禁（合成复测主门禁 + 遥测确认） | — | **validated ✅**（2026-08-29，两域 CI 下界为正，`artifacts/d2/track_a_verdict.md`） |
-| D2-2 | 主循环收敛（主代理撤下域工具） | ~~D2-1 门禁通过~~ | **active**（已解锁） |
-| D2-3 | D4 铺开评审（其余 11 个子代理） | ~~D2-1 门禁通过~~ | **active**（已解锁） |
+| D2-2 | 主循环收敛（主代理撤下域工具） | ~~D2-1 门禁通过~~ | **validated ✅**（2026-08-29，mymain `552c7bfe`；L2 五场景 5/5，`artifacts/d2/mainloop_convergence_verdict.md`；生产面 59→46 工具） |
+| D2-3 | D4 铺开评审（其余 11 个子代理） | ~~D2-1 门禁通过~~ | **active**（C0 定义完成：`d4_batch/candidates_d4.yaml` 11 候选，名称核验全过；orchestrator 建议拒绝） |
 | D2-4 | D3 swarm preset 白名单审计与移植 | 无 | C0 完成（`artifacts/d2/preset_audit.md`），C1 待启动 |
 | D2-5 | qwen3.8-max skill_mcp 通道混淆 | 无（仅遥测跟踪） | active（跟踪类；检测器已备，A3 新增观察：kimi 裸名作答 10 例） |
 | D2-6 | 宿主内建工具软边界 | 无（不排期） | 已知限制（§7） |

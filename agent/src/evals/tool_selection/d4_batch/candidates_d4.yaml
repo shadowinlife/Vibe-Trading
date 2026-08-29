@@ -1,0 +1,867 @@
+# D2-3a — D4 candidate subagent definitions (11 candidates, v0 drafts).
+#
+# Source: HARNESS_EVOLUTION_CAPABILITY_AUDIT.md §8.1 (12+1 draft) minus the two
+# production-proven pilots (quant-agent D06+D07, web-docs-agent D19 — already
+# admitted via d_batch/). Format and quality bar follow the pilots:
+# d_batch/subagent_quant_agent.yaml and d_batch/subagent_web_docs_agent.yaml.
+# Evidence basis: artifacts/d2/track_a_verdict.md (D2-1 PASS — small whitelists
+# + twin-arbitration sentences beat the full surface: +6.67pp quant /
+# +33.44pp webdocs, both CI lower bounds positive).
+#
+# Name verification (2026-08-29, this session, grep-based):
+# - every whitelisted tool name verified against agent/mcp_server.py
+#   (64 @mcp.tool wrappers + 10 _MIRRORED_TOOL_SOURCES = the 74 MCP names);
+# - every whitelisted skill name verified against agent/src/skills/<name>/;
+# - internal-only tools (pattern, options_payoff, financial_rigor, report_audit,
+#   sdm_*, edit_file — audit K25/G10) are deliberately NOT whitelisted anywhere:
+#   they have no MCP surface, so an MCP-hosted subagent cannot call them.
+#
+# Boundary-cut decisions (the actual D4 design work; deviations from §8.1):
+#  1. get_market_data + search_symbol live ONLY in market-data-agent. The §8.1
+#     drafts spread get_market_data across 6 candidates; the D1 pilot proved the
+#     opposite cut (quant-agent excludes it and routes around it). Every other
+#     candidate consumes parent-fetched data and says so in its description.
+#  2. get_sector_info → macro-sector-agent (the audit domain table assigns it
+#     to D11; the §8.1 market-data draft double-assigned it).
+#  3. orderbook_depth → market-data-agent (D01 per domain table; co-located
+#     with the market-microstructure skill). Cut from the altdata draft.
+#  4. prediction_market → valuation-agent (D12 per domain table, co-located
+#     with the event-driven skill it feeds). Cut from the altdata draft.
+#  5. trading-connector-agent: safety-gated admission — see its entry.
+#  6. orchestrator: recommendation REJECT — see its entry; honest rejection is
+#     a valid deliverable per the D2-3a tasking.
+#
+# Revision discipline (same rule as the D1/D2 pilots): one revision round
+# allowed after the deterministic coverage audit against the D4 corpora;
+# all revisions recorded in this header.
+
+candidates:
+
+  - name: market-data-agent
+    domain: D01+D04
+    version: 0
+    recommendation: admit
+    tools:
+      - get_market_data
+      - search_symbol
+      - screen_market
+      - iwencai_search
+      - orderbook_depth
+      - get_fund_flow
+      - get_northbound_flow
+      - get_margin_trading
+      - get_block_trades
+      - get_dragon_tiger
+      - get_lockup_expiry
+      - get_shareholder_count
+    skills:
+      - data-routing
+      - tushare
+      - yfinance
+      - akshare
+      - mootdx
+      - eastmoney
+      - ccxt
+      - okx-market
+      - minute-analysis
+      - hk-connect-flow
+      - market-microstructure
+    twin_pairs:
+      - pair: get_market_data × data-routing + 7 source skills
+        ref: K1/G1
+        arbitration: >-
+          Standard OHLCV fetch → get_market_data (auto source chain); the
+          source skills are for direct-script access to special endpoints only.
+      - pair: get_northbound_flow × hk-connect-flow
+        ref: D04
+        arbitration: Raw northbound net-flow numbers → tool; connect-flow
+          analysis methodology and arbitrage framing → skill.
+      - pair: orderbook_depth × market-microstructure
+        ref: D04
+        arbitration: Live L2 depth/impact-cost snapshot → tool; VPIN/Amihud/Roll
+          microstructure research framework → skill.
+      - pair: get_market_data × minute-analysis
+        ref: D01
+        arbitration: Minute bars via the tool's interval parameter; the skill
+          only for minute-level workflow design.
+    description: >-
+      Market data and capital-flow specialist (行情数据与资金流). Delegate: symbol
+      resolution (名称/代码→标的解析), OHLCV bars across A/HK/US/Canada/Korea/
+      crypto/forex with automatic source fallback (取数/K线/日线/分钟线), same-day
+      market rankings (涨幅/成交/换手排行), A-share natural-language screening via
+      iwencai (问财选股, key-gated), crypto order-book depth and market-impact
+      cost (盘口深度/冲击成本), and capital-flow reads — main-force net inflow
+      (主力资金), northbound connect flow (北向资金), margin balances (融资融券),
+      block trades (大宗交易), dragon-tiger board (龙虎榜), lockup-expiry
+      calendars (限售解禁), and shareholder-count changes (股东户数). Loads the
+      data-routing skill before any fetch. NOT for: account/broker-side quotes
+      or positions (→ trading-connector-agent), sector/concept board membership
+      and board rankings (→ macro-sector-agent), technical-indicator values or
+      named TA schools (RSI信号/缠论/波浪/SMC → main agent), financial
+      statements or filings (→ fundamentals-text-agent), or any backtest
+      execution (→ quant-agent).
+    rationale: >-
+      The cut follows the domain table exactly (D01+D04) with one removal:
+      get_sector_info moved to macro-sector-agent because its ranking mode is
+      the data feed of sector-rotation, and per-stock flow tools already give
+      market-data-agent a coherent "price + money flow" identity without it.
+      Owning the only get_market_data instance makes this agent the single
+      data-fetch authority, which is what makes every other candidate's
+      whitelist small enough to route.
+
+  - name: fundamentals-text-agent
+    domain: D02+D03
+    version: 0
+    recommendation: admit
+    tools:
+      - get_financial_statements
+      - get_fundamentals
+      - get_sec_filings
+      - get_stock_profile
+      - get_institutional_holdings
+      - get_stock_news
+      - get_research_reports
+      - research_papers
+    skills:
+      - financial-statement
+      - sec-edgar-fetch
+      - edgar-sec-filings
+      - fundamental-filter
+    twin_pairs:
+      - pair: get_financial_statements × financial-statement
+        ref: K6
+        arbitration: Structured statement fetch → tool; three-statement reading
+          methodology (勾稽/盈利质量/造假红旗) → skill, applied on fetched data.
+      - pair: get_sec_filings × sec-edgar-fetch × edgar-sec-filings
+        ref: K5/Q2
+        arbitration: Filing lists / XBRL series → tool; sec-edgar-fetch = how
+          the EDGAR interface works; edgar-sec-filings = how to read a filing
+          for signals. (Q2 merge/rename still pending upstream.)
+      - pair: get_fundamentals × fundamental-filter
+        ref: K13
+        arbitration: PIT panel data → tool; PE/PB/ROE screening workflow →
+          skill.
+    description: >-
+      Fundamentals and research-text specialist (基本面与研报). Delegate:
+      structured financial statements and key indicators for A/HK/US stocks
+      (三大报表/财务指标), PIT-safe US fundamental panels (防前视基本面面板), SEC
+      filing lists and XBRL concept series (10-K/10-Q/Revenue 序列), company
+      profiles with analyst targets and ownership (公司画像/目标价), 13F
+      institutional holdings with quarter-over-quarter diffs (机构持仓),
+      per-stock news headlines (个股新闻), A-share sell-side research coverage
+      with per-year EPS consensus (券商盈利预测/一致预期), and academic finance
+      paper search with evidence-anchored factor briefs (学术论文). This agent
+      FETCHES and READS; it does not judge. NOT for: valuation, estimate-
+      revision analysis, or turning statements into an investment view (→
+      valuation-agent); macro data series (→ macro-sector-agent); credit
+      analysis of bond issuers (→ funds-fi-agent); raw OHLCV or quotes (→
+      market-data-agent); web pages or documents outside the finance sources
+      above (→ web-docs-agent).
+    rationale: >-
+      The boundary against valuation-agent is fetch-vs-interpret: every data
+      inlet a valuation needs (statements, profile, consensus) lives here so
+      valuation-agent carries no fetch tools at all. get_institutional_holdings
+      stays here rather than funds-fi-agent because its dominant modes
+      (ticker_holders, manager book diff) are ownership research on companies,
+      not fund product analysis. The K4 tool pair (get_research_reports vs
+      research_papers) is internally arbitrated in the description: 研报
+      defaults to sell-side coverage, papers means academic.
+
+  - name: derivatives-agent
+    domain: D08
+    version: 0
+    recommendation: admit
+    tools:
+      - analyze_options
+      - analyze_options_payoff
+      - get_options_chain
+    skills:
+      - options-strategy
+      - options-payoff
+      - options-advanced
+      - crypto-derivatives
+      - perp-funding-basis
+    twin_pairs:
+      - pair: analyze_options × options-strategy
+        ref: K14/G3
+        arbitration: Single-leg BS price/Greeks compute → tool; option strategy
+          framework and backtest methodology → skill.
+      - pair: analyze_options_payoff × options-payoff
+        ref: G3 (name collision)
+        arbitration: Multi-leg payoff/scenario compute → tool; payoff-diagram
+          and breakeven methodology → skill.
+    description: >-
+      Options and crypto-derivatives specialist (期权与衍生品). Delegate:
+      single-leg Black-Scholes pricing and Greeks (期权定价/Greeks), multi-leg
+      payoff, breakeven and spot×IV scenario analysis (多腿损益/盈亏平衡), US
+      options-chain data (期权链 bid/ask/OI/IV), perpetual funding-rate regimes
+      and annualized basis (资金费率/基差), futures term-structure
+      contango/backwardation (期限结构), and carry-trade construction (套息构建).
+      Underlying price/vol inputs are supplied by the parent — this agent never
+      fetches market data itself. NOT for: underlying OHLCV or order-book depth
+      (→ market-data-agent), on-chain/liquidation/stablecoin data (→
+      altdata-agent), VaR or stress tests on an existing derivatives position
+      (→ risk-portfolio-agent), convertible-bond analysis (→ funds-fi-agent),
+      or backtesting an options strategy end-to-end (→ quant-agent).
+    rationale: >-
+      Three tools + five skills is the smallest coherent derivative surface:
+      the K14 tool trio (single-leg / multi-leg / chain data) is internally
+      arbitrated by construction, and the G3 skill trio is layered
+      (入门/损益专项/波动率进阶). get_market_data was cut per the global
+      data-fetch rule; the cost is a documented parent-supplies-spot
+      dependency, which the pilot precedent says is acceptable. The K11 funding
+      overlap with altdata-agent is arbitrated: strategy/carry construction
+      here, market data there.
+
+  - name: risk-portfolio-agent
+    domain: D09
+    version: 0
+    recommendation: admit
+    tools:
+      - quantlib_call
+      - cashflow_performance
+    skills:
+      - risk-analysis
+      - quant-statistics
+      - asset-allocation
+      - hedging-strategy
+      - performance-attribution
+      - correlation-analysis
+      - correlation-regime
+      - pair-trading
+    twin_pairs:
+      - pair: quantlib_call × risk-analysis × quant-statistics
+        ref: K16
+        arbitration: All computation → quantlib_call's tested functions; the
+          skills supply methodology (what to compute and how to read it).
+      - pair: cashflow_performance × performance-attribution
+        ref: performance stem
+        arbitration: TWR/XIRR/MOIC with cash flows in/out → tool; Brinson/
+          factor attribution methodology → skill.
+    description: >-
+      Risk, statistics and portfolio specialist (风险、统计与组合). Delegate:
+      standalone risk metrics on held positions — VaR/CVaR/EVT and their
+      backtests, max drawdown, Monte Carlo stress (风险度量/压力测试); ADF/
+      cointegration/GARCH and hypothesis tests (统计检验); correlation structure
+      and edge-density regime detection (相关性结构/市场状态); pair-trading
+      spread construction, half-life and Kalman hedge ratios (配对构建);
+      portfolio allocation optimizers and hedge design (资产配置/对冲); Brinson
+      and factor performance attribution (业绩归因); and true time-weighted
+      returns for portfolios with subscriptions/redemptions (TWR/XIRR/MOIC,
+      含申赎的收益计量). All math goes through quantlib_call. NOT for:
+      backtesting a trading strategy or any factor IC work (→ quant-agent),
+      DCF/comps valuation math (→ valuation-agent), market data fetching (→
+      market-data-agent), options pricing or payoff (→ derivatives-agent), or
+      reading live broker positions to analyze (→ trading-connector-agent
+      reads; this agent computes on what the parent hands it).
+    rationale: >-
+      quantlib_call is shared with quant-agent and valuation-agent by design —
+      it is the project's single compute entry point (K16), and the descriptions
+      carry the arbitration sentences D2-1 validated: backtest-adjacent math →
+      quant-agent, DCF/comps → valuation-agent, standalone risk/statistics/
+      attribution on held positions → here. pair-trading stays in D09 per the
+      audit's cluster (检验→quant-statistics, 结构→correlation-analysis,
+      策略→pair-trading); executing the resulting backtest is explicitly handed
+      to quant-agent in the NOT-for.
+
+  - name: valuation-agent
+    domain: D10+D12
+    version: 0
+    recommendation: admit
+    tools:
+      - quantlib_call
+      - prediction_market
+    skills:
+      - valuation-model
+      - investor-lenses
+      - management-deep-dive
+      - private-company-research
+      - deep-company-series
+      - thesis-tracker
+      - bottleneck-hunter
+      - research-discipline
+      - behavioral-finance
+      - report-generate
+      - corporate-events
+      - ashare-pre-st-filter
+      - adr-hshare
+      - earnings-forecast
+      - earnings-revision
+      - event-driven
+    twin_pairs:
+      - pair: quantlib_call × valuation-model
+        ref: K16
+        arbitration: DCF/comps/three-statement computation → quantlib_call
+          (valuation.* modules); valuation methodology, PE-Band/PB-ROE framing
+          and valuation-trap detection → skill.
+      - pair: prediction_market × event-driven
+        ref: K20
+        arbitration: Market-implied event probabilities (Polymarket contracts)
+          → tool; event-driven strategy construction around them → skill.
+    description: >-
+      Valuation and company deep-research specialist (估值与公司深研). Delegate:
+      DCF/DDM/SOTP and relative valuation (PE-Band/PB-ROE/EV-EBITDA) with
+      sensitivity grids, computed via quantlib_call's valuation module
+      (估值建模); investor-lens overlays, management integrity/ability
+      assessment (管理层评估), pre-IPO private-company fair-value ranges, and
+      publication-grade company deep-dive series; investment-thesis writing
+      with red lines and quarterly re-checks (投资论点跟踪); event-driven and
+      special-situation work — M&A arbitrage spreads, shareholder increase/
+      decrease signals (增减持), A-share pre-ST risk prediction (ST预警),
+      ADR/H-share premium tracking (跨上市溢价), earnings forecasts and estimate
+      revisions (SUE/PEAD/业绩超预期), and market-implied event probabilities
+      from prediction markets (事件合约隐含概率). This agent INTERPRETS; it does
+      not fetch primary data. NOT for: fetching statements, filings, news,
+      consensus or 13F data (→ fundamentals-text-agent), macro cycle
+      positioning or geopolitical crisis frameworks (→ macro-sector-agent),
+      OHLCV (→ market-data-agent), risk metrics on the resulting position (→
+      risk-portfolio-agent), or backtests (→ quant-agent).
+    rationale: >-
+      D10 has zero tools of its own in the audit; the honest tool surface is
+      exactly two — quantlib_call for the valuation engine and prediction_market
+      as the D12 event-data inlet (kept here rather than altdata-agent because
+      the domain table assigns it to D12 and it feeds the event-driven skill).
+      The 16-skill breadth is the residual risk: skills are lazy one-line
+      directory entries so the routing cost is low, but if the D4 admission
+      eval shows over-delegation (R2 > 5%), the pre-registered split is D10
+      company-research vs D12 special-situations into two candidates.
+
+  - name: macro-sector-agent
+    domain: D11
+    version: 0
+    recommendation: admit
+    tools:
+      - get_macro_series
+      - get_sector_info
+    skills:
+      - macro-analysis
+      - global-macro
+      - geopolitical-risk
+      - commodity-analysis
+      - sector-rotation
+      - regulatory-knowledge
+    twin_pairs:
+      - pair: get_sector_info × sector-rotation
+        ref: K19
+        arbitration: Board membership / today's board rankings → tool;
+          rotation scoring and industry-chain framework → skill.
+      - pair: get_macro_series × macro-analysis × global-macro
+        ref: K9
+        arbitration: FRED series fetch (key-gated) → tool; China/single-market
+          cycle positioning → macro-analysis; cross-market FX/capital-flow
+          transmission → global-macro.
+    description: >-
+      Macro, sector and regulation specialist (宏观、行业与监管). Delegate:
+      China/single-market cycle positioning and central-bank policy reading
+      (国内宏观周期), global macro transmission — FX, capital flows, rates
+      (全球宏观/汇率), geopolitical crisis signal quantification (地缘危机),
+      commodity supply-demand and pricing frameworks (大宗商品), A-share
+      sector/concept board membership and board rankings (板块归属/行业排名),
+      industry prosperity scoring and rotation (行业轮动), FRED macro series
+      (CPI/失业率/联邦基金利率, key-gated), and trading-rule / tax / regulatory
+      knowledge (涨跌停/ST规则/跨境税务). NOT for: market-implied event
+      probabilities — Polymarket contracts (→ valuation-agent), company-level
+      event analysis such as a specific stock's ST risk (→ valuation-agent),
+      per-stock or northbound capital-flow data (→ market-data-agent), fund/ETF
+      product analysis (→ funds-fi-agent), or OHLCV (→ market-data-agent).
+    rationale: >-
+      get_sector_info moved here from the §8.1 market-data draft: its ranking
+      mode is the sector-rotation data feed, and co-locating data with its
+      framework removes the K19 ambiguity at the routing layer instead of
+      paying for an arbitration sentence forever. The two tools are both
+      key-gated or mode-split (Q12/Q14), so the description carries the
+      gating note. The K9 macro split (domestic vs global) and K20 event-
+      probability boundary against valuation-agent are the two sentences this
+      candidate's routing lives or dies on.
+
+  - name: altdata-agent
+    domain: D13
+    version: 0
+    recommendation: admit
+    tools:
+      - sentiment
+    skills:
+      - sentiment-analysis
+      - social-media-intelligence
+      - onchain-analysis
+      - stablecoin-flow
+      - defi-yield
+      - liquidation-heatmap
+      - token-unlock-treasury
+    twin_pairs:
+      - pair: sentiment × sentiment-analysis
+        ref: K3/Q1 (canonical twin)
+        arbitration: Single-text score or crypto Fear & Greed number → tool;
+          market-level sentiment framework (两融/北向/PCR) → skill.
+    description: >-
+      Sentiment and alternative-data specialist (情绪与另类数据). Delegate:
+      single-text sentiment scoring and the crypto Fear & Greed Index
+      (文本情绪打分/恐贪指数), market-level sentiment frameworks (融资融券/北向/
+      PCR 情绪面), social-media signal extraction from Twitter/Telegram/
+      Discord/Reddit (社媒舆情), on-chain metrics — active addresses, whale
+      tracking, TVL, MVRV/NVT/SOPR (链上数据), stablecoin mint/burn and
+      exchange-reserve flows (稳定币流向), DeFi yield comparison and
+      sustainability (DeFi 收益), liquidation levels and stop-hunt zones
+      (清算热力图), and token unlock schedules with sell-pressure forecasting
+      (解锁抛压). NOT for: market-implied event probabilities (→
+      valuation-agent's prediction_market), perpetual funding-rate/basis
+      strategy design (→ derivatives-agent), order-book depth or impact cost
+      (→ market-data-agent), structured per-stock news (→
+      fundamentals-text-agent), or crypto OHLCV (→ market-data-agent).
+    rationale: >-
+      The honest tool surface is one tool — D13 is a methodology-skill domain
+      whose data comes from parent fetches and web sources. orderbook_depth and
+      prediction_market were cut to their domain-table owners (D01, D12); what
+      remains is unambiguous "alternative data" identity. The residual risk is
+      K11: crypto-derivative themes (funding/liquidation) span this agent and
+      derivatives-agent — the descriptions arbitrate data-vs-strategy, and the
+      D4 admission eval should watch this pair specifically.
+
+  - name: funds-fi-agent
+    domain: D14
+    version: 0
+    recommendation: admit
+    tools:
+      - etf_holdings
+    skills:
+      - fund-analysis
+      - etf-analysis
+      - credit-analysis
+      - convertible-bond
+      - dividend-analysis
+      - us-etf-flow
+    twin_pairs:
+      - pair: etf_holdings × etf-analysis
+        ref: K15
+        arbitration: Holdings look-through data (N-PORT / A-share reports) →
+          tool; product screening, fee and tracking-error analysis → skill.
+      - pair: etf_holdings × us-etf-flow
+        ref: K15
+        arbitration: What an ETF holds → tool; US ETF money-flow and style-
+          factor flows → skill.
+    description: >-
+      Funds, ETF and fixed-income specialist (基金、ETF 与固收). Delegate: ETF
+      look-through — full constituent holdings from SEC N-PORT or A-share fund
+      reports (ETF 持仓穿透), fund screening with Morningstar/Sharpe/style-box
+      and manager evaluation (基金筛选/经理评价), ETF fee, tracking-error and
+      liquidity comparison (ETF 产品分析), US ETF fund flows and style-factor
+      flows (美股 ETF 资金流), credit-bond rating, spread and default analysis
+      including 城投债 (信用债), convertible-bond three-dimensional valuation
+      with 下修/强赎/回售 game analysis (可转债), and dividend quality, payout
+      sustainability and yield-trap checks (红利/股息). NOT for: issuer
+      financial-statement fetching (→ fundamentals-text-agent), 13F manager
+      books (→ fundamentals-text-agent), portfolio-level VaR or attribution on
+      the user's holdings (→ risk-portfolio-agent), macro-cycle sector
+      rotation (→ macro-sector-agent), option pricing on convertible embedded
+      options (→ derivatives-agent), or price data (→ market-data-agent).
+    rationale: >-
+      One tool, six skills: like altdata-agent this is a knowledge-concentration
+      candidate whose value is taking the fund/FI methodology surface off the
+      main loop. get_financial_statements was cut to fundamentals-text-agent
+      (credit analysis consumes issuer financials through the parent). Keeping
+      us-etf-flow here rather than in market-data-agent co-locates the K15
+      triple (holdings/product/flows) in one whitelist, so the arbitration
+      happens inside the candidate instead of across the routing boundary.
+
+  - name: user-analytics-agent
+    domain: D15
+    version: 0
+    recommendation: admit
+    tools:
+      - analyze_trade_journal
+      - extract_shadow_strategy
+      - run_shadow_backtest
+      - render_shadow_report
+      - scan_shadow_signals
+    skills:
+      - shadow-account
+      - trade-journal
+    twin_pairs:
+      - pair: analyze_trade_journal × trade-journal
+        ref: G9
+        arbitration: Parse-and-diagnose a broker export → tool (step 1);
+          journal-analysis methodology → skill.
+      - pair: extract_shadow_strategy / run_shadow_backtest /
+          render_shadow_report / scan_shadow_signals × shadow-account
+        ref: G9
+        arbitration: The skill is the pipeline umbrella (entry point and step
+          order); the four tools are steps 2-5 and fail without earlier
+          artifacts.
+    description: >-
+      User trade-journal and shadow-account specialist (交割单与影子账户).
+      Delegate the strict five-step pipeline in order: (1) parse a broker
+      export (同花顺/东方财富/富途/generic CSV) into a trading profile with four
+      behavior diagnostics (处置效应/过度交易/追涨/锚定); (2) extract 3-5
+      human-readable shadow rules from profitable roundtrips; (3) backtest the
+      shadow across A/HK/US/crypto with delta-PnL attribution; (4) render the
+      8-section HTML/PDF shadow report; (5) scan today's symbols matching the
+      shadow entry cadence. Step order is mandatory. NOT for: generic document
+      or PDF text extraction (→ web-docs-agent), strategy construction not
+      derived from the user's own journal (→ quant-agent), live account
+      positions or orders (→ trading-connector-agent), or generic performance
+      attribution of a held portfolio (→ risk-portfolio-agent).
+    rationale: >-
+      The cleanest candidate of the eleven: D15 has zero cross-domain tool
+      overlap, the five tools form one strict pipeline (G9), and both skills
+      map one-to-one onto pipeline stages. The only boundary worth a sentence
+      is the entry ambiguity — a broker export is also a "document" — resolved
+      by the rule that parse-and-analyze routes here while generic text
+      extraction routes to web-docs-agent.
+
+  - name: trading-connector-agent
+    domain: D16
+    version: 0
+    recommendation: conditional  # SAFETY GATE — see safety_note; do NOT admit
+                                 # without the separate safety review.
+    safety_note: >-
+      The trading_* tool family is globally denied in the production tool
+      policy (vibe-trading-tools.json). Admitting this candidate requires a
+      separate safety review and an explicit per-deployment policy grant
+      before any routing traffic. Scope here is read-only by construction:
+      order placement/cancellation (trading_place_order / trading_cancel_order)
+      is not on the MCP surface at all (agent+CLI only, mandate-gated), and
+      the whitelist below contains only the eight read-side verbs. Even so,
+      these tools read real account state, so the gate applies to the whole
+      family until the review says otherwise.
+    tools:
+      - trading_connections
+      - trading_select_connection
+      - trading_check
+      - trading_account
+      - trading_positions
+      - trading_orders
+      - trading_quote
+      - trading_history
+    skills: []
+    twin_pairs: []  # no skills whitelisted → no tool×skill twins
+    description: >-
+      Read-only broker connector specialist (券商连接器, 只读). Delegate ONLY
+      when a connector profile is configured: listing available connector
+      profiles, selecting the default connection, checking configuration
+      reachability, and reading the user's own account summary, positions, open
+      orders, and connector-side quotes/history (我的账户/持仓/挂单/券商行情).
+      Mandatory entry order: trading_connections → trading_select_connection →
+      the read tools. NOT for: market-wide OHLCV or quotes when no connector is
+      configured (→ market-data-agent's get_market_data), order placement or
+      cancellation of any kind (not available on this surface — main agent
+      explains the mandate-gated CLI path), portfolio risk computation on the
+      positions read here (→ risk-portfolio-agent), or any research/backtest
+      work. SAFETY: this family is globally denied in production pending the
+      separate safety review.
+    rationale: >-
+      The boundary against market-data-agent is the K21 rule made explicit:
+      account-view quotes/history route here, market-wide data routes there,
+      and "no connector configured" collapses the whole domain back to
+      get_market_data. The candidate is defined now so the safety review has a
+      concrete whitelist to evaluate; the conditional recommendation and the
+      deny-by-default note are the deliverable, not admission.
+
+  - name: orchestrator
+    domain: D17
+    version: 0
+    recommendation: reject
+    tools:  # assessed whitelist, recorded for the rejection rationale
+      - start_research_goal
+      - get_research_goal
+      - add_goal_evidence
+      - update_research_goal_status
+      - list_swarm_presets
+      - run_swarm
+      - get_swarm_status
+      - get_run_result
+      - list_runs
+      - retry_run
+    skills:
+      - research-goal
+      - data-routing
+    twin_pairs:
+      - pair: start_research_goal × research-goal
+        ref: K18
+        arbitration: Tool drives the goal lifecycle; the skill is the workflow
+          guide. (Recorded for completeness; moot if rejected.)
+    description: >-
+      (Assessed, not for admission.) Research orchestration and governance
+      verbs: research-goal lifecycle and evidence ledger, swarm preset listing
+      and dispatch, run status polling and retry.
+    rationale: >-
+      Rejection reasoning: (1) In the current architecture orchestration IS the
+      main loop — the parent that would route to this subagent already holds
+      run_swarm/list_swarm_presets as always-on tools, so the parent must still
+      recognize "this needs a swarm" to make the delegation, at which point it
+      can call run_swarm itself; the subagent adds a hop without shrinking any
+      decision surface. (2) The research-goal tools are session-state spine —
+      delegating evidence-ledger writes across an agent boundary breaks the
+      audit model where the main agent's goal tracks the whole conversation.
+      (3) A subagent calling run_swarm spawns a swarm from a worker-like
+      context whose nesting semantics the runtime does not define. (4) The real
+      confusion risk here is run_swarm vs host-native orchestration (K12),
+      which is a description-level arbitration problem, not a whitelist problem.
+      These ten tools stay always-on at the main agent per audit §8.2 input 2.
+
+# ---------------------------------------------------------------------------
+# Boundary matrix: all 55 candidate pairs (C(11,2)), one line each on the
+# adjacent tools/concepts that could cause routing confusion.
+# risk: high = known audit K-item or shared tool; medium = shared concept
+# vocabulary; low = minimal adjacency.
+# ---------------------------------------------------------------------------
+boundary_matrix:
+  - pair: market-data-agent × fundamentals-text-agent
+    risk: high
+    confusion: >-
+      A-share screening triple (K13): iwencai_search (MD) vs fundamental-filter
+      skill (FT) vs screen_market (MD) — "帮我选低估值银行股" hits all three.
+      Rule: natural-language A-share screen → MD/iwencai; PE/PB/ROE field
+      filter workflow → FT; same-day price/volume ranking only → MD.
+  - pair: market-data-agent × derivatives-agent
+    risk: medium
+    confusion: >-
+      Underlying spot/vol/IV inputs — options work needs market data, but DV
+      never fetches; the parent chains MD → DV. "BTC 期权" phrasing touches
+      both.
+  - pair: market-data-agent × risk-portfolio-agent
+    risk: low
+    confusion: >-
+      Returns series are the input to every RP computation; RP consumes
+      parent-supplied series and never fetches. Little lexical overlap.
+  - pair: market-data-agent × valuation-agent
+    risk: low
+    confusion: >-
+      VL fetches nothing; only the generic word "price/估值" is shared.
+  - pair: market-data-agent × macro-sector-agent
+    risk: high
+    confusion: >-
+      get_sector_info (MS) vs screen_market / get_fund_flow (MD): "板块资金
+      流向" and "行业排名" phrasings sit on the cut. Rule: board membership /
+      board ranking → MS; per-stock or market-wide money flow → MD.
+  - pair: market-data-agent × altdata-agent
+    risk: medium
+    confusion: >-
+      "BTC 数据" ambiguity — OHLCV/order-book (MD) vs on-chain/sentiment (AD).
+      Rule: price/depth data → MD; chain metrics and mood → AD.
+  - pair: market-data-agent × funds-fi-agent
+    risk: medium
+    confusion: >-
+      "ETF 数据" ambiguity — ETF price/volume bars (MD) vs ETF holdings and
+      product metrics (FF).
+  - pair: market-data-agent × user-analytics-agent
+    risk: low
+    confusion: >-
+      Shadow backtests fetch internally through the backtest engine; no shared
+      user-facing verbs.
+  - pair: market-data-agent × trading-connector-agent
+    risk: high
+    confusion: >-
+      K21 direct tool collision: trading_quote / trading_history (TC) vs
+      get_market_data (MD) both return quotes/bars. Rule: no connector
+      configured → MD; account-view or connector-realtime → TC.
+  - pair: market-data-agent × orchestrator
+    risk: low
+    confusion: >-
+      Disjoint (data fetch vs governance verbs); orchestrator is recommended
+      for rejection anyway.
+  - pair: fundamentals-text-agent × derivatives-agent
+    risk: low
+    confusion: >-
+      Earnings-event option plays touch both; FT fetches the fundamental
+      facts, DV prices the option structure. Sequential, not competing.
+  - pair: fundamentals-text-agent × risk-portfolio-agent
+    risk: medium
+    confusion: >-
+      "资产负债表风险" phrasing — credit scores (Altman Z via RP/quantlib) vs
+      statement data (FT). Rule: fetch → FT; score/compute → RP.
+  - pair: fundamentals-text-agent × valuation-agent
+    risk: high
+    confusion: >-
+      Earnings estimates: get_research_reports (FT, consensus data) vs
+      earnings-forecast / earnings-revision skills (VL, SUE/PEAD analysis);
+      statement fetch vs interpretation generally. Rule: FT fetches and reads,
+      VL interprets.
+  - pair: fundamentals-text-agent × macro-sector-agent
+    risk: medium
+    confusion: >-
+      "行业数据/研报" phrasing — FT is company-level structured data; MS is
+      macro series and board rankings. Industry research-report full text is
+      host-side, outside both.
+  - pair: fundamentals-text-agent × altdata-agent
+    risk: high
+    confusion: >-
+      K17: get_stock_news (FT) vs social-media-intelligence (AD) — "最近有什么
+      关于 XX 的消息" hits both. Rule: structured per-stock news → FT; social
+      chatter → AD; news miss → web-docs-agent fallback.
+  - pair: fundamentals-text-agent × funds-fi-agent
+    risk: medium
+    confusion: >-
+      Issuer financials for credit analysis (FT fetches, FF analyzes) and 13F
+      manager books (FT) vs fund manager evaluation (FF) — "基金公司持仓"
+      straddles.
+  - pair: fundamentals-text-agent × user-analytics-agent
+    risk: low
+    confusion: >-
+      Disjoint — journal parsing is not fundamentals.
+  - pair: fundamentals-text-agent × trading-connector-agent
+    risk: medium
+    confusion: >-
+      "我持有的公司财报" mixes identity/holdings (TC) with statement fetch (FT);
+      the parent chains TC → FT.
+  - pair: fundamentals-text-agent × orchestrator
+    risk: low
+    confusion: Disjoint.
+  - pair: derivatives-agent × risk-portfolio-agent
+    risk: medium
+    confusion: >-
+      Greeks/BS pricing (DV) vs VaR/EVT on an option position (RP), and
+      hedging-strategy skill (RP) vs option protection legs (DV) — "用期权
+      对冲" sits on the cut. Rule: design the hedge ratio → RP; price the
+      option leg → DV.
+  - pair: derivatives-agent × valuation-agent
+    risk: medium
+    confusion: >-
+      Earnings-event option strategies — VL owns the earnings-event view, DV
+      owns the option structure built around it.
+  - pair: derivatives-agent × macro-sector-agent
+    risk: medium
+    confusion: >-
+      Commodity futures term structure (DV) vs commodity supply-demand
+      framework (MS) — "原油期限结构/怎么看铜价" phrasing overlaps.
+  - pair: derivatives-agent × altdata-agent
+    risk: high
+    confusion: >-
+      K11: funding-rate/basis themes span crypto-derivatives and
+      perp-funding-basis (DV) vs liquidation-heatmap and stablecoin-flow (AD).
+      Rule: strategy/carry construction → DV; market-state data reads → AD.
+  - pair: derivatives-agent × funds-fi-agent
+    risk: medium
+    confusion: >-
+      Convertible bonds embed options — FF owns converts (债底+内嵌期权博弈);
+      DV owns listed/exchange options. "转债期权价值" straddles.
+  - pair: derivatives-agent × user-analytics-agent
+    risk: low
+    confusion: Disjoint.
+  - pair: derivatives-agent × trading-connector-agent
+    risk: low
+    confusion: >-
+      Broker option positions are TC reads; pricing/payoff is DV. Sequential.
+  - pair: derivatives-agent × orchestrator
+    risk: low
+    confusion: Disjoint.
+  - pair: risk-portfolio-agent × valuation-agent
+    risk: medium
+    confusion: >-
+      quantlib_call is shared: valuation.* modules (DCF/comps → VL) vs
+      risk/attribution/performance modules (→ RP). "算一下这个组合" needs the
+      noun after it to route.
+  - pair: risk-portfolio-agent × macro-sector-agent
+    risk: medium
+    confusion: >-
+      correlation-regime skill (RP, edge-density market state) vs macro cycle
+      positioning (MS) — "市场状态/regime" vocabulary is shared.
+  - pair: risk-portfolio-agent × altdata-agent
+    risk: low
+    confusion: >-
+      Sentiment as a risk input — AD supplies the read, RP computes risk on it.
+      Sequential.
+  - pair: risk-portfolio-agent × funds-fi-agent
+    risk: medium
+    confusion: >-
+      Portfolio attribution (RP, Brinson/factor) vs fund style-box evaluation
+      (FF) — "这只基金/组合的归因" straddles when the portfolio is funds.
+  - pair: risk-portfolio-agent × user-analytics-agent
+    risk: medium
+    confusion: >-
+      "归因" both sides: UA's shadow delta-PnL attribution (vs the user's own
+      trades) vs RP's Brinson/factor attribution (vs a benchmark). Rule: own
+      journal → UA; held portfolio → RP.
+  - pair: risk-portfolio-agent × trading-connector-agent
+    risk: medium
+    confusion: >-
+      "我持仓的风险" — TC reads the positions, RP computes the risk; the parent
+      chains them. (portfolio_summary / portfolio_risk_xray are internal-only,
+      not on MCP, so no tool collision exists on this surface.)
+  - pair: risk-portfolio-agent × orchestrator
+    risk: low
+    confusion: Disjoint.
+  - pair: valuation-agent × macro-sector-agent
+    risk: high
+    confusion: >-
+      K20: prediction_market (VL, market-implied probability) vs
+      geopolitical-risk / macro frameworks (MS) — "降息概率" → VL, "降息对大
+      类资产的影响" → MS. Mixing framework speculation with market pricing is
+      the failure mode both descriptions now guard.
+  - pair: valuation-agent × altdata-agent
+    risk: medium
+    confusion: >-
+      Event sentiment scoring (AD) vs event-driven strategy construction (VL)
+      — "这则消息怎么交易" touches both; AD scores, VL builds.
+  - pair: valuation-agent × funds-fi-agent
+    risk: medium
+    confusion: >-
+      红利股 overlap: dividend-stock valuation (VL) vs dividend-analysis yield
+      quality and yield-trap checks (FF). Rule: what is it worth → VL; is the
+      payout sustainable → FF.
+  - pair: valuation-agent × user-analytics-agent
+    risk: low
+    confusion: Disjoint.
+  - pair: valuation-agent × trading-connector-agent
+    risk: low
+    confusion: >-
+      "我持仓的股票值多少" chains TC (read holdings) → VL (value them);
+      sequential, not competing.
+  - pair: valuation-agent × orchestrator
+    risk: low
+    confusion: Disjoint.
+  - pair: macro-sector-agent × altdata-agent
+    risk: medium
+    confusion: >-
+      Fear & Greed / macro sentiment reads (AD) vs macro cycle positioning
+      (MS) — "市场情绪与周期" phrasing. Rule: the index number → AD; what it
+      means for allocation → MS.
+  - pair: macro-sector-agent × funds-fi-agent
+    risk: medium
+    confusion: >-
+      "行业 ETF 配置" — sector rotation framework (MS) vs ETF product selection
+      and allocation (FF). MS picks the sectors, FF picks the vehicles.
+  - pair: macro-sector-agent × user-analytics-agent
+    risk: low
+    confusion: Disjoint.
+  - pair: macro-sector-agent × trading-connector-agent
+    risk: low
+    confusion: Disjoint.
+  - pair: macro-sector-agent × orchestrator
+    risk: low
+    confusion: Disjoint.
+  - pair: altdata-agent × funds-fi-agent
+    risk: medium
+    confusion: >-
+      "资金流向" broad phrasing — us-etf-flow (FF, US ETF flows) vs stablecoin
+      / on-chain flows (AD). Market noun in the query disambiguates.
+  - pair: altdata-agent × user-analytics-agent
+    risk: low
+    confusion: Disjoint.
+  - pair: altdata-agent × trading-connector-agent
+    risk: low
+    confusion: Disjoint.
+  - pair: altdata-agent × orchestrator
+    risk: low
+    confusion: Disjoint.
+  - pair: funds-fi-agent × user-analytics-agent
+    risk: low
+    confusion: Disjoint.
+  - pair: funds-fi-agent × trading-connector-agent
+    risk: low
+    confusion: >-
+      The user's fund holdings (TC read) vs fund analysis (FF); sequential.
+  - pair: funds-fi-agent × orchestrator
+    risk: low
+    confusion: Disjoint.
+  - pair: user-analytics-agent × trading-connector-agent
+    risk: medium
+    confusion: >-
+      "我的交易" ambiguity — realized-trade journal analysis (UA, uploaded
+      export) vs live account orders/positions (TC, connector read). Source of
+      the records disambiguates: file → UA; broker API → TC.
+  - pair: user-analytics-agent × orchestrator
+    risk: low
+    confusion: Disjoint.
+  - pair: trading-connector-agent × orchestrator
+    risk: low
+    confusion: Disjoint.
