@@ -742,15 +742,18 @@ commits），结论由门控/测试证据主导。非阻塞建议 4 项：门控
      场景子代理 49 次调用零越权、能力不可用显式披露（"caveat, not silent
      substitution"）。证据：`artifacts/d_l2_rendered/`（SMOKE_NOTES.md +
      全部轨迹）。
-2. **孪生仲裁证据补强**（D4 的前置门槛）：生产遥测或扩大样本验证
-   prompt 层孪生仲裁句的效果（Level-W 协议看不到子代理 prompt，此缺口
-   只能靠真实会话证据闭合）；未闭合前**不执行主循环收敛**。
-   进展：落地冒烟中未出现孪生误用，但样本不足以关闭——门槛维持开放。
-3. **D4 铺开评审**：以上两步完成后，按 §8.1 全表评审其余 10+1 子代理
-   （market-data / fundamentals-text / derivatives / risk-portfolio /
-   valuation / macro-sector / altdata / funds-fi / user-analytics /
-   trading-connector / orchestrator），评测协议直接复用
-   `d_batch/`（路由模板 + 语料构建器，换定义文件即可）。
+2. **孪生仲裁证据补强** ✅ **已闭合（2026-08-29，D2 Track A）**：治理修订
+   （用户批准，D2_PLAN §2）——原"生产遥测唯一门禁"因两个工程事实修订为
+   "协议修复 + 功效充足合成复测为主门禁，遥测降为生态确认"：Level-W 判官
+   结构性看不见仲裁句；生产流量攒 N≈350 需数月。修复后复测（N=240/320，
+   语料孪生富集 + D19 标注纪律）：quant Δ=+6.67pp CI[+1.95,+11.61]、
+   webdocs Δ=+33.44pp CI[+27.36,+39.28]，两域 CI 下界为正——**不是非劣，
+   是优**。裁决：`artifacts/d2/track_a_verdict.md`。
+3. **D4 铺开评审**：D2-1 已通过门禁，转为可启动。按 §8.1 全表评审其余
+   10+1 子代理（market-data / fundamentals-text / derivatives /
+   risk-portfolio / valuation / macro-sector / altdata / funds-fi /
+   user-analytics / trading-connector / orchestrator），评测协议直接复用
+   `d_batch/`（路由模板 + 语料构建器 + d2 验证器/功效分析工具链）。
 
 **状态快照**：D1/D2 有条件通过（判据对照见 `artifacts/d_batch_verdict.md`）；
 judge 轨迹与 L2 轨迹已归档（`artifacts/d_routing_*`、`artifacts/d_l2/`）；
