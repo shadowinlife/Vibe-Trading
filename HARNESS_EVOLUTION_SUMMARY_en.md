@@ -73,15 +73,17 @@ for both were prepared — and shipped with the landing.
 ## Where things stand
 
 - Approach B is live in production (−17.9% disclosure tax per planning turn);
-- **Approach D's two pilot agents are live in production (2026-08-28)** — the
-  landing itself caught and closed one deeper hole: the plugin runtime quietly
-  injects four extra tool namespaces (websearch & friends) that no template
-  scan can see, so the deny gate now covers those too; in the post-fix
-  adversarial run the quant room made 49 tool calls with zero escapes and
-  honestly disclosed "I couldn't fetch this live — the news list is curated,
-  not scraped." The remaining eleven rooms stay closed until one residual
-  question (occasionally grabbing the "manual" instead of the "tool" for
-  similarly-named pairs) is confirmed fixed by production telemetry;
+- **Approach D's specialist rooms are fully built and certified (2026-08-29)**:
+  the two pilot rooms (quant + web-docs) are live in production and the main
+  desk formally handed over 13 specialist instruments (keeping 46 general
+  ones); nine more rooms passed a three-round admissions exam — the first two
+  rounds each caught a candidate whose self-description was miswritten, and
+  fixing the description (never the exam) passed everyone in round three.
+  One proposed "general manager" room was honestly rejected (routing is the
+  main desk's own job) and one "trading desk" room stays gated pending a
+  safety review. All 30 team presets also gained the honesty clause ("if you
+  lack the tool, say so") and arbitration rules for same-named tool/skill
+  pairs;
 - Approaches A and C are archived with full failure evidence and are
   explicitly marked **do not retry**.
 
