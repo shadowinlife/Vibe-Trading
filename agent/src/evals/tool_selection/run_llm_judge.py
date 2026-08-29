@@ -58,10 +58,12 @@ import yaml
 from src.evals.tool_selection.llm_judge_protocol import (
     SYSTEM_PROMPT,
     USER_TEMPLATE,
+    USER_TEMPLATE_V2,
     build_candidates_block,
     build_name_kinds,
     parse_response,
     prompt_template_sha256,
+    prompt_template_v2_sha256,
     score_response,
     score_response_lenient,
 )
@@ -143,7 +145,7 @@ def load_env_file(path: Path) -> dict[str, str]:
         if not stripped or stripped.startswith("#") or "=" not in stripped:
             continue
         if stripped.startswith("export "):
-            stripped = stripped[len("export "):]
+            stripped = stripped[len("export ") :]
         key, _, value = stripped.partition("=")
         key, value = key.strip(), value.strip()
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
@@ -284,7 +286,8 @@ def derive_spent(lines: list[dict]) -> BudgetState:
         Tokens (prompt + completion) and API calls already spent.
     """
     tokens = sum(
-        int(record.get("prompt_tokens") or 0) + int(record.get("completion_tokens") or 0)
+        int(record.get("prompt_tokens") or 0)
+        + int(record.get("completion_tokens") or 0)
         for record in lines
     )
     calls = sum(int(record.get("api_calls") or 1) for record in lines)
@@ -478,6 +481,7 @@ def run_surface(
     prices: dict,
     limit: int | None = None,
     tag: str | None = None,
+    policy_text: str | None = None,
     client_factory=build_client,
 ) -> int:
     """Score one (model, surface) run with resume and budget enforcement.
@@ -494,6 +498,9 @@ def run_surface(
         limit: Score only the first N entries (None = all).
         tag: Optional run tag; namespaces trace + report artifacts so a
             targeted-subset run stays separate from the full-surface run.
+        policy_text: D2 protocol v2 routing policy (e.g. the subagent's
+            twin-arbitration sentence); switches the run to the v2 template
+            and records the policy hash in the trace header.
         client_factory: Callable (model_cfg, env) -> judge client;
             injectable for offline tests.
 
@@ -502,7 +509,9 @@ def run_surface(
         3 budget cap reached.
     """
     trace_path = trace_path_for(artifacts_dir, model_cfg["id"], surface, tag)
-    template_sha = prompt_template_sha256()
+    template_sha = (
+        prompt_template_v2_sha256() if policy_text else prompt_template_sha256()
+    )
     header, lines = load_trace(trace_path)
     if header is not None and header.get("prompt_template_sha256") != template_sha:
         print(
@@ -513,7 +522,7 @@ def run_surface(
         )
         return EXIT_CONFIG
     if header is None:
-        append_line(trace_path, {
+        header_record = {
             "header": True,
             "prompt_template_sha256": template_sha,
             "model": model_cfg["id"],
@@ -524,14 +533,23 @@ def run_surface(
                 "max_response_tokens": model_cfg["max_response_tokens"],
                 "budget": {"max_tokens": caps.max_tokens, "max_calls": caps.max_calls},
             },
-        })
+        }
+        if policy_text:
+            header_record["policy_sha256"] = hashlib.sha256(
+                policy_text.encode("utf-8")
+            ).hexdigest()
+        append_line(trace_path, header_record)
 
     done_ids = {record.get("query_id") for record in lines}
     state = derive_spent(lines)
     name_kinds = build_name_kinds(corpus)
     candidates_block = build_candidates_block(corpus)
     last_prompt_tokens = next(
-        (int(r.get("prompt_tokens")) for r in reversed(lines) if r.get("prompt_tokens")),
+        (
+            int(r.get("prompt_tokens"))
+            for r in reversed(lines)
+            if r.get("prompt_tokens")
+        ),
         None,
     )
     client = None
@@ -540,12 +558,20 @@ def run_surface(
     for entry in selected:
         if entry["id"] in done_ids:
             continue
-        user_text = USER_TEMPLATE.format(
-            candidates=candidates_block, query=entry["query"]
+        if policy_text:
+            user_text = USER_TEMPLATE_V2.format(
+                policy=policy_text,
+                candidates=candidates_block,
+                query=entry["query"],
+            )
+        else:
+            user_text = USER_TEMPLATE.format(
+                candidates=candidates_block, query=entry["query"]
+            )
+        estimated_next = (
+            estimate_prompt_tokens(SYSTEM_PROMPT, user_text, last_prompt_tokens)
+            + model_cfg["max_response_tokens"]
         )
-        estimated_next = estimate_prompt_tokens(
-            SYSTEM_PROMPT, user_text, last_prompt_tokens
-        ) + model_cfg["max_response_tokens"]
         violation = budget_violation(state, estimated_next, caps)
         if violation:
             abort_message = violation
@@ -592,13 +618,20 @@ def run_surface(
         lines.append(record)
         state = BudgetState(
             tokens_spent=state.tokens_spent
-            + outcome["prompt_tokens"] + outcome["completion_tokens"],
+            + outcome["prompt_tokens"]
+            + outcome["completion_tokens"],
             calls_made=state.calls_made + outcome["api_calls"],
         )
         if outcome["prompt_tokens"]:
             last_prompt_tokens = outcome["prompt_tokens"]
-        mark = "top1" if scores["top1_hit"] else (
-            "top3" if scores["top3_hit"] else ("INVALID" if parsed is None else "miss")
+        mark = (
+            "top1"
+            if scores["top1_hit"]
+            else (
+                "top3"
+                if scores["top3_hit"]
+                else ("INVALID" if parsed is None else "miss")
+            )
         )
         picked = parsed.get("first") if parsed else "-"
         print(f"{entry['id']}: {mark} (first={picked})")
@@ -682,7 +715,11 @@ def run_probe(
     state = derive_spent(lines)
     candidates_block = build_candidates_block(corpus)
     last_prompt_tokens = next(
-        (int(r.get("prompt_tokens")) for r in reversed(lines) if r.get("prompt_tokens")),
+        (
+            int(r.get("prompt_tokens"))
+            for r in reversed(lines)
+            if r.get("prompt_tokens")
+        ),
         None,
     )
     client = None
@@ -693,9 +730,10 @@ def run_probe(
             user_text = USER_TEMPLATE.format(
                 candidates=candidates_block, query=entry["query"]
             )
-            estimated_next = estimate_prompt_tokens(
-                SYSTEM_PROMPT, user_text, last_prompt_tokens
-            ) + model_cfg["max_response_tokens"]
+            estimated_next = (
+                estimate_prompt_tokens(SYSTEM_PROMPT, user_text, last_prompt_tokens)
+                + model_cfg["max_response_tokens"]
+            )
             violation = budget_violation(state, estimated_next, caps)
             if violation:
                 print(f"aborted: {violation}", file=sys.stderr)
@@ -711,7 +749,9 @@ def run_probe(
             except JudgeCallError as exc:
                 print(f"error: {exc}", file=sys.stderr)
                 return EXIT_ERROR
-            parsed = parse_response(outcome["raw"]) if outcome["error"] is None else None
+            parsed = (
+                parse_response(outcome["raw"]) if outcome["error"] is None else None
+            )
             record = {
                 "query_id": entry["id"],
                 "repeat": repeat,
@@ -731,7 +771,8 @@ def run_probe(
             lines.append(record)
             state = BudgetState(
                 tokens_spent=state.tokens_spent
-                + outcome["prompt_tokens"] + outcome["completion_tokens"],
+                + outcome["prompt_tokens"]
+                + outcome["completion_tokens"],
                 calls_made=state.calls_made + outcome["api_calls"],
             )
             if outcome["prompt_tokens"]:
@@ -782,12 +823,15 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--config", default=str(CONFIG_PATH),
+        "--config",
+        default=str(CONFIG_PATH),
         help="judge panel config (default: judge_config.yaml; use "
-             "judge_config_a5a8.yaml for the 2-model A5-A8 panel)",
+        "judge_config_a5a8.yaml for the 2-model A5-A8 panel)",
     )
     parser.add_argument(
-        "--surface", choices=("baseline", "post"), default="post",
+        "--surface",
+        choices=("baseline", "post"),
+        default="post",
         help="corpus surface to score (default: post)",
     )
     parser.add_argument(
@@ -797,45 +841,61 @@ def main(argv: list[str] | None = None) -> int:
         help="judge model; all-available runs every model whose key is present",
     )
     parser.add_argument(
-        "--limit", type=int, default=None,
+        "--limit",
+        type=int,
+        default=None,
         help="score only the first N query entries",
     )
     parser.add_argument(
-        "--queries-file", default=None,
+        "--queries-file",
+        default=None,
         help="alternative queries YAML (e.g. a targeted A7/A8 subset); "
-             "defaults to queries.yaml",
+        "defaults to queries.yaml",
     )
     parser.add_argument(
-        "--refs", default=None,
+        "--refs",
+        default=None,
         help="comma-separated arbitration_refs to keep (e.g. Q5,Q6); "
-             "filters the loaded entries",
+        "filters the loaded entries",
     )
     parser.add_argument(
-        "--tag", default=None,
+        "--tag",
+        default=None,
         help="run tag; namespaces trace/report/probe artifacts so a "
-             "targeted-subset run stays separate from the full run",
+        "targeted-subset run stays separate from the full run",
     )
     parser.add_argument(
-        "--baseline-corpus", default=None,
+        "--baseline-corpus",
+        default=None,
         help="explicit baseline corpus snapshot path (overrides "
-             "corpus_baseline_snapshot.yaml)",
+        "corpus_baseline_snapshot.yaml)",
     )
     parser.add_argument(
-        "--post-corpus", default=None,
-        help="explicit post corpus snapshot path (overrides "
-             "corpus_snapshot.yaml)",
+        "--post-corpus",
+        default=None,
+        help="explicit post corpus snapshot path (overrides " "corpus_snapshot.yaml)",
     )
     parser.add_argument(
-        "--probe-only", action="store_true",
+        "--probe-only",
+        action="store_true",
         help="run the determinism probe instead of the main evaluation",
     )
     parser.add_argument(
-        "--probe-tag", default=None,
+        "--probe-tag",
+        default=None,
         help="probe administration tag (--probe-only): namespaces the probe "
-             "JSONL so two independent administrations (test-retest noise "
-             "floor, B test plan §5.2) land in distinct files and never "
-             "clobber each other via resume; takes precedence over --tag "
-             "for the probe artifact",
+        "JSONL so two independent administrations (test-retest noise "
+        "floor, B test plan §5.2) land in distinct files and never "
+        "clobber each other via resume; takes precedence over --tag "
+        "for the probe artifact",
+    )
+    parser.add_argument(
+        "--policy-file",
+        default=None,
+        help="routing-policy text file (D2 protocol v2): renders the policy "
+        "block into the user message so the judge sees the subagent's "
+        "twin-arbitration sentence; switches the trace to the v2 "
+        "template hash",
     )
     args = parser.parse_args(argv)
 
@@ -844,8 +904,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.model != "all-available":
         models = [m for m in models if m["id"] == args.model]
         if not models:
-            print(f"error: model {args.model} not found in {config_path.name}",
-                  file=sys.stderr)
+            print(
+                f"error: model {args.model} not found in {config_path.name}",
+                file=sys.stderr,
+            )
             return EXIT_CONFIG
     caps = BudgetCaps(
         max_tokens=int(config["budget"]["max_input_tokens_per_model_run"]),
@@ -857,8 +919,7 @@ def main(argv: list[str] | None = None) -> int:
     if corpus_override:
         corpus_override = str(_resolve_asset_path(corpus_override))
         if not Path(corpus_override).exists():
-            print(f"error: corpus file not found: {corpus_override}",
-                  file=sys.stderr)
+            print(f"error: corpus file not found: {corpus_override}", file=sys.stderr)
             return EXIT_CONFIG
     corpus = load_corpus(args.surface, corpus_override)
     queries_path = _resolve_asset_path(args.queries_file) if args.queries_file else None
@@ -869,6 +930,13 @@ def main(argv: list[str] | None = None) -> int:
     if not entries:
         print("error: no query entries matched the selection", file=sys.stderr)
         return EXIT_CONFIG
+    policy_text = None
+    if args.policy_file:
+        policy_path = _resolve_asset_path(args.policy_file)
+        if not policy_path.exists():
+            print(f"error: policy file not found: {policy_path}", file=sys.stderr)
+            return EXIT_CONFIG
+        policy_text = policy_path.read_text(encoding="utf-8").strip()
 
     exit_code = EXIT_OK
     for model_cfg in models:
@@ -883,18 +951,30 @@ def main(argv: list[str] | None = None) -> int:
         )
         if args.probe_only:
             code = run_probe(
-                model_cfg=model_cfg, surface=args.surface, caps=caps,
-                probe_cfg=config["determinism_probe"], corpus=corpus,
-                entries=entries, env=env, artifacts_dir=ARTIFACTS_DIR,
+                model_cfg=model_cfg,
+                surface=args.surface,
+                caps=caps,
+                probe_cfg=config["determinism_probe"],
+                corpus=corpus,
+                entries=entries,
+                env=env,
+                artifacts_dir=ARTIFACTS_DIR,
                 limit=args.limit,
                 tag=args.probe_tag if args.probe_tag is not None else args.tag,
             )
         else:
             code = run_surface(
-                model_cfg=model_cfg, surface=args.surface, caps=caps,
-                corpus=corpus, entries=entries, env=env,
-                artifacts_dir=ARTIFACTS_DIR, prices=config.get("prices", {}),
-                limit=args.limit, tag=args.tag,
+                model_cfg=model_cfg,
+                surface=args.surface,
+                caps=caps,
+                corpus=corpus,
+                entries=entries,
+                env=env,
+                artifacts_dir=ARTIFACTS_DIR,
+                prices=config.get("prices", {}),
+                limit=args.limit,
+                tag=args.tag,
+                policy_text=policy_text,
             )
         exit_code = max(exit_code, code)
     return exit_code

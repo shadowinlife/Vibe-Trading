@@ -21,12 +21,29 @@ SYSTEM_PROMPT = (
     "You are a strict tool router for a finance research agent. Given a user "
     "request and the available capabilities (tools and skills, each with id "
     "and description), select the capabilities that best serve the request. "
-    "Answer with ONLY a JSON object: {\"first\": \"<id>\", \"second\": "
-    "\"<id>\", \"third\": \"<id>\"} where <id> is a candidate id exactly as "
+    'Answer with ONLY a JSON object: {"first": "<id>", "second": '
+    '"<id>", "third": "<id>"} where <id> is a candidate id exactly as '
     "listed, in order of suitability. No explanation, no markdown fences."
 )
 USER_TEMPLATE = "## Candidates\n{candidates}\n\n## User request\n{query}"
 CANDIDATE_LINE = "{kind}:{name} — {description}"
+
+# --------------------------------------------------------------------------- #
+# Protocol v2 (D2 Track A, frozen 2026-08-29): the routing-policy block lets
+# the within-arm judge see the production subagent's twin-arbitration sentence.
+# v1 constants stay byte-identical so prior traces keep verifying. Changes
+# require a revision entry in HARNESS_EVOLUTION_D2_PLAN.md §8.
+# --------------------------------------------------------------------------- #
+USER_TEMPLATE_V2 = (
+    "## Routing policy\n{policy}\n\n## Candidates\n{candidates}\n\n"
+    "## User request\n{query}"
+)
+
+
+def prompt_template_v2_sha256() -> str:
+    """Hash the v2 template (SYSTEM_PROMPT + USER_TEMPLATE_V2 + CANDIDATE_LINE)."""
+    payload = f"{SYSTEM_PROMPT}\n{USER_TEMPLATE_V2}\n{CANDIDATE_LINE}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def prompt_template_sha256() -> str:
@@ -61,7 +78,9 @@ def build_candidates_block(corpus: dict) -> str:
         for row in corpus[f"{kind}s"]:
             description = " ".join(row["description"].split())
             lines.append(
-                CANDIDATE_LINE.format(kind=kind, name=row["name"], description=description)
+                CANDIDATE_LINE.format(
+                    kind=kind, name=row["name"], description=description
+                )
             )
     return "\n".join(lines)
 
@@ -112,7 +131,7 @@ def parse_response(raw: str) -> dict | None:
     if start == -1 or end <= start:
         return None
     try:
-        payload = json.loads(text[start:end + 1])
+        payload = json.loads(text[start : end + 1])
     except json.JSONDecodeError:
         return None
     if not isinstance(payload, dict):
@@ -177,9 +196,7 @@ def score_response(
     negatives = entry.get("negatives") or []
     if negatives:
         negative_ids = {
-            f"{kind}:{name}"
-            for name in negatives
-            for kind in name_kinds.get(name, ())
+            f"{kind}:{name}" for name in negatives for kind in name_kinds.get(name, ())
         }
         neg_false_recall = bool(negative_ids & top3_ids) and not top3_hit
     return {
@@ -246,7 +263,9 @@ def score_response_lenient(
         ]
     else:
         first, top3_picks = None, []
-    top1_hit_lenient = (first == expected_id) or _is_bare_name_pick(first, expected_name)
+    top1_hit_lenient = (first == expected_id) or _is_bare_name_pick(
+        first, expected_name
+    )
     top3_hit_lenient = (expected_id in top3_picks) or any(
         _is_bare_name_pick(pick, expected_name) for pick in top3_picks
     )
