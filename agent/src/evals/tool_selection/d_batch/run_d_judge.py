@@ -199,6 +199,7 @@ def run_routing_probe(*, model_cfg: dict, caps: BudgetCaps,
                       entries: list[dict], candidates_block: str,
                       subagents_block: str, env: dict[str, str],
                       probe_cfg: dict, probe_tag: str | None,
+                      valid_routes: list | None = None,
                       client_factory=build_client) -> int:
     """Determinism probe for the routing template (test-retest noise floor)."""
     probe_path = _probe_path(model_cfg["id"], probe_tag)
@@ -346,6 +347,7 @@ def main(argv: list[str] | None = None) -> int:
                 candidates_block=candidates_block,
                 subagents_block=subagents_block, env=env,
                 probe_cfg=probe_cfg, probe_tag=args.probe_tag,
+                valid_routes=valid_routes,
             )
         else:
             code = run_routing(

@@ -32,9 +32,12 @@ description: 'Market data and capital-flow specialist (行情数据与资金流)
   crypto order-book depth and market-impact cost (盘口深度/冲击成本), and capital-flow reads — main-force net
   inflow (主力资金), northbound connect flow (北向资金), margin balances (融资融券), block trades (大宗交易), dragon-tiger
   board (龙虎榜), lockup-expiry calendars (限售解禁), and shareholder-count changes (股东户数). Loads the data-routing
-  skill before any fetch. NOT for: account/broker-side quotes or positions (→ trading-connector-agent),
-  sector/concept board membership and board rankings (→ macro-sector-agent), technical-indicator values
-  or named TA schools (RSI信号/缠论/波浪/SMC → main agent), financial statements or filings (→ fundamentals-text-agent),
+  skill before any fetch. NOT for: account/broker-side quotes or positions, including connector-based
+  fetches (连接器取数 → main agent — trading-connector not admitted); sector/concept board membership and board
+  rankings (→ macro-sector-agent); technical-indicator values or named TA schools (RSI信号/缠论/波浪/SMC → main
+  agent); financial statements or filings (→ fundamentals-text-agent); fundamental-field screening on
+  statement metrics like PE/PB/ROE (财报字段筛股 → fundamentals-text-agent); paid data marketplaces (QVeris/付费数据市场
+  → main agent); data-source selection advice without an actual fetch to perform (该选哪个数据源 → main agent);
   or any backtest execution (→ quant-agent).'
 twin_pairs:
 - pair: get_market_data × data-routing + 7 source skills
