@@ -27,7 +27,14 @@ agents:
       6. **Tail-risk news** — items that could crater sentiment (geo / financial-system / black-swan watch)
 
       Use load_skill("web-reader"), load_skill("sentiment-analysis"), read_url.
-    tools: [bash, read_file, write_file, load_skill, read_url]
+
+      Tool arbitration (decide by verb): the `read_url` tool fetches the page
+      and the sentiment tool scores a text's direction; the web-reader and
+      sentiment-analysis skills teach the reading and market-sentiment
+      frameworks — the tool executes, the skill teaches. If a capability you
+      need is not in your tool set, state that explicitly as a limitation
+      instead of fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, read_url, sentiment]
     skills: [web-reader, sentiment-analysis, social-media-intelligence]
     max_iterations: 50
     timeout_seconds: 1800
@@ -57,7 +64,13 @@ agents:
       6. **Retail flow inflection** — forecast when retail flows may turn within {timeframe}
 
       Use load_skill("behavioral-finance"), load_skill("sentiment-analysis"), read_url.
-    tools: [bash, read_file, write_file, load_skill, read_url]
+
+      Tool arbitration (decide by verb): the sentiment tool scores a text and
+      fetches the crypto fear-and-greed index; the sentiment-analysis skill
+      teaches the market-level sentiment framework — the tool executes, the
+      skill teaches. If a capability you need is not in your tool set, state
+      that explicitly as a limitation instead of fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, read_url, sentiment]
     skills: [behavioral-finance, sentiment-analysis, social-media-intelligence]
     max_iterations: 50
     timeout_seconds: 1800
@@ -87,7 +100,14 @@ agents:
       6. **Reliability caveats** — lags, data limits, misread risks
 
       Use load_skill("tushare"), load_skill("sentiment-analysis").
-    tools: [bash, read_file, write_file, load_skill, get_market_data]
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars and the sentiment tool scores a text; the `tushare` and
+      sentiment-analysis skills teach the data-access and sentiment frameworks
+      — the tool executes, the skill teaches. If a capability you need is not
+      in your tool set, state that explicitly as a limitation instead of
+      fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, get_market_data, sentiment]
     skills: [tushare, sentiment-analysis]
     max_iterations: 50
     timeout_seconds: 1800
@@ -119,6 +139,9 @@ agents:
       6. **Limitations** — when sentiment fails in trends; blend with fundamentals; key uncertainties
 
       Use load_skill("behavioral-finance"), load_skill("risk-analysis").
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill]
     skills: [behavioral-finance, risk-analysis]
     max_iterations: 50

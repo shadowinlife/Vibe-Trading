@@ -21,6 +21,12 @@ agents:
 
       Use factor_analysis for factor-based screening.
       Use load_skill for data access patterns.
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars; the `tushare` skill teaches the A-share data-access patterns — the
+      tool executes, the skill teaches. If a capability you need is not in your
+      tool set, state that explicitly as a limitation instead of fabricating
+      the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, factor_analysis]
     skills: [tushare, fundamental-filter]
     max_iterations: 50
@@ -45,6 +51,12 @@ agents:
       5. **Risk notes** — Factor-decay scenarios and cyclicality
 
       Use factor_analysis for computations.
+
+      Tool arbitration (decide by verb): the `factor_analysis` tool computes
+      IC/IR and the quantile layers from prepared CSVs; the `factor-research`
+      skill teaches the factor methodology — the tool executes, the skill
+      teaches. If a capability you need is not in your tool set, state that
+      explicitly as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis]
     skills: [multi-factor, factor-research]
     max_iterations: 50
@@ -69,6 +81,12 @@ agents:
       5. **Improvement ideas** — Potential optimizations
 
       You must run **backtest** with real outputs—do not fabricate numbers.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches how to author the
+      strategy — the tool executes, the skill teaches. If a capability you
+      need is not in your tool set, state that explicitly as a limitation
+      instead of fabricating the missing data.
     tools: [bash, read_file, write_file, edit_file, load_skill, backtest]
     skills: [strategy-generate, technical-basic]
     max_iterations: 50
@@ -111,6 +129,15 @@ agents:
       run. If the backtester produced only one period, say the split was not run
       and that overfitting is therefore unmeasured — do not assert robustness that
       was never tested.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
+    # C1 audit decision (under-provisioned role): no data tool granted by
+    # design. The audit consumes the backtester's upstream artifacts via
+    # read_file — its declared evidence base — and computes every risk figure
+    # from them in bash via src.quantlib. Granting get_market_data/backtest
+    # would invite re-deriving equity from fresh market data instead of
+    # auditing the run that actually happened.
     tools: [bash, read_file, write_file, load_skill]
     skills: [volatility]
     max_iterations: 50
@@ -138,6 +165,9 @@ agents:
       The report is the single deliverable a user reads after the run; it
       must stand alone without requiring the reader to open intermediate
       task outputs.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill]
     skills: [report-generate]
     max_iterations: 50
