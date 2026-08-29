@@ -103,11 +103,11 @@ candidates:
     with evidence-anchored factor briefs (学术论文); and field-based fundamental screening on statement metrics
     (按 PE/PB/ROE/毛利率/负债率等财报字段筛股, fundamental-filter). This agent fetches, reads, and analyzes fundamentals
     text; what it does NOT do is turn them into a valuation view or price target (→ valuation-agent).
-    NOT for: valuation, estimate-revision analysis as a valuation input (→ valuation-agent); macro data
-    series (→ macro-sector-agent); credit analysis of bond issuers (→ funds-fi-agent); raw OHLCV or quotes
-    (→ market-data-agent); price/volume/rankings screening, market movers, or iwencai natural-language
-    stock screens (涨幅榜/换手率/问财行情条件 → market-data-agent); web pages or documents outside the finance sources
-    above (→ web-docs-agent).'
+    NOT for: valuation, forward-looking projections, linked three-statement modeling, or estimate-revision
+    analysis as a valuation input (三表联动预测/估值建模 → valuation-agent); macro data series (→ macro-sector-agent);
+    credit analysis of bond issuers (→ funds-fi-agent); raw OHLCV or quotes (→ market-data-agent); price/volume/rankings
+    screening, market movers, or iwencai natural-language stock screens (涨幅榜/换手率/问财行情条件 → market-data-agent);
+    web pages or documents outside the finance sources above (→ web-docs-agent).'
   rationale: 'The boundary against valuation-agent is fetch-vs-interpret: every data inlet a valuation
     needs (statements, profile, consensus) lives here so valuation-agent carries no fetch tools at all.
     get_institutional_holdings stays here rather than funds-fi-agent because its dominant modes (ticker_holders,
@@ -226,14 +226,17 @@ candidates:
       construction around them → skill.
   description: 'Valuation and company deep-research specialist (估值与公司深研). Delegate: DCF/DDM/SOTP and relative
     valuation (PE-Band/PB-ROE/EV-EBITDA) with sensitivity grids, computed via quantlib_call''s valuation
-    module (估值建模); investor-lens overlays, management integrity/ability assessment (管理层评估), pre-IPO private-company
-    fair-value ranges, and publication-grade company deep-dive series; investment-thesis writing with
-    red lines and quarterly re-checks (投资论点跟踪); event-driven and special-situation work — M&A arbitrage
-    spreads, shareholder increase/ decrease signals (增减持), A-share pre-ST risk prediction (ST预警), ADR/H-share
-    premium tracking (跨上市溢价), earnings forecasts and estimate revisions (SUE/PEAD/业绩超预期), and market-implied
-    event probabilities from prediction markets (事件合约隐含概率). This agent INTERPRETS; it does not fetch primary
-    data. NOT for: fetching statements, filings, news, consensus or 13F data (→ fundamentals-text-agent),
-    macro cycle positioning or geopolitical crisis frameworks (→ macro-sector-agent), OHLCV (→ market-data-agent),
+    module — including linked three-statement projections (三表联动预测建模), WACC×growth sensitivity grids (估值建模);
+    investor-lens overlays, management integrity/ability assessment (管理层评估), pre-IPO private-company fair-value
+    ranges, and publication-grade company deep-dive series; investment-thesis writing with red lines and
+    quarterly re-checks (投资论点跟踪); BUILDING event-driven strategies around earnings/news catalysts and
+    special-situation work (事件驱动策略构建) — — M&A arbitrage spreads, shareholder increase/ decrease signals
+    (增减持), A-share pre-ST risk prediction (ST预警), ADR/H-share premium tracking (跨上市溢价), earnings forecasts
+    and estimate revisions (SUE/PEAD/业绩超预期), and market-implied event probabilities from prediction markets
+    (事件合约隐含概率); supply-chain bottleneck and hidden-beneficiary discovery (产业链瓶颈/隐性受益者挖掘); and professional
+    research-report authoring (研究报告撰写). This agent INTERPRETS; it does not fetch primary data. NOT for:
+    fetching statements, filings, news, consensus or 13F data (→ fundamentals-text-agent), macro cycle
+    positioning or geopolitical crisis frameworks (→ macro-sector-agent), OHLCV (→ market-data-agent),
     risk metrics on the resulting position (→ risk-portfolio-agent), or backtests (→ quant-agent).'
   rationale: 'D10 has zero tools of its own in the audit; the honest tool surface is exactly two — quantlib_call
     for the valuation engine and prediction_market as the D12 event-data inlet (kept here rather than

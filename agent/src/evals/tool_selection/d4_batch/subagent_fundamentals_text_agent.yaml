@@ -25,10 +25,11 @@ description: 'Fundamentals and research-text specialist (基本面与研报). De
   with evidence-anchored factor briefs (学术论文); and field-based fundamental screening on statement metrics
   (按 PE/PB/ROE/毛利率/负债率等财报字段筛股, fundamental-filter). This agent fetches, reads, and analyzes fundamentals
   text; what it does NOT do is turn them into a valuation view or price target (→ valuation-agent). NOT
-  for: valuation, estimate-revision analysis as a valuation input (→ valuation-agent); macro data series
-  (→ macro-sector-agent); credit analysis of bond issuers (→ funds-fi-agent); raw OHLCV or quotes (→ market-data-agent);
-  price/volume/rankings screening, market movers, or iwencai natural-language stock screens (涨幅榜/换手率/问财行情条件
-  → market-data-agent); web pages or documents outside the finance sources above (→ web-docs-agent).'
+  for: valuation, forward-looking projections, linked three-statement modeling, or estimate-revision analysis
+  as a valuation input (三表联动预测/估值建模 → valuation-agent); macro data series (→ macro-sector-agent); credit
+  analysis of bond issuers (→ funds-fi-agent); raw OHLCV or quotes (→ market-data-agent); price/volume/rankings
+  screening, market movers, or iwencai natural-language stock screens (涨幅榜/换手率/问财行情条件 → market-data-agent);
+  web pages or documents outside the finance sources above (→ web-docs-agent).'
 twin_pairs:
 - pair: get_financial_statements × financial-statement
   ref: K6

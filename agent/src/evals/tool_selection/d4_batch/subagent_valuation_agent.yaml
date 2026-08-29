@@ -23,15 +23,18 @@ skills:
 - event-driven
 description: 'Valuation and company deep-research specialist (估值与公司深研). Delegate: DCF/DDM/SOTP and relative
   valuation (PE-Band/PB-ROE/EV-EBITDA) with sensitivity grids, computed via quantlib_call''s valuation
-  module (估值建模); investor-lens overlays, management integrity/ability assessment (管理层评估), pre-IPO private-company
-  fair-value ranges, and publication-grade company deep-dive series; investment-thesis writing with red
-  lines and quarterly re-checks (投资论点跟踪); event-driven and special-situation work — M&A arbitrage spreads,
-  shareholder increase/ decrease signals (增减持), A-share pre-ST risk prediction (ST预警), ADR/H-share premium
-  tracking (跨上市溢价), earnings forecasts and estimate revisions (SUE/PEAD/业绩超预期), and market-implied event
-  probabilities from prediction markets (事件合约隐含概率). This agent INTERPRETS; it does not fetch primary data.
-  NOT for: fetching statements, filings, news, consensus or 13F data (→ fundamentals-text-agent), macro
-  cycle positioning or geopolitical crisis frameworks (→ macro-sector-agent), OHLCV (→ market-data-agent),
-  risk metrics on the resulting position (→ risk-portfolio-agent), or backtests (→ quant-agent).'
+  module — including linked three-statement projections (三表联动预测建模), WACC×growth sensitivity grids (估值建模);
+  investor-lens overlays, management integrity/ability assessment (管理层评估), pre-IPO private-company fair-value
+  ranges, and publication-grade company deep-dive series; investment-thesis writing with red lines and
+  quarterly re-checks (投资论点跟踪); BUILDING event-driven strategies around earnings/news catalysts and special-situation
+  work (事件驱动策略构建) — — M&A arbitrage spreads, shareholder increase/ decrease signals (增减持), A-share pre-ST
+  risk prediction (ST预警), ADR/H-share premium tracking (跨上市溢价), earnings forecasts and estimate revisions
+  (SUE/PEAD/业绩超预期), and market-implied event probabilities from prediction markets (事件合约隐含概率); supply-chain
+  bottleneck and hidden-beneficiary discovery (产业链瓶颈/隐性受益者挖掘); and professional research-report authoring
+  (研究报告撰写). This agent INTERPRETS; it does not fetch primary data. NOT for: fetching statements, filings,
+  news, consensus or 13F data (→ fundamentals-text-agent), macro cycle positioning or geopolitical crisis
+  frameworks (→ macro-sector-agent), OHLCV (→ market-data-agent), risk metrics on the resulting position
+  (→ risk-portfolio-agent), or backtests (→ quant-agent).'
 twin_pairs:
 - pair: quantlib_call × valuation-model
   ref: K16
