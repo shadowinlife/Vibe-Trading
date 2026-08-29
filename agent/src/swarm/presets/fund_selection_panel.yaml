@@ -30,6 +30,9 @@ agents:
       Use load_skill("fund-analysis") for fund evaluation metrics and data query methods.
       Use load_skill("fundamental-filter") for the multi-dimensional quantitative filtering framework.
       Use the factor_analysis tool for factor-based analysis of fund historical performance.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis]
     skills: [fund-analysis, fundamental-filter]
     max_iterations: 50
@@ -105,6 +108,9 @@ agents:
       you write yourself; it does not fetch data and does not do Brinson attribution.
       The attribution decomposition comes from `src.quantlib.attribution`, the holdings
       from `etf_holdings`, and the return series from `get_market_data`.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis, etf_holdings, get_market_data, get_stock_profile, get_fundamentals]
     skills: [performance-attribution, fund-analysis, multi-factor]
     max_iterations: 50
@@ -157,6 +163,12 @@ agents:
       Use load_skill("risk-analysis") for portfolio risk attribution and scenario stress testing methods.
       Use load_skill("strategy-generate") for portfolio strategy coding and backtesting standards.
       Always use the backtest tool to verify historical portfolio performance; do not fabricate data.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [asset-allocation, risk-analysis, strategy-generate, etf-analysis]
     max_iterations: 50

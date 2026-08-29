@@ -45,6 +45,12 @@ agents:
       4. **Expected IC Direction and Magnitude** — Based on historical research or theoretical inference, estimate IC mean range (e.g., ±0.03–0.08)
       5. **Factor Correlation Preview** — Expected correlation matrix among candidate factors to avoid information overlap
       6. **Mining Frontier Assessment** — Which factors are already overcrowded and which still have room
+
+      Tool arbitration (decide by verb): the `factor_analysis` tool computes
+      IC/IR and the quantile layers from prepared CSVs; the `factor-research`
+      skill teaches the factor methodology — the tool executes, the skill
+      teaches. If a capability you need is not in your tool set, state that
+      explicitly as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis]
     skills: [factor-research, multi-factor]
     max_iterations: 50
@@ -94,6 +100,12 @@ agents:
       4. **Decay Curve Characteristics** — Optimal holding period recommendation for each factor (based on half-life); turnover rate estimate
       5. **Robustness Assessment** — Whether OOS performance decays significantly; stability across market regimes; flag high-risk factors
       6. **Overfitting Risk Warning** — Flag factors whose statistics look "too good to be true" and may suffer from data mining bias
+
+      Tool arbitration (decide by verb): the `factor_analysis` tool computes
+      IC/IR and the quantile layers from prepared CSVs; the `factor-research`
+      skill teaches the factor methodology — the tool executes, the skill
+      teaches. If a capability you need is not in your tool set, state that
+      explicitly as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis]
     skills: [quant-statistics, factor-research]
     max_iterations: 50
@@ -142,6 +154,12 @@ agents:
       4. **Stock Selection Strategy Rules** — Complete stock selection logic (universe → scoring → sector neutralization → position constraints → rebalancing rules)
       5. **Expected Portfolio Characteristics** — Estimated annualized excess return, information ratio, turnover rate, average monthly holdings count
       6. **Strategy Improvement Roadmap** — How to further enhance the strategy (add which factor types, adjust which parameters, consider which alternative data)
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis, backtest]
     skills: [multi-factor, strategy-generate]
     max_iterations: 50
@@ -193,6 +211,14 @@ agents:
       4. **True Net Return Estimate** — Annualized net excess return and corrected Sharpe ratio after deducting realistic transaction costs
       5. **Extreme Scenario Stress Test Results** — Maximum drawdown, recovery time, and relative performance vs. benchmark in historical extreme markets
       6. **Live Deployment Recommendation** — Explicitly state "Recommend deployment / Deploy after improvement / Do not deploy"; list specific improvement directions and capacity upper bound recommendation
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
+    # C1 audit decision (under-provisioned role): no data tool granted by
+    # design. The review consumes the combiner's upstream backtest artifacts
+    # via read_file — its declared evidence base — and checks them in bash via
+    # src.quantlib. Granting backtest/factor_analysis would invite re-running
+    # the strategy instead of reviewing the run that actually happened.
     tools: [bash, read_file, write_file, load_skill]
     skills: [backtest-diagnose, quant-statistics]
     max_iterations: 50

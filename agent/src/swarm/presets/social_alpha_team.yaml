@@ -53,7 +53,13 @@ agents:
 
       Use load_skill("social-media-intelligence"), load_skill("sentiment-analysis").
       Use read_url for X/FinTwit sources.
-    tools: [bash, read_file, write_file, load_skill, read_url]
+
+      Tool arbitration (decide by verb): the sentiment tool scores a text and
+      fetches the crypto fear-and-greed index; the sentiment-analysis skill
+      teaches the market-level sentiment framework — the tool executes, the
+      skill teaches. If a capability you need is not in your tool set, state
+      that explicitly as a limitation instead of fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, read_url, sentiment]
     skills: [social-media-intelligence, sentiment-analysis]
     max_iterations: 50
     timeout_seconds: 1800
@@ -116,7 +122,13 @@ agents:
 
       Use load_skill("social-media-intelligence"), load_skill("sentiment-analysis"), load_skill("onchain-analysis").
       Use read_url for Telegram and Nansen/Dune.
-    tools: [bash, read_file, write_file, load_skill, read_url]
+
+      Tool arbitration (decide by verb): the sentiment tool scores a text and
+      fetches the crypto fear-and-greed index; the sentiment-analysis skill
+      teaches the market-level sentiment framework — the tool executes, the
+      skill teaches. If a capability you need is not in your tool set, state
+      that explicitly as a limitation instead of fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, read_url, sentiment]
     skills: [social-media-intelligence, sentiment-analysis, onchain-analysis]
     max_iterations: 50
     timeout_seconds: 1800
@@ -175,7 +187,13 @@ agents:
 
       Use load_skill("social-media-intelligence"), load_skill("behavioral-finance"), load_skill("sentiment-analysis").
       Use read_url for Reddit pages/API data.
-    tools: [bash, read_file, write_file, load_skill, read_url]
+
+      Tool arbitration (decide by verb): the sentiment tool scores a text and
+      fetches the crypto fear-and-greed index; the sentiment-analysis skill
+      teaches the market-level sentiment framework — the tool executes, the
+      skill teaches. If a capability you need is not in your tool set, state
+      that explicitly as a limitation instead of fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, read_url, sentiment]
     skills: [social-media-intelligence, behavioral-finance, sentiment-analysis]
     max_iterations: 50
     timeout_seconds: 1800
@@ -238,6 +256,12 @@ agents:
 
       Use load_skill("social-media-intelligence"), load_skill("factor-research"), load_skill("quant-statistics").
       Use factor_analysis for factor stats.
+
+      Tool arbitration (decide by verb): the `factor_analysis` tool computes
+      IC/IR and the quantile layers from prepared CSVs; the `factor-research`
+      skill teaches the factor methodology — the tool executes, the skill
+      teaches. If a capability you need is not in your tool set, state that
+      explicitly as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis]
     skills: [social-media-intelligence, factor-research, quant-statistics]
     max_iterations: 50

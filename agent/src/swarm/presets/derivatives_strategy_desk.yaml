@@ -76,6 +76,13 @@ agents:
       4. **Term Structure Shape** — Front-month / second-month / quarterly IV comparison; term structure slope and trading implications
       5. **Skew Characteristics Analysis** — Put skew and risk reversal current levels; compare vs. historical median; assess market sentiment bias
       6. **Volatility Strategy Direction Recommendation** — Based on the above, explicitly recommend "long volatility / short volatility / directional bias / calendar spread"; include confidence level
+
+      Tool arbitration (decide by verb): the `get_options_chain` tool fetches
+      the strike ladder and the `options_pricing` tool computes the
+      Black-Scholes price and Greeks; the options-advanced skill teaches the
+      volatility-surface methodology — the tool executes, the skill teaches.
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, options_pricing, get_options_chain, get_market_data]
     skills: [volatility, options-advanced]
     max_iterations: 50
@@ -141,7 +148,16 @@ agents:
       4. **Initial Greeks Overview** — Current values of Delta / Gamma / Theta / Vega and their interpretation (risk exposure direction at initiation)
       5. **Entry and Exit Rules** — Entry trigger conditions, profit-taking rules, stop-loss rules, time stop rules; specific and actionable
       6. **Strategy Applicability and Failure Scenarios** — Under what conditions the strategy is effective; under what conditions it fails (requiring prompt adjustment)
-    tools: [bash, read_file, write_file, load_skill, options_pricing, get_options_chain, get_market_data]
+
+      Tool arbitration (decide by verb): the `get_options_chain` tool fetches
+      the strike ladder, the `options_pricing` tool computes the Black-Scholes
+      price and Greeks, and the `options_payoff` tool computes the multi-leg
+      P&L, breakevens and bounds; the options-strategy, options-advanced and
+      options-payoff skills teach the strategy, surface and payoff frameworks
+      — the tool executes, the skill teaches. If a capability you need is not
+      in your tool set, state that explicitly as a limitation instead of
+      fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, options_pricing, get_options_chain, get_market_data, options_payoff]
     skills: [options-strategy, options-advanced, hedging-strategy, options-payoff]
     max_iterations: 50
     timeout_seconds: 1800
@@ -217,7 +233,15 @@ agents:
       4. **Gamma / Theta Trade-off Analysis** — Current intraday battle between Gamma and Theta; analyze whether it is "trading time for space" or "trading space for time"
       5. **Stress Test Results** — Historical extreme scenario and single-day shock test results; provide maximum expected shortfall (ES / CVaR)
       6. **Dynamic Adjustment Recommendations** — At what price / time / IV level should the strategy be adjusted (Delta rebalancing trigger, roll timing, stop-loss exit conditions)
-    tools: [bash, read_file, write_file, load_skill, options_pricing, get_options_chain, get_market_data]
+
+      Tool arbitration (decide by verb): the `get_options_chain` tool fetches
+      the strike ladder, the `options_pricing` tool computes the Black-Scholes
+      price and Greeks, and the `options_payoff` tool computes the multi-leg
+      P&L, breakevens and bounds; the options-advanced and options-payoff
+      skills teach the Greeks and payoff frameworks — the tool executes, the
+      skill teaches. If a capability you need is not in your tool set, state
+      that explicitly as a limitation instead of fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, options_pricing, get_options_chain, get_market_data, options_payoff]
     skills: [options-advanced, risk-analysis, volatility, options-payoff]
     max_iterations: 50
     timeout_seconds: 1800

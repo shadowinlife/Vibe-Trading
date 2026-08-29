@@ -44,6 +44,9 @@ agents:
       available from any tool here**: quote a rating only with the source you read
       it from, and if you have none, group by a stated proxy (issuer size, leverage
       from `get_financial_statements`) and label the grouping a proxy, not a rating.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, get_financial_statements, read_url]
     skills: [convertible-bond, fundamental-filter, credit-analysis]
     max_iterations: 50
@@ -74,6 +77,9 @@ agents:
 
       Use load_skill("convertible-bond") for convertible equity analysis methodology; load_skill("technical-basic") for technical analysis; load_skill("valuation-model") for valuation.
       Use the factor_analysis tool for factor exposure analysis of underlying equities.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis]
     skills: [convertible-bond, technical-basic, valuation-model]
     max_iterations: 50
@@ -104,7 +110,15 @@ agents:
 
       Use load_skill("options-strategy") for option analysis methodology; load_skill("volatility") for volatility analysis support; load_skill("convertible-bond") for convertible option pricing knowledge.
       Use the options_pricing tool for precise option pricing calculations.
-    tools: [bash, read_file, write_file, load_skill, options_pricing]
+
+      Tool arbitration (decide by verb): the `options_pricing` tool computes
+      the Black-Scholes price and Greeks and the `options_payoff` tool computes
+      the multi-leg P&L, breakevens and bounds; the options-strategy and
+      options-payoff skills teach the pricing and payoff frameworks — the tool
+      executes, the skill teaches. If a capability you need is not in your
+      tool set, state that explicitly as a limitation instead of fabricating
+      the missing data.
+    tools: [bash, read_file, write_file, load_skill, options_pricing, options_payoff]
     skills: [options-strategy, volatility, convertible-bond, options-payoff]
     max_iterations: 50
     timeout_seconds: 1800
@@ -136,6 +150,12 @@ agents:
 
       Use load_skill("convertible-bond") to ensure the strategy is grounded in convertible market dynamics; load_skill("strategy-generate") for strategy code standards.
       Use the backtest tool to run historical backtests validating strategy robustness across different market environments.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [convertible-bond, strategy-generate]
     max_iterations: 50

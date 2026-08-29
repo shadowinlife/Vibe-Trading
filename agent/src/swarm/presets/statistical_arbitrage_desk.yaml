@@ -61,6 +61,9 @@ agents:
       **The Hurst exponent and a Kalman time-varying hedge ratio are NOT
       implemented here.** Write and show the estimator yourself in `bash`, or drop
       those columns and say they were not computed — do not populate them by feel.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis, get_market_data, screen_market]
     skills: [pair-trading, quant-statistics, correlation-analysis]
     max_iterations: 50
@@ -126,6 +129,9 @@ agents:
       present a crypto depth measurement and an equity depth proxy in the same
       column without marking which is which.
       Granger causality between legs comes from `src.quantlib.timeseries.granger_test`.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, orderbook_depth]
     skills: [market-microstructure, execution-model]
     max_iterations: 50
@@ -174,6 +180,12 @@ agents:
 
       Use load_skill("pair-trading"), load_skill("strategy-generate"), load_skill("quant-statistics").
       Use backtest with realistic costs.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [pair-trading, strategy-generate, quant-statistics]
     max_iterations: 50
@@ -237,6 +249,9 @@ agents:
       estimate, when the sample is short.
       Net beta and factor tilts must be regressed against a benchmark series you
       pulled. Any figure without a named sample window does not go in the report.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data]
     skills: [risk-analysis, volatility]
     max_iterations: 50

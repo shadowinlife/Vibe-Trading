@@ -32,6 +32,12 @@ agents:
 
       Use load_skill("ml-strategy") for ML feature best practices, load_skill("factor-research") for factor efficacy research, load_skill("multi-factor") for multi-factor design.
       Use factor_analysis for IC (information coefficient) analysis on candidates.
+
+      Tool arbitration (decide by verb): the `factor_analysis` tool computes
+      IC/IR and the quantile layers from prepared CSVs; the `factor-research`
+      skill teaches the factor methodology — the tool executes, the skill
+      teaches. If a capability you need is not in your tool set, state that
+      explicitly as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis]
     skills: [ml-strategy, factor-research, multi-factor]
     max_iterations: 50
@@ -66,6 +72,9 @@ agents:
       5. **Evaluation metrics** — Primary metrics for {target_variable} (ICIR, accuracy, annualized return, etc.) plus secondary metrics; full model-training code skeleton
 
       Use load_skill("ml-strategy") for financial ML design standards, load_skill("quant-statistics") for tests and significance.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, edit_file, load_skill]
     skills: [ml-strategy, quant-statistics]
     max_iterations: 50
@@ -103,6 +112,12 @@ agents:
 
       Use load_skill("strategy-generate") for code standards, load_skill("backtest-diagnose") for diagnostics, load_skill("quant-statistics") for significance tests.
       Use **backtest** for execution; strictly separate OOS data.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [strategy-generate, backtest-diagnose, quant-statistics]
     max_iterations: 50

@@ -61,6 +61,9 @@ agents:
       Every correlation, cluster and score must come from the panel you pulled;
       name the date range. A pair whose history you could not retrieve is excluded
       from the pool, not scored from expectation.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis, get_market_data, screen_market]
     skills: [correlation-analysis, pair-trading, multi-factor]
     max_iterations: 50
@@ -149,6 +152,9 @@ agents:
       it was not computed. A Johansen trace statistic or a Hurst value that did
       not come out of code you ran is a fabricated number — the classification
       thresholds above then apply only to the tests you actually completed.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis, get_market_data]
     skills: [correlation-analysis, quant-statistics]
     max_iterations: 50
@@ -212,6 +218,12 @@ agents:
 
       Use load_skill("pair-trading"), load_skill("correlation-analysis"), load_skill("strategy-generate").
       Use backtest with costs, dynamic hedge, multi-pair rebalancing.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [pair-trading, correlation-analysis, strategy-generate]
     max_iterations: 50
@@ -276,6 +288,9 @@ agents:
       5. **Overall micro verdict** — Grade A/B/C/D; binding limits; pre-live execution checklist
 
       Use load_skill("market-microstructure"), load_skill("execution-model").
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill]
     skills: [market-microstructure, execution-model]
     max_iterations: 50

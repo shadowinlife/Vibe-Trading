@@ -34,6 +34,12 @@ agents:
       Use load_skill("event-driven") for event classification framework and historical impact statistics.
       Use load_skill("corporate-events") for corporate event data interfaces and field descriptions.
       Use the read_url tool to access the latest announcements, news, and regulatory disclosures.
+
+      Tool arbitration (decide by verb): the `read_url` tool fetches the page;
+      the web-reader skill teaches the reading methodology — the tool executes,
+      the skill teaches. If a capability you need is not in your tool set,
+      state that explicitly as a limitation instead of fabricating the missing
+      data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [event-driven, corporate-events, web-reader, geopolitical-risk]
     max_iterations: 50
@@ -121,7 +127,13 @@ agents:
       and the event study itself from `src.quantlib.eventstudy.event_study` — which
       owns the estimation-window model, the CAR arithmetic and the significance
       tests, so none of the three is yours to reimplement.
-    tools: [bash, read_file, write_file, load_skill, factor_analysis, get_market_data, get_stock_news, read_url]
+
+      Tool arbitration (decide by verb): the sentiment tool scores a text and
+      fetches the crypto fear-and-greed index; the sentiment-analysis skill
+      teaches the market-level sentiment framework — the tool executes, the
+      skill teaches. If a capability you need is not in your tool set, state
+      that explicitly as a limitation instead of fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, factor_analysis, get_market_data, get_stock_news, read_url, sentiment]
     skills: [corporate-events, sentiment-analysis, valuation-model]
     max_iterations: 50
     timeout_seconds: 1800
@@ -158,6 +170,12 @@ agents:
 
       Use load_skill("strategy-generate") for strategy writing standards and backtest parameter setup.
       Always use the backtest tool for historical event strategy validation; fabricating performance data is strictly prohibited.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [event-driven, strategy-generate]
     max_iterations: 50

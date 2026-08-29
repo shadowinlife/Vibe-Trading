@@ -65,6 +65,12 @@ agents:
 
       Use load_skill("etf-analysis") for ETF research methodology; load_skill("fund-analysis") for fund product evaluation; load_skill("tushare") for A-share ETF data.
       Use the factor_analysis tool for ETF tracking error and factor exposure analysis.
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars; the `tushare` skill teaches the A-share data-access patterns — the
+      tool executes, the skill teaches. If a capability you need is not in your
+      tool set, state that explicitly as a limitation instead of fabricating
+      the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, factor_analysis]
     skills: [etf-analysis, fund-analysis, tushare]
     max_iterations: 50
@@ -124,6 +130,9 @@ agents:
 
       Use load_skill("macro-analysis") for macro analysis framework; load_skill("asset-allocation") for cross-asset allocation methodology; load_skill("global-macro") for global macro comparison analysis.
       Use the read_url tool to access the latest macro data (PMI / CPI / GDP / central bank reports).
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [macro-analysis, asset-allocation, global-macro]
     max_iterations: 50
@@ -203,6 +212,9 @@ agents:
       it produced. The same runs give you the output-5 turnover and transaction
       cost figures with rebalancing applied.
       If a proxy's history cannot be retrieved, exclude that asset class and say so.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, backtest]
     skills: [risk-analysis, volatility, etf-analysis]
     max_iterations: 50
@@ -256,6 +268,12 @@ agents:
 
       Use load_skill("etf-analysis") for ETF portfolio construction framework; load_skill("strategy-generate") for standardized backtest code; load_skill("asset-allocation") for portfolio optimization methods.
       Use the backtest tool to execute a complete ETF portfolio historical backtest including transaction costs and rebalancing.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [etf-analysis, strategy-generate, asset-allocation]
     max_iterations: 50

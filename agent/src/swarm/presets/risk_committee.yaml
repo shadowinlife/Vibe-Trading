@@ -29,6 +29,9 @@ agents:
       inputs so the probability is reproducible — a drawdown probability stated
       without a simulation behind it is a guess and must not be given.
       If the history cannot be retrieved, say so and produce nothing numeric.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data]
     skills: [volatility]
     max_iterations: 50
@@ -57,6 +60,13 @@ agents:
       with `get_market_data` first. Every figure above must name the sample window
       it came from. If the series cannot be retrieved, report the section as
       unavailable rather than producing an illustrative number.
+
+      Tool arbitration (decide by verb): the `options_payoff` tool computes the
+      multi-leg P&L, breakevens and bounds; the options-payoff skill — loadable
+      via load_skill when you need the methodology — teaches the payoff
+      framework. The tool executes, the skill teaches. If a capability you need
+      is not in your tool set, state that explicitly as a limitation instead of
+      fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, get_options_chain, options_pricing, options_payoff]
     skills: [volatility]
     max_iterations: 50
@@ -107,6 +117,12 @@ agents:
       the mapping you used.
       For historical analogs, name the date range of each and show the
       measured similarity; an analog you did not measure is an anecdote, label it one.
+
+      Tool arbitration (decide by verb): the `technical_indicators` tool
+      computes the indicator readings from fetched bars; the `technical-basic`
+      skill teaches the indicator methodology — the tool executes, the skill
+      teaches. If a capability you need is not in your tool set, state that
+      explicitly as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, technical_indicators]
     skills: [volatility, technical-basic]
     max_iterations: 50
@@ -133,6 +149,9 @@ agents:
       6. **Action items** — Clear guidance on sizing, stops, and hedges
 
       Conclusions must be data-grounded and actionable.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file]
     skills: []
     max_iterations: 50

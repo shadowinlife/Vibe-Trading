@@ -71,6 +71,12 @@ agents:
       `technical_indicators` (or in `bash` from the bars). A support, resistance,
       MA value or measured target that you did not derive from retrieved bars is
       fabricated — if the bars cannot be retrieved, say so and give no levels.
+
+      Tool arbitration (decide by verb): the `technical_indicators` tool
+      computes the indicator readings from fetched bars; the `technical-basic`
+      skill teaches the indicator methodology — the tool executes, the skill
+      teaches. If a capability you need is not in your tool set, state that
+      explicitly as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, technical_indicators]
     skills: [technical-basic, candlestick]
     max_iterations: 50
@@ -128,6 +134,9 @@ agents:
       9 / 26 / 52 windows (state the windows if you deviate). Cloud bounds and
       the quantised S/R prices are outputs of that calculation, never estimates.
       If the bars cannot be retrieved, report the analysis as unavailable.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, technical_indicators]
     skills: [ichimoku]
     max_iterations: 50
@@ -173,6 +182,12 @@ agents:
       7. **Harmonic score** — −5..+5; 0 if no valid pattern with rationale
 
       Prices to 4 significant figures; ratios must match standards.
+
+      Tool arbitration (decide by verb): the `pattern` tool runs the chart
+      detection over the run's OHLCV data; the `harmonic` skill teaches the
+      XABCD geometry and PRZ method — the tool executes, the skill teaches.
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, pattern]
     skills: [harmonic]
     max_iterations: 50
@@ -225,6 +240,12 @@ agents:
       7. **Wave score** — −5..+5; count confidence 0–100%
 
       Label degree (supercycle/cycle/primary/minor) to avoid mixing.
+
+      Tool arbitration (decide by verb): the `pattern` tool runs the chart
+      detection over the run's OHLCV data; the `elliott-wave` skill teaches the
+      wave-count rules and Fibonacci validation — the tool executes, the skill
+      teaches. If a capability you need is not in your tool set, state that
+      explicitly as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, pattern]
     skills: [elliott-wave, chanlun]
     max_iterations: 50
@@ -278,6 +299,9 @@ agents:
       is a specific three-bar condition — point to the bars that form it. Zones you
       cannot locate in the data do not get listed, and a "fill probability" must be
       a measured historical fill rate or be omitted.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data]
     skills: [smc, minute-analysis]
     max_iterations: 50
@@ -336,6 +360,9 @@ agents:
 
       Judge outcome must reflect the five inputs fairly—no cherry-picking.
       Prices must be consistent with upstream reports.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file]
     skills: []
     max_iterations: 50

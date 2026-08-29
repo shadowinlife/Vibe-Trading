@@ -27,6 +27,9 @@ agents:
       - If uncertain, pass. An opportunity outside your circle of competence is not an opportunity.
 
       Use load_skill / get_financial_statements / get_market_data / financial_rigor to source and verify numbers precisely (no "TBD" skips).
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, get_financial_statements, web_search, financial_rigor]
     skills: [fundamental-filter, valuation-model, management-deep-dive]
     max_iterations: 50
@@ -57,6 +60,9 @@ agents:
       - Admitting what you don't know beats pretending you do.
 
       Use financial_rigor to verify any key number; load_skill("risk-analysis") to systematize risk.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, get_financial_statements, web_search, financial_rigor]
     skills: [risk-analysis, financial-statement, fundamental-filter]
     max_iterations: 50
@@ -87,6 +93,9 @@ agents:
       - Sell for only three reasons: you were wrong / fundamentals changed / you found something better.
 
       load_skill("thesis-tracker") to build a thesis and red lines.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, get_financial_statements, web_search, financial_rigor]
     skills: [management-deep-dive, fundamental-filter, thesis-tracker]
     max_iterations: 50
@@ -122,6 +131,9 @@ agents:
       - Civilizational trend + excellent organization + reasonable price = long-term compounding.
 
       Use load_skill("bottleneck-hunter") to judge the supply-chain position; financial_rigor for exact valuation.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, get_financial_statements, web_search, financial_rigor]
     skills: [bottleneck-hunter, valuation-model, thesis-tracker, global-macro]
     max_iterations: 50
@@ -154,6 +166,9 @@ agents:
       resolving it yourself.
 
       Output the full Markdown report and save it with write_file.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, report_audit]
     skills: [report-generate]
     max_iterations: 50

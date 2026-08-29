@@ -46,6 +46,12 @@ agents:
 
       Use load_skill("geopolitical-risk") for the geopolitical risk framework, load_skill("web-reader") for latest news and research, load_skill("global-macro") for macro transmission analysis.
       Use read_url for GPR Index data and real-time geopolitical news.
+
+      Tool arbitration (decide by verb): the `read_url` tool fetches the page;
+      the web-reader skill teaches the reading methodology — the tool executes,
+      the skill teaches. If a capability you need is not in your tool set,
+      state that explicitly as a limitation instead of fabricating the missing
+      data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [geopolitical-risk, web-reader, global-macro]
     max_iterations: 50
@@ -101,6 +107,9 @@ agents:
 
       Use load_skill("commodity-analysis") for commodity methods, load_skill("geopolitical-risk") for geopolitical-energy quant framing.
       Use read_url for latest EIA/IEA/OPEC data and reports.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [commodity-analysis, geopolitical-risk]
     max_iterations: 50
@@ -158,6 +167,9 @@ agents:
 
       Use load_skill("geopolitical-risk") for supply-chain geopolitical frame, load_skill("sector-rotation") for rotation logic, load_skill("event-driven") for event-driven opportunities.
       Use read_url for shipping data, semi industry reports, and supply-chain research.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [geopolitical-risk, sector-rotation, event-driven]
     max_iterations: 50
@@ -219,6 +231,9 @@ agents:
       5. **Risk/reward & timetable** — Risk/reward of proposals; sequencing and timing (immediate/this week/this month); estimate of max drawdown under stress
 
       Use load_skill("asset-allocation") for allocation framework, load_skill("risk-analysis") for risk budget and hedge sizing, load_skill("hedging-strategy") for instruments and execution.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill]
     skills: [asset-allocation, risk-analysis, hedging-strategy]
     max_iterations: 50

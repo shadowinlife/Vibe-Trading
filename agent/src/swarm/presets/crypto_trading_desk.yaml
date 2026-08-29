@@ -38,6 +38,12 @@ agents:
       - Long/short ratio (retail contrarian indicator)
 
       Use load_skill for funding rate analysis patterns and OKX data interfaces.
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars; the `okx-market` skill teaches the crypto data-access patterns —
+      the tool executes, the skill teaches. If a capability you need is not in
+      your tool set, state that explicitly as a limitation instead of
+      fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data]
     skills: [perp-funding-basis, okx-market, crypto-derivatives]
     max_iterations: 50
@@ -79,6 +85,9 @@ agents:
       - Time-of-day liquidity patterns (Asian / European / US session differences)
 
       Use load_skill for liquidation analysis and market microstructure patterns.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [liquidation-heatmap, market-microstructure, execution-model]
     max_iterations: 50
@@ -115,6 +124,9 @@ agents:
       - ETF flows (BTC/ETH spot ETFs): institutional allocation trend
 
       Use load_skill for stablecoin flow, on-chain analysis, and token unlock patterns.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [stablecoin-flow, onchain-analysis, token-unlock-treasury, defi-yield]
     max_iterations: 50
@@ -178,6 +190,9 @@ agents:
       analysts in `{upstream_context}` — cite the upstream figure. If an upstream
       section reported its data as unavailable, the gate that depends on it is
       also unavailable: say so instead of inventing a threshold for it.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data]
     skills: [risk-analysis, asset-allocation, volatility, hedging-strategy]
     max_iterations: 50

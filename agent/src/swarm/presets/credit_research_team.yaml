@@ -79,6 +79,9 @@ agents:
       `factor_analysis` computes IC/IR and layered NAV from CSVs you write; it does
       not do cross-sectional peer comparison for you — build the peer table from
       per-issuer lookups.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis, get_financial_statements, get_stock_profile, get_market_data, read_url]
     skills: [credit-analysis, financial-statement]
     max_iterations: 50
@@ -129,6 +132,9 @@ agents:
 
       Use load_skill("credit-analysis") for bond pricing and spread analysis frameworks; load_skill("macro-analysis") for macro data and rate transmission analysis.
       Use the read_url tool to access the latest rate data from China Central Depository & Clearing, the PBOC, Bloomberg, and other sources.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [credit-analysis, macro-analysis]
     max_iterations: 50
@@ -182,6 +188,9 @@ agents:
 
       Use load_skill("credit-analysis") for sector credit analysis frameworks; load_skill("sector-rotation") for sector comparison; load_skill("regulatory-knowledge") for interpreting the latest regulatory policy impacts on credit risk.
       Use the read_url tool to access the latest sector credit data from China Bond Info, Wind, and policy documents.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [credit-analysis, sector-rotation, regulatory-knowledge]
     max_iterations: 50
@@ -235,6 +244,12 @@ agents:
 
       Use load_skill("credit-analysis") for fixed income investment methodology; load_skill("strategy-generate") to produce standardized strategy code; load_skill("risk-analysis") for risk budgeting and stress testing.
       Use the backtest tool to run historical backtests validating strategy performance across different rate / credit environments.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [credit-analysis, strategy-generate, risk-analysis]
     max_iterations: 50

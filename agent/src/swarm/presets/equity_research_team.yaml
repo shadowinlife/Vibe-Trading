@@ -22,6 +22,13 @@ agents:
       5. **Conclusion for {market}** — Summarize the bullish / bearish / neutral rationale
 
       Use load_skill to access data query methods; prioritize using tools to obtain the latest data to support the analysis.
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars and the `read_url` tool fetches the page; the `tushare`, `yfinance`
+      and `okx-market` skills teach the data-access patterns and the web-reader
+      skill teaches the reading methodology — the tool executes, the skill
+      teaches. If a capability you need is not in your tool set, state that
+      explicitly as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, read_url]
     skills: [tushare, okx-market, yfinance, web-reader, global-macro]
     max_iterations: 50
@@ -47,6 +54,12 @@ agents:
       5. **Recommended Sectors and Rationale** — Explicitly recommend 2–3 sectors with suggested allocation weights
 
       Use the factor_analysis tool for factor-based analysis to support judgments.
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars; the `tushare` and `yfinance` skills teach the data-access patterns
+      — the tool executes, the skill teaches. If a capability you need is not
+      in your tool set, state that explicitly as a limitation instead of
+      fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, factor_analysis]
     skills: [tushare, yfinance, fundamental-filter, multi-factor, us-etf-flow, sector-rotation]
     max_iterations: 50
@@ -73,6 +86,14 @@ agents:
 
       Always use load_skill("strategy-generate") for strategy writing standards.
       Use the backtest tool to validate the historical performance of stock selection logic.
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars and the `backtest` tool runs a prepared run directory; the `tushare`
+      and `yfinance` skills teach the data-access patterns and the
+      strategy-generate skill teaches the strategy authoring workflow — the
+      tool executes, the skill teaches. If a capability you need is not in your
+      tool set, state that explicitly as a limitation instead of fabricating
+      the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, backtest, factor_analysis]
     skills: [tushare, yfinance, strategy-generate, technical-basic, multi-factor, earnings-revision]
     max_iterations: 50
@@ -104,6 +125,9 @@ agents:
       {upstream_context}. If two upstream analysts disagree on a number, surface
       the disagreement rather than picking one; if a section reported its data as
       unavailable, carry that through instead of filling the gap.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill]
     skills: [report-generate]
     max_iterations: 50

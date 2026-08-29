@@ -40,6 +40,12 @@ agents:
       - Relative valuation: is this name cheap or expensive relative to peers?
 
       Use load_skill for SEC filing analysis, financial statement frameworks, and yfinance data.
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars; the `yfinance` skill teaches the data-source patterns — the tool
+      executes, the skill teaches. If a capability you need is not in your
+      tool set, state that explicitly as a limitation instead of fabricating
+      the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, read_url]
     skills: [edgar-sec-filings, financial-statement, yfinance, fundamental-filter, valuation-model]
     max_iterations: 50
@@ -81,6 +87,9 @@ agents:
       - Expected post-earnings drift based on historical pattern
 
       Use load_skill for earnings revision analysis frameworks.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [earnings-revision, earnings-forecast]
     max_iterations: 50
@@ -144,6 +153,14 @@ agents:
         flow you cannot see.
       Any implied move, PCR, skew or OI figure that did not come from a chain call
       you actually ran must not appear.
+
+      Tool arbitration (decide by verb): the `get_options_chain` tool fetches
+      the strike ladder and the `options_pricing` tool computes the
+      Black-Scholes price and Greeks; the options-strategy and options-advanced
+      skills teach the strategy and volatility frameworks — the tool executes,
+      the skill teaches. If a capability you need is not in your tool set,
+      state that explicitly as a limitation instead of fabricating the missing
+      data.
     tools: [bash, read_file, write_file, load_skill, get_options_chain, get_market_data, options_pricing]
     skills: [options-advanced, options-strategy, event-driven, volatility]
     max_iterations: 50
@@ -193,6 +210,12 @@ agents:
       - Quiet period end / next guidance opportunity: [date]
 
       Use load_skill for strategy generation and risk analysis.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [strategy-generate, risk-analysis, report-generate]
     max_iterations: 50

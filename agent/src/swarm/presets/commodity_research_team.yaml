@@ -29,6 +29,12 @@ agents:
 
       Use load_skill("commodity-analysis") for commodity data and analysis frameworks.
       Use the read_url tool for the latest production, inventory, and policy announcement data.
+
+      Tool arbitration (decide by verb): the `read_url` tool fetches the page;
+      the web-reader skill teaches the reading methodology — the tool executes,
+      the skill teaches. If a capability you need is not in your tool set,
+      state that explicitly as a limitation instead of fabricating the missing
+      data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [commodity-analysis, web-reader, geopolitical-risk]
     max_iterations: 50
@@ -62,6 +68,9 @@ agents:
       Use load_skill("commodity-analysis") for demand analysis methodology.
       Use load_skill("seasonal") for seasonality analysis tools and historical pattern database.
       Use load_skill("global-macro") for macroeconomic data interpretation framework.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [commodity-analysis, seasonal, global-macro]
     max_iterations: 50
@@ -97,6 +106,12 @@ agents:
 
       Use load_skill("strategy-generate") for strategy writing standards.
       Always use the backtest tool for historical scenario validation; never fabricate performance data.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [commodity-analysis, seasonal, strategy-generate]
     max_iterations: 50

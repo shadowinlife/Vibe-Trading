@@ -52,6 +52,9 @@ agents:
       that you write yourself — it does not fetch data and does not perform Brinson
       attribution. Use `get_market_data` for the return series, `src.quantlib.attribution`
       for the Brinson decomposition, and `factor_analysis` only for the factor IC work.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis, get_market_data]
     skills: [performance-attribution, multi-factor]
     max_iterations: 50
@@ -107,6 +110,9 @@ agents:
       ADV and pairwise correlations come from the same bars. If a position's bars
       cannot be retrieved, list it as uncovered and state what share of NAV the
       risk report therefore excludes — never extrapolate over the gap.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data]
     skills: [risk-analysis, volatility]
     max_iterations: 50
@@ -161,6 +167,9 @@ agents:
       If no blotter was supplied, say so and report execution quality as not
       assessable. Do not synthesise fill prices, VWAP deviations, or an
       implementation shortfall from position weights alone.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, analyze_trade_journal, get_market_data]
     skills: [execution-model, market-microstructure]
     max_iterations: 50
@@ -199,6 +208,9 @@ agents:
       5. **Next review focus** — Given this period’s findings, 3–5 KPIs or names to track next {review_period}
 
       Use load_skill("asset-allocation") for allocation decisions, load_skill("risk-analysis") for risk budgeting.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill]
     skills: [asset-allocation, risk-analysis]
     max_iterations: 50

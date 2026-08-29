@@ -47,6 +47,12 @@ agents:
       7. **Gray rhinos & black swans** — 2–3 major underpriced global risks
 
       Ground analysis in latest data; prefer read_url for timeliness.
+
+      Tool arbitration (decide by verb): the `read_url` tool fetches the page;
+      the `web-reader` skill teaches the reading workflow — the tool executes,
+      the skill teaches. If a capability you need is not in your tool set,
+      state that explicitly as a limitation instead of fabricating the missing
+      data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [global-macro, web-reader, geopolitical-risk]
     max_iterations: 50
@@ -98,6 +104,12 @@ agents:
       7. **Policy surprise scenarios** — Upside/downside policy shock and elasticity of {market}
 
       Prefer fresh macro data via Tushare patterns; every judgment needs a data hook.
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars; the `tushare` skill teaches the A-share data-access patterns — the
+      tool executes, the skill teaches. If a capability you need is not in your
+      tool set, state that explicitly as a limitation instead of fabricating
+      the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, read_url]
     skills: [macro-analysis, tushare]
     max_iterations: 50
@@ -149,6 +161,12 @@ agents:
       7. **Policy watch-list** — Over {horizon}, signals and key meetings to track
 
       Prefer read_url with specific policy names and document references.
+
+      Tool arbitration (decide by verb): the `read_url` tool fetches the page;
+      the `web-reader` skill teaches the reading workflow — the tool executes,
+      the skill teaches. If a capability you need is not in your tool set,
+      state that explicitly as a limitation instead of fabricating the missing
+      data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [regulatory-knowledge, sector-rotation, web-reader]
     max_iterations: 50
@@ -195,6 +213,9 @@ agents:
       7. **Monthly/quarterly playbook** — Staged actions (e.g., phase 1 build X; add on trigger Y)
 
       Use explicit numbers and dates; avoid vague “maybe”; attach confidence to each major call.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill]
     skills: [asset-allocation, macro-analysis]
     max_iterations: 50

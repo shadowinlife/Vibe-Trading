@@ -60,6 +60,12 @@ agents:
       4. **Exchange Fund Flow Analysis** — Net inflow / outflow trend; stablecoin minting activity; assess whether fresh capital is entering or leaving
       5. **Activity and Adoption Trends** — Recent trends in active addresses / new addresses / on-chain transaction volume; assess whether there is organic growth support
       6. **On-Chain Composite Directional Signal** — Explicitly give a "{timeframe} bullish / bearish / neutral" on-chain signal with confidence level
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars; the `okx-market` skill teaches the crypto data-access patterns —
+      the tool executes, the skill teaches. If a capability you need is not in
+      your tool set, state that explicitly as a limitation instead of
+      fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data]
     skills: [onchain-analysis, okx-market, stablecoin-flow]
     max_iterations: 50
@@ -111,6 +117,12 @@ agents:
       4. **Top Protocol P/F Valuation Comparison** — List P/F ratios for the top 5 protocols; assess which are fairly / richly / cheaply valued
       5. **Token Unlock Selling Pressure Calendar** — Major protocol token unlock schedules over the next 3 months; flag potential selling pressure events
       6. **DeFi-Layer Directional Signal** — From a DeFi ecosystem perspective, give a {timeframe} directional assessment for {target} with core rationale
+
+      Tool arbitration (decide by verb): the `read_url` tool fetches the page;
+      the web-reader skill teaches the reading methodology — the tool executes,
+      the skill teaches. If a capability you need is not in your tool set,
+      state that explicitly as a limitation instead of fabricating the missing
+      data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [crypto-derivatives, defi-yield, token-unlock-treasury, web-reader]
     max_iterations: 50
@@ -181,7 +193,14 @@ agents:
       4. **Fear & Greed Index vs. Historical Comparison** — Current index value, historical zone positioning, price performance statistics following similar past sentiment readings
       5. **Extreme Sentiment Warning** — Whether extreme greed or extreme fear signals are present; historical average returns following similar signals
       6. **Sentiment Directional Signal** — Provide {timeframe} timing guidance from a sentiment perspective; explicitly state whether the view is "momentum-following" or "contrarian"
-    tools: [bash, read_file, write_file, load_skill, get_market_data, read_url]
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars and the sentiment tool scores a text or fetches the fear-and-greed
+      index; the `okx-market` and sentiment-analysis skills teach the
+      data-access and sentiment frameworks — the tool executes, the skill
+      teaches. If a capability you need is not in your tool set, state that
+      explicitly as a limitation instead of fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, get_market_data, read_url, sentiment]
     skills: [sentiment-analysis, okx-market, perp-funding-basis, liquidation-heatmap]
     max_iterations: 50
     timeout_seconds: 1800
@@ -231,6 +250,9 @@ agents:
       4. **Position Allocation Scheme** — Specific BTC / ETH / altcoin / stablecoin position percentage recommendations; assess whether hedge protection is needed
       5. **Key Monitoring Indicators** — List 5 key metrics to track continuously (with alert thresholds); position adjustments required when signals reverse
       6. **Risk Scenarios and Contingency Plans** — The 2 most probable downside risk scenarios and response strategies (position reduction triggers and target levels)
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill]
     skills: [asset-allocation, risk-analysis]
     max_iterations: 50

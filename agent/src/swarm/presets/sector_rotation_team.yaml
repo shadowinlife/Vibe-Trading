@@ -51,6 +51,9 @@ agents:
       7. **Fit with {goal}** — score alignment of {goal} themes with the phase
 
       Every claim needs numeric support, not theory-only.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill]
     skills: [macro-analysis, seasonal]
     max_iterations: 50
@@ -105,6 +108,9 @@ agents:
       7. **{goal} deep dive** — prosperity read on {goal} sectors
 
       Must output a quantitative score table.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, factor_analysis]
     skills: [sector-rotation, fundamental-filter, multi-factor]
     max_iterations: 50
@@ -158,7 +164,14 @@ agents:
       7. **{goal} flow support** — do {goal} sectors align with cycle & prosperity?
 
       Prefer last 20 trading days; emphasize freshness.
-    tools: [bash, read_file, write_file, load_skill, get_market_data]
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars and the sentiment tool scores a text; the `tushare` and
+      sentiment-analysis skills teach the data-access and sentiment frameworks
+      — the tool executes, the skill teaches. If a capability you need is not
+      in your tool set, state that explicitly as a limitation instead of
+      fabricating the missing data.
+    tools: [bash, read_file, write_file, load_skill, get_market_data, sentiment]
     skills: [tushare, sentiment-analysis]
     max_iterations: 50
     timeout_seconds: 1800
@@ -204,6 +217,12 @@ agents:
       7. **Triggers for next review** — what forces a refresh
 
       Must include backtest numbers via backtest—no qualitative-only.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [strategy-generate, sector-rotation]
     max_iterations: 50

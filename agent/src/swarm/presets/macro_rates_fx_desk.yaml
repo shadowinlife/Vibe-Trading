@@ -46,6 +46,9 @@ agents:
       - EM assets: US rate direction drives EM capital flows
 
       Use load_skill for macro analysis and global macro frameworks.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [macro-analysis, global-macro, credit-analysis]
     max_iterations: 50
@@ -91,6 +94,12 @@ agents:
       - EM FX risk assessment: which EM currencies are vulnerable to USD strength?
 
       Use load_skill for global macro and commodity analysis (commodity currencies).
+
+      Tool arbitration (decide by verb): the `get_market_data` tool fetches the
+      bars; the `yfinance` skill teaches the data-source patterns — the tool
+      executes, the skill teaches. If a capability you need is not in your
+      tool set, state that explicitly as a limitation instead of fabricating
+      the missing data.
     tools: [bash, read_file, write_file, load_skill, get_market_data, read_url]
     skills: [global-macro, macro-analysis, yfinance]
     max_iterations: 50
@@ -130,6 +139,9 @@ agents:
       - Stagflation risk: favor gold, defensive equities; avoid cyclicals and bonds
 
       Use load_skill for commodity analysis frameworks.
+
+      If a capability you need is not in your tool set, state that explicitly
+      as a limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, read_url]
     skills: [commodity-analysis, global-macro, seasonal]
     max_iterations: 50
@@ -182,6 +194,12 @@ agents:
       - Next scheduled review date / trigger for rebalancing
 
       Use load_skill for asset allocation and risk management frameworks.
+
+      Tool arbitration (decide by verb): the `backtest` tool runs a prepared
+      run directory; the `strategy-generate` skill teaches the strategy
+      authoring workflow — the tool executes, the skill teaches. If a
+      capability you need is not in your tool set, state that explicitly as a
+      limitation instead of fabricating the missing data.
     tools: [bash, read_file, write_file, load_skill, backtest]
     skills: [asset-allocation, risk-analysis, hedging-strategy, strategy-generate]
     max_iterations: 50
