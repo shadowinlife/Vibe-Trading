@@ -1,0 +1,32 @@
+name: user-analytics-agent
+domain: D15
+version: 0
+tools:
+- analyze_trade_journal
+- extract_shadow_strategy
+- run_shadow_backtest
+- render_shadow_report
+- scan_shadow_signals
+skills:
+- shadow-account
+- trade-journal
+description: 'User trade-journal and shadow-account specialist (交割单与影子账户). Delegate the strict five-step
+  pipeline in order: (1) parse a broker export (同花顺/东方财富/富途/generic CSV) into a trading profile with four
+  behavior diagnostics (处置效应/过度交易/追涨/锚定); (2) extract 3-5 human-readable shadow rules from profitable
+  roundtrips; (3) backtest the shadow across A/HK/US/crypto with delta-PnL attribution; (4) render the
+  8-section HTML/PDF shadow report; (5) scan today''s symbols matching the shadow entry cadence. Step
+  order is mandatory. NOT for: generic document or PDF text extraction (→ web-docs-agent), strategy construction
+  not derived from the user''s own journal (→ quant-agent), live account positions or orders (→ trading-connector-agent),
+  or generic performance attribution of a held portfolio (→ risk-portfolio-agent).'
+twin_pairs:
+- pair: analyze_trade_journal × trade-journal
+  ref: G9
+  arbitration: Parse-and-diagnose a broker export → tool (step 1); journal-analysis methodology → skill.
+- pair: extract_shadow_strategy / run_shadow_backtest / render_shadow_report / scan_shadow_signals × shadow-account
+  ref: G9
+  arbitration: The skill is the pipeline umbrella (entry point and step order); the four tools are steps
+    2-5 and fail without earlier artifacts.
+rationale: 'The cleanest candidate of the eleven: D15 has zero cross-domain tool overlap, the five tools
+  form one strict pipeline (G9), and both skills map one-to-one onto pipeline stages. The only boundary
+  worth a sentence is the entry ambiguity — a broker export is also a "document" — resolved by the rule
+  that parse-and-analyze routes here while generic text extraction routes to web-docs-agent.'

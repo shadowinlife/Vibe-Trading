@@ -1,0 +1,393 @@
+version: 1
+source: D2-3b D4 routing corpus (block A)
+entries:
+# ---------------------------------------------------------------------------
+# market-data-agent (D01+D04) — 15
+# ---------------------------------------------------------------------------
+- id: D4R-A-001
+  query: 拉一下腾讯控股最近半年的周线K线
+  expected: {kind: tool, name: get_market_data}
+  domain: D01
+  route: market-data-agent
+- id: D4R-A-002
+  query: Fetch 4-hour OHLCV bars for ETH-USDT over the last 90 days
+  expected: {kind: tool, name: get_market_data}
+  domain: D01
+  route: market-data-agent
+- id: D4R-A-003
+  query: 300750这个代码对应的是哪家公司
+  expected: {kind: tool, name: search_symbol}
+  domain: D01
+  route: market-data-agent
+- id: D4R-A-004
+  query: I only know the name "SMIC" — which tickers does it trade under across markets?
+  expected: {kind: tool, name: search_symbol}
+  domain: D01
+  route: market-data-agent
+- id: D4R-A-005
+  query: Which US stocks are up the most today? Rank the top 30 for me
+  expected: {kind: tool, name: screen_market}
+  domain: D01
+  route: market-data-agent
+- id: D4R-A-006
+  query: 港股今天成交额最大的前二十只股票是哪些
+  expected: {kind: tool, name: screen_market}
+  domain: D01
+  route: market-data-agent
+- id: D4R-A-007
+  query: 用问财筛一下最近创60日新高且换手率超过5%的A股
+  expected: {kind: tool, name: iwencai_search}
+  domain: D01
+  route: market-data-agent
+- id: D4R-A-008
+  query: What's the slippage on a $50k market buy of SOL-USDT on OKX right now?
+  expected: {kind: tool, name: orderbook_depth}
+  domain: D01
+  route: market-data-agent
+- id: D4R-A-009
+  query: 宁德时代最近一个月主力资金是净流入还是净流出
+  expected: {kind: tool, name: get_fund_flow}
+  domain: D04
+  route: market-data-agent
+- id: D4R-A-010
+  query: Show me Tencent's (00700.HK) daily main-force net inflow this month
+  expected: {kind: tool, name: get_fund_flow}
+  domain: D04
+  route: market-data-agent
+- id: D4R-A-011
+  query: Northbound net buys this week, split by Shanghai and Shenzhen channels?
+  expected: {kind: tool, name: get_northbound_flow}
+  domain: D04
+  route: market-data-agent
+- id: D4R-A-012
+  query: 中芯国际最近两周的融资余额和融券余额怎么变化的
+  expected: {kind: tool, name: get_margin_trading}
+  domain: D04
+  route: market-data-agent
+- id: D4R-A-013
+  query: Who were the top buying broker seats on yesterday's dragon-tiger board?
+  expected: {kind: tool, name: get_dragon_tiger}
+  domain: D04
+  route: market-data-agent
+- id: D4R-A-014
+  query: 帮我查一下立讯精密上市以来的限售解禁记录
+  expected: {kind: tool, name: get_lockup_expiry}
+  domain: D04
+  route: market-data-agent
+- id: D4R-A-015
+  query: 工业富联上个月有没有大宗交易，折价率多少
+  expected: {kind: tool, name: get_block_trades}
+  domain: D04
+  route: market-data-agent
+# ---------------------------------------------------------------------------
+# fundamentals-text-agent (D02+D03) — 15
+# ---------------------------------------------------------------------------
+- id: D4R-A-016
+  query: 把宁德时代最近三年的资产负债表拉出来看看
+  expected: {kind: tool, name: get_financial_statements}
+  domain: D02
+  route: fundamentals-text-agent
+- id: D4R-A-017
+  query: Pull Tencent's cash-flow statements for the last four quarters
+  expected: {kind: tool, name: get_financial_statements}
+  domain: D02
+  route: fundamentals-text-agent
+- id: D4R-A-018
+  query: 给我AAPL和MSFT的gross_profitability季度面板，按公告日对齐防前视
+  expected: {kind: tool, name: get_fundamentals}
+  domain: D02
+  route: fundamentals-text-agent
+- id: D4R-A-019
+  query: List Tesla's recent 8-K filings with their primary document links
+  expected: {kind: tool, name: get_sec_filings}
+  domain: D02
+  route: fundamentals-text-agent
+- id: D4R-A-020
+  query: 查一下微软OperatingIncomeLoss这个XBRL科目近几年的数值序列
+  expected: {kind: tool, name: get_sec_filings}
+  domain: D02
+  route: fundamentals-text-agent
+- id: D4R-A-021
+  query: What's Alibaba's analyst price target and insider ownership looking like?
+  expected: {kind: tool, name: get_stock_profile}
+  domain: D02
+  route: fundamentals-text-agent
+- id: D4R-A-022
+  query: 给我美团的公司画像，重点看机构持股比例
+  expected: {kind: tool, name: get_stock_profile}
+  domain: D02
+  route: fundamentals-text-agent
+- id: D4R-A-023
+  query: 桥水基金上季度的13F持仓里新加仓了哪些票
+  expected: {kind: tool, name: get_institutional_holdings}
+  domain: D02
+  route: fundamentals-text-agent
+- id: D4R-A-024
+  query: 哪些机构在上季度的13F报告里持有英伟达
+  expected: {kind: tool, name: get_institutional_holdings}
+  domain: D02
+  route: fundamentals-text-agent
+- id: D4R-A-025
+  query: 把宁德时代这一周的新闻头条给我列一下
+  expected: {kind: tool, name: get_stock_news}
+  domain: D03
+  route: fundamentals-text-agent
+- id: D4R-A-026
+  query: Any recent headlines on TM.US?
+  expected: {kind: tool, name: get_stock_news}
+  domain: D03
+  route: fundamentals-text-agent
+- id: D4R-A-027
+  query: Show me recent sell-side research reports on 002594.SZ and their ratings
+  expected: {kind: tool, name: get_research_reports}
+  domain: D03
+  route: fundamentals-text-agent
+- id: D4R-A-028
+  query: 最近半年有哪些券商给中际旭创出过研报，评级都是什么
+  expected: {kind: tool, name: get_research_reports}
+  domain: D03
+  route: fundamentals-text-agent
+- id: D4R-A-029
+  query: 帮我找几篇研究低波动异象的学术论文
+  expected: {kind: tool, name: research_papers}
+  domain: D03
+  route: fundamentals-text-agent
+- id: D4R-A-030
+  query: Find papers on post-earnings-announcement drift published since 2023
+  expected: {kind: tool, name: research_papers}
+  domain: D03
+  route: fundamentals-text-agent
+# ---------------------------------------------------------------------------
+# derivatives-agent (D08) — 15
+# ---------------------------------------------------------------------------
+- id: D4R-A-031
+  query: 特斯拉现价180美元，行权价190的看涨期权还有30天到期，波动率45%，值多少钱
+  expected: {kind: tool, name: analyze_options}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-032
+  query: Delta and theta on a 95-strike put, 60 days out, spot 100, vol 30%?
+  expected: {kind: tool, name: analyze_options}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-033
+  query: 沪深300ETF价格4.0，行权价4.2的认购期权90天到期、波动率18%，算一下BS价格和Greeks
+  expected: {kind: tool, name: analyze_options}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-034
+  query: 我买了行权价100的call、卖了110的call，这个牛市价差的到期损益和盈亏平衡点是多少
+  expected: {kind: tool, name: analyze_options_payoff}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-035
+  query: Long the 95 put, short the 90 put — max loss and breakeven at expiry?
+  expected: {kind: tool, name: analyze_options_payoff}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-036
+  query: 同时买入相同行权价的call和put，这个跨式组合的损益结构帮我分析一下
+  expected: {kind: tool, name: analyze_options_payoff}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-037
+  query: Walk through my covered call's P&L if spot lands anywhere between 80 and 120
+  expected: {kind: tool, name: analyze_options_payoff}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-038
+  query: 看看SPY下个月到期期权的持仓量在各行权价上怎么分布
+  expected: {kind: tool, name: get_options_chain}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-039
+  query: What expiration dates are available for TSLA options? Show me the nearest chain
+  expected: {kind: tool, name: get_options_chain}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-040
+  query: Bid-ask and open interest on AAPL's at-the-money calls expiring next month?
+  expected: {kind: tool, name: get_options_chain}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-041
+  query: "Price a European call: spot 50, strike 55, six months out, 25% vol, 4% risk-free"
+  expected: {kind: tool, name: analyze_options}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-042
+  query: 我卖出了一个宽跨式组合，帮我确认最大亏损是不是理论上无界
+  expected: {kind: tool, name: analyze_options_payoff}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-043
+  query: 帮我看看微软期权链上虚值put的隐含波动率，有没有明显偏斜
+  expected: {kind: tool, name: get_options_chain}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-044
+  query: 比特币按现货98000算，行权价10万、85天到期、55%波动率的看涨期权值多少钱
+  expected: {kind: tool, name: analyze_options}
+  domain: D08
+  route: derivatives-agent
+- id: D4R-A-045
+  query: "Iron butterfly at the 100 strike: expiry P&L, and what if IV doubles?"
+  expected: {kind: tool, name: analyze_options_payoff}
+  domain: D08
+  route: derivatives-agent
+# ---------------------------------------------------------------------------
+# risk-portfolio-agent (D09) — 15
+# ---------------------------------------------------------------------------
+- id: D4R-A-046
+  query: 用历史模拟法算一下我持仓组合99%置信度的预期损失，收益率我贴给你
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-047
+  query: 算一下我持仓组合相对沪深300的beta和跟踪误差
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-048
+  query: 按我给的这组净值序列，算一下组合最大回撤发生在哪段时间
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-049
+  query: 帮我检验手里这两只票的价格序列在5%显著性下是否协整
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-050
+  query: 用GARCH(1,1)估计一下这组日收益率的条件波动率
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-051
+  query: Given my two holdings' price series, estimate the Kalman hedge ratio between them
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-052
+  query: 帮我做这个组合的Brinson归因，拆成行业配置和选股两部分，基准沪深300
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-053
+  query: EVT tail fit on these daily returns — expected shortfall beyond 99%?
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-054
+  query: 这个账户今年两次入金一次提现，帮我算不受资金进出影响的时间加权收益率
+  expected: {kind: tool, name: cashflow_performance}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-055
+  query: Capital call in March, distribution in September — compute the XIRR and MOIC
+  expected: {kind: tool, name: cashflow_performance}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-056
+  query: 私募基金份额这一年有追加出资也有分红，帮我算XIRR和DPI
+  expected: {kind: tool, name: cashflow_performance}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-057
+  query: 按风险平价的思路给我这四类资产算一下配置权重
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-058
+  query: Rolling 60-day correlation matrix across my five positions' returns
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-059
+  query: 对这组收益率做正态性和自相关检验，看能不能近似当正态处理
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+- id: D4R-A-060
+  query: 给我这个科技股持仓算一个最小方差对冲比率，对冲工具用纳指期货
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+# ---------------------------------------------------------------------------
+# valuation-agent (D10+D12) — 15
+# ---------------------------------------------------------------------------
+- id: D4R-A-061
+  query: 帮我用DCF给这家公司估值，WACC取9%、永续增长率2.5%，现金流预测我贴给你
+  expected: {kind: tool, name: quantlib_call}
+  domain: D10
+  route: valuation-agent
+- id: D4R-A-062
+  query: Run comps on these peer EV/EBITDA multiples — what's the implied value range?
+  expected: {kind: tool, name: quantlib_call}
+  domain: D10
+  route: valuation-agent
+- id: D4R-A-063
+  query: 用股利贴现模型给这只银行股估值，假设分红率稳定在30%
+  expected: {kind: tool, name: quantlib_call}
+  domain: D10
+  route: valuation-agent
+- id: D4R-A-064
+  query: 帮我反推一下这个DCF隐含的永续增长率，和市场预期比是不是偏高
+  expected: {kind: tool, name: quantlib_call}
+  domain: D10
+  route: valuation-agent
+- id: D4R-A-065
+  query: 做个SOTP：把这家公司三块业务分别估值再加总，给我每块的贡献
+  expected: {kind: tool, name: quantlib_call}
+  domain: D10
+  route: valuation-agent
+- id: D4R-A-066
+  query: Three-statement projection on these revenue assumptions — does the balance sheet tie?
+  expected: {kind: tool, name: quantlib_call}
+  domain: D10
+  route: valuation-agent
+- id: D4R-A-067
+  query: 用PE和EV/EBITDA两种相对估值法交叉验证这个标的的合理区间
+  expected: {kind: tool, name: quantlib_call}
+  domain: D10
+  route: valuation-agent
+- id: D4R-A-068
+  query: 在PB-ROE框架下给这几只票的相对估值排个序
+  expected: {kind: tool, name: quantlib_call}
+  domain: D10
+  route: valuation-agent
+- id: D4R-A-069
+  query: 事件合约市场现在给比特币年底突破15万美元定价的隐含概率是多少
+  expected: {kind: tool, name: prediction_market}
+  domain: D12
+  route: valuation-agent
+- id: D4R-A-070
+  query: What's the market-implied probability of a US government shutdown next month?
+  expected: {kind: tool, name: prediction_market}
+  domain: D12
+  route: valuation-agent
+- id: D4R-A-071
+  query: 市场隐含的美国CPI年内回落到2%以下的概率是多少
+  expected: {kind: tool, name: prediction_market}
+  domain: D12
+  route: valuation-agent
+- id: D4R-A-072
+  query: 搜一下事件合约市场上跟油价相关的合约，把各自的隐含概率列出来
+  expected: {kind: tool, name: prediction_market}
+  domain: D12
+  route: valuation-agent
+- id: D4R-A-073
+  query: 这个地缘冲突相关的事件合约，市场定价的概率最近一周涨了多少
+  expected: {kind: tool, name: prediction_market}
+  domain: D12
+  route: valuation-agent
+- id: D4R-A-074
+  query: Order-book depth on the 2026 recession contract — is the quote reliable?
+  expected: {kind: tool, name: prediction_market}
+  domain: D12
+  route: valuation-agent
+- id: D4R-A-075
+  query: Implied probability of ETH staking approval this year, and how has it moved?
+  expected: {kind: tool, name: prediction_market}
+  domain: D12
+  route: valuation-agent

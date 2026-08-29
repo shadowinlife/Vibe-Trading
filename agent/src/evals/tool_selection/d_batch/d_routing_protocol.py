@@ -89,7 +89,7 @@ def build_routing_messages(candidates_block: str, subagents_block: str,
     ]
 
 
-def parse_route(raw: str) -> str | None:
+def parse_route(raw: str, valid_routes: tuple | list | None = None) -> str | None:
     """Parse the judge reply into a route label.
 
     Handles clean JSON, markdown-fenced JSON and JSON embedded in prose.
@@ -98,10 +98,14 @@ def parse_route(raw: str) -> str | None:
 
     Args:
         raw: Raw model reply text.
+        valid_routes: Allowed route labels; defaults to the frozen D-batch
+            VALID_ROUTES. D4 passes its extended candidate list here (the
+            template hash is unaffected — route labels are not hashed).
 
     Returns:
-        One of VALID_ROUTES, or None.
+        One of valid_routes, or None.
     """
+    allowed = tuple(valid_routes) if valid_routes else VALID_ROUTES
     text = raw.strip()
     candidates = [text]
     if "```" in text:
@@ -123,6 +127,6 @@ def parse_route(raw: str) -> str | None:
             route = obj.get("route")
             if isinstance(route, str):
                 normalized = route.strip().lower().replace("_", "-")
-                if normalized in VALID_ROUTES:
+                if normalized in allowed:
                     return normalized
     return None

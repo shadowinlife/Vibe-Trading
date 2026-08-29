@@ -53,3 +53,15 @@ webdocs 域：`read_url`×`web-reader`、`read_document`×`doc-reader`、
   会话占比。
 - 兜底（用户预授权）：窗开启 4 周内 twin_choice <30 → 记
   `inconclusive-underpowered`，不阻塞任何项。
+
+## 6. 观察窗开启记录（B3，2026-08-29 15:45）
+
+- **冻结声明**：观察窗内不动 quant-agent / web-docs-agent 的 prompt、
+  白名单与 description（mymain `552c7bfe` 为冻结点）；评测侧语料/协议
+  变更不影响生产配置。
+- **基线**：opencode sqlite 现有会话 2115（子会话 1682），基线时间戳
+  2026-08-29 15:45:01（本地）。窗内事件 = 该时间戳之后的记录。
+- **读出节奏**：事件计数触发（twin_choice 达 30 即触发中期读出）；
+  日历兜底 4 周（2026-09-26 事件 <30 → inconclusive-underpowered 关闭，
+  用户已预授权）。
+- **已知盲区**（§3 已申报）：不触发任一侧调用的孪生场景不可见。

@@ -88,7 +88,7 @@ def _probe_path(model_id: str, probe_tag: str | None) -> Path:
 def run_routing(*, model_cfg: dict, caps: BudgetCaps, entries: list[dict],
                 candidates_block: str, subagents_block: str,
                 env: dict[str, str], limit: int | None = None,
-                tag: str | None = None,
+                tag: str | None = None, valid_routes: list | None = None,
                 client_factory=build_client) -> int:
     """Score the routing corpus for one judge model, with resume + budget.
 
@@ -112,7 +112,7 @@ def run_routing(*, model_cfg: dict, caps: BudgetCaps, entries: list[dict],
             "prompt_template_sha256": template_sha,
             "model": model_cfg["id"],
             "level": "routing",
-            "valid_routes": list(VALID_ROUTES),
+            "valid_routes": list(valid_routes or VALID_ROUTES),
             "config_pins": {
                 "temperature": model_cfg["temperature"],
                 "max_response_tokens": model_cfg["max_response_tokens"],
@@ -153,7 +153,8 @@ def run_routing(*, model_cfg: dict, caps: BudgetCaps, entries: list[dict],
         except JudgeCallError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return EXIT_ERROR
-        route = parse_route(outcome["raw"]) if outcome["error"] is None else None
+        route = (parse_route(outcome["raw"], valid_routes)
+                 if outcome["error"] is None else None)
         record = {
             "query_id": entry["id"],
             "model": model_cfg["id"],
@@ -237,7 +238,8 @@ def run_routing_probe(*, model_cfg: dict, caps: BudgetCaps,
             except JudgeCallError as exc:
                 print(f"error: {exc}", file=sys.stderr)
                 return EXIT_ERROR
-            route = parse_route(outcome["raw"]) if outcome["error"] is None else None
+            route = (parse_route(outcome["raw"], valid_routes)
+                 if outcome["error"] is None else None)
             record = {
                 "query_id": entry["id"],
                 "repeat": repeat,
@@ -294,6 +296,16 @@ def main(argv: list[str] | None = None) -> int:
                              "administration (same discipline as --probe-tag)")
     parser.add_argument("--probe-only", action="store_true")
     parser.add_argument("--probe-tag", default=None)
+    parser.add_argument("--queries-file", default=None,
+                        help="routing queries YAML (default: the D-batch "
+                             "queries_d_routing.yaml); D4 passes its expanded corpus")
+    parser.add_argument("--definitions", default=None,
+                        help="comma-separated subagent definition YAMLs "
+                             "(default: the two D-batch pilots); D4 passes the "
+                             "pilot + candidate files")
+    parser.add_argument("--extra-routes", default=None,
+                        help="comma-separated additional valid route labels "
+                             "(D4 candidate names); recorded in the trace header")
     args = parser.parse_args(argv)
 
     config_path = Path(args.config)
@@ -311,9 +323,15 @@ def main(argv: list[str] | None = None) -> int:
 
     corpus = _load_yaml(FULL_CORPUS)
     candidates_block = build_candidates_block(corpus)
-    definitions = [_load_yaml(p) for p in DEFINITION_FILES]
+    def_files = ([Path(p) for p in args.definitions.split(",")]
+                 if args.definitions else DEFINITION_FILES)
+    definitions = [_load_yaml(p) for p in def_files]
     subagents_block = build_subagent_block(definitions)
-    entries = _load_yaml(ROUTING_QUERIES)["entries"]
+    queries_path = Path(args.queries_file) if args.queries_file else ROUTING_QUERIES
+    entries = _load_yaml(queries_path)["entries"]
+    valid_routes = (list(VALID_ROUTES)
+                    + [r.strip() for r in args.extra_routes.split(",")]
+                    if args.extra_routes else list(VALID_ROUTES))
     caps = BudgetCaps(
         max_tokens=int(config["budget"]["max_input_tokens_per_model_run"]),
         max_calls=int(config["budget"]["max_calls_per_model_run"]),
@@ -334,7 +352,7 @@ def main(argv: list[str] | None = None) -> int:
                 model_cfg=model_cfg, caps=caps, entries=entries,
                 candidates_block=candidates_block,
                 subagents_block=subagents_block, env=env, limit=args.limit,
-                tag=args.tag,
+                tag=args.tag, valid_routes=valid_routes,
             )
         if code != EXIT_OK:
             exit_code = code

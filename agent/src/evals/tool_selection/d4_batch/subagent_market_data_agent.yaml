@@ -1,0 +1,60 @@
+name: market-data-agent
+domain: D01+D04
+version: 0
+tools:
+- get_market_data
+- search_symbol
+- screen_market
+- iwencai_search
+- orderbook_depth
+- get_fund_flow
+- get_northbound_flow
+- get_margin_trading
+- get_block_trades
+- get_dragon_tiger
+- get_lockup_expiry
+- get_shareholder_count
+skills:
+- data-routing
+- tushare
+- yfinance
+- akshare
+- mootdx
+- eastmoney
+- ccxt
+- okx-market
+- minute-analysis
+- hk-connect-flow
+- market-microstructure
+description: 'Market data and capital-flow specialist (行情数据与资金流). Delegate: symbol resolution (名称/代码→标的解析),
+  OHLCV bars across A/HK/US/Canada/Korea/ crypto/forex with automatic source fallback (取数/K线/日线/分钟线),
+  same-day market rankings (涨幅/成交/换手排行), A-share natural-language screening via iwencai (问财选股, key-gated),
+  crypto order-book depth and market-impact cost (盘口深度/冲击成本), and capital-flow reads — main-force net
+  inflow (主力资金), northbound connect flow (北向资金), margin balances (融资融券), block trades (大宗交易), dragon-tiger
+  board (龙虎榜), lockup-expiry calendars (限售解禁), and shareholder-count changes (股东户数). Loads the data-routing
+  skill before any fetch. NOT for: account/broker-side quotes or positions (→ trading-connector-agent),
+  sector/concept board membership and board rankings (→ macro-sector-agent), technical-indicator values
+  or named TA schools (RSI信号/缠论/波浪/SMC → main agent), financial statements or filings (→ fundamentals-text-agent),
+  or any backtest execution (→ quant-agent).'
+twin_pairs:
+- pair: get_market_data × data-routing + 7 source skills
+  ref: K1/G1
+  arbitration: Standard OHLCV fetch → get_market_data (auto source chain); the source skills are for direct-script
+    access to special endpoints only.
+- pair: get_northbound_flow × hk-connect-flow
+  ref: D04
+  arbitration: Raw northbound net-flow numbers → tool; connect-flow analysis methodology and arbitrage
+    framing → skill.
+- pair: orderbook_depth × market-microstructure
+  ref: D04
+  arbitration: Live L2 depth/impact-cost snapshot → tool; VPIN/Amihud/Roll microstructure research framework
+    → skill.
+- pair: get_market_data × minute-analysis
+  ref: D01
+  arbitration: Minute bars via the tool's interval parameter; the skill only for minute-level workflow
+    design.
+rationale: 'The cut follows the domain table exactly (D01+D04) with one removal: get_sector_info moved
+  to macro-sector-agent because its ranking mode is the data feed of sector-rotation, and per-stock flow
+  tools already give market-data-agent a coherent "price + money flow" identity without it. Owning the
+  only get_market_data instance makes this agent the single data-fetch authority, which is what makes
+  every other candidate''s whitelist small enough to route.'
