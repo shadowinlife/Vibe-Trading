@@ -317,3 +317,29 @@ C1 design inputs this audit feeds:
 113-name tool inventory greped from `agent/src/tools/*.py` and the 90 skill
 directories under `agent/src/skills/`. No preset, runtime, or test file was
 modified; no swarm or backtest was executed.*
+
+---
+
+## 附录：C1 试点落地与冒烟（2026-08-29，闭环 C0 → C1）
+
+C0 审计 → C1 试点（quant_strategy_desk / investment_committee /
+sentiment_intelligence_team，commit `442c8c62`）：
+
+1. **仲裁句移植**：所有持有孪生对的 agent 的 system_prompt 加入
+   "Tool arbitration (decide by verb)" 句（factor_analysis×factor-research、
+   backtest×strategy-generate、get_market_data×tushare/yfinance、
+   read_url×web-reader、options_payoff×options-payoff 精确孪生）。
+2. **能力缺口修复**：4 个持 sentiment-analysis 技能而无 sentiment 工具的
+   agent 补发 sentiment 工具。
+3. **诚实披露契约**：13 个 agent 全部加入"缺能力即显式声明限制"句。
+4. **risk_auditor 保持无数据工具**（by design，行内注释记录裁决理由：
+   其证据基线是上游回测产物，授予数据工具反而诱使其重算而非审计）。
+5. **守门人回归**：`pytest -k "swarm or preset"` 496 passed / 4 skipped
+   （含 claim-backing 门）；冒烟前抓出并修复一处子代理编辑引入的
+   空白符污染（投资委员会 prompt 行）。
+
+**冒烟证据**（sentiment_intelligence_team 全链路实跑，
+run `swarm-20260829-083056-ac7fca88`，16m21s，~750k tokens）：
+新增 sentiment 工具被真实调用 **54 次**（修复前为 0——技能在手、工具缺席），
+read_url ×273 / load_skill ×56；3 个 agent 的报告中情绪指标落地。
+能力缺口修复从配置层穿透到行为层。
