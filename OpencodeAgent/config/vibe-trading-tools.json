@@ -1,5 +1,18 @@
 {
   "disabled": [
-    "trading_*"
+    "trading_*",
+    "alpha_zoo",
+    "alpha_bench",
+    "factor_analysis",
+    "list_strategies",
+    "query_strategies",
+    "get_strategy_evidence",
+    "backtest",
+    "pattern_recognition",
+    "read_file",
+    "write_file",
+    "web_search",
+    "read_url",
+    "read_document"
   ]
 }
