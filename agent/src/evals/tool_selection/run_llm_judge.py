@@ -944,10 +944,13 @@ def main(argv: list[str] | None = None) -> int:
         if not env.get(key_env):
             print(f"{model_cfg['id']}: skipped (no {key_env} key)")
             continue
+        banner_sha = (
+            prompt_template_v2_sha256() if policy_text else prompt_template_sha256()
+        )
         print(
             f"=== llm-judge {model_cfg['id']} / {args.surface} "
             f"(corpus captured_at {corpus['captured_at']}, "
-            f"template sha256 {prompt_template_sha256()[:16]}…) ==="
+            f"template sha256 {banner_sha[:16]}…) ==="
         )
         if args.probe_only:
             code = run_probe(
