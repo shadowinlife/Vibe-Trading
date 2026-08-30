@@ -16,9 +16,10 @@
 |---|---|---|
 | D2-1 孪生仲裁门禁 | ✅ validated | `artifacts/d2/track_a_verdict.md`（两域 CI 下界为正） |
 | D2-2 主循环收敛 | ✅ validated（生产已上） | `artifacts/d2/mainloop_convergence_verdict.md`；59→46 工具 |
-| D2-3 D4 铺开评审 | ✅ **9/9 候选全过准入**（三轮迭代收敛） | `artifacts/d2/d4_final_verdict.md` + `d4_round1_verdict.md` |
-| D2-4 C1 preset 试点 | ✅ validated | `artifacts/d2/preset_audit.md` 附录（sentiment 工具 54 次真实调用） |
-| Track B 遥测观察窗 | 🟢 开启中（4 周兜底 2026-09-26） | `artifacts/d2/event_taxonomy.md` §6 |
+| D2-3 D4 铺开评审 | ✅ 9/9 候选全过准入（三轮迭代收敛） | `artifacts/d2/d4_final_verdict.md` + `d4_round1_verdict.md` |
+| D2-4 C1+C2 preset 治理 | ✅ validated（30/30 preset 全覆盖） | `artifacts/d2/preset_audit.md` + 附录；commits `442c8c62`/`71963e2f` |
+| **D4 生产同步** | ✅ **完成（mymain `07a08aab`）** | 11 子代理节 + 11 prompt + AGENTS.md 2→11 + quant-agent NOT-for 收紧；渲染验证 11 节全出；冒烟：quant 委派回归 ✓、fundamentals-text 新域委派 ✓、轻量取数走 escape hatch 直答（记录为校准观察项，见下） |
+| Track B 遥测观察窗 | 🟢 开启中（4 周兜底 2026-09-26） | `artifacts/d2/event_taxonomy.md` §6；**新增观察项**：轻量数据取数（≤2 调用）是否绕过委派走主循环直答 |
 | D2-5 通道混淆 | 跟踪类 | 检测器 `d2_telemetry/` 已备 |
 | D2-6 软边界 | 已知限制（不排期） | S5f 案例已归档 |
 
@@ -29,22 +30,15 @@ D4 Round 3 traces 双判官 353/353 完整落盘（重启未造成数据损失�
 
 ## 新 session 从这里继续（按序）
 
-1. **生产同步 D4 准入结果**（下一步主任务）：9 个准入候选合入 mymain——
-   - 定义源：`agent/src/evals/tool_selection/d4_batch/candidates_d4.yaml`
-     （v3 描述，三轮迭代收敛版）+ 拆分定义文件 9 个；
-   - 为 9 个候选撰写生产 prompt（模仿 `OpencodeAgent/config/prompts/quant_agent.md`
-     的 Tool contract + Twin arbitration + Output contract 结构）；
-   - 合入 `OpencodeAgent/config/subagents.json`（prompt 用 `{file:./prompts/}`
-     相对引用，colocation 机制已就绪）；
-   - `OpencodeAgent/AGENTS.md` 路由政策从 2 子代理扩写至 11；
-   - quant-agent 生产 description 应用 D4 侧 v2 NOT-for 收紧补丁
-     （`d4_batch/subagent_quant_agent.yaml` 为参照）；
-   - 跑 `OpencodeAgent/tests/`（33 测试）+ L2 冒烟（参照
-     `artifacts/d2/mainloop_convergence_verdict.md` 的五场景协议）。
+~~1. 生产同步 D4 准入结果~~ ✅ 已完成（mymain `07a08aab`）。
+
+1. **新域的主循环收敛评审**（下一个实质决策）：9 个新子代理的工具目前与
+   主面双驻（staging 设计）。是否把 fundamentals-text / market-data 等域的
+   工具也从主面撤下（复刻 D2-2 的 diff+探针+五场景流程），需要先回答
+   Track B 观察到的校准问题：轻量取数（≤2 调用）应不应留在主循环。
 2. **trading-connector-agent 安全评审**：另立工作项（trading_* 全局 deny 中）。
 3. **Track B 读出**：2026-09-26 前 twin_choice 事件 <30 → 按预授权记
    inconclusive-underpowered 关闭，不阻塞。
-4. **C2**（27 个 preset 治理铺开）：C1 已过，可随时启动。
 
 ## 关键工程事实（重启后勿重推导）
 
