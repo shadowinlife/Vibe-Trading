@@ -130,18 +130,25 @@ p90 46s → 29s。委派本身增加一次路由决策（5-7s）+ 任务书生�
 
 ## 5. 最终状态与续作接口
 
-- **生产面**：MCP keyless 74→59 工具（B 批）→ 主循环收敛后再 59→46
-  （D2-2，13 个域工具移入子代理独占；mymain `552c7bfe`，单 commit 可回滚）。
+- **生产面**：MCP keyless 74→59（B 批）→ 主循环收敛后 59→46
+  （D2-2，13 个域工具移入子代理独占；mymain `552c7bfe`，单 commit 可回滚）
+  → F2 镜像补充后 59→61（financial_rigor + report_audit，DEC-3，`eebf48af`）。
 - **D 批生产线收官（2026-08-29）**：
   - D2-1 孪生仲裁 ✅（功效充足复测：两域 CI 下界为正，小面+仲裁句**优于**全表面）；
   - D2-2 主循环收敛 ✅（L2 五场景 5/5，委派正确率 100%，对抗零越权）；
   - D2-3 D4 铺开评审 ✅（三轮迭代收敛：9/9 候选准入；orchestrator 诚实拒绝；
-    trading-connector 安全挂起；Round 1/2 两轮 FAIL 如实记录并驱动修订）；
+    Round 1/2 两轮 FAIL 如实记录并驱动修订）；trading-connector 后经 DEC-5
+    mini-admission 准入（R1 0.974 / R2 0 / R3 1.000，`d4tc_verdict.md`）→
+    生产 mymain `b5a7265b`（花名册 12 子代理，写族永不进子代理锚定为测试）；
   - D2-4 swarm 治理 ✅（C0 全量审计 + C1 三试点冒烟 sentiment×54 + C2 全量 27 preset 移植）。
-- **D3**（swarm 白名单移植映射）已由 D2-4 实际完成（C0/C1/C2 即其执行形态）。
-- **续作**：9 个准入候选的生产同步（prompts + subagents.json + 路由政策，
-  进行中）；trading-connector 安全评审（独立立项）；Track B 遥测窗
-  （2026-09-26 兜底关闭，不阻塞）。
+- **D3** 拆解闭合：preset 白名单完整性（SWARM 侧动机）已由 D2-4 闭合（C0/C1/C2，
+  30/30 preset）；内部名→MCP 名运行时映射层无消费者，DEC-6 降级为按需触发
+  （映射数据在 AUDIT §8.1，首个真实移植需求出现时再写代码）。
+- **续作**：Track B 遥测窗读出（2026-09-26 兜底关闭，不阻塞）；
+  新域主循环收敛评审（被 Track B 校准答案门控）。
+  已闭合：生产同步（mymain `07a08aab` + `b5a7265b`）；F2/F3/F4 缺口
+  （DEC-3/4，`eebf48af` + `489ef36c`）；准入协议资产化
+  （`agent/src/evals/tool_selection/SUBAGENT_ADMISSION_PROTOCOL.md`）。
 
 ## 6. 引用清单
 

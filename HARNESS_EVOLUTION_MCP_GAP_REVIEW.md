@@ -15,7 +15,7 @@
 | `sdm_register` | 因子/策略注册入策略库 | **写**（~/.vibe-trading 策略库） | 仅 agent 面 | strategy-dev-manager 技能生命周期第一步 |
 | `sdm_status` | 查询**或更新**库中状态 | 读+写（含 four-eyes 治理校验 `is_four_eyes_violation`） | 仅 agent 面 | 同上 |
 | `sdm_decay_scan` | 衰减监控扫描 | 读 + 可能写（生命周期状态迁移） | 仅 agent 面 | 同上 + 定时任务场景 |
-| `trading_*` ×17 | 连接器交易族（B2 后条件暴露） | 读族无副作用；**写族（place/cancel）从不在 MCP 面**（agent+CLI，mandate 门控） | MCP 面仅读族（B2 门控后）；opencode 部署中全族全局 deny | D4 候选 trading-connector 因此被安全挂起 |
+| `trading_*` ×17 | 连接器交易族（B2 后条件暴露） | 读族无副作用；**写族（place/cancel）从不在 MCP 面**（agent+CLI，mandate 门控） | MCP 面仅读族（B2 门控后）；opencode 部署原全族全局 deny → DEC-5 后 Tier-0 读族放行、写族维持显式 deny（mymain b5a7265b） | D4 候选 trading-connector 因此被安全挂起 |
 
 **关键已存在事实**：策略库的**读侧**已在 MCP 面——strategy-discovery 三件套
 （`list_strategies` / `query_strategies` / `get_strategy_evidence`，mcp_server.py:1215+）

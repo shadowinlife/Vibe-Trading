@@ -137,22 +137,22 @@
 | `scaffold_signal_engine` | 为已保存假设写入契约正确的 signal_engine.py 桩 | 同上 | `write_file`（手写桩代码） | 未暴露（无决策记录） |
 | `run_research_autopilot` | 从已保存假设启动研究目标 | 同上 | `start_research_goal`（MCP 面有，但无假设关联） | 未暴露（无决策记录） |
 
-### 2.6 财务严谨性与报告审计（待暴露评估：F2）
+### 2.6 财务严谨性与报告审计（✅ 已暴露：DEC-3，2026-08-30）
 
 | 内部名 | 用途 | 为何不在 MCP 面 | MCP 侧替代（AUDIT §8.1） | 处置 |
 |---|---|---|---|---|
-| `financial_rigor` | 以精确十进制算术（无浮点漂移）校验财务数据准确性 | **待评估**：AUDIT §8.3 P0 要求"MCP 暴露评估有结论"；ROADMAP PLAN-F2（P1）立项 | `quantlib_call` + 提示词约束 | 待暴露评估（F2） |
-| `report_audit` | 发布前审计研究报告的数字数据点准确性 | 同上 | 提示词自检 | 待暴露评估（F2） |
+| `financial_rigor` | 以精确十进制算术（无浮点漂移）校验财务数据准确性 | **已在 MCP 面**（DEC-3，镜像注册 `_MIRRORED_TOOL_SOURCES`，同名） | 同名 `financial_rigor` | ✅ 已暴露（eebf48af） |
+| `report_audit` | 发布前审计研究报告的数字数据点准确性 | **已在 MCP 面**（DEC-3，同上） | 同名 `report_audit` | ✅ 已暴露（eebf48af） |
 
-### 2.7 SDM 策略生命周期（待暴露评估：F4）
+### 2.7 SDM 策略生命周期（✅ 已裁决不暴露：DEC-4，2026-08-30）
 
-> AUDIT §8.1 明确：`sdm_*` "仅内部运行时可用"。ROADMAP PLAN-F4（P2）将在"暴露 / 文档降级 / 技能改写"三选一。在决策前，技能文档（strategy-dev-manager）已按 TASK-A6 要求加注"仅内置 agent 运行时可用"可达性声明。
+> DEC-4 裁决（2026-08-30）：**不新增 MCP 注册**。读侧由 strategy-discovery 三件套（`list_strategies` / `query_strategies` / `get_strategy_evidence`，同一策略库的只读门面）承担；写侧（register / status 更新 / decay 扫描）维持 agent-only。strategy-dev-manager 技能文档已改写为双面指引。
 
 | 内部名 | 用途 | 为何不在 MCP 面 | MCP 侧替代 | 处置 |
 |---|---|---|---|---|
-| `sdm_register` | 把从论文提取的因子/策略注册进策略库 | **待评估**：内部运行时工作流（AUDIT §8.1）；F4 待决策 | 无（仅内置 agent 运行时） | 待暴露评估（F4） |
-| `sdm_status` | 查询/更新策略库中因子/策略的生命周期状态 | 同上 | 无 | 待暴露评估（F4） |
-| `sdm_decay_scan` | 对活跃因子/策略批量跑衰减监控扫描 | 同上 | 无 | 待暴露评估（F4） |
+| `sdm_register` | 把从论文提取的因子/策略注册进策略库 | 写侧：策略库喂推荐，写入面留在本地运行时（DEC-4） | 无（agent-only） | ✅ 已裁决不暴露（eebf48af） |
+| `sdm_status` | 查询/更新策略库中因子/策略的生命周期状态 | 写侧同上 | 读侧：`list_strategies` / `query_strategies` / `get_strategy_evidence` | ✅ 已裁决（读侧三件套，写侧 agent-only） |
+| `sdm_decay_scan` | 对活跃因子/策略批量跑衰减监控扫描 | 运维性质（对照 B3 同族处置） | 无（agent-only） | ✅ 已裁决不暴露（eebf48af） |
 
 ### 2.8 组合 / 连接器只读扩展（未暴露，无决策记录）
 
@@ -200,7 +200,7 @@
 | 16 | `etoro_copy_start` | EtoroCopyStartTool / `trading_connector_tool` | 开始跟单/调整跟单配置 | no-equivalent | — | none | 刻意不暴露 |
 | 17 | `etoro_edit_position_stops` | EtoroEditPositionStopsTool / `trading_connector_tool` | 修改 eToro 止损/止盈（paper；live fail-closed） | no-equivalent | — | none | 刻意不暴露 |
 | 18 | `etoro_search_instruments` | EtoroSearchInstrumentsTool / `trading_connector_tool` | 搜索 eToro 标的 | no-equivalent | — | none | 未暴露（无决策记录） |
-| 19 | `financial_rigor` | FinancialRigorTool / `financial_rigor_tool` | 精确十进制算术校验财务数据 | no-equivalent | — | none | 待暴露评估（F2） |
+| 19 | `financial_rigor` | FinancialRigorTool / `financial_rigor_tool` | 精确十进制算术校验财务数据 | `financial_rigor`（DEC-3 同名镜像） | — | none | ✅ 已暴露（eebf48af） |
 | 20 | `generate_backtest_config` | GenerateBacktestConfigTool / `autopilot_tool` | 从假设生成回测 config.json | no-equivalent | — | none | 未暴露（无决策记录） |
 | 21 | `get_taiwan_stock_data` † | TaiwanStockDataTool / `taiwan_stock_data_tool` | 本地台股快照查询（TWSE/TPEx） | no-equivalent | — | env `VIBE_TW_STOCK_DB`（schema 合法 SQLite） | 刻意不暴露 |
 | 22 | `link_autopilot_backtest` | LinkAutopilotBacktestTool / `autopilot_tool` | 读 run_card.json 指标并关联假设 | no-equivalent | — | none | 未暴露（无决策记录） |
@@ -213,14 +213,14 @@
 | 29 | `portfolio_summary` | PortfolioSummaryTool / `portfolio_tool` | 本地只读券商账户脱敏快照 | no-equivalent | — | none | 未暴露（无决策记录） |
 | 30 | `propose_mandate_profiles` | ProposeMandateProfilesTool / `propose_mandate_tool` | 提出有界自主实盘 mandate 档案 | no-equivalent | — | none | 刻意不暴露 |
 | 31 | `remember` | RememberTool / `remember_tool` | 持久化跨会话记忆 | no-equivalent | — | none | 刻意不暴露 |
-| 32 | `report_audit` | ReportAuditTool / `report_audit_tool` | 研究报告数字准确性审计 | no-equivalent | — | none | 待暴露评估（F2） |
+| 32 | `report_audit` | ReportAuditTool / `report_audit_tool` | 研究报告数字准确性审计 | `report_audit`（DEC-3 同名镜像） | — | none | ✅ 已暴露（eebf48af） |
 | 33 | `run_research_autopilot` | RunResearchAutopilotTool / `autopilot_tool` | 从假设启动研究目标 | no-equivalent | — | none | 未暴露（无决策记录） |
 | 34 | `save_skill` | SaveSkillTool / `skill_writer_tool` | 保存工作流为可复用技能 | no-equivalent | — | none | 刻意不暴露 |
 | 35 | `scaffold_signal_engine` | ScaffoldSignalEngineTool / `autopilot_tool` | 为假设写 signal_engine.py 桩 | no-equivalent | — | none | 未暴露（无决策记录） |
 | 36 | `scheduled_research` | ScheduledResearchTool / `scheduled_research_tool` | 计划研究检视与提案准备 | no-equivalent | — | none | 刻意不暴露 |
-| 37 | `sdm_decay_scan` | SdmDecayScanTool / `sdm_decay_scan_tool` | 活跃因子/策略衰减扫描 | no-equivalent | — | none | 待暴露评估（F4） |
-| 38 | `sdm_register` | SdmRegisterTool / `sdm_register_tool` | 论文因子/策略注册进策略库 | no-equivalent | — | none | 待暴露评估（F4） |
-| 39 | `sdm_status` | SdmStatusTool / `sdm_status_tool` | 策略库生命周期状态查询/更新 | no-equivalent | — | none | 待暴露评估（F4） |
+| 37 | `sdm_decay_scan` | SdmDecayScanTool / `sdm_decay_scan_tool` | 活跃因子/策略衰减扫描 | 无 | — | none | 刻意不暴露（DEC-4） |
+| 38 | `sdm_register` | SdmRegisterTool / `sdm_register_tool` | 论文因子/策略注册进策略库 | 无 | — | none | 刻意不暴露（DEC-4） |
+| 39 | `sdm_status` | SdmStatusTool / `sdm_status_tool` | 策略库生命周期状态查询/更新 | 读侧：strategy-discovery 三件套 | — | none | 刻意不暴露（DEC-4；写侧 agent-only） |
 | 40 | `search_hypotheses` | SearchHypothesesTool / `hypothesis_tool` | 假设文本/状态搜索 | no-equivalent | — | none | 未暴露（无决策记录） |
 | 41 | `session_search` | SessionSearchTool / `session_search_tool` | 过往会话关键词搜索 | no-equivalent | — | none | 刻意不暴露 |
 | 42 | `skill_file` | SkillFileTool / `skill_writer_tool` | 技能目录辅助文件管理 | no-equivalent | — | none | 刻意不暴露 |
