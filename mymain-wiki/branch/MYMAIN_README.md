@@ -36,9 +36,44 @@ related: [MYMAIN_DIVERGENCE.md]
 
 ---
 
-### release/mymain · 2026-08-28 — 基线：上游 `80ffdda4`
+### release/mymain · 2026-08-30 — 基线：上游 `fb5013c2`
 
 - **发布 commit**：`release/mymain` tag 所指 commit（即本条发布记录 commit）
+- **上游基线**：`fb5013c2`（v0.1.14 后第 79 commit；本轮对齐覆盖 `80ffdda4` 之后的全部上游 commit）
+- **差异总量**：626 个文件、+118,306/−140 行（复核命令 `git diff origin/main release/mymain --shortstat`；较上轮大增系 `mymain-wiki/` 知识库归档入库）
+- **对齐方式**：**rebase**（34 个本地 commit 重放；回退点 `backup/mymain-2026-08-30`）
+
+#### 核心差异（F1–F7 不变，均未被上游取代）
+
+详见 `MYMAIN_DIVERGENCE.md` §2.1。本轮取代核查结论：上游 79 commit（UK LSE 股权支持、quantlib 微结构/Heston/copula/HRP 批次、live halt-sweep 持久化、backtest 数据窗/评估窗分离、connector onboarding 契约、stream retry 升级、前端 Studio 路由等）与本地七项能力**均无重叠**；本轮无 shadowinlife PR 合入（无分歧消除项）。分歧收敛审查：quantlib 微结构函数与 OpencodeAgent escape-top 不重叠（无重实现可去重）；上游 provenance `currency_conversion`/`quote_currency` 与本地 CH `extra_provenance` 互补共存。
+
+#### 核心迭代（本次发布完成的工作）
+
+1. **rebase 对齐**：34 个本地 commit 重放，1 处真冲突（reconciliation commit × 上游 uk_equity 测试集，解决为 clickhouse-first pin 与 uk_equity 并存）。
+2. **历史卫生**：2 个 edit 停点从源头清理上轮记录的已知瑕疵——F2 commit 移除误入树的 `.omo` 会话文件；Phase 2 commit 移除 SKILL.md / mcp_server.py 两处冲突标记文本。
+3. **计数基线不变**：MCP **OFF=77 / ON=82**、skills **91**、数据源 **26**、引擎 **10**。
+4. **文档同步**：`MYMAIN_DIVERGENCE.md` 更新至新基线（含本轮迭代笔记与分歧收敛审查）；回填上一条记录的发布 commit SHA。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件 | 309 passed / 3 skipped |
+| ClickHouse 套件（F5 + 语义层，10 文件） | 137 passed / 11 skipped |
+| ClickHouse schema 门禁 | 53 passed / 1 skipped + comments gate exit 0 |
+| README / SKILL 计数门禁（六 README 集合级校验） | 76 passed（上游新增 6 条 pin，含 quantlib badge 模块数双锚定） |
+| env-var AST 门禁 | exit 0（3 条 WARN 来自上游 llm.py） |
+| market_data / registry / source_order / settings_api | 133 passed |
+| OpencodeAgent config render | 33 passed |
+| MCP 工具计数 | OFF=77 / ON=82 |
+| 自维护链路冒烟 | memory_save/recall/status → ok；reflect 关闭=skipped、开启=ok 并落 lessons JSONL（`VT_MEMORY_BASE_DIR` 生效） |
+| 提交规范 | 单一作者 shadowinlife + DCO 签名 + 无 AI 归属行 |
+
+---
+
+### release/mymain · 2026-08-28 — 基线：上游 `80ffdda4`
+
+- **发布 commit**：`fc41c949`（2026-08-30 rebase 前 SHA；本轮对齐后该 commit 已被重写。注：08-28 发布时 tag 未随之移动，本次按发布时分支头回填）
 - **上游基线**：`80ffdda4`（v0.1.14 后第 117 commit；本轮对齐覆盖 `1907e47d` 之后的全部上游 commit）
 - **差异总量**：282 个文件、+49,714/−140 行（复核命令 `git diff origin/main release/mymain --shortstat`）
 - **对齐方式**：**rebase**（22 个本地 commit 重放；回退点 `backup/mymain-2026-08-28`）
