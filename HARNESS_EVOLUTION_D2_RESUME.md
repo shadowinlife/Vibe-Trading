@@ -31,14 +31,21 @@ D4 Round 3 traces 双判官 353/353 完整落盘（重启未造成数据损失�
 ## 新 session 从这里继续（按序）
 
 ~~1. 生产同步 D4 准入结果~~ ✅ 已完成（mymain `07a08aab`）。
+~~2. trading-connector 安全评审~~ ✅ 已完成（DEC-5 通过 → mini-admission ADMIT
+   `artifacts/d2/d4tc_verdict.md`（R1 0.974 / R2 0 / R3 1.000，一轮无修订）→
+   生产同步 mymain `b5a7265b`，12 子代理花名册；写族永不进子代理已测试锚定）。
+~~3. F2/F4/F3/D3 缺口~~ ✅ 全部闭合（DEC-3/4/6）：F2 镜像上 MCP（59→61，
+   `eebf48af`）；F4 技能改写；F3 symlink + 漂移断言（`check_skills_link.py`）；
+   D3 降级按需（映射数据在 AUDIT §8.1）。准入协议已资产化：
+   `agent/src/evals/tool_selection/SUBAGENT_ADMISSION_PROTOCOL.md`。
 
-1. **新域的主循环收敛评审**（下一个实质决策）：9 个新子代理的工具目前与
+1. **新域的主循环收敛评审**（下一个实质决策）：10 个新子代理的工具目前与
    主面双驻（staging 设计）。是否把 fundamentals-text / market-data 等域的
    工具也从主面撤下（复刻 D2-2 的 diff+探针+五场景流程），需要先回答
    Track B 观察到的校准问题：轻量取数（≤2 调用）应不应留在主循环。
-2. **trading-connector-agent 安全评审**：另立工作项（trading_* 全局 deny 中）。
-3. **Track B 读出**：2026-09-26 前 twin_choice 事件 <30 → 按预授权记
-   inconclusive-underpowered 关闭，不阻塞。
+2. **Track B 读出**：2026-09-26 前 twin_choice 事件 <30 → 按预授权记
+   inconclusive-underpowered 关闭，不阻塞。新增观察项：轻量数据取数是否
+   绕过委派走主循环直答。
 
 ## 关键工程事实（重启后勿重推导）
 

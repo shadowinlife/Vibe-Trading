@@ -76,16 +76,16 @@
 | ~~**C3**~~ | C 路由层 | ~~5 条路由元规则（AUDIT §8.2 输入 3）编译进路由器 system 层~~ | 撞名仲裁无硬规则落点 | AGENT | ~~P2~~ ❌已试·回滚（§9） | C2 | ❌ 回滚 | 随 C1/C2 一并回滚（§9） |
 | **D1** | D 子代理 | **quant-agent** 试点：11 工具 + 9 技能白名单（AUDIT §8.1 草案），工具面 = B 后门控面 | 主循环路由面超载；领域隔离验证 | AGENT+MCP | P1 | B、A6 | ✅ 完成 | 有条件通过（§10）→ 生产落地 mymain；主循环收敛 552c7bfe（D2-2，L2 5/5） |
 | **D2** | D 子代理 | **web-docs-agent** 试点：3 工具 + 2 技能（仲裁规则最明确的最小闭环） | 同上 | AGENT+MCP | P1 | B | ✅ 完成 | 同 D1（§10、D2-2） |
-| **D3** | D 子代理 | swarm 白名单移植映射工程化：内部名→MCP 名运行时转换或配置（A6 映射表的代码化） | K25 preset 白名单不可直接移植 MCP 面 | SWARM+AGENT | P1 | A6 | ⏸️ 暂缓（按需） | 评估成文：MCP_GAP_REVIEW §5——运行时映射层当前无消费者（生产子代理直接用 MCP 名写白名单；preset 在 VT 内部运行正常）；映射数据已在 AUDIT §8.1，触发条件 = 首个 preset 白名单移植需求 → DEC-6 |
-| **D4** | D 子代理 | 其余 10+1 子代理铺开（§8.1 全表：market-data / fundamentals-text / derivatives / risk-portfolio / valuation / macro-sector / altdata / funds-fi / user-analytics / trading-connector / orchestrator） | 同上 | AGENT+MCP | P2 | D1、D2 验证 | ✅ 完成 | 三轮评审 9 候选准入并同步生产（mymain 07a08aab）；orchestrator 拒绝、trading-connector 安全挂起（D2-3，`d4_final_verdict.md`） |
+| **D3** | D 子代理 | swarm 白名单移植映射工程化：内部名→MCP 名运行时转换或配置（A6 映射表的代码化） | K25 preset 白名单不可直接移植 MCP 面 | SWARM+AGENT | P1 | A6 | ⏸️ 暂缓（按需） | 评估成文：MCP_GAP_REVIEW §5——运行时映射层当前无消费者（生产子代理直接用 MCP 名写白名单；preset 在 VT 内部运行正常）；映射数据已在 AUDIT §8.1，触发条件 = 首个 preset 白名单移植需求 → DEC-6 已通过（2026-08-30） |
+| **D4** | D 子代理 | 其余 10+1 子代理铺开（§8.1 全表：market-data / fundamentals-text / derivatives / risk-portfolio / valuation / macro-sector / altdata / funds-fi / user-analytics / trading-connector / orchestrator） | 同上 | AGENT+MCP | P2 | D1、D2 验证 | ✅ 完成 | 三轮评审 9 候选准入并同步生产（mymain 07a08aab）；orchestrator 拒绝；trading-connector 经 DEC-5 mini-admission 准入（`d4tc_verdict.md`：R1 0.974 / R2 0.0000 / R3 1.000，一轮无修订）并入生产（mymain b5a7265b，12 子代理） |
 | **E1** | E 评测遥测 | 工具选择准确率评测集：从 §7.2 触发关键词/负向触发构造 ~100 条金融域 query→期望命中对 | 所有改动缺量化裁决依据 | CROSS | P0 | — | ✅ 完成 | 158 条基础语料 + 冻结判官基建；被 A/B/C/D 四批复用，D4 扩至 353 条 |
 | **E2** | E 评测遥测 | 基线实测对比：74 全量暴露 vs 披露层级后的选择准确率（PAPERS §F BoR/短名单方法学） | A/B/C 改动效果无对照 | CROSS | P1 | E1、B | ✅ 完成 | A/B 批两轮裁决（§7、§8.3）；DEC-2 基座实际定为 qwen3.8-max + kimi-k3 |
 | **E3** | E 评测遥测 | 路由遥测上线 + §7.2"命中失败案例"列回填机制（日期/查询/误选/正解） | 评测集只有先验、无真实失败案例 | AGENT+MCP | P2（依赖 C2 已回滚，§9；暂缓） | ~~C2~~ | ⏸️ 暂缓 | C2 回滚失依（§9.4）；部分后继 = D2 Track B 生产遥测（`d2_telemetry/` + twin_choice 观察窗，2026-09-26 读出兜底） |
 | **E4** | E 评测遥测 | 描述变更接入回归：prompt hash manifest（已存在）+ 描述 diff 测试 | 描述改写可能静默破坏缓存纪律/路由行为 | CROSS | P1 | A 批 | ⬜ 未启动 | A 批回滚后缺回归对象；职能现由 D4 准入纪律（修订先于采集冻结 + 模板 hash 钉死）部分承担 |
 | **F1** | F 深排缺口 | 内部工具面完整盘点：以 `build_registry()` 运行时输出为权威，对账 ~32 个非 MCP 工具全名单 | 审计名单是部分的（诚实性声明 §6.3） | AGENT | P0 | — | ✅ 完成 | P0 批（2026-08-26）；A6/D3/F2/F4 的地基 |
-| **F2** | F 深排缺口 | `financial_rigor` / `report_audit` 的 MCP 只读暴露评估（含暴露/不暴露两案的成本收益） | Q19 无 MCP 对应物，preset 行为不可移植 | AGENT+MCP+SWARM | P1 | F1 | 📋 待裁决 | 评估成文：`HARNESS_EVOLUTION_MCP_GAP_REVIEW.md` §2（建议暴露，两工具天然只读）→ DEC-3 |
+| **F2** | F 深排缺口 | `financial_rigor` / `report_audit` 的 MCP 只读暴露评估（含暴露/不暴露两案的成本收益） | Q19 无 MCP 对应物，preset 行为不可移植 | AGENT+MCP+SWARM | P1 | F1 | ✅ 完成 | DEC-3 通过并执行（eebf48af）：两工具经 `_MIRRORED_TOOL_SOURCES` 镜像上 MCP（结构性只读），keyless 面 59→61；README×6 + SKILL.md 清单 + 测试锚点全同步，全量 12072 过 |
 | **F3** | F 深排缺口 | `.opencode/skills/` 分发副本同步机制：生成脚本或 git 跟踪 + 漂移检测 | K18 副本无同步保证（字节级一致仅当前快照） | HOST | P1 | DEC-1 | ✅ 完成 | 本地为 symlink（`../agent/src/skills`），漂移结构性不可能；残余失败模式（被替换成真实副本）由 `agent/src/evals/tool_selection/check_skills_link.py` 断言拦截（2026-08-30 实测 PASS） |
-| **F4** | F 深排缺口 | `sdm_*`（register/status/decay_scan）与 MCP 面策略统一：暴露、文档降级或技能改写三选一 | Q19 strategy-dev-manager 引导的工作流依赖不可达工具 | AGENT+MCP | P2 | F1 | 📋 待裁决 | 评估成文：MCP_GAP_REVIEW §3（建议②+③混合：读侧→strategy-discovery 三件套，写侧声明 agent-only，不新增注册）→ DEC-4 |
+| **F4** | F 深排缺口 | `sdm_*`（register/status/decay_scan）与 MCP 面策略统一：暴露、文档降级或技能改写三选一 | Q19 strategy-dev-manager 引导的工作流依赖不可达工具 | AGENT+MCP | P2 | F1 | ✅ 完成 | DEC-4 通过并执行（eebf48af）：不新增注册；技能文档改写——读侧→list_strategies/query_strategies/get_strategy_evidence，写侧声明 agent-only |
 
 **优先级分布**（SOTA 天花板裁决后，2026-08-27 更新；C 批回滚 2026-08-28 更新）：有效 P0 ×4（A5、A6、E1、F1，均已完成）｜ ~~A1-A4 划掉~~（E2 验证路由中性）｜ ~~A7 弱/局部效应（未达预注册标准）~~ ｜ ~~A8 否决（显著回归）~~ ｜ ~~C1-C3 已试·回滚~~（§9：检索本身达标但端到端路由准确率显著下降）｜ P1 ×14 ｜ P2 ×6。
 
@@ -379,10 +379,10 @@
 |---|---|---|---|
 | **DEC-1** | 技能双暴露的主面选择：MCP 客户端优先 or opencode 宿主优先 | A5 → B5、F3 | ✅ 已裁决（方案甲，§8.1） |
 | **DEC-2** | E2 评测的基座模型固定 | E2 | ✅ 已裁决（qwen3.8-max + kimi-k3） |
-| **DEC-3** | F2：financial_rigor + report_audit 注册 MCP 只读 | F2 执行 | 通过（评估：MCP_GAP_REVIEW §2） |
-| **DEC-4** | F4：sdm_* 不暴露，技能文档改写（读→三件套，写→agent-only） | F4 执行 | 通过（MCP_GAP_REVIEW §3） |
-| **DEC-5** | trading-connector 子代理：Tier-0 只读入白名单、Tier-1 写永不进子代理 | D4 遗留挂起项 | 通过设计；无连接器配置则暂缓启用（MCP_GAP_REVIEW §4） |
-| **DEC-6** | D3 降级为按需触发（无消费者不写运行时代码） | D3 | 通过（MCP_GAP_REVIEW §5） |
+| **DEC-3** | F2：financial_rigor + report_audit 注册 MCP 只读 | ~~F2 执行~~ | ✅ 已裁决通过并执行（2026-08-30，eebf48af） |
+| **DEC-4** | F4：sdm_* 不暴露，技能文档改写（读→三件套，写→agent-only） | ~~F4 执行~~ | ✅ 已裁决通过并执行（2026-08-30，eebf48af） |
+| **DEC-5** | trading-connector 子代理：Tier-0 只读入白名单、Tier-1 写永不进子代理 | ~~D4 遗留挂起项~~ | ✅ 已裁决通过（用户有连接器配置）：mini-admission ADMIT + 生产同步（2026-08-30，mymain b5a7265b） |
+| **DEC-6** | D3 降级为按需触发（无消费者不写运行时代码） | ~~D3~~ | ✅ 已裁决通过（2026-08-30） |
 
 ---
 

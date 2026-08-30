@@ -1,6 +1,6 @@
 # MCP 面缺口收口评估（F2 + F4 + trading-connector 安全设计）
 
-> 日期：2026-08-30 ｜ 状态：**评估成文，待裁决**
+> 日期：2026-08-30 ｜ 状态：**全部裁决通过并已执行**（DEC-3/4/5/6，2026-08-30 用户拍板；执行证据：F2+F4=eebf48af，DEC-5=mymain b5a7265b + artifacts/d2/d4tc_verdict.md，DEC-6 状态降级已落 ROADMAP）
 > 输入：ROADMAP F2/F4（K25/Q19 残留）+ D4 安全挂起的 trading-connector 候选
 > 性质：三者为同一决策族——"内部工具/能力在 MCP 面（含 opencode 子代理）的可达性边界画在哪"
 
