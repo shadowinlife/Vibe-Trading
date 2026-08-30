@@ -1,6 +1,7 @@
 {
   "disabled": [
-    "trading_*",
+    "trading_place_order",
+    "trading_cancel_order",
     "alpha_zoo",
     "alpha_bench",
     "factor_analysis",

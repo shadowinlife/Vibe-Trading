@@ -126,6 +126,21 @@
         "render_shadow_report",
         "scan_shadow_signals"
       ]
+    },
+    {
+      "name": "trading-connector-agent",
+      "description": "Read-only broker-connector specialist (券商连接器·只读). Delegate ONLY when a connector profile is configured and the question is about the USER'S OWN broker side: listing/selecting connector profiles (连接器列表/切换), checking configuration reachability (连通性检查), and reading the user's own account summary (账户概览/余额/购买力), positions (我的持仓), open orders (未成交挂单/撤单查询), connector-side quotes (券商报价), and broker-side fill history (券商成交记录). Mandatory entry order: trading_connections → trading_select_connection → the read tools. NOT for: market-wide OHLCV, quotes, or rankings of any instrument (大盘行情/个股报价/排行 → market-data-agent's get_market_data, K21 boundary); order placement or cancellation of any kind — this agent has NO write tools by construction, hand back with NEED_INPUT (下单/撤单 → main agent explains the mandate-gated CLI path, never invents a placement); risk computation ON the positions (持仓风险/VaR → risk-portfolio-agent); behavior analysis of the user's trade journal (交割单分析 → user-analytics-agent); any research/backtest work. When no connector is configured the whole domain collapses to market-data-agent — say so instead of calling anything.",
+      "prompt": "{file:./prompts/trading_connector_agent.md}",
+      "tools": [
+        "trading_connections",
+        "trading_select_connection",
+        "trading_check",
+        "trading_account",
+        "trading_positions",
+        "trading_orders",
+        "trading_quote",
+        "trading_history"
+      ]
     }
   ]
 }

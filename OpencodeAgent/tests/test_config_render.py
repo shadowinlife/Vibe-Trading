@@ -98,9 +98,24 @@ class TestToolGovernanceManifest:
         assert isinstance(disabled, list) and disabled
         assert all(isinstance(entry, str) and entry for entry in disabled)
 
-    def test_trading_surface_stays_denied(self):
+    def test_trading_write_surface_stays_denied(self):
+        # DEC-5 (2026-08-30): Tier-0/Tier-1 split. The read family is available
+        # (B2 connector-gated); the write pair stays denied globally and must
+        # never appear in any subagent whitelist either.
         manifest = render_config.load_manifest(MANIFEST_PATH)
-        assert "trading_*" in manifest["disabled"]
+        assert "trading_place_order" in manifest["disabled"]
+        assert "trading_cancel_order" in manifest["disabled"]
+        assert "trading_*" not in manifest["disabled"]
+        subagents = {s["name"]: s for s in render_config.load_subagents(SUBAGENTS_PATH)}
+        for name, spec in subagents.items():
+            assert "trading_place_order" not in spec["tools"], name
+            assert "trading_cancel_order" not in spec["tools"], name
+        # The connector subagent holds exactly the Tier-0 read verbs.
+        assert set(subagents["trading-connector-agent"]["tools"]) == {
+            "trading_connections", "trading_select_connection", "trading_check",
+            "trading_account", "trading_positions", "trading_orders",
+            "trading_quote", "trading_history",
+        }
 
     def test_disabled_entries_compile_to_permission_denies(self):
         config = _rendered()
@@ -157,6 +172,9 @@ class TestDomainSubagents:
         "altdata-agent": {"sentiment"},
         "funds-fi-agent": {"etf_holdings"},
         "user-analytics-agent": {"analyze_trade_journal", "extract_shadow_strategy", "run_shadow_backtest", "render_shadow_report", "scan_shadow_signals"},
+        # DEC-5 (2026-08-30): Tier-0 read-only connector verbs; the write pair
+        # (place/cancel) is denied globally and never enters any whitelist.
+        "trading-connector-agent": {"trading_connections", "trading_select_connection", "trading_check", "trading_account", "trading_positions", "trading_orders", "trading_quote", "trading_history"},
     }
 
     def test_subagent_sections_rendered(self):
