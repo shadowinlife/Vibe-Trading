@@ -1,0 +1,429 @@
+version: 1
+source: 'D4 trading-connector mini-admission block (DEC-5, 2026-08-30): 30 in-domain + 12 boundary/negative. Verbs carry the
+  K21 disambiguation (券商/我的/连接器/账户侧 vs 市场行情). Order-placement entries assert route=direct by construction (no subagent holds
+  write tools).'
+entries:
+- id: D16-101
+  query: 查看我现在配置了哪些券商连接器
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_connections
+  negatives:
+  - get_market_data
+  arbitration_ref: K21
+- id: D16-102
+  query: list my broker connector profiles
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_connections
+  negatives:
+  - search_symbol
+  arbitration_ref: K21
+- id: D16-103
+  query: 我现在有哪些可用的交易连接，帮我列一下
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_connections
+  negatives: []
+  arbitration_ref: K21
+- id: D16-104
+  query: 我配过哪些券商的接入？盈透和 Robinhood 都还在吗
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_connections
+  negatives: []
+  arbitration_ref: K21
+- id: D16-105
+  query: 帮我切换到 IBKR 这个连接器
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_select_connection
+  negatives: []
+  arbitration_ref: K21
+- id: D16-106
+  query: use the Robinhood profile as the default connection
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_select_connection
+  negatives: []
+  arbitration_ref: K21
+- id: D16-107
+  query: 把默认券商连接换成富途
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_select_connection
+  negatives: []
+  arbitration_ref: K21
+- id: D16-108
+  query: 检查一下我当前券商连接器的连通性，配置有没有问题
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_check
+  negatives: []
+  arbitration_ref: K21
+- id: D16-109
+  query: is my broker connection working right now?
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_check
+  negatives: []
+  arbitration_ref: K21
+- id: D16-110
+  query: 盈透的 TWS 好像断了，帮我确认下连接状态
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_check
+  negatives: []
+  arbitration_ref: K21
+- id: D16-111
+  query: 看看我的券商账户概览，余额和购买力还有多少
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_account
+  negatives:
+  - get_market_data
+  arbitration_ref: K21
+- id: D16-112
+  query: show me my brokerage account summary
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_account
+  negatives: []
+  arbitration_ref: K21
+- id: D16-113
+  query: 我账户里现在有多少可用现金
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_account
+  negatives: []
+  arbitration_ref: K21
+- id: D16-114
+  query: 我在盈透账户的净资产值是多少
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_account
+  negatives: []
+  arbitration_ref: K21
+- id: D16-115
+  query: 我现在的持仓情况，帮我从券商那边读一下
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_positions
+  negatives:
+  - get_market_data
+  arbitration_ref: K21
+- id: D16-116
+  query: what positions am I holding in my broker account right now?
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_positions
+  negatives: []
+  arbitration_ref: K21
+- id: D16-117
+  query: 我在 Robinhood 里的持仓市值分别是多少
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_positions
+  negatives: []
+  arbitration_ref: K21
+- id: D16-118
+  query: 帮我看看账户里现在有哪些股票仓位和成本价
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_positions
+  negatives: []
+  arbitration_ref: K21
+- id: D16-119
+  query: 我有哪些未成交的挂单
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_orders
+  negatives: []
+  arbitration_ref: K21
+- id: D16-120
+  query: show my open orders at the broker
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_orders
+  negatives: []
+  arbitration_ref: K21
+- id: D16-121
+  query: 昨天挂的那笔限价单成交了没有
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_orders
+  negatives: []
+  arbitration_ref: K21
+- id: D16-122
+  query: 我在券商那边还有几笔 pending 的订单？帮我查下状态
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_orders
+  negatives: []
+  arbitration_ref: K21
+- id: D16-123
+  query: 通过我的券商连接看一下 AAPL 现在的报价
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_quote
+  negatives:
+  - get_market_data
+  arbitration_ref: K21
+  boundary_with: market-data-agent
+- id: D16-124
+  query: 用我盈透的通道查一下特斯拉的实时买卖盘口价
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_quote
+  negatives:
+  - get_market_data
+  arbitration_ref: K21
+  boundary_with: market-data-agent
+- id: D16-125
+  query: quote NVDA from my broker connection
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_quote
+  negatives:
+  - get_market_data
+  arbitration_ref: K21
+  boundary_with: market-data-agent
+- id: D16-126
+  query: 我券商通道里 0700.HK 的最新价是多少
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_quote
+  negatives:
+  - get_market_data
+  arbitration_ref: K21
+  boundary_with: market-data-agent
+- id: D16-127
+  query: 我在券商那边的成交历史，帮我拉一下最近一个月的
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_history
+  negatives:
+  - analyze_trade_journal
+  arbitration_ref: K21
+  boundary_with: user-analytics-agent
+- id: D16-128
+  query: my broker-side fill history for last week
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_history
+  negatives:
+  - analyze_trade_journal
+  arbitration_ref: K21
+  boundary_with: user-analytics-agent
+- id: D16-129
+  query: 从连接器里查我今年以来的所有已成交订单记录
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_history
+  negatives:
+  - analyze_trade_journal
+  arbitration_ref: K21
+  boundary_with: user-analytics-agent
+- id: D16-130
+  query: 帮我把券商账户里三月份的交易流水导出来看看
+  route: trading-connector-agent
+  domain: D16
+  expected:
+    kind: tool
+    name: trading_history
+  negatives:
+  - analyze_trade_journal
+  arbitration_ref: K21
+  boundary_with: user-analytics-agent
+- id: D16-131
+  query: 帮我看一下贵州茅台今天的股价行情
+  route: market-data-agent
+  domain: D01
+  expected:
+    kind: tool
+    name: get_market_data
+  negatives:
+  - trading_quote
+  arbitration_ref: K21
+  boundary_with: trading-connector-agent
+- id: D16-132
+  query: AAPL 最近三个月的日线数据帮我取一下
+  route: market-data-agent
+  domain: D01
+  expected:
+    kind: tool
+    name: get_market_data
+  negatives:
+  - trading_quote
+  - trading_history
+  arbitration_ref: K21
+  boundary_with: trading-connector-agent
+- id: D16-133
+  query: 现在纳斯达克大盘怎么样，给我看几个主要指数的行情
+  route: market-data-agent
+  domain: D01
+  expected:
+    kind: tool
+    name: get_market_data
+  negatives:
+  - trading_quote
+  arbitration_ref: K21
+  boundary_with: trading-connector-agent
+- id: D16-134
+  query: 今天 A 股涨幅榜前二十是哪些票
+  route: market-data-agent
+  domain: D01
+  expected:
+    kind: tool
+    name: screen_market
+  negatives:
+  - trading_quote
+  arbitration_ref: K21
+  boundary_with: trading-connector-agent
+- id: D16-135
+  query: 帮我买入100股贵州茅台
+  route: direct
+  domain: D16
+  expected:
+    kind: action
+    name: explain-mandate-path
+  negatives:
+  - trading_place_order
+  arbitration_ref: K21
+  boundary_with: main
+- id: D16-136
+  query: sell all my TSLA shares at market price
+  route: direct
+  domain: D16
+  expected:
+    kind: action
+    name: explain-mandate-path
+  negatives:
+  - trading_place_order
+  arbitration_ref: K21
+  boundary_with: main
+- id: D16-137
+  query: 帮我把昨天那笔挂单撤掉
+  route: direct
+  domain: D16
+  expected:
+    kind: action
+    name: explain-mandate-path
+  negatives:
+  - trading_cancel_order
+  arbitration_ref: K21
+  boundary_with: main
+- id: D16-138
+  query: 算一下我当前持仓组合的 VaR 和最大回撤压力测试
+  route: risk-portfolio-agent
+  domain: D08
+  expected:
+    kind: tool
+    name: quantlib_call
+  negatives:
+  - trading_positions
+  arbitration_ref: K21
+  boundary_with: trading-connector-agent
+- id: D16-139
+  query: 我的股票仓位现在整体风险敞口多大，做个压力测试
+  route: risk-portfolio-agent
+  domain: D08
+  expected:
+    kind: tool
+    name: quantlib_call
+  negatives:
+  - trading_positions
+  arbitration_ref: K21
+  boundary_with: trading-connector-agent
+- id: D16-140
+  query: 分析一下我的交割单，看看我有没有追涨杀跌的毛病
+  route: user-analytics-agent
+  domain: D15
+  expected:
+    kind: tool
+    name: analyze_trade_journal
+  negatives:
+  - trading_history
+  arbitration_ref: K21
+  boundary_with: trading-connector-agent
+- id: D16-141
+  query: 从我的交易记录里提炼一下我的操作模式
+  route: user-analytics-agent
+  domain: D15
+  expected:
+    kind: tool
+    name: extract_shadow_strategy
+  negatives:
+  - trading_history
+  arbitration_ref: K21
+  boundary_with: trading-connector-agent
+- id: D16-142
+  query: 我没配过任何券商连接，直接帮我查一下恒生指数今天的行情
+  route: market-data-agent
+  domain: D01
+  expected:
+    kind: tool
+    name: get_market_data
+  negatives:
+  - trading_quote
+  - trading_connections
+  arbitration_ref: K21
+  boundary_with: trading-connector-agent
