@@ -54,38 +54,38 @@
 
 ## 2. 计划总表（28 PLAN）
 
-> 列定义：**工作上下文** = 需要执行的工作；**解决的问题** = AUDIT 编号 + 一句话；**受益形态** = 按 §1 图例；**依赖** = 前置 PLAN 或决策点（DEC-x）。
+> 列定义：**工作上下文** = 需要执行的工作；**解决的问题** = AUDIT 编号 + 一句话；**受益形态** = 按 §1 图例；**依赖** = 前置 PLAN 或决策点（DEC-x）；**状态** = ✅ 完成 / 🟡 部分完成 / ⏸️ 暂缓 / ⬜ 未启动 / ❌ 划掉·回滚（2026-08-30 补录）；**备注** = 关键裁决与证据指针。
 
-| PLAN | 流 | 工作上下文 | 解决的问题 | 受益形态 | 优先级 | 依赖 |
-|---|---|---|---|---|---|---|
-| ~~**A1**~~ | A 描述治理 | ~~重写 `sentiment` 工具描述：显式双模式分工（文本打分 vs 加密恐贪指数）+ 与 sentiment-analysis 技能互指~~ | Q1/K3 多职责 + 撞名 | AGENT+MCP | ~~P0~~ ❌天花板 | — |
-| ~~**A2**~~ | A 描述治理 | ~~`sec-edgar` 更名 `sec-edgar-fetch`，或与 `edgar-sec-filings` 合并为"抓取+分析"单技能~~ | Q2/K5 撞名（词序差） | HOST+AGENT | ~~P0~~ ❌天花板 | — |
-| ~~**A3**~~ | A 描述治理 | ~~`read_file` / `write_file` 描述补作用域声明（回测工作区 / 相对路径），read_file 对齐 write_file 句式~~ | Q3/K22 缺边界（与宿主同名动词混淆） | AGENT+MCP | ~~P0~~ ❌天花板 | — |
-| ~~**A4**~~ | A 描述治理 | ~~`quantlib_call` 描述首句前置高频用例（VaR/CVaR、Black-Scholes、deflated Sharpe、DCF）~~ | Q4/K16 埋没（286 函数入口，急用场景多付两轮） | AGENT+MCP | ~~P0~~ ❌天花板 | — |
-| **A5** | A 描述治理 | 技能双暴露治理决策成文：单宿主单路径策略 + `.opencode/` 副本定位 | Q7/K18 双暴露 | HOST+MCP | P0 🔄代币税 | **DEC-1** |
-| **A6** | A 描述治理 | 内外工具名映射表落文档（§8.1 移植映射表扩展为权威版）+ 技能文档统一引用 MCP 名 | Q19/K25/G10 名实漂移（移植障碍） | AGENT+SWARM | P0 🔄D批前置 | F1 |
-| ~~**A7**~~ | A 描述治理 | ~~P1 描述批量修订 ×6：correlation-analysis 删越界（Q5）、screen_market 补边界（Q6）、web_search 更新多引擎现状+衔接（Q8）、trading_* 入口顺序（Q10）、technical 层级声明（Q17）、族内互指（Q18：研报/期权/策略发现三族）~~ | ~~中严重度：越界/缺边界/名实不符/缺互指~~ | AGENT+MCP | ~~P1~~ ❌无改进 | — |
-| ~~**A8**~~ | A 描述治理 | ~~P2 描述批量修订 ×7：cashflow_performance 触发词（Q9）、get_sector_info 模式说明（Q14）、prediction_market 定位（Q15）、volatility 更名评估（Q16）、TA 流派场景句（G2）、shadow 流水线步骤号（G9）、数据源技能删互称备份（G1）~~ | ~~低严重度观察项~~ | AGENT+MCP+HOST | ~~P2~~ ❌无改进 | — |
-| **B1** | B 暴露面工程 | 5 个 key 门控工具（qveris_* ×3、get_macro_series、iwencai_search）在 MCP 侧改注册时门控，对齐 agent 侧 `check_available` 语义 | Q12 门控不对称（无 key 会话纯披露税） | MCP | P1 | — |
-| **B2** | B 暴露面工程 | 8 个 `trading_*` 条件暴露：落在工具类 `check_available()`（无连接器不注册），MCP 注册尊重同一门控 | Q10/K21 无配置时全部为死重 | AGENT+MCP | P1 | — |
-| **B3** | B 暴露面工程 | `reap_stale_runs` / `refresh_strategy_evidence` 移出默认暴露面（运维工具组或懒加载） | Q13 运维工具占据研究面披露位 | AGENT+MCP | P2 | — |
-| **B4** | B 暴露面工程 | `list_skills` 输出补 `category` 字段（数据模型已有，仅输出层） | Q11 路由侧拿不到现成分类 | AGENT+MCP+HOST | P1 | — |
-| **B5** | B 暴露面工程 | 技能双暴露关闭一侧（opencode 宿主内关 MCP 侧 list_skills/load_skill，或反之） | Q7/K18 双路径混淆 + 2 工具重复 | HOST+MCP | P1 | A5（DEC-1） |
-| ~~**C1**~~ | C 路由层 | ~~建 `search_tools` 元工具：按需召回 on-demand 工具；索引语料 = AUDIT §7.2 触发关键词列~~ | 全量暴露超退化区间；召回无入口 | AGENT+MCP | ~~P1~~ ❌已试·回滚（§9） | A 批、B1 |
-| ~~**C2**~~ | C 路由层 | ~~披露层级实现：12 常驻（§8.2 输入 2 清单）+ on-demand 经 C1 召回 + gated 条件暴露 + 技能维持一行目录~~ | 74 全量暴露逼近崩塌阈值（PAPERS §F） | AGENT+MCP | ~~P1~~ ❌已试·回滚（§9） | C1、B 批 |
-| ~~**C3**~~ | C 路由层 | ~~5 条路由元规则（AUDIT §8.2 输入 3）编译进路由器 system 层~~ | 撞名仲裁无硬规则落点 | AGENT | ~~P2~~ ❌已试·回滚（§9） | C2 |
-| **D1** | D 子代理 | **quant-agent** 试点：11 工具 + 9 技能白名单（AUDIT §8.1 草案），工具面 = B 后门控面 | 主循环路由面超载；领域隔离验证 | AGENT+MCP | P1 | B、A6 |
-| **D2** | D 子代理 | **web-docs-agent** 试点：3 工具 + 2 技能（仲裁规则最明确的最小闭环） | 同上 | AGENT+MCP | P1 | B |
-| **D3** | D 子代理 | swarm 白名单移植映射工程化：内部名→MCP 名运行时转换或配置（A6 映射表的代码化） | K25 preset 白名单不可直接移植 MCP 面 | SWARM+AGENT | P1 | A6 |
-| **D4** | D 子代理 | 其余 10+1 子代理铺开（§8.1 全表：market-data / fundamentals-text / derivatives / risk-portfolio / valuation / macro-sector / altdata / funds-fi / user-analytics / trading-connector / orchestrator） | 同上 | AGENT+MCP | P2 | D1、D2 验证 |
-| **E1** | E 评测遥测 | 工具选择准确率评测集：从 §7.2 触发关键词/负向触发构造 ~100 条金融域 query→期望命中对 | 所有改动缺量化裁决依据 | CROSS | P0 | — |
-| **E2** | E 评测遥测 | 基线实测对比：74 全量暴露 vs 披露层级后的选择准确率（PAPERS §F BoR/短名单方法学） | A/B/C 改动效果无对照 | CROSS | P1 | E1、B |
-| **E3** | E 评测遥测 | 路由遥测上线 + §7.2"命中失败案例"列回填机制（日期/查询/误选/正解） | 评测集只有先验、无真实失败案例 | AGENT+MCP | P2（依赖 C2 已回滚，§9；暂缓） | ~~C2~~ |
-| **E4** | E 评测遥测 | 描述变更接入回归：prompt hash manifest（已存在）+ 描述 diff 测试 | 描述改写可能静默破坏缓存纪律/路由行为 | CROSS | P1 | A 批 |
-| **F1** | F 深排缺口 | 内部工具面完整盘点：以 `build_registry()` 运行时输出为权威，对账 ~32 个非 MCP 工具全名单 | 审计名单是部分的（诚实性声明 §6.3） | AGENT | P0 | — |
-| **F2** | F 深排缺口 | `financial_rigor` / `report_audit` 的 MCP 只读暴露评估（含暴露/不暴露两案的成本收益） | Q19 无 MCP 对应物，preset 行为不可移植 | AGENT+MCP+SWARM | P1 | F1 |
-| **F3** | F 深排缺口 | `.opencode/skills/` 分发副本同步机制：生成脚本或 git 跟踪 + 漂移检测 | K18 副本无同步保证（字节级一致仅当前快照） | HOST | P1 | DEC-1 |
-| **F4** | F 深排缺口 | `sdm_*`（register/status/decay_scan）与 MCP 面策略统一：暴露、文档降级或技能改写三选一 | Q19 strategy-dev-manager 引导的工作流依赖不可达工具 | AGENT+MCP | P2 | F1 |
+| PLAN | 流 | 工作上下文 | 解决的问题 | 受益形态 | 优先级 | 依赖 | 状态 | 备注 |
+|---|---|---|---|---|---|---|---|---|
+| ~~**A1**~~ | A 描述治理 | ~~重写 `sentiment` 工具描述：显式双模式分工（文本打分 vs 加密恐贪指数）+ 与 sentiment-analysis 技能互指~~ | Q1/K3 多职责 + 撞名 | AGENT+MCP | ~~P0~~ ❌天花板 | — | ❌ 划掉 | 路由中性（E2 天花板裁决 §7.5）；已本地实现，不上游 |
+| ~~**A2**~~ | A 描述治理 | ~~`sec-edgar` 更名 `sec-edgar-fetch`，或与 `edgar-sec-filings` 合并为"抓取+分析"单技能~~ | Q2/K5 撞名（词序差） | HOST+AGENT | ~~P0~~ ❌天花板 | — | ❌ 划掉 | 路由收益到顶；仅余命名卫生残值，不单独追求（§7.5） |
+| ~~**A3**~~ | A 描述治理 | ~~`read_file` / `write_file` 描述补作用域声明（回测工作区 / 相对路径），read_file 对齐 write_file 句式~~ | Q3/K22 缺边界（与宿主同名动词混淆） | AGENT+MCP | ~~P0~~ ❌天花板 | — | ❌ 划掉 | 路由中性（§7.5） |
+| ~~**A4**~~ | A 描述治理 | ~~`quantlib_call` 描述首句前置高频用例（VaR/CVaR、Black-Scholes、deflated Sharpe、DCF）~~ | Q4/K16 埋没（286 函数入口，急用场景多付两轮） | AGENT+MCP | ~~P0~~ ❌天花板 | — | ❌ 划掉 | 路由中性（§7.5） |
+| **A5** | A 描述治理 | 技能双暴露治理决策成文：单宿主单路径策略 + `.opencode/` 副本定位 | Q7/K18 双暴露 | HOST+MCP | P0 🔄代币税 | **DEC-1** | ✅ 完成 | DEC-1 裁决 = B5 方案甲（§8.1，2026-08-27）；代币税价值经 B5 描述追加落地 |
+| **A6** | A 描述治理 | 内外工具名映射表落文档（§8.1 移植映射表扩展为权威版）+ 技能文档统一引用 MCP 名 | Q19/K25/G10 名实漂移（移植障碍） | AGENT+SWARM | P0 🔄D批前置 | F1 | ✅ 完成 | 实测通过（§7.5；`a6_a8_verdict.md`） |
+| ~~**A7**~~ | A 描述治理 | ~~P1 描述批量修订 ×6：correlation-analysis 删越界（Q5）、screen_market 补边界（Q6）、web_search 更新多引擎现状+衔接（Q8）、trading_* 入口顺序（Q10）、technical 层级声明（Q17）、族内互指（Q18：研报/期权/策略发现三族）~~ | ~~中严重度：越界/缺边界/名实不符/缺互指~~ | AGENT+MCP | ~~P1~~ ❌无改进 | — | ❌ 划掉 | 已测：弱/局部效应未达预注册标准（2/4 判据），①②③⑤⑥已回滚；④为独立 PR #1219（随 §8.4 暂缓上游） |
+| ~~**A8**~~ | A 描述治理 | ~~P2 描述批量修订 ×7：cashflow_performance 触发词（Q9）、get_sector_info 模式说明（Q14）、prediction_market 定位（Q15）、volatility 更名评估（Q16）、TA 流派场景句（G2）、shadow 流水线步骤号（G9）、数据源技能删互称备份（G1）~~ | ~~低严重度观察项~~ | AGENT+MCP+HOST | ~~P2~~ ❌无改进 | — | ❌ 划掉 | 已测：全集显著回归（lenient 池化 p=0.012），17 处改动已回滚（§7.5） |
+| **B1** | B 暴露面工程 | 5 个 key 门控工具（qveris_* ×3、get_macro_series、iwencai_search）在 MCP 侧改注册时门控，对齐 agent 侧 `check_available` 语义 | Q12 门控不对称（无 key 会话纯披露税） | MCP | P1 | — | ✅ 完成 | 41d805a7；MCP keyless 74→69（§8.1） |
+| **B2** | B 暴露面工程 | 8 个 `trading_*` 条件暴露：落在工具类 `check_available()`（无连接器不注册），MCP 注册尊重同一门控 | Q10/K21 无配置时全部为死重 | AGENT+MCP | P1 | — | ✅ 完成 | 17 工具统一 `_ConnectorGatedTradingTool` 门控基类；MCP 69→61、AGENT keyless 107→90（§8.1） |
+| **B3** | B 暴露面工程 | `reap_stale_runs` / `refresh_strategy_evidence` 移出默认暴露面（运维工具组或懒加载） | Q13 运维工具占据研究面披露位 | AGENT+MCP | P2 | — | 🟡 完成（维持现状） | MCP 61→59；C1 懒加载恢复路径随 §9 回滚失效，MCP 面不暴露为终态（§9.4） |
+| **B4** | B 暴露面工程 | `list_skills` 输出补 `category` 字段（数据模型已有，仅输出层） | Q11 路由侧拿不到现成分类 | AGENT+MCP+HOST | P1 | — | ✅ 完成 | 90/90 技能 × 9 类（§8.1） |
+| **B5** | B 暴露面工程 | 技能双暴露关闭一侧（opencode 宿主内关 MCP 侧 list_skills/load_skill，或反之） | Q7/K18 双路径混淆 + 2 工具重复 | HOST+MCP | P1 | A5（DEC-1） | ✅ 完成 | 方案甲：list_skills/load_skill 保留 + 描述追加宿主优先指引；不实施注册时降权（§8.1） |
+| ~~**C1**~~ | C 路由层 | ~~建 `search_tools` 元工具：按需召回 on-demand 工具；索引语料 = AUDIT §7.2 触发关键词列~~ | 全量暴露超退化区间；召回无入口 | AGENT+MCP | ~~P1~~ ❌已试·回滚（§9） | A 批、B1 | ❌ 回滚 | 检索本身达标（recall@7=0.937）但端到端路由显著下降，R1 FAIL（§9） |
+| ~~**C2**~~ | C 路由层 | ~~披露层级实现：12 常驻（§8.2 输入 2 清单）+ on-demand 经 C1 召回 + gated 条件暴露 + 技能维持一行目录~~ | 74 全量暴露逼近崩塌阈值（PAPERS §F） | AGENT+MCP | ~~P1~~ ❌已试·回滚（§9） | C1、B 批 | ❌ 回滚 | 同 C1（§9）；教训：披露税治理走 B 式裁剪或 D 式子代理，不走"藏起来让模型自己找" |
+| ~~**C3**~~ | C 路由层 | ~~5 条路由元规则（AUDIT §8.2 输入 3）编译进路由器 system 层~~ | 撞名仲裁无硬规则落点 | AGENT | ~~P2~~ ❌已试·回滚（§9） | C2 | ❌ 回滚 | 随 C1/C2 一并回滚（§9） |
+| **D1** | D 子代理 | **quant-agent** 试点：11 工具 + 9 技能白名单（AUDIT §8.1 草案），工具面 = B 后门控面 | 主循环路由面超载；领域隔离验证 | AGENT+MCP | P1 | B、A6 | ✅ 完成 | 有条件通过（§10）→ 生产落地 mymain；主循环收敛 552c7bfe（D2-2，L2 5/5） |
+| **D2** | D 子代理 | **web-docs-agent** 试点：3 工具 + 2 技能（仲裁规则最明确的最小闭环） | 同上 | AGENT+MCP | P1 | B | ✅ 完成 | 同 D1（§10、D2-2） |
+| **D3** | D 子代理 | swarm 白名单移植映射工程化：内部名→MCP 名运行时转换或配置（A6 映射表的代码化） | K25 preset 白名单不可直接移植 MCP 面 | SWARM+AGENT | P1 | A6 | ⬜ 未启动 | 不被 D 批结论阻塞（§10.4）；注意与 D2-4 preset 治理（30/30 工具行补全，71963e2f）是不同工作 |
+| **D4** | D 子代理 | 其余 10+1 子代理铺开（§8.1 全表：market-data / fundamentals-text / derivatives / risk-portfolio / valuation / macro-sector / altdata / funds-fi / user-analytics / trading-connector / orchestrator） | 同上 | AGENT+MCP | P2 | D1、D2 验证 | ✅ 完成 | 三轮评审 9 候选准入并同步生产（mymain 07a08aab）；orchestrator 拒绝、trading-connector 安全挂起（D2-3，`d4_final_verdict.md`） |
+| **E1** | E 评测遥测 | 工具选择准确率评测集：从 §7.2 触发关键词/负向触发构造 ~100 条金融域 query→期望命中对 | 所有改动缺量化裁决依据 | CROSS | P0 | — | ✅ 完成 | 158 条基础语料 + 冻结判官基建；被 A/B/C/D 四批复用，D4 扩至 353 条 |
+| **E2** | E 评测遥测 | 基线实测对比：74 全量暴露 vs 披露层级后的选择准确率（PAPERS §F BoR/短名单方法学） | A/B/C 改动效果无对照 | CROSS | P1 | E1、B | ✅ 完成 | A/B 批两轮裁决（§7、§8.3）；DEC-2 基座实际定为 qwen3.8-max + kimi-k3 |
+| **E3** | E 评测遥测 | 路由遥测上线 + §7.2"命中失败案例"列回填机制（日期/查询/误选/正解） | 评测集只有先验、无真实失败案例 | AGENT+MCP | P2（依赖 C2 已回滚，§9；暂缓） | ~~C2~~ | ⏸️ 暂缓 | C2 回滚失依（§9.4）；部分后继 = D2 Track B 生产遥测（`d2_telemetry/` + twin_choice 观察窗，2026-09-26 读出兜底） |
+| **E4** | E 评测遥测 | 描述变更接入回归：prompt hash manifest（已存在）+ 描述 diff 测试 | 描述改写可能静默破坏缓存纪律/路由行为 | CROSS | P1 | A 批 | ⬜ 未启动 | A 批回滚后缺回归对象；职能现由 D4 准入纪律（修订先于采集冻结 + 模板 hash 钉死）部分承担 |
+| **F1** | F 深排缺口 | 内部工具面完整盘点：以 `build_registry()` 运行时输出为权威，对账 ~32 个非 MCP 工具全名单 | 审计名单是部分的（诚实性声明 §6.3） | AGENT | P0 | — | ✅ 完成 | P0 批（2026-08-26）；A6/D3/F2/F4 的地基 |
+| **F2** | F 深排缺口 | `financial_rigor` / `report_audit` 的 MCP 只读暴露评估（含暴露/不暴露两案的成本收益） | Q19 无 MCP 对应物，preset 行为不可移植 | AGENT+MCP+SWARM | P1 | F1 | ⬜ 未启动 | F1 已解锁；两工具仍内部专用，建议与 trading-connector 评审合并为"MCP 面缺口收口"工作包 |
+| **F3** | F 深排缺口 | `.opencode/skills/` 分发副本同步机制：生成脚本或 git 跟踪 + 漂移检测 | K18 副本无同步保证（字节级一致仅当前快照） | HOST | P1 | DEC-1 | 🟡 半解 | DEC-1 已解除（B5 方案甲）；本地仓库已改 symlink 布局，漂移被结构性消除；正式验收（漂移检测断言）未做，建议补后关闭 |
+| **F4** | F 深排缺口 | `sdm_*`（register/status/decay_scan）与 MCP 面策略统一：暴露、文档降级或技能改写三选一 | Q19 strategy-dev-manager 引导的工作流依赖不可达工具 | AGENT+MCP | P2 | F1 | ⬜ 未启动 | F1 已解锁；与 F2 同属"内部工具 vs MCP 面"决策族，建议同批裁决 |
 
 **优先级分布**（SOTA 天花板裁决后，2026-08-27 更新；C 批回滚 2026-08-28 更新）：有效 P0 ×4（A5、A6、E1、F1，均已完成）｜ ~~A1-A4 划掉~~（E2 验证路由中性）｜ ~~A7 弱/局部效应（未达预注册标准）~~ ｜ ~~A8 否决（显著回归）~~ ｜ ~~C1-C3 已试·回滚~~（§9：检索本身达标但端到端路由准确率显著下降）｜ P1 ×14 ｜ P2 ×6。
 
