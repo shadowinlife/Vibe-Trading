@@ -16,6 +16,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 
 | 日期 | 事件 | 证据 |
 |---|---|---|
+| 2026-08-30 | rebase 对齐上游 `fb5013c2`（`80ffdda4` 后 79 commit，34 个本地 commit 重放，1 处真冲突）；历史卫生：F2 的 `.omo` 会话文件与 Phase 2 的冲突标记经 edit 停点出史；release/mymain 2026-08-30 发布 | [../branch/MYMAIN_README.md](../branch/MYMAIN_README.md)；DIVERGENCE §5 2026-08-30 条 |
 | 2026-08-30 | D4 生产同步：9 个准入域子代理上岗（`07a08aab`）；trading-connector 经 DEC-5 mini-admission 成为第 12 席（`b5a7265b`） | [../harness-evolution/README.md](../harness-evolution/README.md) 裁决总表 |
 | 2026-08-29 | 主循环收敛：13 个域工具移入子代理独占，主表面 59→46（`552c7bfe`）；D 批 D2-1/D2-2/D2-3 同日收官 | [../harness-evolution/HARNESS_EVOLUTION_SUMMARY.md](../harness-evolution/HARNESS_EVOLUTION_SUMMARY.md) §5 |
 | 2026-08-28 | rebase 对齐上游 `80ffdda4`（v0.1.14 后 117 commit，22 个本地 commit 重放，4 处真冲突）；上轮 merge 解法经 reconciliation `8a05a7c1` 回收；release/mymain 2026-08-28 发布；D 批试点子代理落地（`43cf7624` + `6f61a2c5`） | [../branch/MYMAIN_README.md](../branch/MYMAIN_README.md)；DIVERGENCE §5 2026-08-28 条 |
