@@ -84,7 +84,7 @@
 | **E4** | E 评测遥测 | 描述变更接入回归：prompt hash manifest（已存在）+ 描述 diff 测试 | 描述改写可能静默破坏缓存纪律/路由行为 | CROSS | P1 | A 批 | ⬜ 未启动 | A 批回滚后缺回归对象；职能现由 D4 准入纪律（修订先于采集冻结 + 模板 hash 钉死）部分承担 |
 | **F1** | F 深排缺口 | 内部工具面完整盘点：以 `build_registry()` 运行时输出为权威，对账 ~32 个非 MCP 工具全名单 | 审计名单是部分的（诚实性声明 §6.3） | AGENT | P0 | — | ✅ 完成 | P0 批（2026-08-26）；A6/D3/F2/F4 的地基 |
 | **F2** | F 深排缺口 | `financial_rigor` / `report_audit` 的 MCP 只读暴露评估（含暴露/不暴露两案的成本收益） | Q19 无 MCP 对应物，preset 行为不可移植 | AGENT+MCP+SWARM | P1 | F1 | ⬜ 未启动 | F1 已解锁；两工具仍内部专用，建议与 trading-connector 评审合并为"MCP 面缺口收口"工作包 |
-| **F3** | F 深排缺口 | `.opencode/skills/` 分发副本同步机制：生成脚本或 git 跟踪 + 漂移检测 | K18 副本无同步保证（字节级一致仅当前快照） | HOST | P1 | DEC-1 | 🟡 半解 | DEC-1 已解除（B5 方案甲）；本地仓库已改 symlink 布局，漂移被结构性消除；正式验收（漂移检测断言）未做，建议补后关闭 |
+| **F3** | F 深排缺口 | `.opencode/skills/` 分发副本同步机制：生成脚本或 git 跟踪 + 漂移检测 | K18 副本无同步保证（字节级一致仅当前快照） | HOST | P1 | DEC-1 | ✅ 完成 | 本地为 symlink（`../agent/src/skills`），漂移结构性不可能；残余失败模式（被替换成真实副本）由 `agent/src/evals/tool_selection/check_skills_link.py` 断言拦截（2026-08-30 实测 PASS） |
 | **F4** | F 深排缺口 | `sdm_*`（register/status/decay_scan）与 MCP 面策略统一：暴露、文档降级或技能改写三选一 | Q19 strategy-dev-manager 引导的工作流依赖不可达工具 | AGENT+MCP | P2 | F1 | ⬜ 未启动 | F1 已解锁；与 F2 同属"内部工具 vs MCP 面"决策族，建议同批裁决 |
 
 **优先级分布**（SOTA 天花板裁决后，2026-08-27 更新；C 批回滚 2026-08-28 更新）：有效 P0 ×4（A5、A6、E1、F1，均已完成）｜ ~~A1-A4 划掉~~（E2 验证路由中性）｜ ~~A7 弱/局部效应（未达预注册标准）~~ ｜ ~~A8 否决（显著回归）~~ ｜ ~~C1-C3 已试·回滚~~（§9：检索本身达标但端到端路由准确率显著下降）｜ P1 ×14 ｜ P2 ×6。
@@ -355,6 +355,12 @@
 - **验收方向**：源改动后副本自动同步或漂移被 CI 拦截；A2/A8 的技能改动不再需要手工双写。
 - **量化方向**：漂移检测覆盖 90/90 技能。
 - **依赖**：**DEC-1**（副本定位取决于主面决策）｜ **优先级**：P1
+- **✅ 关闭记录（2026-08-30）**：本地 `.opencode/skills` 为指向 `../agent/src/skills`
+  的 symlink，内容与源同一 inode，漂移结构性不可能（手工双写场景不存在）。残余
+  失败模式 = 有人把 symlink 替换成真实目录副本——由
+  `agent/src/evals/tool_selection/check_skills_link.py` 拦截（symlink 指向校验 +
+  真实目录时退化为逐字节对比），2026-08-30 实测 PASS。未接入上游测试套件
+  （symlink 是本地 harness 布局，上游检出中不存在）。
 
 #### PLAN-F4 · sdm_* 与 MCP 面策略统一
 - **工作上下文**：`sdm_register` / `sdm_status` / `sdm_decay_scan` 三选一：① MCP 暴露（只读优先）；② strategy-dev-manager 技能文档降级（声明仅内置 agent 可用）；③ 技能改写为不依赖内部工具的流程。
