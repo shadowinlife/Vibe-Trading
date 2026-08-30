@@ -14,7 +14,7 @@ This project packages the OpenCode Web Server research environment into a reprod
 - **OpenCode CLI 1.18.5** + OMO (oh-my-openagent) plugin
 - **nano-search-mcp** — local MCP server for Chinese financial data (新浪财经, 百炼 WebSearch)
 - **5 OpenCode skills**: data-warehouse (ClickHouse heavy queries), html-report (ECharts), periodic-execution (cron), escape-top-microstructure (top-detection signals), research-scenarios (scenario playbooks A–F, loaded on demand)
-- **2 domain subagents**: `quant-agent` (strategy research + backtesting, 11-tool whitelist) and `web-docs-agent` (web/document reading, 3-tool whitelist) — the orchestrator delegates via the AGENTS.md routing policy; each subagent sees only its whitelist (every other MCP namespace is permission-denied), cutting its per-decision tool surface by ~86%
+- **11 domain subagents**: `quant-agent` + `web-docs-agent` (production pilots) plus 9 admitted via the D4 three-round admission eval (market-data / fundamentals-text / derivatives / risk-portfolio / valuation / macro-sector / altdata / funds-fi / user-analytics) — the orchestrator delegates via the AGENTS.md routing policy; each subagent sees only its whitelist (every other MCP namespace is permission-denied)
 - **Full AGENTS.md** with behavior instructions for 6 scenarios (A through F), a 4-class question-handling protocol and anti-hallucination discipline
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
 - **Cron job infrastructure** with CLI management and DingTalk/email notification

@@ -147,6 +147,16 @@ class TestDomainSubagents:
             "write_file", "read_file", "pattern_recognition", "quantlib_call",
         },
         "web-docs-agent": {"web_search", "read_url", "read_document"},
+        # D4 round-3 admitted candidates (d4_batch/candidates_d4.yaml):
+        "market-data-agent": {"get_market_data", "search_symbol", "screen_market", "iwencai_search", "orderbook_depth", "get_fund_flow", "get_northbound_flow", "get_margin_trading", "get_block_trades", "get_dragon_tiger", "get_lockup_expiry", "get_shareholder_count"},
+        "fundamentals-text-agent": {"get_financial_statements", "get_fundamentals", "get_sec_filings", "get_stock_profile", "get_institutional_holdings", "get_stock_news", "get_research_reports", "research_papers"},
+        "derivatives-agent": {"analyze_options", "analyze_options_payoff", "get_options_chain"},
+        "risk-portfolio-agent": {"quantlib_call", "cashflow_performance"},
+        "valuation-agent": {"quantlib_call", "prediction_market"},
+        "macro-sector-agent": {"get_macro_series", "get_sector_info"},
+        "altdata-agent": {"sentiment"},
+        "funds-fi-agent": {"etf_holdings"},
+        "user-analytics-agent": {"analyze_trade_journal", "extract_shadow_strategy", "run_shadow_backtest", "render_shadow_report", "scan_shadow_signals"},
     }
 
     def test_subagent_sections_rendered(self):
