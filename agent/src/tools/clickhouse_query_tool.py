@@ -1,7 +1,7 @@
 """Constrained ad-hoc SQL exploration of the ClickHouse ashare warehouse.
 
 ``ch_query`` is the Execute tier of the flexibility channel
-(CLICKHOUSE_ITERATION_PLAN.md Phase 2). Safety model, all fail-closed:
+(mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md Phase 2). Safety model, all fail-closed:
 
 - connects ONLY with the dedicated read-only ``llm_role`` credentials
   (``CLICKHOUSE_LLM_USER`` / ``CLICKHOUSE_LLM_PASSWORD`` via the centralized

@@ -1,0 +1,442 @@
+version: 1
+source: D2-3b D4 routing corpus (block B)
+entries:
+# ---------------------------------------------------------------------------
+# macro-sector-agent (D11) — 15
+# ---------------------------------------------------------------------------
+- id: D4R-B-001
+  query: 拉一下美国核心PCE和PPI最近五年的月度序列
+  expected: {kind: tool, name: get_macro_series}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-002
+  query: Pull the FRED series for the effective fed funds rate and the 3-month T-bill
+  expected: {kind: tool, name: get_macro_series}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-003
+  query: 帮我看看比亚迪这只票归属哪些概念板块
+  expected: {kind: tool, name: get_sector_info}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-004
+  query: Which industry and concept boards does SMIC belong to?
+  expected: {kind: tool, name: get_sector_info}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-005
+  query: 中国最新PMI和社融增速显示经济处于周期的什么位置
+  expected: {kind: skill, name: macro-analysis}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-006
+  query: Framework for forecasting USD/CNY and tracking cross-border capital flows
+  expected: {kind: skill, name: global-macro}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-007
+  query: 中美利差变化对新兴市场股债的传导路径帮我梳理一下
+  expected: {kind: skill, name: global-macro}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-008
+  query: 如果新一轮出口管制落地，供应链中断风险怎么量化和提前识别
+  expected: {kind: skill, name: geopolitical-risk}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-009
+  query: Gold pricing framework — real rates, central-bank buying and safe-haven demand
+  expected: {kind: skill, name: commodity-analysis}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-010
+  query: Oil supply-demand balance — inventory cycles and OPEC production decisions
+  expected: {kind: skill, name: commodity-analysis}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-011
+  query: 行业动量排名里最近一个月哪些行业在走强
+  expected: {kind: skill, name: sector-rotation}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-012
+  query: A股涨跌停幅度和ST股票的认定规则具体是怎么规定的
+  expected: {kind: skill, name: regulatory-knowledge}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-013
+  query: How do HK/US short-selling and T+0 rules differ from A-shares?
+  expected: {kind: skill, name: regulatory-knowledge}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-014
+  query: 美股PDT规则和熔断机制的触发条件给我讲讲
+  expected: {kind: skill, name: regulatory-knowledge}
+  domain: D11
+  route: macro-sector-agent
+- id: D4R-B-015
+  query: 跨境投资的税务基础：港股通股息税和美股预扣税怎么算
+  expected: {kind: skill, name: regulatory-knowledge}
+  domain: D11
+  route: macro-sector-agent
+# ---------------------------------------------------------------------------
+# altdata-agent (D13) — 15
+# ---------------------------------------------------------------------------
+- id: D4R-B-016
+  query: 这段央行声明的措辞偏鹰还是偏鸽，帮我打个情绪分
+  expected: {kind: tool, name: sentiment}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-017
+  query: 'Give me a sentiment score for this headline: "Tesla misses delivery estimates"'
+  expected: {kind: tool, name: sentiment}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-018
+  query: Extract trading signals from Telegram and Discord crypto communities
+  expected: {kind: skill, name: social-media-intelligence}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-019
+  query: 监控一下推特上关于AI概念币的讨论热度和情绪倾向
+  expected: {kind: skill, name: social-media-intelligence}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-020
+  query: Analyze ETH on-chain — active addresses, exchange netflows and the NVT ratio
+  expected: {kind: skill, name: onchain-analysis}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-021
+  query: 巨鲸钱包最近在增持还是减持BTC，链上持仓分布看一下
+  expected: {kind: skill, name: onchain-analysis}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-022
+  query: 交易所的USDC储备变化和稳定币流速说明什么
+  expected: {kind: skill, name: stablecoin-flow}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-023
+  query: 稳定币总市值在增长是不是资金进场信号，看下铸造销毁数据
+  expected: {kind: skill, name: stablecoin-flow}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-024
+  query: Compare Aave and Compound lending rates against LP pool yields
+  expected: {kind: skill, name: defi-yield}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-025
+  query: 质押ETH的收益率和流动性池farming收益，风险调整后哪个更划算
+  expected: {kind: skill, name: defi-yield}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-026
+  query: ETH当前价格附近有哪些清算密集区
+  expected: {kind: skill, name: liquidation-heatmap}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-027
+  query: 画出BTC的清算热力图，标记可能的插针位置
+  expected: {kind: skill, name: liquidation-heatmap}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-028
+  query: Show me this token's unlock schedule for the next year, including cliff dates
+  expected: {kind: skill, name: token-unlock-treasury}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-029
+  query: 团队和投资人的代币线性解锁节奏对抛压影响有多大
+  expected: {kind: skill, name: token-unlock-treasury}
+  domain: D13
+  route: altdata-agent
+- id: D4R-B-030
+  query: Put-Call Ratio和融资融券余额怎么组合成市场层面的情绪指标
+  expected: {kind: skill, name: sentiment-analysis}
+  domain: D13
+  route: altdata-agent
+# ---------------------------------------------------------------------------
+# funds-fi-agent (D14) — 15
+# ---------------------------------------------------------------------------
+- id: D4R-B-031
+  query: 纳斯达克100的QQQ成分股穿透一下，看前二十大持仓
+  expected: {kind: tool, name: etf_holdings}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-032
+  query: Look up gold ETFs and compare their sizes
+  expected: {kind: tool, name: etf_holdings}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-033
+  query: 沪深300ETF的完整组合持仓，要年报全量披露口径
+  expected: {kind: tool, name: etf_holdings}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-034
+  query: 这两只主动基金的晨星评级和信息比率帮我对比一下
+  expected: {kind: skill, name: fund-analysis}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-035
+  query: Evaluate this fund manager's tenure, track record and style-box consistency
+  expected: {kind: skill, name: fund-analysis}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-036
+  query: 构建一个ETF组合，先比较几只宽基的费率和跟踪误差
+  expected: {kind: skill, name: etf-analysis}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-037
+  query: US semiconductor ETF fund flows and sector breadth this month
+  expected: {kind: skill, name: us-etf-flow}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-038
+  query: 美股ETF的风格因子资金流，资金从成长流向价值了吗
+  expected: {kind: skill, name: us-etf-flow}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-039
+  query: 高收益债的利差分析和违约风险评估框架
+  expected: {kind: skill, name: credit-analysis}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-040
+  query: Break down this convertible bond into conversion value, bond floor and option value
+  expected: {kind: skill, name: convertible-bond}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-041
+  query: 这只转债快触发强赎了，博弈上该怎么看
+  expected: {kind: skill, name: convertible-bond}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-042
+  query: 这家公司连续十年提高分红，股息增长的质量怎么样
+  expected: {kind: skill, name: dividend-analysis}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-043
+  query: Explain ex-dividend mechanics and shareholder-yield strategy for income stocks
+  expected: {kind: skill, name: dividend-analysis}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-044
+  query: 帮我做FOF组合的基金筛选和配置
+  expected: {kind: skill, name: fund-analysis}
+  domain: D14
+  route: funds-fi-agent
+- id: D4R-B-045
+  query: How should I assess credit risk and spreads on Chinese offshore USD bonds
+  expected: {kind: skill, name: credit-analysis}
+  domain: D14
+  route: funds-fi-agent
+# ---------------------------------------------------------------------------
+# user-analytics-agent (D15) — 15
+# ---------------------------------------------------------------------------
+- id: D4R-B-046
+  query: 这是我东方财富导出的交易记录Excel，帮我算一下持股天数和胜率
+  expected: {kind: tool, name: analyze_trade_journal}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-047
+  query: Parse my Futu broker export and tell me my PnL ratio
+  expected: {kind: tool, name: analyze_trade_journal}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-048
+  query: 帮我看看我的交易里有没有处置效应和追涨杀跌的毛病
+  expected: {kind: tool, name: analyze_trade_journal}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-049
+  query: 把我赚钱的那些交易提炼成几条人能看懂的if-then规则
+  expected: {kind: tool, name: extract_shadow_strategy}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-050
+  query: Extract a shadow strategy from my profitable roundtrips, at least three rules
+  expected: {kind: tool, name: extract_shadow_strategy}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-051
+  query: 用我提炼出的影子策略在A股和港股各回测一遍
+  expected: {kind: tool, name: run_shadow_backtest}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-052
+  query: 影子账户的回测结果和我实际操作差多少，做个差值归因
+  expected: {kind: tool, name: run_shadow_backtest}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-053
+  query: 生成影子账户报告，要包含图表和今天的市场扫描
+  expected: {kind: tool, name: render_shadow_report}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-054
+  query: Render my shadow account's HTML report so I can archive it
+  expected: {kind: tool, name: render_shadow_report}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-055
+  query: 今天市场上有哪些股票触发了我影子账户的买入节奏
+  expected: {kind: tool, name: scan_shadow_signals}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-056
+  query: Scan today's US market for names matching my shadow entry cadence
+  expected: {kind: tool, name: scan_shadow_signals}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-057
+  query: 交割单分析的方法论是什么，四个行为偏差指标怎么计算的
+  expected: {kind: skill, name: trade-journal}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-058
+  query: 我的交割单是富途格式的CSV，解析时支持哪些字段和格式
+  expected: {kind: skill, name: trade-journal}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-059
+  query: 影子策略的入场节奏是怎么从我自己的交易里挖掘出来的
+  expected: {kind: skill, name: shadow-account}
+  domain: D15
+  route: user-analytics-agent
+- id: D4R-B-060
+  query: 我上周又交易了几笔，把新交割单加进去重新分析一遍
+  expected: {kind: tool, name: analyze_trade_journal}
+  domain: D15
+  route: user-analytics-agent
+# ---------------------------------------------------------------------------
+# Boundary set — 20 highest-confusion pairs, one defensible owner each
+# ---------------------------------------------------------------------------
+- id: D4R-B-061
+  query: Backtest is done — now compute VaR/CVaR and a Monte Carlo stress test on the
+    positions I'm currently holding
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+  boundary_with: quant-agent
+- id: D4R-B-062
+  query: 把苹果公司最近三份10-Q里的Revenue数据按季度拉出来
+  expected: {kind: tool, name: get_sec_filings}
+  domain: D02
+  route: fundamentals-text-agent
+  boundary_with: valuation-agent
+- id: D4R-B-063
+  query: Fetch one year of daily bars for BTC-USDT
+  expected: {kind: tool, name: get_market_data}
+  domain: D01
+  route: market-data-agent
+  boundary_with: altdata-agent
+- id: D4R-B-064
+  query: 帮我比较几只红利ETF的股息质量和费率，选一只长期收息
+  expected: {kind: skill, name: dividend-analysis}
+  domain: D14
+  route: funds-fi-agent
+  boundary_with: valuation-agent
+- id: D4R-B-065
+  query: 市场恐惧贪婪指数现在处于什么分位，把情绪读数给我
+  expected: {kind: tool, name: sentiment}
+  domain: D13
+  route: altdata-agent
+  boundary_with: macro-sector-agent
+- id: D4R-B-066
+  query: 今天行业板块涨幅榜的排名和领涨股帮我列一下
+  expected: {kind: tool, name: get_sector_info}
+  domain: D11
+  route: macro-sector-agent
+  boundary_with: market-data-agent
+- id: D4R-B-067
+  query: What's the chatter on Tesla across Twitter and Reddit lately?
+  expected: {kind: skill, name: social-media-intelligence}
+  domain: D13
+  route: altdata-agent
+  boundary_with: fundamentals-text-agent
+- id: D4R-B-068
+  query: Design a cash-and-carry trade on BTC perpetuals around the current funding-rate
+    regime
+  expected: {kind: skill, name: perp-funding-basis}
+  domain: D08
+  route: derivatives-agent
+  boundary_with: altdata-agent
+- id: D4R-B-069
+  query: 帮我构建一个基本面筛选流程，从毛利率、负债率和现金流三个维度打分
+  expected: {kind: skill, name: fundamental-filter}
+  domain: D02
+  route: fundamentals-text-agent
+  boundary_with: market-data-agent
+- id: D4R-B-070
+  query: Run the DCF for this company — WACC build, sensitivity grid, implied value
+    range
+  expected: {kind: tool, name: quantlib_call}
+  domain: D10
+  route: valuation-agent
+  boundary_with: risk-portfolio-agent
+- id: D4R-B-071
+  query: 我持有的基金组合相对业绩基准做一期Brinson归因分解
+  expected: {kind: skill, name: performance-attribution}
+  domain: D09
+  route: risk-portfolio-agent
+  boundary_with: user-analytics-agent
+- id: D4R-B-072
+  query: 我手上这个期权头寸，帮我算一下VaR和压力情景下的亏损
+  expected: {kind: tool, name: quantlib_call}
+  domain: D09
+  route: risk-portfolio-agent
+  boundary_with: derivatives-agent
+- id: D4R-B-073
+  query: 这只可转债的下修条款博弈和回售保护怎么分析
+  expected: {kind: skill, name: convertible-bond}
+  domain: D14
+  route: funds-fi-agent
+  boundary_with: derivatives-agent
+- id: D4R-B-074
+  query: Pick the best vehicle among semiconductor ETFs — fees, tracking error,
+    liquidity
+  expected: {kind: skill, name: etf-analysis}
+  domain: D14
+  route: funds-fi-agent
+  boundary_with: macro-sector-agent
+- id: D4R-B-075
+  query: 帮我评估这只城投债的信用利差和违约风险
+  expected: {kind: skill, name: credit-analysis}
+  domain: D14
+  route: funds-fi-agent
+  boundary_with: fundamentals-text-agent
+- id: D4R-B-076
+  query: 围绕这次财报超预期事件构建一个事件驱动交易策略
+  expected: {kind: skill, name: event-driven}
+  domain: D12
+  route: valuation-agent
+  boundary_with: altdata-agent
+- id: D4R-B-077
+  query: 铁矿石和螺纹钢这类黑色大宗的供需框架帮我梳理一下
+  expected: {kind: skill, name: commodity-analysis}
+  domain: D11
+  route: macro-sector-agent
+  boundary_with: derivatives-agent
+- id: D4R-B-078
+  query: 把申万一级行业当前的景气度评分和动量排名对比一下
+  expected: {kind: skill, name: sector-rotation}
+  domain: D11
+  route: macro-sector-agent
+  boundary_with: fundamentals-text-agent
+- id: D4R-B-079
+  query: 帮我查一下IVV的全部成分股和权重
+  expected: {kind: tool, name: etf_holdings}
+  domain: D14
+  route: funds-fi-agent
+  boundary_with: market-data-agent
+- id: D4R-B-080
+  query: Polymarket上对美联储12月议息结果的押注概率是多少
+  expected: {kind: tool, name: prediction_market}
+  domain: D12
+  route: valuation-agent
+  boundary_with: macro-sector-agent

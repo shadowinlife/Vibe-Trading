@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Export ClickHouse DDL snapshots into ``schema/clickhouse/``.
 
-ClickHouse semantic layer P0.1 (see CLICKHOUSE_ITERATION_PLAN.md): the repo
+ClickHouse semantic layer P0.1 (see mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md): the repo
 files are the semantic contract snapshot; the physical tables are created by
 ``/opt/qdata/sync/schema.py`` on the production host. Default mode (re)writes
 one deterministic, timestamp-free ``<database>__<table>.sql`` per table;

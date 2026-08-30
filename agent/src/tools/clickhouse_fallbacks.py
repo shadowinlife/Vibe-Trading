@@ -5,7 +5,7 @@ return dict shape. When ClickHouse is unreachable or returns no data, the call i
 transparently forwarded to the tushare fallback so the caller always receives a
 compatible envelope.
 
-Unit conversions are metadata-driven (CLICKHOUSE_ITERATION_PLAN.md P1.4): the
+Unit conversions are metadata-driven (mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md P1.4): the
 factors come from ``src.clickhouse_units`` (``schema/clickhouse/comments.yaml``)
 with transition assertions, so a COMMENT edit that breaks the verified contract
 fails loudly instead of silently rescaling data.

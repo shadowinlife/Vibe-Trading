@@ -1,7 +1,7 @@
 """Explicit column contract for the ClickHouse ``stk_factor_pro`` table.
 
 Generated from the DDL snapshot ``schema/clickhouse/ashare__stk_factor_pro.sql``
-(CLICKHOUSE_ITERATION_PLAN.md P0.1 / P1.1), whose column order is authoritative.
+(mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md P0.1 / P1.1), whose column order is authoritative.
 The ClickHouse loader SELECTs exactly this list instead of ``SELECT *`` so a
 schema change fails loudly at query time instead of silently leaking new
 unannotated columns into the backtest/tool envelope (Flow-B closure).

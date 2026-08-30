@@ -1,0 +1,8 @@
+{
+  "container": "hb-bridge-88869",
+  "torn_down_at": "2026-08-23T07:00:49.134416+00:00",
+  "docker_rm_exit_code": 0,
+  "docker_rm_output": "hb-bridge-88869",
+  "container_still_listed": false,
+  "verify_exit_code": 0
+}

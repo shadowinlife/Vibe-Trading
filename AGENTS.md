@@ -13,11 +13,13 @@
 # 8. mymain 分支特有约定
 
 > **当前分支定位**: `mymain` 是开源社区 [HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) `main` 分支的一个**独立部署分支**。
+>
+> **分支知识库**: `mymain-wiki/AGENTS.md` 是本分支持久记忆的路由入口（功能差异、开发历史、验证证据、研究裁决、未落地资产）。在此分支上工作前先读它，按需深入。
 
 ## 8.1 与上游的关系
 
 - **周期性 rebase**: 本分支需要周期性从开源社区 `main` rebase 回全套 patch（通常每周一次，或重大发布后立即跟进）。rebase 命令: `git fetch upstream && git rebase upstream/main`。
-- **差异追踪**: 所有与上游 `main` 的功能差异记录在 `MYMAIN_DIVERGENCE.md` 中。每次 rebase 后需更新该文档。
+- **差异追踪**: 所有与上游 `main` 的功能差异记录在 `mymain-wiki/branch/MYMAIN_DIVERGENCE.md` 中。每次 rebase 后需更新该文档。
 - **冲突处理**: rebase 冲突优先保留本分支的本地改造逻辑，但需确保不与上游新增功能冲突。
 
 ## 8.2 本地独特改造
@@ -36,4 +38,4 @@
 2. **随演进随时贡献回社区**: 每个独立的功能 patch 在本地验证稳定后，立即以独立 PR 形式提交到上游 `HKUDS/Vibe-Trading`。PR 保持 Draft 形态直到完整检查通过。
 3. **commit message 清洁**: 提交到社区的 commit 不得包含 `AI-Contributed`、`AI-Model`、`Co-Authored-By` 等 AI 归属行。使用 `git commit -s` 签名 DCO。
 4. **PR 描述模板**: 每个社区 PR 必须包含: Summary / Why / Changes / Test Plan / Checklist（参考 `.github/PULL_REQUEST_TEMPLATE.md`）。
-5. **差异文档同步**: 社区 PR 合入后，从 `MYMAIN_DIVERGENCE.md` 移除对应条目。全部合入后本分支回归为纯跟踪分支。
+5. **差异文档同步**: 社区 PR 合入后，从 `mymain-wiki/branch/MYMAIN_DIVERGENCE.md` 移除对应条目。全部合入后本分支回归为纯跟踪分支。
