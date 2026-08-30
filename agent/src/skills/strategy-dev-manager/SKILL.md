@@ -6,7 +6,7 @@ category: research
 
 # Strategy Development Manager
 
-> **可达性说明**：本技能依赖的 `sdm_register` / `sdm_status` / `sdm_decay_scan` 工具**仅在内置 agent 运行时可用**（注册于 agent 内部注册表），**MCP 客户端不可达**（MCP 面无等价工具）；假设/自动驾驶栈（`create_hypothesis` / `generate_backtest_config` / `scaffold_signal_engine` / `link_autopilot_backtest`）同为内部注册表工具。内外名称与可达性详见仓库根目录 `HARNESS_EVOLUTION_TOOL_MAPPING.md`（表 B / 表 C）。
+> **可达性说明**：本技能的**写侧**工具 `sdm_register` / `sdm_status`（更新动作）/ `sdm_decay_scan` **仅在内置 agent 运行时可用**（注册于 agent 内部注册表，MCP 客户端不可达）；假设/自动驾驶栈（`create_hypothesis` / `generate_backtest_config` / `scaffold_signal_engine` / `link_autopilot_backtest`）同为内部注册表工具。**读侧在 MCP 面有等价门面**：查询库中因子/策略与其证据状态，MCP 客户端请用 `list_strategies` / `query_strategies` / `get_strategy_evidence`（strategy-discovery 只读门面，读的就是同一策略库），不要用本技能的 sdm_* 工具名。内外名称与可达性详见仓库根目录 `HARNESS_EVOLUTION_TOOL_MAPPING.md`（表 B / 表 C）。
 
 ## Purpose
 
@@ -23,9 +23,9 @@ Decision tree for routing user requests:
 - User says "implement and backtest" or "run the backtest" → **Phase 3: IMPLEMENT**
 - User says "evaluate results" or "check if it works" → **Phase 4: EVALUATE**
 - User says "check decay" or "monitor factors" → **Phase 5: MONITOR**
-- User says "disable factor" → `sdm_status(action="disable", artifact_id=...)`
-- User says "enable factor" → `sdm_status(action="enable", artifact_id=...)`
-- User says "list my factors" or "show status" → `sdm_status(action="list")`
+- User says "disable factor" → `sdm_status(action="disable", artifact_id=...)`（仅 agent 面）
+- User says "enable factor" → `sdm_status(action="enable", artifact_id=...)`（仅 agent 面）
+- User says "list my factors" or "show status" → `sdm_status(action="list")`（仅 agent 面）；**MCP 客户端改走 `list_strategies` / `query_strategies`，证据状态用 `get_strategy_evidence`**
 
 When the user's intent spans multiple phases (for example "read this paper and build a factor"), run the phases sequentially from INGEST through EVALUATE.
 
@@ -154,7 +154,7 @@ Track artifact health over time and handle decay.
 | `factor_analysis` | 4 | IC/IR analysis for factor artifacts |
 | `sdm_decay_scan` | 5 | Batch decay monitoring |
 
-> 表中标注：`sdm_register` / `sdm_status` / `sdm_decay_scan` 与假设/自动驾驶栈工具（`create_hypothesis` / `generate_backtest_config` / `scaffold_signal_engine` / `link_autopilot_backtest`）**仅在内置 agent 运行时可用，MCP 客户端不可达**；`read_document` / `alpha_bench` / `backtest` / `factor_analysis` 在 MCP 面同名可用。
+> 表中标注：`sdm_register` / `sdm_status` / `sdm_decay_scan` 与假设/自动驾驶栈工具（`create_hypothesis` / `generate_backtest_config` / `scaffold_signal_engine` / `link_autopilot_backtest`）**仅在内置 agent 运行时可用，MCP 客户端不可达**——MCP 客户端查询库内容请走 `list_strategies` / `query_strategies` / `get_strategy_evidence`（同一策略库的只读门面）；`read_document` / `alpha_bench` / `backtest` / `factor_analysis` 在 MCP 面同名可用。
 
 ## SignalEngine Contract
 

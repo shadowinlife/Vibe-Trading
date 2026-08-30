@@ -133,7 +133,7 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (59)
+## Available MCP Tools (61)
 
 Five more tools register once their credentials are configured: `get_macro_series` (`FRED_API_KEY`), `iwencai_search` (`VIBE_TRADING_IWENCAI_KEY`), and `qveris_search` / `qveris_inspect` / `qveris_execute` (`QVERIS_API_KEY` + paid mode via `vibe-trading data mode paid`). Eight `trading_*` connector tools register once a trading connector profile is configured (`vibe-trading connector use <profile>`); the `reap_stale_runs` and `refresh_strategy_evidence` maintenance tools stay available on the agent/CLI surface.
 
@@ -198,6 +198,8 @@ Five more tools register once their credentials are configured: `get_macro_serie
 | `sentiment` | Local lexicon text scoring + crypto Fear & Greed Index | None |
 | `technical_indicators` | RSI / MACD / Bollinger / SMA / EMA through the existing loaders | None* |
 | `get_fundamentals` | PIT-safe SEC fundamentals panels (filed-date anchored) | None |
+| `financial_rigor` | Exact-decimal verification of financial numbers — fetch elsewhere, verify here | None |
+| `report_audit` | Pre-publish audit of a report's numeric claims (extract → verdict) | None |
 
 <sub>*A-share symbols require `TUSHARE_TOKEN`. HK/US/Canada/crypto are free. Trading connector rows use the selected connector profile, e.g. IBKR local TWS/Gateway or Robinhood MCP OAuth.</sub>
 

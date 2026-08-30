@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 59 tools, with thirteen more registering once their preconditions are
+Surfaces 61 tools, with thirteen more registering once their preconditions are
 configured — five on credentials (get_macro_series / iwencai_search /
 qveris_search / qveris_inspect / qveris_execute) and eight trading_* tools on
 a configured trading connector: skills, research goals, strategy discovery,
@@ -2418,6 +2418,12 @@ _MIRRORED_TOOL_SOURCES = (
     ("src.tools.sentiment_tool", "SentimentTool"),
     ("src.tools.technical_indicator_tool", "TechnicalIndicatorTool"),
     ("src.tools.get_fundamentals_tool", "GetFundamentalsTool"),
+    # F2 (DEC-3, 2026-08-30): exact-decimal financial verification and
+    # pre-publish report audit. Both are pure compute with no credentials or
+    # side effects; surfacing them lets MCP-side subagents reproduce the
+    # value_investing_committee / fundamental_research_team preset behavior.
+    ("src.tools.financial_rigor_tool", "FinancialRigorTool"),
+    ("src.tools.report_audit_tool", "ReportAuditTool"),
 )
 
 

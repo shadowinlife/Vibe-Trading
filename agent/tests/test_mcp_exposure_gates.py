@@ -98,7 +98,7 @@ def test_keyless_surface_hides_every_gated_tool(tmp_path: Path) -> None:
     assert not hidden & set(tools), sorted(hidden & set(tools))
     # Always-on sentinels stay registered: the gates remove only gated tools.
     assert {"get_market_data", "backtest", "list_skills", "web_search", "run_swarm"} <= set(tools)
-    assert len(tools) == 59
+    assert len(tools) == 61
 
 
 def test_fred_and_iwencai_keys_restore_only_their_tools(tmp_path: Path) -> None:
@@ -110,7 +110,7 @@ def test_fred_and_iwencai_keys_restore_only_their_tools(tmp_path: Path) -> None:
     assert "get_macro_series" in tools
     assert "iwencai_search" in tools
     assert not {"qveris_search", "qveris_inspect", "qveris_execute"} & set(tools)
-    assert len(tools) == 61
+    assert len(tools) == 63
 
 
 def test_qveris_paid_mode_restores_the_marketplace_tools(tmp_path: Path) -> None:
@@ -128,7 +128,7 @@ def test_qveris_paid_mode_restores_the_marketplace_tools(tmp_path: Path) -> None
         home=tmp_path,
     )
     assert KEY_GATED_TOOLS <= set(tools)
-    assert len(tools) == 64
+    assert len(tools) == 66
 
 
 def test_qveris_key_without_paid_mode_stays_hidden(tmp_path: Path) -> None:
@@ -148,7 +148,7 @@ def test_configured_connector_restores_the_trading_tools(tmp_path: Path) -> None
     )
     tools = _list_mcp_tools(home=tmp_path)
     assert TRADING_TOOLS <= set(tools)
-    assert len(tools) == 67
+    assert len(tools) == 69
 
 
 def test_ops_tools_stay_off_even_with_a_configured_connector(tmp_path: Path) -> None:
