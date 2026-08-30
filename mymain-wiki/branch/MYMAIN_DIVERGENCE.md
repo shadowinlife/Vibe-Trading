@@ -11,13 +11,13 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 
 # mymain 分支差异说明
 
-> 维护者：shadowinlife ｜ 基线：HKUDS/Vibe-Trading `main` @ `80ffdda4`（v0.1.14 后，2026-08-28 对齐，上游自 `1907e47d` 前进 117 commit）
+> 维护者：shadowinlife ｜ 基线：HKUDS/Vibe-Trading `main` @ `fb5013c2`（v0.1.14 后，2026-08-30 对齐，上游自 `80ffdda4` 前进 79 commit）
 
 ## 1. 分支定位
 
 `mymain` 是 shadowinlife 个人维护的**锁定演进分支**，承载记忆系统 T4 迭代与本地 ClickHouse A 股数据源，功能上领先于社区 `main`。本分支作为个人生产/验证环境的稳定基线，所有改动最终以社区 PR 形式回流上游；PR 合入后相应条目从本文档移除，全部合入后本分支回归纯跟踪分支。
 
-相对 `origin/main` 的差异总量：**282 个文件、+49714/−140 行**（含本文档、`MYMAIN_README.md`、分支级 AGENTS.md 扩展、ClickHouse 语义层 Phase 0–2 与 `OpencodeAgent/` harness 层）。功能历史组织为 **6 个单一功能 commit**（F1→F5 + docs，每个可独立作为社区 PR 候选）+ 语义层 Phase 0–2（fork PR #1，个人部署独有）+ OpencodeAgent harness（F7，个人部署独有）。
+相对 `origin/main` 的差异总量：**626 个文件、+118306/−140 行**（含 `mymain-wiki/` 知识库及其 harness-evolution 归档、分支级 AGENTS.md 扩展、ClickHouse 语义层 Phase 0–2 与 `OpencodeAgent/` harness 层）。功能历史组织为 **6 个单一功能 commit**（F1→F5 + docs，每个可独立作为社区 PR 候选）+ 语义层 Phase 0–2（fork PR #1，个人部署独有）+ OpencodeAgent harness（F7，个人部署独有）。
 
 ## 2. 核心功能差异
 
@@ -89,7 +89,7 @@ python -m pytest tools/test_ci_clickhouse_comments_gate.py \
   tools/test_clickhouse_apply_comments.py tools/test_clickhouse_export_ddl.py -q
 python tools/ci_clickhouse_comments_gate.py
 
-# README/SKILL.md 计数门禁——基线 70 passed（六份 README + manifest 全套 pin）
+# README/SKILL.md 计数门禁——基线 76 passed（六份 README + manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
 python -m pytest agent/tests/test_readme_counts.py agent/tests/test_distribution_skill_manifest.py -q
 
 # env-var AST 门禁——基线 exit 0（4 条 WARN 来自上游 llm.py，与本分支无关）
@@ -303,4 +303,12 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - **取代核查**：F1–F7 均未被上游取代——上游对 reflections/mcp_adapter/memory_guard、clickhouse 全家、OpencodeAgent 零触碰；本轮上游无 shadowinlife PR 合入（无分歧消除项）；上游 memory FTS GC 修复（#1174）作用于 lifecycle/persistent，与 F4 不同关注面，自动共存。
 - **环境注意**：`legonanobot` 环境缺 `sqlglot`（ch_* 工具的 AST 守卫依赖，pyproject 已声明）会导致 3 个 ch_* 工具静默缺席、MCP 计数塌缩到 74/79——本轮验证前已 `pip install sqlglot>=30`；上游 #1129 的「工具模块导入失败具名报错」让该问题在日志可见。
 - 验证基线：memory **309/3**、ClickHouse **137/11**、schema 门禁 **53 passed / 1 skipped + comments gate exit 0**、README+manifest 门禁 **70 passed**（含六 README 的 MCP 工具清单集合级校验）、env gate **exit 0**、MCP **OFF=77 / ON=82**、market_data/registry/source_order/settings_api **132 passed**、OpencodeAgent config render **24 passed**。
-- 已知瑕疵（接受）：F2/Phase 2 两个中间 commit 分别混入一个 `.omo` 会话文件与两处冲突标记文本（rebase 冲突解决期间的 `git add -A` 事故），最终树已干净；社区 PR carve 从最终树提取，不受影响。
+- 已知瑕疵（**2026-08-30 已关闭**）：F2/Phase 2 两个中间 commit 分别混入一个 `.omo` 会话文件与两处冲突标记文本（rebase 冲突解决期间的 `git add -A` 事故），最终树已干净；社区 PR carve 从最终树提取，不受影响。→ 2026-08-30 rebase 经 edit 停点从源头 commit 移除，历史中亦不再存在。
+
+### 2026-08-30 rebase（基线 `fb5013c2`）
+
+- 上游前进 79 commit（`80ffdda4` → `fb5013c2`）：UK LSE 股权（`.L` 检测 / SDRT 0.5% 买方印花税 / GBp→GBP loader 归一 / 财报 Yahoo 路由）、quantlib 微结构批次（VPIN / Roll / Amihud / Kyle）+ Heston / copula / HRP、live halt-sweep 跨重启持久化与 episode 绑定、backtest `warmup_bars` / `evaluation_start_date` 数据窗与评估窗分离、order-plan 拒绝经 `_on_plan_rejected` 上浮、connector onboarding 契约 + keyring 凭据、provider stream retry 升级与 Retry-After、前端 Studio 路由与 Run Detail 滚动等。
+- **本轮继续 rebase**（§4.1 第一种做法）：34 个本地 commit 重放。设 2 个 edit 停点做历史卫生：F2 移除误入树的 `.omo/run-continuation/*.json` 会话文件（此前一直在树中）；Phase 2 移除 SKILL.md / mcp_server.py 两处冲突标记文本（原由 reconciliation commit 兜底，现前置到源头 commit）。真冲突仅 1 处：reconciliation commit 与上游 uk_equity 测试集在 `test_settings_api.py` 叠加，解决为 clickhouse-first pin 与 uk_equity 断言并存；`test_registry.py` 自动合并（uk_equity 集合 + clickhouse 链 pin 各就各位）。
+- **取代核查**：F1–F7 均未被上游取代——上游对 memory（reflections / mcp_adapter / memory_guard / persistent）、clickhouse 全家、OpencodeAgent、schema/clickhouse 零触碰；本轮无 shadowinlife PR 合入（无分歧消除项）。
+- **分歧收敛审查**：quantlib 新增微结构函数（VPIN / Roll / Amihud / Kyle）与 OpencodeAgent escape-top 微观结构信号**不重叠**（escape-top 代码 grep 零命中 amihud/vpin/kyle/roll，无重实现可去重）；上游 market_data provenance 新增 `currency_conversion` / `quote_currency` 字段，与本地 CH `extra_provenance` 通道互补共存；UK `.L` 源模式与本地 a_share clickhouse 检测各居 `_SOURCE_PATTERNS` 不同行。结论：本轮无可移除的重复实现，分歧面保持 F1–F7 纯增量。
+- 验证基线：memory **309/3**、ClickHouse **137/11**、schema 门禁 **53/1 + comments gate exit 0**、README+manifest 门禁 **76 passed**（上游 +6 pin）、env gate **exit 0**（3 条 WARN 来自上游 llm.py）、market_data/registry/source_order/settings_api **133 passed**（+1 上游 uk chain 测试）、OpencodeAgent config render **33 passed**、MCP **OFF=77 / ON=82**；自维护链路冒烟（memory_save/recall/status/reflect + `VT_MEMORY_BASE_DIR` 落盘 lessons JSONL）全绿。
