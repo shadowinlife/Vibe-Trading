@@ -2,7 +2,7 @@
   "subagents": [
     {
       "name": "quant-agent",
-      "description": "Quantitative strategy research and backtesting workspace. Delegate: alpha zoo browsing/benching (Kakushadze/GTJA/Qlib 因子库), factor IC/IR analysis and quantile backtests, strategy catalogue queries with per-regime evidence, writing and running signal_engine backtests, backtest diagnosis, ML walk-forward strategies, execution cost modeling, K-line pattern recognition on fetched data (K线形态识别), backtest workspace file read/write (回测工作区的 config/metrics/signal_engine 读写), and strategy export (Pine/通达信/vnpy). 量化策略研究与回测： 因子、IC、策略生成与诊断、回测工作区。 NOT for: standalone risk metrics on an existing portfolio (VaR/Sharpe of held positions → main agent's quantlib_call), options/perpetual derivatives strategies, pure technical-indicator reads (candlestick/ ichimoku/缠论), event/news-driven strategy design, raw quote browsing (get_market_data), fundamentals/filings, web reading, or live trading.",
+      "description": "Quantitative strategy research and backtesting workspace. Delegate: alpha zoo browsing/benching (Kakushadze/GTJA/Qlib 因子库), factor IC/IR analysis and quantile backtests, strategy catalogue queries with per-regime evidence, writing and running signal_engine backtests, backtest diagnosis, ML walk-forward strategies, execution cost modeling, K-line pattern recognition on fetched data (K线形态识别), backtest workspace file read/write (回测工作区的 config/metrics/signal_engine 读写), and strategy export (Pine/通达信/vnpy). 量化策略研究与回测： 因子、IC、策略生成与诊断、回测工作区。 NOT for: standalone risk metrics on an existing portfolio (VaR/Sharpe of held positions → main agent's quantlib_call), options/perpetual derivatives strategies, standalone technical-analysis reads with no strategy/backtest context — pure indicator values, candlestick/ichimoku/缠论/SMC school analysis; and bare strategy-concept mentions without an execution or teaching verb (仅策略概念咨询 → main agent), event/news-driven strategy design, raw quote browsing (get_market_data), fundamentals/filings, web reading, or live trading.",
       "prompt": "{file:./prompts/quant_agent.md}",
       "tools": [
         "alpha_zoo",
@@ -26,6 +26,105 @@
         "web_search",
         "read_url",
         "read_document"
+      ]
+    },
+    {
+      "name": "market-data-agent",
+      "description": "Market data and capital-flow specialist (行情数据与资金流). Delegate: symbol resolution (名称/代码→标的解析), OHLCV bars across A/HK/US/Canada/Korea/ crypto/forex with automatic source fallback (取数/K线/日线/分钟线), same-day market rankings (涨幅/成交/换手排行), A-share natural-language screening via iwencai (问财选股, key-gated), crypto order-book depth and market-impact cost (盘口深度/冲击成本), and capital-flow reads — main-force net inflow (主力资金), northbound connect flow (北向资金), margin balances (融资融券), block trades (大宗交易), dragon-tiger board (龙虎榜), lockup-expiry calendars (限售解禁), and shareholder-count changes (股东户数). Loads the data-routing skill before any fetch. NOT for: account/broker-side quotes or positions, including connector-based fetches (连接器取数 → main agent — trading-connector not admitted); sector/concept board membership and board rankings (→ macro-sector-agent); technical-indicator values or named TA schools (RSI信号/缠论/波浪/SMC → main agent); financial statements or filings (→ fundamentals-text-agent); fundamental-field screening on statement metrics like PE/PB/ROE (财报字段筛股 → fundamentals-text-agent); paid data marketplaces (QVeris/付费数据市场 → main agent); data-source selection advice without an actual fetch to perform (该选哪个数据源 → main agent); or any backtest execution (→ quant-agent).",
+      "prompt": "{file:./prompts/market_data_agent.md}",
+      "tools": [
+        "get_market_data",
+        "search_symbol",
+        "screen_market",
+        "iwencai_search",
+        "orderbook_depth",
+        "get_fund_flow",
+        "get_northbound_flow",
+        "get_margin_trading",
+        "get_block_trades",
+        "get_dragon_tiger",
+        "get_lockup_expiry",
+        "get_shareholder_count"
+      ]
+    },
+    {
+      "name": "fundamentals-text-agent",
+      "description": "Fundamentals and research-text specialist (基本面与研报). Delegate: structured financial statements and key indicators for A/HK/US stocks (三大报表/财务指标) INCLUDING statement-level analysis — three-statement reconciliation, earnings-quality teardown, DuPont decomposition (三表勾稽/盈利质量分析/杜邦分解); PIT-safe US fundamental panels (防前视基本面面板); SEC filing lists and XBRL concept series (10-K/10-Q/Revenue 序列); company profiles with analyst targets and ownership (公司画像/目标价); 13F institutional holdings with quarter-over-quarter diffs (机构持仓); per-stock news headlines AND market-level financial news digests (个股新闻/全球财经要闻); A-share sell-side research coverage with per-year EPS consensus (券商盈利预测/一致预期); academic finance paper search with evidence-anchored factor briefs (学术论文); and field-based fundamental screening on statement metrics (按 PE/PB/ROE/毛利率/负债率等财报字段筛股, fundamental-filter). This agent fetches, reads, and analyzes fundamentals text; what it does NOT do is turn them into a valuation view or price target (→ valuation-agent). NOT for: valuation, forward-looking projections, linked three-statement modeling, or estimate-revision analysis as a valuation input (三表联动预测/估值建模 → valuation-agent); macro data series (→ macro-sector-agent); credit analysis of bond issuers (→ funds-fi-agent); raw OHLCV or quotes (→ market-data-agent); price/volume/rankings screening, market movers, or iwencai natural-language stock screens (涨幅榜/换手率/问财行情条件 → market-data-agent); web pages or documents outside the finance sources above (→ web-docs-agent).",
+      "prompt": "{file:./prompts/fundamentals_text_agent.md}",
+      "tools": [
+        "get_financial_statements",
+        "get_fundamentals",
+        "get_sec_filings",
+        "get_stock_profile",
+        "get_institutional_holdings",
+        "get_stock_news",
+        "get_research_reports",
+        "research_papers"
+      ]
+    },
+    {
+      "name": "derivatives-agent",
+      "description": "Options and crypto-derivatives specialist (期权与衍生品). Delegate: single-leg Black-Scholes pricing and Greeks (期权定价/Greeks), multi-leg payoff, breakeven and spot×IV scenario analysis (多腿损益/盈亏平衡), US options-chain data (期权链 bid/ask/OI/IV), perpetual funding-rate regimes and annualized basis (资金费率/基差), futures term-structure contango/backwardation (期限结构), and carry-trade construction (套息构建). Underlying price/vol inputs are supplied by the parent — this agent never fetches market data itself. NOT for: underlying OHLCV or order-book depth (→ market-data-agent), on-chain/liquidation/stablecoin data (→ altdata-agent), VaR or stress tests on an existing derivatives position (→ risk-portfolio-agent), convertible-bond analysis (→ funds-fi-agent), or backtesting an options strategy end-to-end (→ quant-agent).",
+      "prompt": "{file:./prompts/derivatives_agent.md}",
+      "tools": [
+        "analyze_options",
+        "analyze_options_payoff",
+        "get_options_chain"
+      ]
+    },
+    {
+      "name": "risk-portfolio-agent",
+      "description": "Risk, statistics and portfolio specialist (风险、统计与组合). Delegate: standalone risk metrics on held positions — VaR/CVaR/EVT and their backtests, max drawdown, Monte Carlo stress (风险度量/压力测试); ADF/ cointegration/GARCH and hypothesis tests (统计检验); correlation structure and edge-density regime detection (相关性结构/市场状态); pair-trading spread construction, half-life and Kalman hedge ratios (配对构建); portfolio allocation optimizers and hedge design (资产配置/对冲); Brinson and factor performance attribution (业绩归因); and true time-weighted returns for portfolios with subscriptions/redemptions (TWR/XIRR/MOIC, 含申赎的收益计量). All math goes through quantlib_call. NOT for: backtesting a trading strategy or any factor IC work (→ quant-agent), DCF/comps valuation math (→ valuation-agent), market data fetching (→ market-data-agent), options pricing or payoff (→ derivatives-agent), or reading live broker positions to analyze (→ trading-connector-agent reads; this agent computes on what the parent hands it).",
+      "prompt": "{file:./prompts/risk_portfolio_agent.md}",
+      "tools": [
+        "quantlib_call",
+        "cashflow_performance"
+      ]
+    },
+    {
+      "name": "valuation-agent",
+      "description": "Valuation and company deep-research specialist (估值与公司深研). Delegate: DCF/DDM/SOTP and relative valuation (PE-Band/PB-ROE/EV-EBITDA) with sensitivity grids, computed via quantlib_call's valuation module — including linked three-statement projections (三表联动预测建模), WACC×growth sensitivity grids (估值建模); investor-lens overlays, management integrity/ability assessment (管理层评估), pre-IPO private-company fair-value ranges, and publication-grade company deep-dive series; investment-thesis writing with red lines and quarterly re-checks (投资论点跟踪); BUILDING event-driven strategies around earnings/news catalysts and special-situation work (事件驱动策略构建) — — M&A arbitrage spreads, shareholder increase/ decrease signals (增减持), A-share pre-ST risk prediction (ST预警), ADR/H-share premium tracking (跨上市溢价), earnings forecasts and estimate revisions (SUE/PEAD/业绩超预期), and market-implied event probabilities from prediction markets (事件合约隐含概率); supply-chain bottleneck and hidden-beneficiary discovery (产业链瓶颈/隐性受益者挖掘); and professional research-report authoring (研究报告撰写). This agent INTERPRETS; it does not fetch primary data. NOT for: fetching statements, filings, news, consensus or 13F data (→ fundamentals-text-agent), macro cycle positioning or geopolitical crisis frameworks (→ macro-sector-agent), OHLCV (→ market-data-agent), risk metrics on the resulting position (→ risk-portfolio-agent), or backtests (→ quant-agent).",
+      "prompt": "{file:./prompts/valuation_agent.md}",
+      "tools": [
+        "quantlib_call",
+        "prediction_market"
+      ]
+    },
+    {
+      "name": "macro-sector-agent",
+      "description": "Macro, sector and regulation specialist (宏观、行业与监管). Delegate: China/single-market cycle positioning and central-bank policy reading (国内宏观周期), global macro transmission — FX, capital flows, rates (全球宏观/汇率), geopolitical crisis signal quantification (地缘危机), commodity supply-demand and pricing frameworks (大宗商品), A-share sector/concept board membership and board rankings (板块归属/行业排名), industry prosperity scoring and rotation (行业轮动), FRED macro series (CPI/失业率/联邦基金利率, key-gated), and trading-rule / tax / regulatory knowledge (涨跌停/ST规则/跨境税务). NOT for: market-implied event probabilities — Polymarket contracts (→ valuation-agent), company-level event analysis such as a specific stock's ST risk (→ valuation-agent), per-stock or northbound capital-flow data (→ market-data-agent), fund/ETF product analysis (→ funds-fi-agent), or OHLCV (→ market-data-agent).",
+      "prompt": "{file:./prompts/macro_sector_agent.md}",
+      "tools": [
+        "get_macro_series",
+        "get_sector_info"
+      ]
+    },
+    {
+      "name": "altdata-agent",
+      "description": "Sentiment and alternative-data specialist (情绪与另类数据). Delegate: single-text sentiment scoring and the crypto Fear & Greed Index (文本情绪打分/恐贪指数), market-level sentiment frameworks (融资融券/北向/ PCR 情绪面), social-media signal extraction from Twitter/Telegram/ Discord/Reddit (社媒舆情), on-chain metrics — active addresses, whale tracking, TVL, MVRV/NVT/SOPR (链上数据), stablecoin mint/burn and exchange-reserve flows (稳定币流向), DeFi yield comparison and sustainability (DeFi 收益), liquidation levels and stop-hunt zones (清算热力图), and token unlock schedules with sell-pressure forecasting (解锁抛压). NOT for: market-implied event probabilities (→ valuation-agent's prediction_market), perpetual funding-rate/basis strategy design (→ derivatives-agent), order-book depth or impact cost (→ market-data-agent), structured per-stock news (→ fundamentals-text-agent), or crypto OHLCV (→ market-data-agent).",
+      "prompt": "{file:./prompts/altdata_agent.md}",
+      "tools": [
+        "sentiment"
+      ]
+    },
+    {
+      "name": "funds-fi-agent",
+      "description": "Funds, ETF and fixed-income specialist (基金、ETF 与固收). Delegate: ETF look-through — full constituent holdings from SEC N-PORT or A-share fund reports (ETF 持仓穿透), fund screening with Morningstar/Sharpe/style-box and manager evaluation (基金筛选/经理评价), ETF fee, tracking-error and liquidity comparison (ETF 产品分析), US ETF fund flows and style-factor flows (美股 ETF 资金流), credit-bond rating, spread and default analysis including 城投债 (信用债), convertible-bond three-dimensional valuation with 下修/强赎/回售 game analysis (可转债), and dividend quality, payout sustainability and yield-trap checks (红利/股息). NOT for: issuer financial-statement fetching (→ fundamentals-text-agent), 13F manager books (→ fundamentals-text-agent), portfolio-level VaR or attribution on the user's holdings (→ risk-portfolio-agent), macro-cycle sector rotation (→ macro-sector-agent), option pricing on convertible embedded options (→ derivatives-agent), or price data (→ market-data-agent).",
+      "prompt": "{file:./prompts/funds_fi_agent.md}",
+      "tools": [
+        "etf_holdings"
+      ]
+    },
+    {
+      "name": "user-analytics-agent",
+      "description": "User trade-journal and shadow-account specialist (交割单与影子账户). Delegate the strict five-step pipeline in order: (1) parse a broker export (同花顺/东方财富/富途/generic CSV) into a trading profile with four behavior diagnostics (处置效应/过度交易/追涨/锚定); (2) extract 3-5 human-readable shadow rules from profitable roundtrips; (3) backtest the shadow across A/HK/US/crypto with delta-PnL attribution; (4) render the 8-section HTML/PDF shadow report; (5) scan today's symbols matching the shadow entry cadence. Step order is mandatory. NOT for: generic document or PDF text extraction (→ web-docs-agent), strategy construction not derived from the user's own journal (→ quant-agent), live account positions or orders (→ trading-connector-agent), or generic performance attribution of a held portfolio (→ risk-portfolio-agent).",
+      "prompt": "{file:./prompts/user_analytics_agent.md}",
+      "tools": [
+        "analyze_trade_journal",
+        "extract_shadow_strategy",
+        "run_shadow_backtest",
+        "render_shadow_report",
+        "scan_shadow_signals"
       ]
     }
   ]
