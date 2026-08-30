@@ -1,6 +1,6 @@
 """SQL guard + result-safety utilities for the ClickHouse flexibility channel.
 
-The ``ch_query`` tool (CLICKHOUSE_ITERATION_PLAN.md Phase 2) lets the agent run
+The ``ch_query`` tool (mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md Phase 2) lets the agent run
 constrained ad-hoc SQL against the ``ashare`` warehouse. This module is the
 safety core of that channel and fails CLOSED on any ambiguity:
 
