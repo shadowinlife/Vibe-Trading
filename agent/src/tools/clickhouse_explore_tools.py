@@ -1,6 +1,6 @@
 """ClickHouse schema-exploration tools (flexibility channel, L2 discovery).
 
-Phase 2 of the ClickHouse semantic layer (CLICKHOUSE_ITERATION_PLAN.md §4)
+Phase 2 of the ClickHouse semantic layer (mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md §4)
 adds a protected ad-hoc channel next to the deterministic domain tools:
 ``ch_list_tables`` and ``ch_describe_table`` are the Catalog → Inspect tiers
 of the MCP three-tier progressive-discovery pattern; ``ch_query`` (see

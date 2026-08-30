@@ -10,7 +10,7 @@ The SELECT never uses ``*``: the column list is the explicit contract in
 ``backtest.loaders.clickhouse_columns`` (generated from the DDL snapshot
 ``schema/clickhouse/ashare__stk_factor_pro.sql``), so a schema change
 fails loudly instead of silently leaking new columns (Flow-B closure,
-CLICKHOUSE_ITERATION_PLAN.md P1.1).  Returned frames carry additive unit
+mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md P1.1).  Returned frames carry additive unit
 metadata under ``df.attrs["_provenance"]`` (P1.2).
 
 Non-A-share symbols and minute intervals return an empty dict so the

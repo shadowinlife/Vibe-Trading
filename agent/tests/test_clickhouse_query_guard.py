@@ -1,7 +1,7 @@
 """Unit tests for the ch_query SQL guard and result-safety utilities.
 
 The guard is the safety core of the ClickHouse flexibility channel
-(CLICKHOUSE_ITERATION_PLAN.md Phase 2); it must fail CLOSED on any
+(mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md Phase 2); it must fail CLOSED on any
 ambiguity. No live ClickHouse is needed — everything here is pure AST /
 serialization logic.
 """

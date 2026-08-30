@@ -1,7 +1,7 @@
 """Metadata-driven unit/caliber registry for the ClickHouse ``ashare`` database.
 
 Loads the column-comment contract from ``schema/clickhouse/comments.yaml``
-(CLICKHOUSE_ITERATION_PLAN.md P0.2/P1.4) and exposes unit / adjust / caliber
+(mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md P0.2/P1.4) and exposes unit / adjust / caliber
 lookups per ``(table, column)``.  Comment strings follow the convention
 ``unit=<单位>; adjust=<raw|hfq|qfq|bfq>; caliber=<口径>; source=tushare <api>;
 desc=<中文说明>; ambiguous_with=<列>``.

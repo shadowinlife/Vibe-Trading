@@ -1,7 +1,7 @@
 # ClickHouse Schema Snapshots (`schema/clickhouse/`)
 
 DDL-in-repo artifacts of the ClickHouse semantic layer
-(see `CLICKHOUSE_ITERATION_PLAN.md`, Phase 0 P0.1/P0.4).
+(see `../../mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md`, Phase 0 P0.1/P0.4).
 
 ## Source-of-truth relationship
 

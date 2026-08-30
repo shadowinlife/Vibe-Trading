@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "harness_bench/parity_spec.schema.json",
+  "title": "Harness benchmark parity spec",
+  "description": "Contract shared by both harnesses under comparison. Any runtime config must match this spec field-for-field on every parity-critical value (model mapping, generation parameters, seeds, subsets, budgets).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "spec_id",
+    "created",
+    "model",
+    "generation",
+    "benchmarks",
+    "budgets",
+    "subsets"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "spec_id": { "type": "string", "minLength": 1 },
+    "created": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["harness_model_id", "endpoint", "verified_against"],
+      "properties": {
+        "harness_model_id": { "type": "string", "minLength": 1 },
+        "verified_against": { "type": "string", "minLength": 1 },
+        "endpoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider",
+            "mode",
+            "base_url_env",
+            "base_url_default",
+            "api_key_env",
+            "model_name"
+          ],
+          "properties": {
+            "provider": { "type": "string", "minLength": 1 },
+            "mode": { "type": "string", "enum": ["openai-compatible"] },
+            "base_url_env": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$",
+              "description": "Env var holding the base URL. Never a literal key."
+            },
+            "base_url_default": { "type": "string", "format": "uri" },
+            "api_key_env": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$",
+              "description": "Env var NAME holding the API key. The key value itself must never appear in this spec."
+            },
+            "model_name": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "temperature",
+        "top_p",
+        "max_output_tokens",
+        "max_output_tokens_field",
+        "thinking",
+        "seed_policy"
+      ],
+      "properties": {
+        "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+        "top_p": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "max_output_tokens": { "type": "integer", "minimum": 1 },
+        "max_output_tokens_field": { "type": "string", "minLength": 1 },
+        "seed_policy": { "type": "string", "minLength": 1 },
+        "thinking": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enable_field",
+            "enable_value",
+            "budget_field",
+            "budget_value",
+            "transport",
+            "rationale"
+          ],
+          "properties": {
+            "enable_field": { "type": "string", "minLength": 1 },
+            "enable_value": { "type": "boolean" },
+            "budget_field": { "type": "string", "minLength": 1 },
+            "budget_value": { "type": "integer", "minimum": 1 },
+            "transport": { "type": "string", "enum": ["extra_body", "top_level"] },
+            "rationale": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "benchmarks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tau2",
+        "financebench_fineval",
+        "backtestbench",
+        "swebench_verified",
+        "terminal_bench_2"
+      ],
+      "properties": {
+        "tau2": { "$ref": "#/definitions/benchmark" },
+        "financebench_fineval": { "$ref": "#/definitions/benchmark" },
+        "backtestbench": { "$ref": "#/definitions/benchmark" },
+        "swebench_verified": { "$ref": "#/definitions/benchmark" },
+        "terminal_bench_2": { "$ref": "#/definitions/benchmark" }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suite_cost_cap_usd_per_harness",
+        "suite_token_budget_per_harness",
+        "over_budget_action"
+      ],
+      "properties": {
+        "suite_cost_cap_usd_per_harness": { "type": "number", "exclusiveMinimum": 0 },
+        "suite_token_budget_per_harness": { "type": "integer", "minimum": 1 },
+        "over_budget_action": { "type": "string", "enum": ["degrade-and-disclose", "abort"] },
+        "notes": { "type": "string" }
+      }
+    },
+    "subsets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["swebench_verified", "fineval"],
+      "properties": {
+        "swebench_verified": { "$ref": "#/definitions/subset" },
+        "fineval": { "$ref": "#/definitions/subset" }
+      }
+    }
+  },
+  "definitions": {
+    "benchmark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seeds",
+        "high_variance",
+        "rationale",
+        "cost_cap_usd_per_run",
+        "metric"
+      ],
+      "properties": {
+        "seeds": { "type": "integer", "minimum": 3 },
+        "high_variance": { "type": "boolean" },
+        "rationale": { "type": "string", "minLength": 20 },
+        "cost_cap_usd_per_run": { "type": "number", "exclusiveMinimum": 0 },
+        "metric": { "type": "string", "minLength": 1 },
+        "domains": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" }
+      }
+    },
+    "subset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "sampling_seed", "list_artifact", "owner_todo"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 1 },
+        "sampling_seed": { "type": "integer", "minimum": 0 },
+        "cap": { "type": "integer", "minimum": 1 },
+        "list_artifact": { "type": "string", "minLength": 1 },
+        "owner_todo": { "type": "integer", "minimum": 1 },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

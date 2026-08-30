@@ -1,0 +1,34 @@
+name: derivatives-agent
+domain: D08
+version: 0
+tools:
+- analyze_options
+- analyze_options_payoff
+- get_options_chain
+skills:
+- options-strategy
+- options-payoff
+- options-advanced
+- crypto-derivatives
+- perp-funding-basis
+description: 'Options and crypto-derivatives specialist (期权与衍生品). Delegate: single-leg Black-Scholes pricing
+  and Greeks (期权定价/Greeks), multi-leg payoff, breakeven and spot×IV scenario analysis (多腿损益/盈亏平衡), US
+  options-chain data (期权链 bid/ask/OI/IV), perpetual funding-rate regimes and annualized basis (资金费率/基差),
+  futures term-structure contango/backwardation (期限结构), and carry-trade construction (套息构建). Underlying
+  price/vol inputs are supplied by the parent — this agent never fetches market data itself. NOT for:
+  underlying OHLCV or order-book depth (→ market-data-agent), on-chain/liquidation/stablecoin data (→
+  altdata-agent), VaR or stress tests on an existing derivatives position (→ risk-portfolio-agent), convertible-bond
+  analysis (→ funds-fi-agent), or backtesting an options strategy end-to-end (→ quant-agent).'
+twin_pairs:
+- pair: analyze_options × options-strategy
+  ref: K14/G3
+  arbitration: Single-leg BS price/Greeks compute → tool; option strategy framework and backtest methodology
+    → skill.
+- pair: analyze_options_payoff × options-payoff
+  ref: G3 (name collision)
+  arbitration: Multi-leg payoff/scenario compute → tool; payoff-diagram and breakeven methodology → skill.
+rationale: 'Three tools + five skills is the smallest coherent derivative surface: the K14 tool trio (single-leg
+  / multi-leg / chain data) is internally arbitrated by construction, and the G3 skill trio is layered
+  (入门/损益专项/波动率进阶). get_market_data was cut per the global data-fetch rule; the cost is a documented parent-supplies-spot
+  dependency, which the pilot precedent says is acceptable. The K11 funding overlap with altdata-agent
+  is arbitrated: strategy/carry construction here, market data there.'

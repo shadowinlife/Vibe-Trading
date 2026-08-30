@@ -1,0 +1,643 @@
+version: 1
+source: D2-A2 corpus expansion (twin-arbitration powered re-run)
+entries:
+- id: D2Q-001
+  query: 查一下qlib158里有多少个动量类因子
+  expected: {kind: tool, name: alpha_zoo}
+  domain: D06
+  negatives: [alpha-zoo, list_strategies]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: tool
+- id: D2Q-002
+  query: GTJA191因子库里量价相关性类的因子有哪些，查一下
+  expected: {kind: tool, name: alpha_zoo}
+  domain: D06
+  negatives: [alpha-zoo, factor_analysis]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: tool
+- id: D2Q-003
+  query: 把alpha101在沪深300上跑个bench，看IC排名
+  expected: {kind: tool, name: alpha_bench}
+  domain: D06
+  negatives: [alpha-zoo, alpha_zoo]
+  arbitration_ref: K7
+  twin_pair: alpha_bench×alpha-zoo
+  twin_side: tool
+- id: D2Q-004
+  query: 把基本面因子库在标普500上bench一下，2020到2025
+  expected: {kind: tool, name: alpha_bench}
+  domain: D06
+  negatives: [alpha-zoo, alpha_zoo]
+  arbitration_ref: K7
+  twin_pair: alpha_bench×alpha-zoo
+  twin_side: tool
+- id: D2Q-005
+  query: 看看学术因子库里有没有52周高点相关的因子
+  expected: {kind: tool, name: alpha_zoo}
+  domain: D06
+  negatives: [alpha-zoo, query_strategies]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: tool
+- id: D2Q-006
+  query: 调出gtja191_171这个因子的详细元信息看看
+  expected: {kind: tool, name: alpha_zoo}
+  domain: D06
+  negatives: [alpha-zoo, get_strategy_evidence]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: tool
+- id: D2Q-007
+  query: 跑一下qlib158在标普500上的因子IC基准测试
+  expected: {kind: tool, name: alpha_bench}
+  domain: D06
+  negatives: [alpha-zoo, factor_analysis]
+  arbitration_ref: K7
+  twin_pair: alpha_bench×alpha-zoo
+  twin_side: tool
+- id: D2Q-008
+  query: 因子库里波动率主题的因子都列出来
+  expected: {kind: tool, name: alpha_zoo}
+  domain: D06
+  negatives: [alpha-zoo, list_strategies]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: tool
+- id: D2Q-009
+  query: 讲讲alpha zoo里五个因子库的区别和适用场景
+  expected: {kind: skill, name: alpha-zoo}
+  domain: D06
+  negatives: [alpha_zoo, alpha_bench]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: skill
+- id: D2Q-010
+  query: How do I pick the right zoo for my CSI300 universe?
+  expected: {kind: skill, name: alpha-zoo}
+  domain: D06
+  negatives: [alpha_zoo, list_strategies]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: skill
+- id: D2Q-011
+  query: alpha101和gtja191的设计思路有什么区别，该怎么选
+  expected: {kind: skill, name: alpha-zoo}
+  domain: D06
+  negatives: [alpha_zoo, alpha_bench]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: skill
+- id: D2Q-012
+  query: bench报告里alive、reversed、dead这三档是怎么定义的
+  expected: {kind: skill, name: alpha-zoo}
+  domain: D06
+  negatives: [alpha_zoo, alpha_bench]
+  arbitration_ref: K7
+  twin_pair: alpha_bench×alpha-zoo
+  twin_side: skill
+- id: D2Q-013
+  query: 教我怎么读懂zoo里每个因子的公式和出处
+  expected: {kind: skill, name: alpha-zoo}
+  domain: D06
+  negatives: [alpha_zoo, alpha_bench]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: skill
+- id: D2Q-014
+  query: What's the methodology behind the zoo's lookahead guard?
+  expected: {kind: skill, name: alpha-zoo}
+  domain: D06
+  negatives: [alpha_zoo, factor_analysis]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: skill
+- id: D2Q-015
+  query: 给我讲讲因子库里的反转因子都是怎么构造的
+  expected: {kind: skill, name: alpha-zoo}
+  domain: D06
+  negatives: [alpha_zoo, factor-research]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: skill
+- id: D2Q-016
+  query: 不同zoo的因子要怎么组合成一个信号，教我下
+  expected: {kind: skill, name: alpha-zoo}
+  domain: D06
+  negatives: [alpha_zoo, multi-factor]
+  arbitration_ref: K7
+  twin_pair: alpha_zoo×alpha-zoo
+  twin_side: skill
+- id: D2Q-017
+  query: 回测一下我配置好的MACD金叉策略
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [strategy-generate, backtest-diagnose]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: tool
+- id: D2Q-018
+  query: Run my ETH grid strategy backtest with the config I saved
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [strategy-generate, ml-strategy]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: tool
+- id: D2Q-019
+  query: 把昨天配好的KDJ策略回测再跑一遍，参数不变
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [strategy-generate, backtest-diagnose]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: tool
+- id: D2Q-020
+  query: Execute the backtest in my run directory and show Sharpe
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [strategy-generate, read_file]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: tool
+- id: D2Q-021
+  query: 用这个配置文件跑一下宁德时代过去三年的回测
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [strategy-generate, backtest-diagnose]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: tool
+- id: D2Q-022
+  query: Backtest my mean-reversion config on BTC-USDT for 2024
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [strategy-generate, ml-strategy]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: tool
+- id: D2Q-023
+  query: 回测跑一下，标的改成腾讯控股，其他不动
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [strategy-generate, write_file]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: tool
+- id: D2Q-024
+  query: Fire off the turtle strategy backtest I configured yesterday
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [strategy-generate, backtest-diagnose]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: tool
+- id: D2Q-025
+  query: 帮我设计一个基于量价背离的新策略，写清构建流程
+  expected: {kind: skill, name: strategy-generate}
+  domain: D07
+  negatives: [backtest, cross-market-strategy]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: skill
+- id: D2Q-026
+  query: How do I write a new pairs-trading strategy from scratch?
+  expected: {kind: skill, name: strategy-generate}
+  domain: D07
+  negatives: [backtest, ml-strategy]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: skill
+- id: D2Q-027
+  query: 教我写一个龙虎榜跟庄策略，从思路到代码
+  expected: {kind: skill, name: strategy-generate}
+  domain: D07
+  negatives: [backtest, factor-research]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: skill
+- id: D2Q-028
+  query: Walk me through creating a breakout strategy for SOL
+  expected: {kind: skill, name: strategy-generate}
+  domain: D07
+  negatives: [backtest, ml-strategy]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: skill
+- id: D2Q-029
+  query: 我想构建一个新策略：北向资金大幅流入时买入，怎么落地
+  expected: {kind: skill, name: strategy-generate}
+  domain: D07
+  negatives: [backtest, cross-market-strategy]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: skill
+- id: D2Q-030
+  query: Help me design a new volatility regime switching strategy
+  expected: {kind: skill, name: strategy-generate}
+  domain: D07
+  negatives: [backtest, ml-strategy]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: skill
+- id: D2Q-031
+  query: 怎么写一个可转债双低轮动策略，步骤讲一下
+  expected: {kind: skill, name: strategy-generate}
+  domain: D07
+  negatives: [backtest, multi-factor]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: skill
+- id: D2Q-032
+  query: Guide me through building a news-sentiment momentum strategy
+  expected: {kind: skill, name: strategy-generate}
+  domain: D07
+  negatives: [backtest, ml-strategy]
+  arbitration_ref: K7
+  twin_pair: backtest×strategy-generate
+  twin_side: skill
+- id: D2Q-033
+  query: 按现有配置重新跑一遍回测，我想看最新净值
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [backtest-diagnose, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: tool
+- id: D2Q-034
+  query: Run the same backtest but with 50k initial capital
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [backtest-diagnose, write_file]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: tool
+- id: D2Q-035
+  query: 回测一下这个网格策略在BNB-USDT上的表现
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [backtest-diagnose, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: tool
+- id: D2Q-036
+  query: 这次用15分钟线跑一下配置好的策略
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [backtest-diagnose, write_file]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: tool
+- id: D2Q-037
+  query: 把回测区间拉长到五年再跑一次
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [backtest-diagnose, write_file]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: tool
+- id: D2Q-038
+  query: Execute the backtest and print the drawdown curve
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [backtest-diagnose, read_file]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: tool
+- id: D2Q-039
+  query: 回测夏普只有0.3，帮我分析是哪里出了问题
+  expected: {kind: skill, name: backtest-diagnose}
+  domain: D07
+  negatives: [backtest, execution-model]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: skill
+- id: D2Q-040
+  query: My backtest made almost no trades — find the root cause
+  expected: {kind: skill, name: backtest-diagnose}
+  domain: D07
+  negatives: [backtest, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: skill
+- id: D2Q-041
+  query: 为什么我的回测收益全来自头两个月，帮我诊断下
+  expected: {kind: skill, name: backtest-diagnose}
+  domain: D07
+  negatives: [backtest, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: skill
+- id: D2Q-042
+  query: The strategy bleeds money in ranging markets — diagnose why
+  expected: {kind: skill, name: backtest-diagnose}
+  domain: D07
+  negatives: [backtest, execution-model]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: skill
+- id: D2Q-043
+  query: 回测换手率异常地高，帮我查查原因
+  expected: {kind: skill, name: backtest-diagnose}
+  domain: D07
+  negatives: [backtest, execution-model]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: skill
+- id: D2Q-044
+  query: Diagnose why my backtest Sharpe collapsed after 2023
+  expected: {kind: skill, name: backtest-diagnose}
+  domain: D07
+  negatives: [backtest, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×backtest-diagnose
+  twin_side: skill
+- id: D2Q-045
+  query: 两个CSV备好了，帮我算这个因子的Rank IC序列
+  expected: {kind: tool, name: factor_analysis}
+  domain: D07
+  negatives: [factor-research, alpha_bench]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: tool
+- id: D2Q-046
+  query: Compute the quantile group returns from my two CSVs
+  expected: {kind: tool, name: factor_analysis}
+  domain: D07
+  negatives: [factor-research, alpha_bench]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: tool
+- id: D2Q-047
+  query: 对我的动量因子做个十分位分组检验
+  expected: {kind: tool, name: factor_analysis}
+  domain: D07
+  negatives: [factor-research, multi-factor]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: tool
+- id: D2Q-048
+  query: 算一下我导出因子面板的IC序列，看有没有逐年衰减
+  expected: {kind: tool, name: factor_analysis}
+  domain: D07
+  negatives: [factor-research, strategy-dev-manager]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: tool
+- id: D2Q-049
+  query: 把我整理的三个因子CSV一起跑IC检验，对比下各自IR
+  expected: {kind: tool, name: factor_analysis}
+  domain: D07
+  negatives: [factor-research, alpha_bench]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: tool
+- id: D2Q-050
+  query: Run the full IC plus layered analysis on my sentiment CSV
+  expected: {kind: tool, name: factor_analysis}
+  domain: D07
+  negatives: [factor-research, multi-factor]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: tool
+- id: D2Q-051
+  query: 教我一套完整的因子研究流程，从假设到IC检验
+  expected: {kind: skill, name: factor-research}
+  domain: D07
+  negatives: [factor_analysis, strategy-dev-manager]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: skill
+- id: D2Q-052
+  query: What's the methodology for validating a new alpha factor?
+  expected: {kind: skill, name: factor-research}
+  domain: D07
+  negatives: [factor_analysis, strategy-dev-manager]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: skill
+- id: D2Q-053
+  query: 想验证隔夜涨跌和次日反转的关系，研究上该怎么设计
+  expected: {kind: skill, name: factor-research}
+  domain: D07
+  negatives: [factor_analysis, backtest]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: skill
+- id: D2Q-054
+  query: How do I structure factor research to avoid lookahead bias?
+  expected: {kind: skill, name: factor-research}
+  domain: D07
+  negatives: [factor_analysis, ml-strategy]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: skill
+- id: D2Q-055
+  query: 想挖掘量价类新因子，给我讲讲研究框架
+  expected: {kind: skill, name: factor-research}
+  domain: D07
+  negatives: [factor_analysis, alpha-zoo]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: skill
+- id: D2Q-056
+  query: Teach me how to combine weak factors into a composite signal
+  expected: {kind: skill, name: factor-research}
+  domain: D07
+  negatives: [factor_analysis, multi-factor]
+  arbitration_ref: K7
+  twin_pair: factor_analysis×factor-research
+  twin_side: skill
+- id: D2Q-057
+  query: 把策略目录按来源分组列一下，alpha zoo的和SDM的分开
+  expected: {kind: tool, name: list_strategies}
+  domain: D06
+  negatives: [strategy-discovery, query_strategies]
+  arbitration_ref: K7
+  twin_pair: list_strategies×strategy-discovery
+  twin_side: tool
+- id: D2Q-058
+  query: Show strategies with adequate evidence and 50+ trades
+  expected: {kind: tool, name: query_strategies}
+  domain: D06
+  negatives: [strategy-discovery, list_strategies]
+  arbitration_ref: K7
+  twin_pair: query_strategies×strategy-discovery
+  twin_side: tool
+- id: D2Q-059
+  query: 把momentum-v2这个策略的结构市证据调出来看看
+  expected: {kind: tool, name: get_strategy_evidence}
+  domain: D06
+  negatives: [strategy-discovery, query_strategies]
+  arbitration_ref: K7
+  twin_pair: get_strategy_evidence×strategy-discovery
+  twin_side: tool
+- id: D2Q-060
+  query: List the strategy catalogue page by page, twenty at a time
+  expected: {kind: tool, name: list_strategies}
+  domain: D06
+  negatives: [strategy-discovery, query_strategies]
+  arbitration_ref: K7
+  twin_pair: list_strategies×strategy-discovery
+  twin_side: tool
+- id: D2Q-061
+  query: 帮我筛出证据新鲜度没过期的策略
+  expected: {kind: tool, name: query_strategies}
+  domain: D06
+  negatives: [strategy-discovery, get_strategy_evidence]
+  arbitration_ref: K7
+  twin_pair: query_strategies×strategy-discovery
+  twin_side: tool
+- id: D2Q-062
+  query: Pull the per-regime evidence rows for strategy alpha-rev-3
+  expected: {kind: tool, name: get_strategy_evidence}
+  domain: D06
+  negatives: [strategy-discovery, list_strategies]
+  arbitration_ref: K7
+  twin_pair: get_strategy_evidence×strategy-discovery
+  twin_side: tool
+- id: D2Q-063
+  query: 讲讲策略发现的证据门槛是怎么设计的
+  expected: {kind: skill, name: strategy-discovery}
+  domain: D06
+  negatives: [list_strategies, query_strategies]
+  arbitration_ref: K7
+  twin_pair: list_strategies×strategy-discovery
+  twin_side: skill
+- id: D2Q-064
+  query: How does evidence gating decide what gets recommended?
+  expected: {kind: skill, name: strategy-discovery}
+  domain: D06
+  negatives: [query_strategies, get_strategy_evidence]
+  arbitration_ref: K7
+  twin_pair: query_strategies×strategy-discovery
+  twin_side: skill
+- id: D2Q-065
+  query: 教我理解策略证据的充足、边际、不足三档是怎么划分的
+  expected: {kind: skill, name: strategy-discovery}
+  domain: D06
+  negatives: [get_strategy_evidence, list_strategies]
+  arbitration_ref: K7
+  twin_pair: get_strategy_evidence×strategy-discovery
+  twin_side: skill
+- id: D2Q-066
+  query: Explain fresh, aging and stale evidence states
+  expected: {kind: skill, name: strategy-discovery}
+  domain: D06
+  negatives: [query_strategies, list_strategies]
+  arbitration_ref: K7
+  twin_pair: query_strategies×strategy-discovery
+  twin_side: skill
+- id: D2Q-067
+  query: 策略发现里为什么要按市场状态分别看证据，方法论讲下
+  expected: {kind: skill, name: strategy-discovery}
+  domain: D06
+  negatives: [get_strategy_evidence, query_strategies]
+  arbitration_ref: K7
+  twin_pair: get_strategy_evidence×strategy-discovery
+  twin_side: skill
+- id: D2Q-068
+  query: How does cost-breakeven screening work in discovery?
+  expected: {kind: skill, name: strategy-discovery}
+  domain: D06
+  negatives: [query_strategies, list_strategies]
+  arbitration_ref: K7
+  twin_pair: query_strategies×strategy-discovery
+  twin_side: skill
+- id: D2Q-069
+  query: 回测一下我刚配好的随机森林选股策略
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [ml-strategy, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: tool
+- id: D2Q-070
+  query: Run the configured XGBoost signal backtest on SP500
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [ml-strategy, factor_analysis]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: tool
+- id: D2Q-071
+  query: 把我训练好的ML策略按配置跑一遍回测
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [ml-strategy, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: tool
+- id: D2Q-072
+  query: Run the backtest for my sklearn momentum classifier config
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [ml-strategy, backtest-diagnose]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: tool
+- id: D2Q-073
+  query: 用这个LSTM信号的配置跑一下ETH日线回测
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [ml-strategy, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: tool
+- id: D2Q-074
+  query: Run the backtest for my gradient-boosting strategy config
+  expected: {kind: tool, name: backtest}
+  domain: D07
+  negatives: [ml-strategy, backtest-diagnose]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: tool
+- id: D2Q-075
+  query: 教我怎么用walk-forward训练一个机器学习择时策略
+  expected: {kind: skill, name: ml-strategy}
+  domain: D07
+  negatives: [backtest, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: skill
+- id: D2Q-076
+  query: What features should I feed a walk-forward crypto ML model?
+  expected: {kind: skill, name: ml-strategy}
+  domain: D07
+  negatives: [backtest, factor-research]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: skill
+- id: D2Q-077
+  query: ML策略里怎么防止训练时用到未来数据，讲讲做法
+  expected: {kind: skill, name: ml-strategy}
+  domain: D07
+  negatives: [backtest, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: skill
+- id: D2Q-078
+  query: How do I pick the label horizon for an ML alpha?
+  expected: {kind: skill, name: ml-strategy}
+  domain: D07
+  negatives: [backtest, factor-research]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: skill
+- id: D2Q-079
+  query: 我想用机器学习预测A股截面收益，整个流程怎么搭
+  expected: {kind: skill, name: ml-strategy}
+  domain: D07
+  negatives: [backtest, multi-factor]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: skill
+- id: D2Q-080
+  query: How do I turn a trained sklearn model into ranking signals?
+  expected: {kind: skill, name: ml-strategy}
+  domain: D07
+  negatives: [backtest, strategy-generate]
+  arbitration_ref: K7
+  twin_pair: backtest×ml-strategy
+  twin_side: skill
