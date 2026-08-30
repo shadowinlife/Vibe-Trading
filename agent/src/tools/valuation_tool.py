@@ -13,7 +13,7 @@ workflow alive.  This is a read-only research tool: it places no orders and
 reaches no live trading endpoint.
 
 Part of the ClickHouse semantic-layer main-channel hardening
-(CLICKHOUSE_ITERATION_PLAN.md P1.3).
+(mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md P1.3).
 """
 
 from __future__ import annotations

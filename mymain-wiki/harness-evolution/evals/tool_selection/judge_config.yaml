@@ -1,0 +1,109 @@
+# E2 LLM-judge evaluation — pinned judge configuration.
+#
+# Protocol pins for run_llm_judge.py, the semantic arbiter that scores how a
+# pinned LLM routes the versioned query set over the FULL routing surface
+# (74 MCP tools + 90 bundled skills). The frozen pre-change baseline corpus
+# and the current post-change corpus are compared under identical pins.
+#
+# PANEL NOTE (final, 2026-08-26, user-directed): four model FAMILIES, all
+# hosted by DashScope under the SAME key: qwen3.8-max (primary),
+# deepseek-v4-flash-0731, kimi-k3, glm-5.2 (sensitivity). Superseded /
+# unavailable (do NOT use): kimi-k2.6, glm-5.1 (superseded by user switch),
+# glm-5.3 (403 on this account), bare deepseek-v4 (404).
+#
+# DOCUMENTED DEVIATIONS — reasoning-model caps (EMPIRICAL, do not lower
+# without re-probing):
+# - deepseek-v4-flash-0731 consumes its max_tokens budget with reasoning
+#   BEFORE emitting the visible answer: empty content on 24/24 probe calls at
+#   cap 80 (evidence: artifacts/*.pin80-evidence.jsonl) and 18/24 at cap 500
+#   (2026-08-26 rerun). Needs 2000.
+# - glm-5.2 truncates to EMPTY content at max_tokens<=300 (smoke-verified);
+#   answers correctly at 2000. Needs 2000.
+# - kimi-k3 finishes within ~200 completion tokens on easy queries; 1000 is
+#   headroom for the harder 164-candidate prompt.
+# - qwen3.8-max probed 7/8 consistent at cap 80 with one truncation suspect;
+#   500 is headroom.
+# Reasoning tokens are billed as completion tokens; they do not affect
+# parsing. Budget is user-approved as UNLIMITED — caps here bound worst-case
+# latency and keep failures fast; they are not cost controls.
+#
+# Editing this file changes the evaluation protocol: bump the pins only with
+# the same deliberate care as rebuilding a corpus snapshot, and record the
+# change in artifacts/llm_judge_design.md.
+
+schema_version: 3
+
+models:
+  - id: qwen3.8-max
+    provider: dashscope
+    base_url_env: DASHSCOPE_BASE_URL
+    base_url_fallback: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key_env: DASHSCOPE_API_KEY
+    temperature: 0.0
+    max_response_tokens: 500
+    role: primary
+  - id: deepseek-v4-flash-0731
+    provider: dashscope
+    base_url_env: DASHSCOPE_BASE_URL
+    base_url_fallback: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key_env: DASHSCOPE_API_KEY
+    temperature: 0.0
+    max_response_tokens: 2000
+    role: sensitivity
+  - id: kimi-k3
+    provider: dashscope
+    base_url_env: DASHSCOPE_BASE_URL
+    base_url_fallback: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key_env: DASHSCOPE_API_KEY
+    temperature: 0.0
+    max_response_tokens: 1000
+    role: sensitivity
+  - id: glm-5.2
+    provider: dashscope
+    base_url_env: DASHSCOPE_BASE_URL
+    base_url_fallback: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key_env: DASHSCOPE_API_KEY
+    temperature: 0.0
+    max_response_tokens: 2000
+    role: sensitivity
+
+budget:
+  # Hard caps per (model, surface) run, checked BEFORE each call so a run can
+  # never overshoot. Resume-friendly: already-spent tokens/calls are re-derived
+  # from the golden trace on startup. With ~12k prompt tokens per call the
+  # token cap holds ~2000 calls; each (model, surface) pair needs 158.
+  max_input_tokens_per_model_run: 25000000
+  max_calls_per_model_run: 700
+
+determinism_probe:
+  # --probe-only: first N query ids, each repeated R times; reports the
+  # agreement rate of the `first` pick across repeats.
+  sample_queries: 8
+  repeats: 3
+
+candidate_format:
+  # Spec for the candidate block of the frozen prompt (see run_llm_judge.py).
+  line: "<kind>:<name> — <description>"
+  order: "tools first in registration order, then skills in loader order"
+  id_scheme: "<kind>:<name>"
+  description_whitespace: "collapsed to a single line (newlines -> spaces)"
+
+prices:
+  # PLACEHOLDER prices — estimate: true, best-effort per-1M guesses. They MUST
+  # be verified against the providers' current price lists before any cost
+  # figure produced by the reports is quoted outside this repo.
+  estimate: true
+  currency: USD
+  per_million_tokens:
+    qwen3.8-max:
+      input: 2.50    # estimate:true — verify against DashScope price list
+      output: 10.00  # estimate:true — verify against DashScope price list
+    deepseek-v4-flash-0731:
+      input: 0.30    # estimate:true — verify against DashScope price list
+      output: 1.20   # estimate:true — verify against DashScope price list
+    kimi-k3:
+      input: 0.60    # estimate:true — verify against DashScope price list
+      output: 2.50   # estimate:true — verify against DashScope price list
+    glm-5.2:
+      input: 1.00    # estimate:true — verify against DashScope price list
+      output: 4.00   # estimate:true — verify against DashScope price list

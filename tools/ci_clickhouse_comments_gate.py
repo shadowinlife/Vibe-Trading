@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """CI gate: every covered ClickHouse column must have a COMMENT definition.
 
-Part of the ClickHouse semantic layer (CLICKHOUSE_ITERATION_PLAN.md P0.4).
+Part of the ClickHouse semantic layer (mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md P0.4).
 Pure repository-file check — no network, no ClickHouse connection.
 
 Inputs (both inside the repository):
@@ -172,7 +172,7 @@ def run_gate(comments_path: Path, schema_dir: Path, database: str) -> int:
         print(f"FAIL: {comments_path} not found.")
         print(
             "The comment contract must live in the repository "
-            "(see CLICKHOUSE_ITERATION_PLAN.md P0.2/P0.4)."
+            "(see mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md P0.2/P0.4)."
         )
         return 1
 

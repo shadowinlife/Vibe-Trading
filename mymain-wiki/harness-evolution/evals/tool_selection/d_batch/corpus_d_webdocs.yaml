@@ -1,0 +1,37 @@
+schema_version: 1
+captured_at: '2026-08-27T07:46:41+00:00'
+source: d_batch filter of mcp_server.mcp.list_tools() (registration order) + skills
+subagent: web-docs-agent
+tools:
+- name: read_url
+  description: 'Fetch a web page and convert it to clean Markdown text.
+
+
+    Strips ads, navigation, and styling. Useful for reading API docs,
+
+    financial articles, research reports, and GitHub READMEs.'
+- name: read_document
+  description: 'Extract text from a PDF document with OCR fallback for scanned pages.
+
+
+    Supports text-based and image-based PDFs. Automatically uses OCR
+
+    for pages with insufficient extractable text.'
+- name: web_search
+  description: 'Search the web via DuckDuckGo and return top results.
+
+
+    Returns titles, URLs, and snippets. Use read_url() to fetch full content
+
+    from any result URL. Free, no API key required.'
+skills:
+- name: doc-reader
+  description: Read any common document/data file — PDF, Word (.docx), Excel (.xlsx/.xls),
+    PowerPoint (.pptx), images (OCR), CSV/TSV, plain text, JSON/YAML/TOML, HTML/XML,
+    and most source-code files. Use the `read_document` tool.
+- name: web-reader
+  description: Read web pages, articles, and document links by converting URLs into
+    Markdown text. Use the `read_url` tool directly, without bash. Sends the full
+    URL to the third-party Jina Reader (r.jina.ai).
+tool_count: 3
+skill_count: 2
