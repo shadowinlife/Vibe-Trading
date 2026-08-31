@@ -16,6 +16,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 
 | 日期 | 事件 | 证据 |
 |---|---|---|
+| 2026-08-31 | rebase 对齐上游 `899d3c75`（+1 commit：六 README 的 UK equities 新闻，docs-only）；38 个本地 commit 零冲突重放，全量门禁与 08-30 基线逐字一致；`--force-with-lease` 推送（保护窗口 ~30s），备份 `backup/mymain-pre-rebase-20260831` | [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-08-31 条 |
 | 2026-08-31 | 生产部署：ECS `120.26.181.156` 同步至 `273520d0`（含 D 批 12 领域子代理 + 主循环收敛）；宿主 `.opencode/` 补齐 `subagents.json`/`prompts/`/新 `render_config.py`/新版工具治理清单并重渲染；验证：MCP 82、网关 401/200、memory_status ok、ch_list_tables 57 表、task→market-data-agent 委派 e2e 通过；CH 数据追平至 20260828（stk_factor_pro/idx_weight/stk_margin 迟一日属上游发布延迟，fail-closed 次日重试） | 部署会话记录；[../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §3.3 |
 | 2026-08-30 | rebase 对齐上游 `fb5013c2`（`80ffdda4` 后 79 commit，34 个本地 commit 重放，1 处真冲突）；历史卫生：F2 的 `.omo` 会话文件与 Phase 2 的冲突标记经 edit 停点出史；release/mymain 2026-08-30 发布 | [../branch/MYMAIN_README.md](../branch/MYMAIN_README.md)；DIVERGENCE §5 2026-08-30 条 |
 | 2026-08-30 | D4 生产同步：9 个准入域子代理上岗（`07a08aab`）；trading-connector 经 DEC-5 mini-admission 成为第 12 席（`b5a7265b`） | [../harness-evolution/README.md](../harness-evolution/README.md) 裁决总表 |

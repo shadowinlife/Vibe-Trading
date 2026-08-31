@@ -313,3 +313,11 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - **取代核查**：F1–F7 均未被上游取代——上游对 memory（reflections / mcp_adapter / memory_guard / persistent）、clickhouse 全家、OpencodeAgent、schema/clickhouse 零触碰；本轮无 shadowinlife PR 合入（无分歧消除项）。
 - **分歧收敛审查**：quantlib 新增微结构函数（VPIN / Roll / Amihud / Kyle）与 OpencodeAgent escape-top 微观结构信号**不重叠**（escape-top 代码 grep 零命中 amihud/vpin/kyle/roll，无重实现可去重）；上游 market_data provenance 新增 `currency_conversion` / `quote_currency` 字段，与本地 CH `extra_provenance` 通道互补共存；UK `.L` 源模式与本地 a_share clickhouse 检测各居 `_SOURCE_PATTERNS` 不同行。结论：本轮无可移除的重复实现，分歧面保持 F1–F7 纯增量。
 - 验证基线：memory **309/3**、ClickHouse **137/11**、schema 门禁 **53/1 + comments gate exit 0**、README+manifest 门禁 **76 passed**（上游 +6 pin）、env gate **exit 0**（3 条 WARN 来自上游 llm.py）、market_data/registry/source_order/settings_api **133 passed**（+1 上游 uk chain 测试）、OpencodeAgent config render **33 passed**、MCP **OFF=77 / ON=82**；自维护链路冒烟（memory_save/recall/status/reflect + `VT_MEMORY_BASE_DIR` 落盘 lessons JSONL）全绿。
+
+### 2026-08-31 rebase（基线 `899d3c75`）
+
+- 上游前进 1 commit（`fb5013c2` → `899d3c75`）：六份 README 增补 UK equities 新闻与 LSE 数据源表述（docs-only，零代码变更）。
+- **本轮继续 rebase**（§4.1 第一种做法）：38 个本地 commit 全部干净重放，**零冲突**——上游 README 新闻区/数据源表插入点与本地 F2/Phase 2 计数区、ch_* 清单行在文本上不重叠，自动合并就位；diff 校验 rebase 前后树差 = 上游该 commit 原样（6 文件 +66/−48）。
+- **吸收核查**：`gh pr list --author shadowinlife` 无新合入（#1286 子代理 PR 仍 OPEN，保留为分歧面）；F1–F7 无取代风险（docs-only commit）。
+- 验证基线（与 08-30 逐字一致）：memory **309/3**、ClickHouse **137/11**、schema 门禁 **53/1 + comments gate exit 0**、README+manifest 门禁 **76 passed**、env gate **exit 0**、market_data/registry/source_order/settings_api **133 passed**、OpencodeAgent config render **33 passed**、MCP **OFF=77 / ON=82**。
+- 推送：§4.2 保护窗口 ~30s（PUT protection allow_force_pushes → `--force-with-lease` 817c6a7d→6f35b026 → 立即恢复）；备份分支 `backup/mymain-pre-rebase-20260831` 已推 fork。
