@@ -4,7 +4,7 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F7
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-08-30
+updated: 2026-08-31
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -56,7 +56,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **③ F2** | MCP 记忆工具 | `mcp_adapter.py` 整文件新增；`mcp_server.py` 五工具注册段（含 `VT_MEMORY_MCP_TOOLS` 门控）；`memory-lifecycle/SKILL.md`；**六份 README**（含 2026-08-16 新增 README_es.md；skills 89→90、Tool 类 10→11 及相关 prose）；`agent/SKILL.md`（skills=90、Finance Skills 小节标题）；测试 | README 计数更新必须随 PR 一并提交（上游 pin 测试强制）；注意上游 MCP 基数为 70（本分支头注释 73/78 含 3 个不回流的 ch_* 工具，PR 需按当时上游基数重述） |
 | **④ F3** | 回测反思钩子 | `backtest_tool.py` daemon 线程钩子；`conftest.py` bench marker；`pyproject.toml` markers；bench/并发测试 | 依赖 ②（反思存储 API） |
 | **⑤ F4 中间件部分** | MemoryGuard | `memory_guard.py` 整文件新增；`mcp_server.py` 注册段 | **必须先解决 D1（加 env 门控开关）与 D2（dedup/增长）**，否则过不了社区评审 |
-| **⑥ 领域子代理层**（issue #1267 piece 2+3） | load_skill 技能白名单修复 + 内置 agent 子代理委派层 | **已提交 PR [#1286](https://github.com/HKUDS/Vibe-Trading/pull/1286)（Draft，2026-08-31）**：`feat/domain-subagents` 分支基于上游 899d3c75；commit 1 = load_skill allowlist（可独立 cherry-pick），commit 2 = `src/specialists/` 包（12 准入定义）+ `delegate_to_specialist` + `VIBE_TRADING_SPECIALISTS_ENABLED` 门控（默认关）；全量套件 11694 通过 | 待社区方向确认后再推进 piece 1（评测 harness）与主循环收敛（piece 3 后半）；本分支 OpencodeAgent 生产面不受影响（机制同名不同源） |
+| **⑥ 领域子代理层**（issue #1267 piece 2+3） | load_skill 技能白名单修复 + 内置 agent 子代理委派层 | **已提交 PR [#1286](https://github.com/HKUDS/Vibe-Trading/pull/1286)（Draft，2026-08-31）**：`feat/domain-subagents` 分支基于上游 899d3c75；commit 1 = load_skill allowlist（可独立 cherry-pick），commit 2 = `src/specialists/` 包（12 准入定义）+ `delegate_to_specialist` + `VIBE_TRADING_SPECIALISTS_ENABLED` 门控（默认关）；全量套件 11694 通过；2026-08-31 评审发现 B1-B5 并已修复推送（commit 范围 38e04d88..5a26eacc）；PR 维持 Draft 待 #1267 方向确认 | 待社区方向确认后再推进 piece 1（评测 harness）与主循环收敛（piece 3 后半）；本分支 OpencodeAgent 生产面不受影响（机制同名不同源） |
 | ✗ F5 | ClickHouse | — | 暂不回流（个人部署独有） |
 
 ### 2.4 已知上游缺陷（mymain 跟踪）
