@@ -4,7 +4,7 @@ description: wiki 内每份文档的一行式索引（路径 + 一句话 + 状�
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-08-31
+updated: 2026-09-09
 tags: [index]
 ---
 
@@ -20,7 +20,7 @@ tags: [index]
 
 ## branch/ — 分支治理
 
-- [branch/MYMAIN_DIVERGENCE.md](branch/MYMAIN_DIVERGENCE.md) — 与上游差异权威台账：F1-F7、贡献队列、验证门禁、债务 D1-D4 — active
+- [branch/MYMAIN_DIVERGENCE.md](branch/MYMAIN_DIVERGENCE.md) — 与上游差异权威台账：F1-F7、贡献队列（含 PR #1286 specialist-arch iter2/iter3 E2E 裁决——**iter3 终局：built-in loop 子代理移植放弃、PR #1286 已关闭**）、验证门禁、债务 D1-D4 — active
 - [branch/MYMAIN_README.md](branch/MYMAIN_README.md) — 发布 changelog：基线/迭代/验证基线/ tag 约定 — active
 
 ## features/ — 迭代功能卡
@@ -60,6 +60,10 @@ tags: [index]
 - [clickhouse/CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md](clickhouse/CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md) — R1 英文调研原文 — active
 - [clickhouse/CLICKHOUSE_ITERATION_PLAN.md](clickhouse/CLICKHOUSE_ITERATION_PLAN.md) — Phase 0-2 已落地 / Phase 3 未启动 — active
 - [clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md](clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md) — 同步停更诊断（postmortem） — active
+
+## multitenant/ — 多租户服务化
+
+- [multitenant/MULTI_TENANT_GAP_ANALYSIS.md](multitenant/MULTI_TENANT_GAP_ANALYSIS.md) — 多租户 opencode+OMO+VT-MCP 能力差距台账：FE-/IM-/BASE-/SEC-/OPS- 编号差距表 + 优先级路线（2026-09-09 四路勘察） — active
 
 ## history/
 

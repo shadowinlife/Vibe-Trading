@@ -4,7 +4,7 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F7
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-08-31
+updated: 2026-09-06
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -56,7 +56,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **③ F2** | MCP 记忆工具 | `mcp_adapter.py` 整文件新增；`mcp_server.py` 五工具注册段（含 `VT_MEMORY_MCP_TOOLS` 门控）；`memory-lifecycle/SKILL.md`；**六份 README**（含 2026-08-16 新增 README_es.md；skills 89→90、Tool 类 10→11 及相关 prose）；`agent/SKILL.md`（skills=90、Finance Skills 小节标题）；测试 | README 计数更新必须随 PR 一并提交（上游 pin 测试强制）；注意上游 MCP 基数为 70（本分支头注释 73/78 含 3 个不回流的 ch_* 工具，PR 需按当时上游基数重述） |
 | **④ F3** | 回测反思钩子 | `backtest_tool.py` daemon 线程钩子；`conftest.py` bench marker；`pyproject.toml` markers；bench/并发测试 | 依赖 ②（反思存储 API） |
 | **⑤ F4 中间件部分** | MemoryGuard | `memory_guard.py` 整文件新增；`mcp_server.py` 注册段 | **必须先解决 D1（加 env 门控开关）与 D2（dedup/增长）**，否则过不了社区评审 |
-| **⑥ 领域子代理层**（issue #1267 piece 2+3） | load_skill 技能白名单修复 + 内置 agent 子代理委派层 | **已提交 PR [#1286](https://github.com/HKUDS/Vibe-Trading/pull/1286)（Draft，2026-08-31）**：`feat/domain-subagents` 分支基于上游 899d3c75；commit 1 = load_skill allowlist（可独立 cherry-pick），commit 2 = `src/specialists/` 包（12 准入定义）+ `delegate_to_specialist` + `VIBE_TRADING_SPECIALISTS_ENABLED` 门控（默认关）；全量套件 11694 通过；2026-08-31 评审发现 B1-B5 并已修复推送（commit 范围 38e04d88..5a26eacc）；PR 维持 Draft 待 #1267 方向确认 | 待社区方向确认后再推进 piece 1（评测 harness）与主循环收敛（piece 3 后半）；本分支 OpencodeAgent 生产面不受影响（机制同名不同源） |
+| **⑥ 领域子代理层**（issue #1267 piece 2+3） | load_skill 技能白名单修复 + 内置 agent 子代理委派层 | **已提交 PR [#1286](https://github.com/HKUDS/Vibe-Trading/pull/1286)（Draft，2026-08-31）**：`feat/domain-subagents` 分支基于上游 899d3c75；commit 1 = load_skill allowlist（可独立 cherry-pick），commit 2 = `src/specialists/` 包（12 准入定义）+ `delegate_to_specialist` + `VIBE_TRADING_SPECIALISTS_ENABLED` 门控（默认关）；全量套件 11694 通过；2026-08-31 评审发现 B1-B5 并已修复推送（commit 范围 38e04d88..5a26eacc）；PR 维持 Draft 待 #1267 方向确认；**2026-09-04 specialist-arch-iter2 完成本地 E2E 量化验证**：pr1286-fix 三个修复 commit（quantlib_call 留主面 + 直算例外 + 反拼凑、无主工具划归批 A/B，本地未推送）+ 全量重跑，冻结门槛 G1-G6 = 4 PASS / 1 FAIL（G4 唯一违规 = valuation-zh-1「取数前置计算」盲区），超时对 45→19，详见 §5 2026-09-04 迭代笔记 | 待社区方向确认后再推进 piece 1（评测 harness）与主循环收敛（piece 3 后半）；本分支 OpencodeAgent 生产面不受影响（机制同名不同源） |
 | ✗ F5 | ClickHouse | — | 暂不回流（个人部署独有） |
 
 ### 2.4 已知上游缺陷（mymain 跟踪）
@@ -321,3 +321,27 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - **吸收核查**：`gh pr list --author shadowinlife` 无新合入（#1286 子代理 PR 仍 OPEN，保留为分歧面）；F1–F7 无取代风险（docs-only commit）。
 - 验证基线（与 08-30 逐字一致）：memory **309/3**、ClickHouse **137/11**、schema 门禁 **53/1 + comments gate exit 0**、README+manifest 门禁 **76 passed**、env gate **exit 0**、market_data/registry/source_order/settings_api **133 passed**、OpencodeAgent config render **33 passed**、MCP **OFF=77 / ON=82**。
 - 推送：§4.2 保护窗口 ~30s（PUT protection allow_force_pushes → `--force-with-lease` 817c6a7d→6f35b026 → 立即恢复）；备份分支 `backup/mymain-pre-rebase-20260831` 已推 fork。
+
+### 2026-09-04 specialist-arch-iter2：专家委派架构 E2E 量化验证（贡献队列 ⑥）
+
+在 `pr1286-fix` 工作树（branch `pr-1286`，PR #1286 保持 Draft）对内置 agent 专家委派架构做第二轮修复，并用本地 agent-e2e-bench（qwen3.8-max，56 任务 × 3 repeat，specialist_v3 vs baseline，last-wins 去重）按预注册冻结门槛 G1-G6 裁决：**4 PASS / 1 FAIL**。终报与全部证据在 `.omo/evidence/specialist-arch-iter2/`（`final-report.md` 为纲，`task-8-gates.json` + `task-8-gates-compute.py` 为复算入口）。
+
+- **架构侧（3 个本地 commit，未推送，基线 5a26eacc）**：A `c82418ec` quantlib_call 加入 `_NARROW_KEEP_LIST` 留主面 + 路由政策直接计算例外 + 反拼凑条款；B `e4f8ab35` 无主工具划归批 A/B（quant/risk-portfolio/fundamentals-text/valuation/market-data/trading-connector 六 yaml，trading 六件只读件逐一源码甄别零写副作用，trading-connector 8→14 工具）；C `af99459a` 仅 black 格式化。写操作/授权工具全部维持 FORBIDDEN 只留主面，`trading_select_connection` 维持 FORBIDDEN，qveris 三件套留主面，语料未动。
+- **测量侧（bench 仓）**：T1 修 scorer `regex_any` 大小写 bug（altdata 配对 Δ −0.0889 → −0.0222）；T2 新增 `harness/diagnostics.py` 交换代价账本工具。
+- **G1-G6 判定**：G1 委派率 **0.9022**（83/92，9 条 miss 全为 risk 族主面直做）PASS；G2 token **18,071,239 ≤ baseline 35,555,023**（ok 口径，省约 49%）PASS；G3 池化 rubric Δ **−0.0413**（92 对，v3 0.8525 vs 0.8938）贴线 PASS；G4 控制组纪律 **FAIL**，10 个主面控制任务唯一违规 = valuation-zh-1（3/3 委派取数专家且 3/3 timeout；根因 = query 缺 FCF 输入、DCF 需取数而取数工具已收窄离主面，corpus 的 expect_delegate=false 是收窄前假设；对照 risk-en-1 同为 [quantlib_call] 主面任务 3/3 不委派全 ok，证明纪律机制本身有效）；G5 信息性（control p50 1.938x / token −11.6%；delegated p50 3.298x 标黄 / token +21.9% 由省转超，与 delegated ok 70→92 取数链完成率提高相关）；G6 超时回归 PASS（去重唯一超时对 **45→19**，剩余全在估值/衍生品/基金取数族）。
+- **诚实纠正**：编排过程中曾预测"本轮对降超时未命中根因"，G6 证伪该悲观结论——本轮确实消除了大部分超时，剩余 19 对是边界清晰的单一任务族。
+- **剩余盲区 = 下一轮目标**：直算例外未覆盖"需先取数再计算"的任务；候选方向（未决策）：编排侧先把数据取进委派 brief / 共享数据层 / 按任务类别放宽超时预算。
+- **状态**：3 个 commit 本地未推送；PR #1286 维持 Draft 待 #1267 方向确认；本分支 OpencodeAgent 生产面不受影响（机制同名不同源）。**（→ 已被下方 2026-09-06 iter3 终局取代：修复未达标，PR #1286 已关闭放弃）**
+
+### 2026-09-06 specialist-arch-iter3：终局裁决——built-in loop 子代理移植放弃，PR #1286 已关闭（贡献队列 ⑥ 终结）
+
+承接 iter2「剩余盲区」（需先取数再计算的任务），iter3 用「自包含专家」修复（commit `fb6189b3`：valuation/derivatives/fundamentals-text 三 yaml 加 `search_symbol`+只读取数工具；路由政策加 field-level brief + 成功后禁止重派；8 专家 timeout 600→300s）+ gate 二分类修复（`harness/gates.py`，控制组按 baseline 工具用量二分类，G4' 测量口径修正）。重跑超时簇+控制组+risk 族（specialist_v4 vs baseline，同 102 对），预注册门槛 G1'-G6' 裁决：**2 PASS / 3 FAIL，修复未达标，放弃 specialist 方案**。终报与全部证据在 `.omo/evidence/specialist-arch-iter3/`（`task-4-final-report.md` 为纲；Oracle 对抗性复核 session `ses_f8a63e1e3ffeamB1i6kql21QH2`）。
+
+- **门槛判定**：G1' 委派率 0.7917 FAIL（<0.90）；G2' token 8.84M≤baseline PASS；G3' rubric Δ −0.0625 FAIL（<−0.05）；G4' 控制纪律 PASS（**二分类测量修复挣得，非产品修复**——valuation-zh-1 正确归 data-dependent）；G6' 去重超时 **23>19** FAIL（目标≤8 远未达）。
+- **决定性对照（同 102 对，Oracle 复算 + 本地独立复核一致）**：baseline 超时 **0/102**、specialist **23/102 (22.5%)**；状态矩阵单向 **ok→timeout 23、timeout→ok 0**（没救回任何 baseline 失败任务，只弄坏 23 个）；LLM 调用 442→1156（**2.6x**）；双 ok 对 wall 中位 25s→85s（**3.4x**）；token 21.6M→15.4M（仅 **1.4x** 省，非 iter2 误算的 4x）；非 hard 任务 **0/25 更快**。
+- **根因（Oracle 校正：合取，非单一机制）**：① 委派**串行阻塞**（`delegate_tool.execute()`→`child_thread.join`）+ 嵌套 loop → 轮次膨胀，慢思考模型（~17-38s/轮）上撞 600s；② 路由 top-up 政策剥夺 baseline「接受退化数据给参数化答案」的廉价出口；③ 工具收窄把主面推向垃圾 stub（quantlib 常数 0.0327，部分 bench 失真）；④ child 超时 `content=""` 丢弃部分工作。iter3 自包含白名单确有局部疗效（funds-en-2/market-en-2 族清零、valuation-en-2#r2 超时转 431s ok），但 300s 预算削减+top-up 政策在别处造新超时（fund-en-2 1→3），簇内 19→19 是构成换血。
+- **核心教训（opencode 子代理移植参考）**：harness-evolution D 批子代理在**生产 harness（opencode+MCP，并行派发+harness 快模型）**落地成立；移植进 **built-in loop** 后两属性皆缺（委派串行阻塞、child 跑同一慢思考模型）——**机制可移植，经济性不可移植**。后来者做同样移植须把 child 模型速度与派发并行度当承重项。
+- **数据完整性**：有效数据=昨天快照（ts<2026-09-05T22:00 UTC，102 对 79ok/23timeout）；今天 06:17-06:34 重跑被 DashScope 宕机污染（9 条 APIConnectionError 4s 即时失败），`ts<2026-09-06` 过滤器切不掉损坏段（=09-05T22 UTC），复算须按此修正。
+- **决策与执行**：**不回退代码**（gate `VIBE_TRADING_SPECIALISTS_ENABLED` 默认关、零影响，commit `fb6189b3` 在 fork 分支 `pr-1286` 休眠）；社区通报已发（PR #1286 评论 issuecomment-5557896674，含公平性 caveat / specialist 胜出子集 / opencode-subagent 参考结论 / 复活通道 / commit 1 load_skill 修复可分离说明）；**PR #1286 已关闭**（CLOSED，2026-09-06T08:01:56Z）。
+- **唯一复活通道（未执行，需稳定 API 窗口 ~4h）**：child 换快非思考模型（`SpecialistSpec.model_name` 旋钮，一行 yaml）重跑 23 超时对，主面/预算/stub/路由全冻结；预注册判据 超时≤3/23、wall 中位≤1.3x baseline、rubric Δ≥−0.05。通过→可救=配置+两小修（超时 child 返回部分 content；top-up 对确认残缺数据源接受参数化答案）；不通过→编排政策是死因、彻底关账。**勿**选「恢复 600s child 预算」（v3 已证伪）或先做并行化（需动代码且 v3 并行扇出已单独证伪充分性）。
+- **状态**：贡献队列 ⑥ **终结**（放弃 built-in loop 移植）；iter2「剩余盲区」候选方向「编排侧先把数据取进委派 brief」已由 iter3 证伪；本分支 OpencodeAgent 生产面（D 批 12 子代理）不受影响——其取胜 regime（并行+快模型）与 built-in loop 不同源。
