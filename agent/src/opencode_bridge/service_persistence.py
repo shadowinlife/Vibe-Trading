@@ -35,7 +35,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional
 
 from src.session.checkpoint import ResponseCheckpoint
 from src.session.models import Attempt, AttemptStatus, Message
@@ -333,6 +333,15 @@ class BridgeEventPlumbing:
     _pump_task: Optional[asyncio.Task]
     _dispatch_task: Optional[asyncio.Task]
 
+    #: Optional async tap on every ROUTED vt event (T9 IM streaming producer,
+    #: attached by ``wiring.build_session_service``). Receives ``(event,
+    #: vt_session_id)`` after the ``attempt_id`` stamp and BEFORE terminal
+    #: resolution, so stream publications (incl. ``_stream_end``) reach the
+    #: channel bus before the runtime's polled final message can be published.
+    #: Exceptions are contained here: an IM-side failure must never kill the
+    #: web dispatch loop.
+    vt_event_observer: Optional[Callable[["VtEventLike", str], Awaitable[None]]] = None
+
     async def start(self) -> None:
         """Eagerly start the pump + dispatch tasks (idempotent).
 
@@ -376,7 +385,7 @@ class BridgeEventPlumbing:
         """``translator.events()`` -> bus publish + persistence side effects."""
         try:
             async for event in self._translator.events():
-                self._handle_vt_event(event)
+                await self._handle_vt_event(event)
         except asyncio.CancelledError:
             raise
         except Exception as exc:
@@ -425,8 +434,8 @@ class BridgeEventPlumbing:
             guards = alive
         return run.done.result()
 
-    def _handle_vt_event(self, event: VtEventLike) -> None:
-        """Route one translated event: checkpoint, trail, bus, or terminal."""
+    async def _handle_vt_event(self, event: VtEventLike) -> None:
+        """Route one translated event: observer tap, checkpoint, trail, bus, terminal."""
         event_type = event.type
         data = event.data
         run = self._route_run(data)
@@ -438,6 +447,17 @@ class BridgeEventPlumbing:
             )
             return
         data["attempt_id"] = run.attempt.attempt_id
+
+        observer = self.vt_event_observer
+        if observer is not None:
+            try:
+                await observer(event, run.session_id)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.warning(
+                    "vt_event_observer failed for %r", event_type, exc_info=True
+                )
 
         terminal_status = TERMINAL_EVENT_TO_STATUS.get(event_type)
         if terminal_status is not None:

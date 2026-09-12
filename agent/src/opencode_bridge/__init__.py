@@ -29,6 +29,7 @@ from .errors import (
     OpencodeResponseShapeError,
 )
 from .events import OpencodeEvent
+from .im_stream import ImStreamProducer
 from .recovery import (
     ENGINE_SESSION_CONFIG_KEY,
     ReconciliationReport,
@@ -51,6 +52,7 @@ __all__ = [
     "DriverSettings",
     "EngineDriver",
     "EventTranslator",
+    "ImStreamProducer",
     "OpencodeBridgeError",
     "OpencodeConnectionError",
     "OpencodeDriver",
