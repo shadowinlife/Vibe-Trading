@@ -140,6 +140,9 @@ async def _run_startup_preflight() -> None:
 
     if get_env_config().agent_tuning.vibe_trading_channels_auto_start:
         await _start_channel_runtime()
+    if get_env_config().opencode_bridge.vibe_trading_engine == "opencode":
+        from src.opencode_bridge import preflight_engine_bridge
+        await preflight_engine_bridge(_get_session_service)
 
 
 async def _stop_scheduled_research_on_shutdown() -> None:
@@ -148,6 +151,8 @@ async def _stop_scheduled_research_on_shutdown() -> None:
         await _stop_channel_runtime()
     finally:
         await _stop_scheduled_research_executor()
+        from src.opencode_bridge import stop_engine_bridge
+        await stop_engine_bridge()
 
 
 @asynccontextmanager

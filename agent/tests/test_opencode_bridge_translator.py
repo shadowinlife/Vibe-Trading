@@ -629,6 +629,65 @@ def test_run_dir_prose_form_and_non_backtest_tools_ignored() -> None:
     assert completed["run_dir"] == "/runs/r1"
 
 
+def test_run_dir_harvested_from_bash_runner_command() -> None:
+    """Production governance disables the backtest MCP tool — the live path
+    is ``python -m backtest.runner <run_dir>`` through the bash tool, whose
+    stdout carries metrics only (T7 E2E finding). The runner CLI argument is
+    the run_dir source there."""
+
+    async def scenario():
+        async with TranslatorBench(tool_map=TMAP) as bench:
+            await open_turn(bench)
+            await bench.feed(
+                tool_part(
+                    SID,
+                    "p1",
+                    "msg_a",
+                    "bash",
+                    "c1",
+                    "completed",
+                    input={
+                        "command": "python -m backtest.runner /runs/r_bash 2>&1 | tail -25"
+                    },
+                    output='{"total_return": 0.1}',
+                ),
+                at=1002.0,
+            )
+            await bench.feed(wire_event("session.idle", sessionID=SID), at=1003.0)
+            await bench.advance(8.05)
+        return bench.out
+
+    out = run(scenario())
+    completed = [e for e in out if e.type == "attempt.completed"][0].data
+    assert completed["run_dir"] == "/runs/r_bash"
+
+
+def test_run_dir_bash_harvest_ignores_unrelated_commands() -> None:
+    async def scenario():
+        async with TranslatorBench(tool_map=TMAP) as bench:
+            await open_turn(bench)
+            await bench.feed(
+                tool_part(
+                    SID,
+                    "p1",
+                    "msg_a",
+                    "bash",
+                    "c1",
+                    "completed",
+                    input={"command": "ls /runs && cat config.json"},
+                    output="ok",
+                ),
+                at=1002.0,
+            )
+            await bench.feed(wire_event("session.idle", sessionID=SID), at=1003.0)
+            await bench.advance(8.05)
+        return bench.out
+
+    out = run(scenario())
+    completed = [e for e in out if e.type == "attempt.completed"][0].data
+    assert completed["run_dir"] is None
+
+
 # ---------------------------------------------------------------------------
 # llm_usage / stream_reset / allowlist
 # ---------------------------------------------------------------------------
