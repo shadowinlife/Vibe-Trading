@@ -61,11 +61,16 @@ def _get_session_service():
     except RuntimeError:
         pass
 
-    _session_service = SessionService(
-        store=store,
-        event_bus=event_bus,
-        runs_dir=runs_dir,
-    )
+    engine = get_env_config().opencode_bridge.vibe_trading_engine
+    if engine == "opencode":
+        from src.opencode_bridge import build_session_service
+        _session_service = build_session_service(store, event_bus, runs_dir)
+    elif engine == "native":
+        _session_service = SessionService(
+            store=store, event_bus=event_bus, runs_dir=runs_dir
+        )
+    else:
+        raise ValueError(f"VIBE_TRADING_ENGINE must be native|opencode: {engine!r}")
     _set_host_attr("_session_service", _session_service)
     _attach_delivery_listener(event_bus)
     return _session_service

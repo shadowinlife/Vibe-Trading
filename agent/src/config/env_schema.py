@@ -36,6 +36,7 @@ __all__ = [
     "PathConfig",
     "OcrConfig",
     "MemoryConfig",
+    "OpencodeBridgeConfig",
 ]
 
 
@@ -665,6 +666,49 @@ class MemoryConfig(_EnvBase):
 
 
 # ---------------------------------------------------------------------------
+# opencode engine bridge
+# ---------------------------------------------------------------------------
+
+
+class OpencodeBridgeConfig(_EnvBase):
+    """Engine selection and opencode-bridge transport tuning.
+
+    Sources: ``src/opencode_bridge/driver.py`` (base URL / Basic Auth),
+    ``src/api/state.py`` factory switch (``VIBE_TRADING_ENGINE``, T7).
+
+    ``OPENCODE_BRIDGE_QUIESCENCE_S`` and ``OPENCODE_BRIDGE_CHILD_EVENTS``
+    are declared here for schema completeness; their consumers are the
+    bridge translator/service (T4/T5), not the driver (T3).
+    """
+
+    # Session-runtime engine factory switch (D1): "native" keeps the
+    # in-process Python agent loop; "opencode" routes sessions through the
+    # opencode bridge. Unknown values are rejected by the factory, not here.
+    vibe_trading_engine: str = Field(alias="VIBE_TRADING_ENGINE", default="native")
+    opencode_base_url: str = Field(
+        alias="OPENCODE_BASE_URL",
+        default="http://127.0.0.1:4096",
+    )
+    # Basic-auth password for ``opencode serve`` (empty = unsecured
+    # loopback dev serve; the tenant container sets it, plan D9/T10).
+    opencode_server_password: str = Field(alias="OPENCODE_SERVER_PASSWORD", default="")
+    # Quiescence window before an idle session emits its terminal event.
+    # T1-measured default: OmO stop-hook continuation re-prompts 6.4 s
+    # after ``session.idle`` (n=2, sigma < 0.02 s), falsifying the initial
+    # 3.0 s value — 8.0 s carries margin (spike report §5c/§7f, D4).
+    opencode_bridge_quiescence_s: float = Field(
+        alias="OPENCODE_BRIDGE_QUIESCENCE_S",
+        default=8.0,
+    )
+    # Child-session (subagent) event policy (D4): "drop" ignores events
+    # from ``task``-spawned child sessions on the shared /event stream.
+    opencode_bridge_child_events: str = Field(
+        alias="OPENCODE_BRIDGE_CHILD_EVENTS",
+        default="drop",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Top-level composition
 # ---------------------------------------------------------------------------
 
@@ -688,6 +732,7 @@ class EnvConfig(_EnvBase):
     paths: PathConfig = Field(default_factory=PathConfig)
     ocr: OcrConfig = Field(default_factory=OcrConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
+    opencode_bridge: OpencodeBridgeConfig = Field(default_factory=OpencodeBridgeConfig)
 
     @model_validator(mode="after")
     def _resolve_api_key_alias(self) -> "EnvConfig":
