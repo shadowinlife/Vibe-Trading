@@ -76,6 +76,7 @@ def build_session_service(
         (recovery deferred to its :meth:`reconcile`, T6 contract).
     """
     from .driver import OpencodeDriver
+    from .im_stream import ImStreamProducer
     from .translator import EventTranslator
 
     config = get_env_config().opencode_bridge
@@ -85,13 +86,17 @@ def build_session_service(
         child_events=config.opencode_bridge_child_events,
         tool_map=driver.tool_map,
     )
-    return RecoverableOpencodeSessionService(
+    service = RecoverableOpencodeSessionService(
         store=store,
         event_bus=event_bus,
         runs_dir=runs_dir,
         driver=driver,
         translator=translator,
     )
+    # T9: the IM streaming producer taps translated events (per-channel
+    # `streaming` gate; inert for web sessions and while channels are down).
+    ImStreamProducer(store=store).attach(service)
+    return service
 
 
 async def preflight_engine_bridge(get_service: Callable[[], Any]) -> None:

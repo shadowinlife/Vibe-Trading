@@ -250,6 +250,11 @@ def test_build_session_service_reads_env(monkeypatch, tmp_path):
     assert isinstance(service, RecoverableOpencodeSessionService)
     assert service._driver.base_url == "http://127.0.0.1:14096"
     assert service._translator._quiescence_s == 10.0
+    # T9: the IM streaming producer is attached at the composition root.
+    from src.opencode_bridge.im_stream import ImStreamProducer
+
+    observer = service.vt_event_observer
+    assert observer is not None and isinstance(observer.__self__, ImStreamProducer)
 
 
 def test_package_exports_public_surface():
@@ -257,6 +262,7 @@ def test_package_exports_public_surface():
 
     expected = {
         "EventTranslator",
+        "ImStreamProducer",
         "OpencodeDriver",
         "OpencodeSessionService",
         "RecoverableOpencodeSessionService",
