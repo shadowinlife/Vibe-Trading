@@ -18,10 +18,12 @@ Steps:
    ``ENGINE_BRIDGE_E2E=1`` and the T8 evidence/observation env (output tee'd
    into the evidence dir);
 3. engine-session hygiene + cost: every opencode session the suite created is
-   read from ``engine-sessions.jsonl``; scenario 2 KILLS the serve, so a
-   transient serve is respawned on 14096 (same scratch XDG) purely to price
-   and DELETE those sessions (spike §7h: the user's opencode data dir is
-   shared read-as-is), then ``t8-cost.json`` is written;
+   read from ``engine-sessions.jsonl``; scenario 2 KILLS the serve and then
+   RESPAWNS it (Phase C resume proof, ``imlib.respawn_serve`` updates
+   ``rig_state.json``), so cleanup normally finds a live serve; the
+   transient-respawn fallback stays for a Phase-C failure. Sessions are
+   priced and DELETEd (spike §7h: the user's opencode data dir is shared
+   read-as-is), then ``t8-cost.json`` is written;
 4. serve/gateway logs copied to the evidence dir; rig down via ``stop_rig``
    (``--purge`` passthrough).
 
@@ -127,7 +129,11 @@ def _cleanup_engine_sessions(
         print("[t8] no engine sessions recorded — nothing to clean")
         return
     proc = None
-    reachable = serve_url is not None and stop_rig._req(serve_url, "GET", "/app")[0]
+    # Status-only probe: a LIVE serve answers /app with HTML (the web UI),
+    # which stop_rig._req's JSON decode cannot parse (run-3 debug evidence).
+    reachable = (
+        serve_url is not None and start_rig._http_status(f"{serve_url}/app") is not None
+    )
     if not reachable:
         print("[t8] serve is down (scenario-2 kill) — respawning for cleanup")
         proc, serve_url = _spawn_transient_serve(rig_root)
@@ -173,9 +179,10 @@ def main() -> int:
     parser.add_argument(
         "--death-observe-s",
         type=float,
-        default=660.0,
-        help="scenario-2 observation window; 660 captures the full 600s "
-        "polling-budget landing (default for the evidence run)",
+        default=120.0,
+        help="scenario-2 Phase-A observation window; 120 = 4x margin over the "
+        "<30s acceptance (the pre-fix evidence run used 660 to capture the "
+        "600s polling-budget landing)",
     )
     parser.add_argument("--cleanup-only", action="store_true")
     parser.add_argument("--no-purge", action="store_true")
@@ -210,7 +217,12 @@ def main() -> int:
     _cleanup_engine_sessions(args.evidence_dir, args.rig_root, serve_url)
 
     if state is not None:
-        for name in ("serve.log", "gateway.log", "serve-cleanup.log"):
+        for name in (
+            "serve.log",
+            "gateway.log",
+            "serve-cleanup.log",
+            "serve-respawn.log",
+        ):
             src = args.rig_root / name
             if src.exists():
                 shutil.copy2(src, args.evidence_dir / f"t8-{name}")

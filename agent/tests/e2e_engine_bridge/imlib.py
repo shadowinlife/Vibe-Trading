@@ -378,6 +378,102 @@ def serve_alive(rig_state: Dict[str, Any]) -> bool:
         return False
 
 
+def respawn_serve(rig_state: Dict[str, Any]) -> int:
+    """Respawn the rig's serve on its port after the s2 kill (T8-1 Phase C).
+
+    Blocking (spawn + readiness waits) — callers in async scenarios use
+    ``asyncio.to_thread``. Mirrors the runner's transient-cleanup respawn
+    (same scratch XDG config) but UPDATES ``rig_state.json`` with the new
+    pid so the runner's cost/DELETE sweep and ``stop_rig`` reap the process
+    this started.
+
+    Two environment traps, both learned empirically (run-3 debug evidence):
+
+    * ``HOME`` — the pytest process runs under ``agent/tests/conftest.py``'s
+      sandbox HOME, but the ORIGINAL serve was spawned by the runner process
+      with the REAL HOME, so its opencode data dir (provider auth + engine
+      sessions, shared read-as-is per spike §7h) is ``~/.local/share/opencode``.
+      Inheriting the sandbox HOME would give the respawn a DIFFERENT data dir
+      (no auth, orphaned sessions the cleanup sweep cannot see) — restore the
+      real home from the passwd entry (env-independent).
+    * Readiness — ``/app`` answers HTML as soon as the listener binds, while
+      the API/event subsystem keeps initializing (observed: ~14 s; requests
+      queue until then, and a queued /event delivers no heartbeats). Gate on
+      ``GET /mcp`` answering 200 — the same call the gateway preflight's
+      ``load_tool_mapping`` makes — so the resume turn and the restarted
+      pump meet a fully initialized serve.
+
+    Port-ownership guard: refuses to bind unless the rig's serve port is
+    free (the killed serve released it; a foreign listener raises).
+
+    Returns:
+        The respawned serve pid.
+    """
+    import pwd
+
+    from tests.e2e_engine_bridge import start_rig
+
+    rig_root = Path(rig_state["rig_root"])
+    port = int(rig_state["serve_url"].rsplit(":", 1)[-1])
+    if not start_rig._port_free(port):
+        raise RuntimeError(
+            f"serve port {port} is not free — refusing to respawn "
+            "(foreign listener?)"
+        )
+    env = {
+        **os.environ,
+        "HOME": pwd.getpwuid(os.getuid()).pw_dir,
+        "XDG_CONFIG_HOME": str(rig_root / "xdg"),
+        "VIBE_TRADING_HOME": str(rig_root / "vt-home"),
+    }
+    env.pop("XDG_DATA_HOME", None)
+    log = rig_root / "serve-respawn.log"
+    proc = start_rig._spawn(
+        [
+            start_rig._find_opencode_bin(),
+            "serve",
+            "--hostname",
+            "127.0.0.1",
+            "--port",
+            str(port),
+            "--print-logs",
+            "--log-level",
+            "INFO",
+        ],
+        cwd=rig_root / "workspace",
+        env=env,
+        log=log,
+    )
+    start_rig._wait_http(f"{rig_state['serve_url']}/app", 90.0, "respawned serve", log)
+    _wait_serve_api_ready(rig_state["serve_url"], 90.0)
+    state_path = rig_root / "rig_state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state["serve_pid"] = proc.pid
+    state["serve_respawn_log"] = str(log)
+    state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    rig_state["serve_pid"] = proc.pid
+    return proc.pid
+
+
+def _wait_serve_api_ready(serve_url: str, timeout_s: float) -> None:
+    """Block until the serve's API answers (GET /mcp 200), not just its UI."""
+    import urllib.error
+    import urllib.request
+
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(f"{serve_url}/mcp", timeout=3.0) as resp:
+                if resp.status == 200:
+                    return
+        except (urllib.error.URLError, OSError, TimeoutError):
+            pass
+        time.sleep(0.5)
+    raise RuntimeError(
+        f"respawned serve API not ready within {timeout_s}s ({serve_url}/mcp)"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Evidence helpers
 # ---------------------------------------------------------------------------

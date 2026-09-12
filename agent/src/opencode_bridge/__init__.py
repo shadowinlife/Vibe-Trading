@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from .driver import DriverSettings, EngineDriver, OpencodeDriver
 from .errors import (
+    EnginePresumedDeadError,
     OpencodeBridgeError,
     OpencodeConnectionError,
     OpencodeHttpError,
@@ -51,6 +52,7 @@ __all__ = [
     "ENGINE_SESSION_CONFIG_KEY",
     "DriverSettings",
     "EngineDriver",
+    "EnginePresumedDeadError",
     "EventTranslator",
     "ImStreamProducer",
     "OpencodeBridgeError",
