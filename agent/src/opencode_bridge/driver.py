@@ -52,13 +52,29 @@ fan-out to per-session translators is the consumer's job (T5).
 backoff 500 ms -> 30 s, reset to the floor on every received event. HTTP
 401/403 on the stream fail fast instead of looping — an auth
 misconfiguration cannot heal by retrying.
+
+**Bounded liveness (T8-1 fix)**: reconnection is NOT infinite. A live
+serve carries ``server.heartbeat`` bytes every ~10 s even inside a 120 s
+content-silent tool (T1 trace scenario g), so the driver declares the
+engine dead — raising :class:`~src.opencode_bridge.errors.EnginePresumedDeadError`
+out of :meth:`OpencodeDriver.events` — after ``liveness_max_silent_cycles``
+(default 4) consecutive frameless connection cycles (~3.5 s for a SIGKILLed
+localhost serve) or ``liveness_silence_window_s`` (default 15 s) without
+ANY received frame (~20 s for a frozen serve, via the 20 s read timeout).
+Pure content silence never trips it. The service pump's existing no-hang
+path (``_fail_all_pending``) then lands pending attempts ``failed`` inside
+the IM <30 s budget, and the existing ``_ensure_pumps`` restart-on-next-send
+re-establishes the stream when the engine returns (supervisord restarts are
+a normal operational mode, T10) — no gateway restart. Design rationale and
+rejected alternatives: ``stream_liveness.py`` module docstring.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, AsyncIterator, Protocol, runtime_checkable
+import time
+from typing import Any, AsyncIterator, Callable, Protocol, runtime_checkable
 
 import httpx
 
@@ -68,6 +84,7 @@ from .client import DriverSettings, OpencodeHttpClient
 from .errors import OpencodeHttpError, OpencodeResponseShapeError, StreamDisconnected
 from .events import OpencodeEvent, decode_event
 from .sse import SseFrameParser
+from .stream_liveness import StreamLiveness
 from .tool_names import EMPTY_TOOL_NAME_MAP, ToolNameMap, build_tool_name_map
 
 logger = logging.getLogger("opencode_bridge")
@@ -120,6 +137,7 @@ class OpencodeDriver:
         username: str = "opencode",
         settings: DriverSettings | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         """Bind a driver to one opencode serve.
 
@@ -130,6 +148,9 @@ class OpencodeDriver:
             username: Basic-auth username (opencode's default: ``opencode``).
             settings: Transport tuning overrides (:class:`DriverSettings`).
             transport: httpx transport injection seam (tests).
+            clock: Monotonic time source for the stream-liveness budget
+                (test injection seam — unit tests advance a fake clock
+                instead of really waiting).
         """
         self._http = OpencodeHttpClient(
             base_url,
@@ -138,6 +159,7 @@ class OpencodeDriver:
             settings=settings,
             transport=transport,
         )
+        self._clock = clock
         self._tool_map = EMPTY_TOOL_NAME_MAP
         self._stream_active = False
         self._closed = False
@@ -231,15 +253,25 @@ class OpencodeDriver:
         """Yield opencode-native events from the single persistent SSE stream.
 
         Reconnects with exponential backoff (500 ms -> 30 s, reset on every
-        received event) until the driver is closed or the consumer stops
-        iterating. Undecodable frames and unknown event types never
-        terminate the stream.
+        received event) until the driver is closed, the consumer stops
+        iterating, or the bounded liveness budget declares the engine dead
+        (T8-1: ``liveness_max_silent_cycles`` consecutive frameless cycles
+        or ``liveness_silence_window_s`` without any frame — heartbeats are
+        wire bytes, so content silence alone never trips it). Undecodable
+        frames and unknown event types never terminate the stream. After a
+        death raise the generator is re-iterable (the single-consumer slot
+        frees in the ``finally``), which is how the service pump supervisor
+        path (``_ensure_pumps`` on the next send) resumes a returned engine
+        without a gateway restart.
 
         Raises:
             RuntimeError: Another consumer is already iterating this
                 driver's event stream (one connection per driver instance).
             OpencodeHttpError: The stream got HTTP 401/403 — an auth
                 misconfiguration that retrying cannot fix.
+            EnginePresumedDeadError: The liveness budget fired — the serve
+                is presumed dead (the pump turns this into the no-hang
+                ``_fail_all_pending`` path).
         """
         if self._stream_active:
             raise RuntimeError(
@@ -249,12 +281,17 @@ class OpencodeDriver:
                 "consumer instead"
             )
         self._stream_active = True
-        backoff = self._http.settings.reconnect_initial_backoff_s
+        settings = self._http.settings
+        backoff = settings.reconnect_initial_backoff_s
+        liveness = StreamLiveness(self.base_url, settings, clock=self._clock)
         try:
             while not self._closed:
+                cycle_frames = 0
                 try:
                     async for event in self._read_stream():
-                        backoff = self._http.settings.reconnect_initial_backoff_s
+                        cycle_frames += 1
+                        backoff = settings.reconnect_initial_backoff_s
+                        liveness.note_frame()
                         yield event
                 except asyncio.CancelledError:
                     raise
@@ -270,10 +307,9 @@ class OpencodeDriver:
                     )
                 if self._closed:
                     break
+                liveness.cycle_ended(cycle_frames)
                 await asyncio.sleep(backoff)
-                backoff = min(
-                    backoff * 2.0, self._http.settings.reconnect_max_backoff_s
-                )
+                backoff = min(backoff * 2.0, settings.reconnect_max_backoff_s)
         finally:
             self._stream_active = False
 

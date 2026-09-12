@@ -19,7 +19,10 @@ from typing import Any, Dict, List, Optional, Tuple
 import pytest
 
 from src.config.paths import get_uploads_dir
-from src.opencode_bridge.errors import OpencodeConnectionError
+from src.opencode_bridge.errors import (
+    EnginePresumedDeadError,
+    OpencodeConnectionError,
+)
 from src.opencode_bridge.events import OpencodeEvent
 from src.opencode_bridge.service import OpencodeSessionService
 from src.session.events import EventBus, SSEEvent
@@ -134,6 +137,35 @@ class DeadStreamDriver(FakeDriver):
     async def events(self):
         raise RuntimeError("boom")
         yield  # pragma: no cover - makes this an async generator
+
+
+#: Sentinel: emitting it makes PresumedDeadDriver.events() declare death.
+_DEAD = object()
+
+
+class PresumedDeadDriver(FakeDriver):
+    """events() raises EnginePresumedDeadError on the _DEAD sentinel (T8-1).
+
+    Re-iterable afterwards — mirrors the real driver, whose single-consumer
+    slot frees when the generator raises, so ``_ensure_pumps`` can restart
+    the stream when the engine returns.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.stream_generations = 0
+
+    async def events(self):
+        self.stream_generations += 1
+        if self._native is None:
+            self._native = asyncio.Queue()
+        while True:
+            item = await self._native.get()
+            if item is None:
+                return
+            if item is _DEAD:
+                raise EnginePresumedDeadError("serve presumed dead (test)")
+            yield item
 
 
 class RecordingIndex:
@@ -594,6 +626,66 @@ def test_dead_event_stream_fails_pending_attempt(tmp_path, monkeypatch) -> None:
         reply = await wait_for_reply(ctx.svc, session.session_id, result["attempt_id"])
         assert reply.metadata["status"] == "failed"
         assert "engine event stream lost" in reply.content
+        await ctx.svc.aclose()
+
+    asyncio.run(scenario())
+
+
+def test_engine_presumed_dead_fails_once_then_resumes_next_send(
+    tmp_path, monkeypatch
+) -> None:
+    """T8-1 contract: death -> failed exactly once -> resume on next send.
+
+    Given a running attempt and a T9-style vt_event_observer tap, when the
+    driver's stream declares the engine dead mid-turn, then the attempt
+    lands failed through the EXISTING _fail_all_pending path (one reply
+    message, one attempt.failed bus event — no double terminal). When the
+    engine returns, the NEXT send_message restarts the pump (existing
+    _ensure_pumps path — no service rebuild, no gateway restart), the
+    observer tap survives the restart, and the new turn completes.
+    """
+
+    async def scenario() -> None:
+        driver = PresumedDeadDriver()
+        ctx = make_ctx(tmp_path, monkeypatch, driver=driver)
+        observed: List[str] = []
+
+        async def observer(event: Any, vt_session_id: str) -> None:
+            observed.append(event.type)
+
+        ctx.svc.vt_event_observer = observer
+        session = ctx.svc.create_session()
+        result = await ctx.svc.send_message(session.session_id, "long turn")
+        attempt_id = result["attempt_id"]
+        await wait_until(lambda: bool(driver.prompts))
+        pump_before = ctx.svc._pump_task
+
+        driver.emit_native(_DEAD)
+
+        reply = await wait_for_reply(ctx.svc, session.session_id, attempt_id)
+        assert reply.metadata["status"] == "failed"
+        assert "engine event stream lost" in reply.content
+        assert "presumed dead" in reply.content
+        attempt = ctx.store.get_attempt(session.session_id, attempt_id)
+        assert attempt.status == AttemptStatus.FAILED
+        await wait_until(lambda: ctx.svc._pump_task.done())
+        await asyncio.sleep(0.05)
+        replies = [
+            m
+            for m in ctx.svc.get_messages(session.session_id)
+            if m.linked_attempt_id == attempt_id
+        ]
+        assert len(replies) == 1  # exactly-once terminal
+        assert len(ctx.bus.by_type("attempt.failed")) == 1
+
+        ctx.translator.auto_terminal = ("attempt.completed", dict(COMPLETED_EXTRA))
+        result2 = await ctx.svc.send_message(session.session_id, "after return")
+        attempt2 = result2["attempt_id"]
+        reply2 = await wait_for_reply(ctx.svc, session.session_id, attempt2)
+        assert reply2.metadata["status"] == "completed"
+        assert ctx.svc._pump_task is not pump_before
+        assert driver.stream_generations == 2
+        assert "attempt.completed" in observed
         await ctx.svc.aclose()
 
     asyncio.run(scenario())

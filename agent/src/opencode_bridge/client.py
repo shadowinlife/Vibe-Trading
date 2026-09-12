@@ -33,17 +33,35 @@ class DriverSettings:
         request_timeout_s: Overall timeout for one REST primitive.
         connect_timeout_s: TCP connect timeout.
         stream_read_timeout_s: Read timeout on the SSE stream. opencode
-            emits ``server.heartbeat`` every 10 s (spike report §7g), so a
-            90 s silence means the connection is dead and must reconnect.
+            emits ``server.heartbeat`` every 10 s (spike report §7g; the T1
+            traces' max observed inter-frame gap is 10.01 s), so 20 s
+            (2x cadence) without ANY byte means the connection is dead and
+            must cycle. Sized >= ``liveness_silence_window_s`` so the first
+            silent read-timeout cycle (~20 s without a byte) trips the
+            window check, bounding frozen-serve detection at ~20 s — inside
+            the T8 <30 s engine-death budget.
         reconnect_initial_backoff_s: Backoff floor after a disconnect.
         reconnect_max_backoff_s: Backoff ceiling (plan T3: 500 ms -> 30 s).
+        liveness_max_silent_cycles: Consecutive /event connection cycles
+            that may complete without delivering ANY frame before the
+            stream declares the engine dead (``EnginePresumedDeadError``,
+            T8-1). With the default backoff floor, a SIGKILLed serve (EOF +
+            connection-refused) is detected in ~3.5 s.
+        liveness_silence_window_s: Wall-clock window without ANY received
+            frame after which a cycle end declares the engine dead. Must
+            stay > the 10 s heartbeat cadence (no false positives on a
+            healthy stream — scenario g proves heartbeats bridge a 120.75 s
+            content silence) and <= ``stream_read_timeout_s`` so the first
+            silent read-timeout cycle trips it.
     """
 
     request_timeout_s: float = 30.0
     connect_timeout_s: float = 10.0
-    stream_read_timeout_s: float = 90.0
+    stream_read_timeout_s: float = 20.0
     reconnect_initial_backoff_s: float = 0.5
     reconnect_max_backoff_s: float = 30.0
+    liveness_max_silent_cycles: int = 4
+    liveness_silence_window_s: float = 15.0
 
 
 class OpencodeHttpClient:

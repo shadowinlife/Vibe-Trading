@@ -7,6 +7,7 @@ T6 recovery) match on type, never on message strings.
 from __future__ import annotations
 
 __all__ = [
+    "EnginePresumedDeadError",
     "OpencodeBridgeError",
     "OpencodeConnectionError",
     "OpencodeHttpError",
@@ -42,6 +43,21 @@ class OpencodeHttpError(OpencodeBridgeError):
 
 class OpencodeResponseShapeError(OpencodeBridgeError):
     """The serve answered 2xx with a body the bridge cannot use."""
+
+
+class EnginePresumedDeadError(OpencodeBridgeError):
+    """The event stream's bounded liveness budget declared the engine dead.
+
+    Raised by :meth:`OpencodeDriver.events` (T8-1 fix) when reconnect
+    cycles keep completing without ANY frame — the serve carries
+    ``server.heartbeat`` bytes every ~10 s even inside a long-silent tool
+    (T1 trace scenario g), so a bounded window of total byte silence and/or
+    N consecutive frameless reconnect cycles is sound death evidence, while
+    pure content silence is NOT. The service pump turns this into the
+    existing no-hang path (``_fail_all_pending``): pending attempts land
+    ``failed`` within the IM reply budget instead of hanging until the
+    600 s polling timeout.
+    """
 
 
 class StreamDisconnected(Exception):

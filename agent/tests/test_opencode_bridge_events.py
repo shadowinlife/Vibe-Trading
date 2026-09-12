@@ -13,13 +13,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import httpx
 import pytest
 
 from src.opencode_bridge.driver import DriverSettings, OpencodeDriver
-from src.opencode_bridge.errors import OpencodeHttpError
+from src.opencode_bridge.errors import EnginePresumedDeadError, OpencodeHttpError
 from src.opencode_bridge.events import OpencodeEvent
 
 BASE = "http://serve.test"
@@ -246,7 +247,14 @@ def test_aclose_stops_the_reconnect_loop() -> None:
         raise httpx.ConnectError("serve down")
 
     async def run_test() -> None:
-        driver = make_driver(handler, settings=FAST_RECONNECT)
+        # Liveness disabled here: this test pins the aclose semantics of the
+        # reconnect loop, not the T8-1 death budget (own tests below).
+        settings = replace(
+            FAST_RECONNECT,
+            liveness_max_silent_cycles=10**6,
+            liveness_silence_window_s=1e9,
+        )
+        driver = make_driver(handler, settings=settings)
         consumed: list[OpencodeEvent] = []
 
         async def consume() -> None:
@@ -263,6 +271,157 @@ def test_aclose_stops_the_reconnect_loop() -> None:
         assert consumed == []
 
     asyncio.run(run_test())
+
+
+# ---------------------------------------------------------------------------
+# bounded liveness (T8-1): engine death is declared, content silence is not
+# ---------------------------------------------------------------------------
+
+
+class FakeClock:
+    """Injectable monotonic clock — liveness tests never really wait."""
+
+    def __init__(self, start: float = 1000.0) -> None:
+        self.now = start
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
+
+
+#: Backoff floor small enough that N cycles cost milliseconds of real time.
+INSTANT_RECONNECT = DriverSettings(
+    reconnect_initial_backoff_s=0.001, reconnect_max_backoff_s=0.002
+)
+
+
+def test_frameless_cycles_declare_engine_dead_after_threshold() -> None:
+    """Signal 1: N consecutive zero-frame cycles (SIGKILL -> refused connects).
+
+    Given a serve that refuses every connection and a pinned clock (so ONLY
+    the cycle-count signal can fire), when the stream reconnects, then the
+    generator raises EnginePresumedDeadError after exactly
+    ``liveness_max_silent_cycles`` cycles — ~3.5 s of real backoff at the
+    production 0.5 s floor, inside the T8 <30 s budget.
+    """
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        raise httpx.ConnectError("connection refused")
+
+    driver = make_driver(
+        handler, settings=INSTANT_RECONNECT, clock=FakeClock()  # window never fires
+    )
+    with pytest.raises(EnginePresumedDeadError, match="presumed dead"):
+        asyncio.run(collect_events(driver, 1))
+    assert calls["n"] == DriverSettings().liveness_max_silent_cycles == 4
+
+
+def test_silence_window_declares_engine_dead_on_first_silent_cycle() -> None:
+    """Signal 2: no frame for ``liveness_silence_window_s`` (frozen serve).
+
+    A serve that ACCEPTS connections but delivers zero frames (frozen
+    process / half-open TCP — in production each such cycle ends at the
+    20 s read timeout) is declared dead on the first cycle whose end is
+    past the window: ~20 s detection, inside the T8 <30 s budget.
+    """
+    calls = {"n": 0}
+    clock = FakeClock()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        clock.advance(16.0)  # > liveness_silence_window_s (15) of byte silence
+        return sse_response([])  # connect OK, zero frames, clean EOF
+
+    driver = make_driver(handler, settings=INSTANT_RECONNECT, clock=clock)
+    with pytest.raises(EnginePresumedDeadError, match="no frame received"):
+        asyncio.run(collect_events(driver, 1))
+    assert calls["n"] == 1  # the window fires on the FIRST silent cycle
+
+
+def test_heartbeats_across_reconnects_never_trip_liveness() -> None:
+    """No false positive: frame every 10 s beats both signals, forever.
+
+    The harshest legitimate shape: the connection drops after EVERY frame
+    (10 reconnect cycles >> the 4-cycle threshold), but each cycle
+    delivers a heartbeat at the real 10 s cadence — both liveness signals
+    reset on every frame, so the stream stays alive.
+    """
+    calls = {"n": 0}
+    clock = FakeClock()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        clock.advance(10.0)  # server.heartbeat cadence (spike §7g)
+        return sse_response(sse_chunks(json.dumps({"type": "server.heartbeat"})))
+
+    driver = make_driver(handler, settings=INSTANT_RECONNECT, clock=clock)
+    events = asyncio.run(collect_events(driver, 10))
+    assert len(events) == 10
+    assert calls["n"] == 10  # 10 cycles, threshold is 4 — frames reset it
+
+
+class _TimedFrameStream(httpx.AsyncByteStream):
+    """One-frame stream that moves the fake clock to the frame's real time.
+
+    ``frame_at`` is when the frame arrives (``note_frame`` sees it);
+    ``eof_at`` is when the connection then drops (``cycle_ended`` sees the
+    worst-case elapsed silence = the real inter-frame gap).
+    """
+
+    def __init__(self, chunk: bytes, clock: FakeClock, frame_at: float, eof_at: float):
+        self._chunk = chunk
+        self._clock = clock
+        self._frame_at = frame_at
+        self._eof_at = eof_at
+
+    async def __aiter__(self):
+        self._clock.now = self._frame_at
+        yield self._chunk
+        self._clock.now = self._eof_at
+
+
+def test_scenario_g_real_trace_gaps_never_trip_liveness() -> None:
+    """Real-data no-false-positive guard: T1 scenario g (120.75 s silence).
+
+    Replays the recorded 120.75 s silent-tool trace through the LIVE
+    liveness logic — one connection cycle per frame, the fake clock driven
+    by the trace's real ``mono`` timestamps, each cycle ending at the next
+    frame's arrival time (worst-case elapsed silence = the real gap, max
+    10.01 s). Heartbeats are wire bytes: the 120 s CONTENT silence never
+    trips either signal, and the default thresholds stay above the real
+    heartbeat cadence (data-bound pin).
+    """
+    frames = load_wire_frames("scenario_g_silent_tool.jsonl")
+    monos = [frame["mono"] for frame in frames]
+    defaults = DriverSettings()
+    gaps = [b - a for a, b in zip(monos, monos[1:])]
+    # Constants pin: the window/read-timeout MUST stay above the real
+    # max heartbeat gap, or a healthy long-silent tool would false-trip.
+    assert max(gaps) < defaults.liveness_silence_window_s
+    assert max(gaps) < defaults.stream_read_timeout_s
+
+    clock = FakeClock(monos[0])
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        i = calls["n"]
+        calls["n"] += 1
+        eof_at = monos[i + 1] if i + 1 < len(monos) else monos[i]
+        chunk = b"data: " + frames[i]["data"].encode("utf-8") + b"\n\n"
+        return httpx.Response(
+            200,
+            stream=_TimedFrameStream(chunk, clock, monos[i], eof_at),
+            headers={"content-type": "text/event-stream"},
+        )
+
+    driver = make_driver(handler, settings=INSTANT_RECONNECT, clock=clock)
+    events = asyncio.run(collect_events(driver, len(frames), timeout=30.0))
+    assert [event.type for event in events] == [frame["type"] for frame in frames]
+    assert calls["n"] == len(frames)  # every cycle reconnected, none declared dead
 
 
 # ---------------------------------------------------------------------------
