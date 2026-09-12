@@ -67,6 +67,16 @@ _RUN_DIR_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"Run directory:\s*(\S+)"),
 )
 
+#: Runner-CLI invocation inside a bash command (T7 E2E finding): the frozen
+#: production tool governance (``vibe-trading-tools.json``) DISABLES the
+#: backtest MCP tool, so live backtests run through the bash tool as
+#: ``python -m backtest.runner <run_dir>`` (or ``vibe-trading backtest
+#: <run_dir>``) — and the runner's stdout carries metrics only, no run_dir.
+#: The CLI argument is the reliable run_dir source on that path.
+_RUNNER_CMD_PATTERN = re.compile(
+    r"(?:backtest\.runner|vibe-trading\s+backtest)\s+[\"']?([^\s\"'|;&]+)"
+)
+
 _TERMINAL_STATUSES = frozenset({"completed", "error"})
 
 
@@ -253,6 +263,17 @@ class ToolState:
                     # references the most recent run).
                     self.run_dir = match.group(1)
                     break
+        if tool == "bash":
+            command_input = state.get("input")
+            command = (
+                command_input.get("command")
+                if isinstance(command_input, Mapping)
+                else None
+            )
+            if isinstance(command, str):
+                match = _RUNNER_CMD_PATTERN.search(command)
+                if match:
+                    self.run_dir = match.group(1)
         if tool == "task":
             metadata = state.get("metadata")
             if isinstance(metadata, Mapping):

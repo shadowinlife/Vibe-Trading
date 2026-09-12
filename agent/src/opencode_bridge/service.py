@@ -354,8 +354,9 @@ class OpencodeSessionService(BridgePersistence, BridgeEventPlumbing):
             "conversation.",
             "Uploaded files: a relative path uploads/<name> in this "
             f"conversation resolves to {get_uploads_dir()}/<name>. Read it "
-            "with the vibe-trading MCP read_file tool using that absolute "
-            "path.",
+            "via that ABSOLUTE path with a file-reading tool (the built-in "
+            "read tool works); the relative form resolves against your "
+            "workspace and will miss the file.",
         ]
         return "\n\n".join(blocks) + "\n\n"
 

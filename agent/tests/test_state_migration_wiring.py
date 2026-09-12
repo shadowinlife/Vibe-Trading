@@ -37,9 +37,7 @@ def test_mcp_server_main_runs_migration(
 ) -> None:
     import mcp_server
 
-    monkeypatch.setattr(
-        "sys.argv", ["vibe-trading-mcp", "--transport", "stdio"]
-    )
+    monkeypatch.setattr("sys.argv", ["vibe-trading-mcp", "--transport", "stdio"])
     monkeypatch.setattr(mcp_server.mcp, "run", lambda **kwargs: None)
 
     mcp_server.main()
@@ -63,7 +61,10 @@ def test_api_startup_runs_migration(
             {
                 "agent_tuning": type(
                     "Tuning", (), {"vibe_trading_channels_auto_start": False}
-                )()
+                )(),
+                "opencode_bridge": type(
+                    "Bridge", (), {"vibe_trading_engine": "native"}
+                )(),
             },
         )(),
     )
@@ -116,7 +117,10 @@ def test_api_lifespan_preserves_startup_and_shutdown_order(
             {
                 "agent_tuning": type(
                     "Tuning", (), {"vibe_trading_channels_auto_start": True}
-                )()
+                )(),
+                "opencode_bridge": type(
+                    "Bridge", (), {"vibe_trading_engine": "native"}
+                )(),
             },
         )(),
     )
