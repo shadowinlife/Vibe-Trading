@@ -1,10 +1,10 @@
 ---
 title: mymain 分支差异说明（DIVERGENCE）
-description: mymain 与上游 main 的权威差异台账——独有功能 F1-F7、上游贡献队列、验证门禁、维护约定、已知债务。改代码/发 PR/rebase 前必读。触发词：分支差异、上游、回流、rebase、门禁、D1-D4。
+description: mymain 与上游 main 的权威差异台账——独有功能 F1-F8、上游贡献队列、验证门禁、维护约定、已知债务。改代码/发 PR/rebase 前必读。触发词：分支差异、上游、回流、rebase、门禁、D1-D4、engine-bridge。
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-09-06
+updated: 2026-09-13
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -31,6 +31,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **F4** | MemoryGuard + 项目目录存储 | FastMCP middleware：工具调用后自动 memory_save + memory_reflect（零 LLM）；`VT_MEMORY_BASE_DIR` 支持记忆存项目目录；默认路径跟随 `get_runtime_root()`（`VIBE_TRADING_HOME` 感知） | `agent/src/memory/memory_guard.py`（新增）、`agent/src/memory/persistent.py`（`_default_memory_base`）、`agent/src/config/env_schema.py`（`MemoryConfig.base_dir`） | middleware **无条件注册**（债务 D1） | 上游 memory 仍锚定 `~/.vibe-trading`（上游对 persistent.py 的改动——FTS5 排序衰减、FTS5 tokenizer 下限——均不同关注面，两者并存） |
 | **F5** | ClickHouse A 股数据源 + 语义层 | CH HTTP connector + OHLCV loader（DataLoaderProtocol）+ 基本面 Provider（回退 Tushare）+ 四只资金流工具 CH 优先回退；A 股 chain 与路由以 clickhouse 为首选。**语义层 Phase 0–2**（2026-08-12）：56 表 DDL 快照 + 9 表 444 列 COMMENT + 单位 registry（`clickhouse_units.py`）+ 显式 199 列（`clickhouse_columns.py`）+ `get_valuation` + llm_role 受约束灵活性通道（`ch_list_tables` / `ch_describe_table` / `ch_query`，sqlglot AST 守卫） | `agent/src/clickhouse_connector.py`、`agent/backtest/loaders/clickhouse.py`、`agent/src/tools/clickhouse_fallbacks.py`、`schema/clickhouse/`、`agent/src/tools/clickhouse_query_tool.py`、`agent/src/tools/clickhouse_explore_tools.py`、`agent/src/tools/valuation_tool.py` 等 97 文件 | `CLICKHOUSE_*`（DataConfig）；灵活性通道 `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | 个人部署独有，不回流 |
 | **F7** | OpencodeAgent harness 层 | opencode + omo + 本仓库 MCP 的独立部署 harness（Docker 镜像 `opencode-serve`）：问题处理协议（明确/开放/待澄清/宏观四类分流，Least-to-Most 收敛漏斗 + Step-Back 拆分 + 单轮 ≤3 问轮次预算）、防幻觉与诚实拒答纪律（数字溯源三来源、弃权一等公民、五要素拒答模板）、escape-top 微观结构信号（CH 数据层 + 7 门验证框架）、三层选股、VT 联邦行情 scanner、cron + 钉钉通知基础设施、nano-search-mcp（新浪财经/百炼搜索 12 工具） | `OpencodeAgent/`（整目录，源自独立仓库 vibetrading-opencode-instruct，2026-08-17 引入） | 容器 env（`CLICKHOUSE_*` / `CLICKHOUSE_LLM_*` / `DASHSCOPE_API_KEY` 等，见 `OpencodeAgent/.env.example`） | 个人部署独有，不回流；消费 F5/F6 语义层（ch_* 工具）与 F1–F4 记忆能力 |
+| **F8** | opencode 引擎桥 | SessionService 接缝下把 opencode serve 当外置 agent 引擎整体置换（driver/translator/service/recovery/liveness/im_stream 六模块）：前端 + 16 IM 适配器 + 调度器零改动；Web SSE = token-delta 直通、IM = 渐进编辑（`_stream_delta` 首产者，消费端基建 101306e9 起休眠）；三分支崩溃恢复 + 存活对账（引擎死亡 8.03s 落 failed，原 590s 挂起）；goal 绑定注入（模型遵从 12/12）；Phase 0-2 活体验证（web E2E 八组 67 检查 + IM parity + golden trace 回放 233 测试） | `agent/src/opencode_bridge/`（整包新增）、`agent/src/api/state.py`（15 行工厂）、`agent/api_server.py`（+5 preflight）、`agent/src/config/env_schema.py`（增 5 变量）、`agent/tests/e2e_engine_bridge/`（可复跑 rig + E2E）、golden trace fixtures | `VIBE_TRADING_ENGINE=opencode`（**默认 native = 零行为变化**，回滚一键）+ `OPENCODE_BASE_URL` / `OPENCODE_SERVER_PASSWORD` / `OPENCODE_BRIDGE_QUIESCENCE_S=8.0` / `OPENCODE_BRIDGE_CHILD_EVENTS=drop` | 分支独有，不回流（上游无 opencode 引擎形态）；上游候选三件记队列 ⑦；运维圣经 = [../features/f8-engine-bridge.md](../features/f8-engine-bridge.md) |
 
 ### 2.2 已随对齐消除的历史分歧（上游已承接）
 
@@ -57,6 +58,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **④ F3** | 回测反思钩子 | `backtest_tool.py` daemon 线程钩子；`conftest.py` bench marker；`pyproject.toml` markers；bench/并发测试 | 依赖 ②（反思存储 API） |
 | **⑤ F4 中间件部分** | MemoryGuard | `memory_guard.py` 整文件新增；`mcp_server.py` 注册段 | **必须先解决 D1（加 env 门控开关）与 D2（dedup/增长）**，否则过不了社区评审 |
 | **⑥ 领域子代理层**（issue #1267 piece 2+3） | load_skill 技能白名单修复 + 内置 agent 子代理委派层 | **已提交 PR [#1286](https://github.com/HKUDS/Vibe-Trading/pull/1286)（Draft，2026-08-31）**：`feat/domain-subagents` 分支基于上游 899d3c75；commit 1 = load_skill allowlist（可独立 cherry-pick），commit 2 = `src/specialists/` 包（12 准入定义）+ `delegate_to_specialist` + `VIBE_TRADING_SPECIALISTS_ENABLED` 门控（默认关）；全量套件 11694 通过；2026-08-31 评审发现 B1-B5 并已修复推送（commit 范围 38e04d88..5a26eacc）；PR 维持 Draft 待 #1267 方向确认；**2026-09-04 specialist-arch-iter2 完成本地 E2E 量化验证**：pr1286-fix 三个修复 commit（quantlib_call 留主面 + 直算例外 + 反拼凑、无主工具划归批 A/B，本地未推送）+ 全量重跑，冻结门槛 G1-G6 = 4 PASS / 1 FAIL（G4 唯一违规 = valuation-zh-1「取数前置计算」盲区），超时对 45→19，详见 §5 2026-09-04 迭代笔记 | 待社区方向确认后再推进 piece 1（评测 harness）与主循环收敛（piece 3 后半）；本分支 OpencodeAgent 生产面不受影响（机制同名不同源） |
+| **⑦ F8 上游候选** | 引擎桥外围三件（桥本体不回流——上游无 opencode 引擎形态） | ① SessionService Protocol 抽取（D6 契约面，落 `src/session/` 保护区）；② `scheduled_research` MCP wrapper（T13，`mcp_server.py` 双表面 + 6 README 计数 + tool_selection eval）；③ ChannelRuntime `_streamed` 原生修复（T9 FINDINGS #3：runtime 终态消息缺 `_streamed`/`origin_message_id`，流式开启时编辑型适配器双重回答，落 `channels/` 冻结面） | 三件彼此独立可分离提交；① 需保护区事先讨论（上游 PR 模板约束）；③ 需 channels/ 冻结解除；② 受 harness-evolution 冻结门控（T13 前置检查，冻结中顺延） |
 | ✗ F5 | ClickHouse | — | 暂不回流（个人部署独有） |
 
 ### 2.4 已知上游缺陷（mymain 跟踪）
@@ -345,3 +347,15 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - **决策与执行**：**不回退代码**（gate `VIBE_TRADING_SPECIALISTS_ENABLED` 默认关、零影响，commit `fb6189b3` 在 fork 分支 `pr-1286` 休眠）；社区通报已发（PR #1286 评论 issuecomment-5557896674，含公平性 caveat / specialist 胜出子集 / opencode-subagent 参考结论 / 复活通道 / commit 1 load_skill 修复可分离说明）；**PR #1286 已关闭**（CLOSED，2026-09-06T08:01:56Z）。
 - **唯一复活通道（未执行，需稳定 API 窗口 ~4h）**：child 换快非思考模型（`SpecialistSpec.model_name` 旋钮，一行 yaml）重跑 23 超时对，主面/预算/stub/路由全冻结；预注册判据 超时≤3/23、wall 中位≤1.3x baseline、rubric Δ≥−0.05。通过→可救=配置+两小修（超时 child 返回部分 content；top-up 对确认残缺数据源接受参数化答案）；不通过→编排政策是死因、彻底关账。**勿**选「恢复 600s child 预算」（v3 已证伪）或先做并行化（需动代码且 v3 并行扇出已单独证伪充分性）。
 - **状态**：贡献队列 ⑥ **终结**（放弃 built-in loop 移植）；iter2「剩余盲区」候选方向「编排侧先把数据取进委派 brief」已由 iter3 证伪；本分支 OpencodeAgent 生产面（D 批 12 子代理）不受影响——其取胜 regime（并行+快模型）与 built-in loop 不同源。
+
+### 2026-09-13 engine-bridge Phase 0-2 里程碑并回（mymain-engine-bridge → mymain `50675965`）
+
+`opencode-engine-bridge-v2` 计划（本地 `.omo/plans/`，engine-bridge worktree，不入 git；动机文档 = [../multitenant/MULTI_TENANT_GAP_ANALYSIS.md](../multitenant/MULTI_TENANT_GAP_ANALYSIS.md)）首批 12 commits（`14bf3fe3..02731637`）经 `--no-ff` 并回 mymain（merge commit `50675965`，68 文件 +21720/−10）。F8 引擎桥落地生产血统：**`VIBE_TRADING_ENGINE` 默认 native，零行为变化**；回滚 = 一键（F8 卡）。计划经五轮对抗审查（4 路代码调查 → Oracle 一轮 F1-F7 → 12 项目先例调查 → Momus OKAY → Oracle 二轮 B1-B6 全部修订入文本）。
+
+- **验证基线（并回后 mymain 实测）**：桥套件 **233 passed / 6 skipped**；全套件失败集与已知 9 失败基线完全一致（eastmoney×4 / anthropic×3 / metrics×1 / provider-header×1，T3 stash 复现验证为既有）；保护区（`src/agent|session|providers`）、`frontend/`、`channels/` 全区间零 diff。
+- **Phase 0（go/no-go）**：T1 spike **GO + 3 强制条件**（QUIESCENCE_S 8.0——OmO idle 后 6.4s re-prompt 证伪 3.0；partID→part.type join 防思维链泄漏；sessionID-scoped idle）；T2 盘点实锤三方版本分裂（镜像 1.18.18 / 宿主生产 1.18.23 / npm 1.18.30）、生产实为 host-direct（08-28 起）、OmO 事实 4.19.4 + `@latest` 翻牌风险、B5 volume/ENV_PATH 分裂。
+- **Phase 1（汇合门 T7）**：活体浏览器 E2E 八组 **67 检查全绿**（含 >90s 静默回合破前端 90s watchdog、上传→分析绝对路径生效）；两个 live 修复根因均为冻结治理清单（backtest/read_file 被禁 → run_dir 改从 bash-runner INPUT 收割、D8② 注入 tool-agnostic 化）。
+- **Phase 2（IM）**：T8 parity（16 适配器零改动消费接缝，193s 长回合 D4 实证 94 次轮询全空）+ T8-1 活性修复（引擎死亡 **8.03s** 落 failed，原 590s 挂起；引擎回归免网关重启自愈）+ T9 `_stream_delta` 首产者（grinev 阶梯节流叠加 manager coalescing）。
+- **Wave 5 早鸟**：T14 goal 绑定（遵从率 **12/12=100%**，门 ≥80%，别名映射升级不需要；降级项 12 诚实佐证）+ T15 F8 卡定稿（14 项降级清单逐项实证、F6 认证配方、回滚程序、Settings 三裁决零代码路径）。
+- **进行中/待裁决**：T10 租户容器（钉版 **opencode-ai@1.18.30 + oh-my-openagent@4.19.4 + base digest**，用户已确认；supervisord 双进程 + B5/B6 修正 + 前端 dist 入镜像）；T11/T12（router/隔离矩阵）；T13（冻结门控）；第二次里程碑并交待 T10-T13。用户门控项：真平台冒烟（钉钉/飞书/Telegram 测试 bot 凭据，脚本已 fail-closed 交付）、ECS 部署、registry push。
+- **证据链**：`.omo/evidence/opencode-engine-bridge-v2/`（engine-bridge worktree，untracked）——spike_report / baseline_memo / t7-e2e（67 检查 + FINDINGS）/ t8-im / t9-im-stream / t14-goal；运维圣经 = [../features/f8-engine-bridge.md](../features/f8-engine-bridge.md)。
