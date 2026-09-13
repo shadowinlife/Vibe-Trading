@@ -1,0 +1,7 @@
+# Router image dependencies — the SAME three libraries the repo already
+# declares in pyproject.toml (httpx>=0.28.0, fastapi>=0.104.0 which ships
+# starlette, uvicorn[standard]>=0.24.0). No new project dependency; this file
+# exists only so the router image does not install the whole agent surface.
+httpx>=0.25,<1
+starlette>=0.40,<2
+uvicorn[standard]>=0.24,<1

@@ -127,6 +127,109 @@ curl -sf http://localhost:24096/health    # gateway /health（preflight 成功�
 
 ---
 
+## §T11. 多租户薄路由 + 租户开通（engine-bridge，`deploy/router/`）
+
+> 本章描述 **T10 容器之上的多租户接入层**（plan `opencode-engine-bridge-v2` T11 / D2 / D9-F6）：
+> 一个薄反代（token/Host → tenant → upstream，**不含业务逻辑**）+ 一个开通脚本。
+> 深度文档见 [`../deploy/router/README.md`](../deploy/router/README.md)（路由规则表、SSE 配方、
+> 唤醒/回收/栅栏三套先例配方、env 参考、T12 交接）；本章只给部署动作。
+
+### T11.0 架构
+
+```
+公网 → router（:28080，Host 保留）→ 租户 A 容器（gateway :8080 / serve :4096 内部）
+                                  → 租户 B 容器（同上）
+        ↑ tenant_registry.json（token_sha256 → tenant → upstream；Host → tenant）
+        ↑ provision_tenant.py 写入，router 按 mtime 热加载（新租户无需重启）
+```
+
+- **router 只做路由**：业务鉴权仍在租户 gateway（它用同一把 Bearer key 对自己的
+  `API_AUTH_KEY` 复核）。registry 只存 **token 的 sha256**，明文 key 只存在于租户
+  `0600 tenant.env`——registry 泄漏 ≠ 凭据泄漏。
+- **Host 保留**（D9/F6 配方）：公网 Host 原样转发，租户 `API_ALLOWED_HOSTS=<公网host>`
+  信任它；改写成 upstream host 会让每个请求被 `_reject_untrusted_loopback_host` 403。
+- **wake-on-inbound**：上游无响应 → 问容器状态 → `docker start` → 轮询 gateway `/health`
+  → **重放原请求（含 body）**；超时/后端不可用 → `503 + Retry-After +` 兜底页（点名租户），
+  绝不静默挂死。本机实测（暖卷、amd64/Rosetta）**19.7–40.9s** 拿到 201 + 真 session_id。
+- **空闲回收真值检查**（opencode-router 配方）：代理侧活动记录不充分（SSE/WS 不打访问日志）
+  → 回收前 `docker exec` 问引擎 `GET /session?limit=1&roots=true` 读 `time.updated`；
+  引擎沉默且代理无记录 → **fail closed 保留**。回收间隔策略属 T12
+  （`VT_ROUTER_RECLAIM_INTERVAL_S` 默认 0=关）。
+- **租户删除栅栏**（openwork directory-fence）：per-tenant 串行化 dispose 与 prompt admission，
+  删除/回收不会与在途消息竞争；SSE 流的 admission 由流结束时释放（不是 handler 返回时）。
+
+### T11.1 开通一个租户
+
+```bash
+cd OpencodeAgent
+python deploy/provision_tenant.py \
+    --tenant acme --public-host acme.example.com --host-port 28081 \
+    --out-dir /srv/vt-tenants --container-prefix vt-tenant --volume-prefix vt-tenant \
+    --image opencode-serve:v3.0.0-tenant \
+    --base-env .env --print-key          # --print-key 只打一次，交给租户
+docker compose -f /srv/vt-tenants/acme/docker-compose.yml up -d
+# 或一次起全部已开通租户（开通脚本自动维护 include 列表）
+docker compose -f /srv/vt-tenants/fleet.yml up -d
+```
+
+产出：`tenant.env`(0600，含生成的 `API_AUTH_KEY`/`OPENCODE_SERVER_PASSWORD`、
+`API_ALLOWED_HOSTS`、`VIBE_TRADING_SSE_TIMEOUT`、D11 的 `LANGCHAIN_*`、
+`VIBE_TRADING_CHANNELS_AUTO_START=false`)、`agent.json`（channels 段**占位凭据** +
+全部 `enabled:false` + `operators:[]`，fail-closed）、`docker-compose.yml`（T10 端口/卷约定）、
+三个 named volume（home 卷按 B5 骨架预建 + `chown opencode`）、registry 条目、`fleet.yml`。
+
+- **`opencode.json` 不由开通脚本渲染**：仍走既有 `config/opencode.json.tmpl` +
+  `render_config.py`（`entrypoint.sh` 启动时渲染并编译工具治理清单）——治理面不分叉。
+- **幂等**：重跑复用已有 key（`--rotate-key` 才换新）、生成文件字节稳定、`agent.json`
+  只写一次（运维填入的真凭据不会被占位符覆盖，卷内同理）。
+- **绝不写入真凭据**：`--base-env` 只透传白名单内的模型/数据源凭据
+  （`DASHSCOPE_*`/`CLICKHOUSE_*`/`TUSHARE_TOKEN`）；bot 凭据永远是占位符。
+
+### T11.2 跑 router
+
+```bash
+cd OpencodeAgent/deploy
+# 宿主直跑（本地/E2E 形态：upstream = http://127.0.0.1:<host-port>）
+VT_ROUTER_REGISTRY=/srv/vt-tenants/tenant_registry.json \
+VT_ROUTER_ADMIN_TOKEN_SHA256=$(python -c "import hashlib,os;print(hashlib.sha256(os.environ['ADMIN'].encode()).hexdigest())") \
+    python -m router.cli serve --port 28080
+python -m router.cli show                 # 路由表（无密钥）
+python -m router.cli reclaim --dry-run    # 真值检查裁决，不停任何容器
+```
+
+容器形态（`deploy/router/Dockerfile.router` + `docker-compose.router.yml`，本机已构建并
+实测转发/SSE/断连传播）：
+
+- 需要 docker CLI + `/var/run/docker.sock`（唤醒后端）；镜像以 root 运行——socket 本身即
+  root 等价权限，故**不要**把 admin 面暴露公网，也不要与租户网络混布。
+- **upstream 必须用容器名**（`provision_tenant.py --upstream http://vt-tenant-acme:8080`）
+  并与租户同网络；用 `127.0.0.1:<host-port>` 会打到 router 容器自己的 loopback → 连接失败
+  → 触发无意义的唤醒（本机实测确认此坑）。
+- registry 挂**目录**不挂单文件，且该目录必须是 Docker VM 共享路径：本机（colima）
+  `/tmp` **未共享**——挂进去是空目录、单文件挂载会materialize成目录（`IsADirectoryError`）。
+  用 `$HOME` 下路径或 named volume；也不要把整个 tenants 目录挂进去（那会把各租户
+  明文 `tenant.env` 暴露给 router，它只需要 sha256）。
+- ECS 唤醒路径**只文档化未实现**（plan 禁止对真实基础设施调 ECS API）：配方见
+  `router/backend.py::EcsBackend` docstring（`DescribeTasks`/`UpdateService desiredCount=1`
+  + ALB 目标组健康，或 Lambda 唤醒 authorizer；真值检查走 `ExecuteCommand`/service-connect）。
+
+### T11.3 验证
+
+```bash
+# 无 docker 的单测（路由解析/Host 保留/SSE 头/栅栏/回收真值/开通渲染）
+pytest OpencodeAgent/tests/ -q      # 无 docker：路由/Host 保留/SSE 头/栅栏/回收真值/开通渲染
+# 双租户全链 E2E（需 T10 镜像 + 已开通租户；59 项检查，含 1 次真实模型回合）
+python deploy/e2e_multi_tenant.py --registry /srv/vt-tenants/tenant_registry.json \
+    --tenants-dir /srv/vt-tenants --tenants a,b --measure-resources \
+    --out .omo/evidence/opencode-engine-bridge-v2/t11-router
+```
+
+T10 的 `tests/test_config_render.py`（47 项）不受影响：开通脚本不渲染 `opencode.json`。
+T12 的隔离矩阵直接复用 `deploy/e2e_rig.py`（`Rig`/`RouterProcess`/`Recorder`/`docker_rss_mb`）
++ `--tenants` 参数化 + `--measure-resources` 采样钩子（本机实测每容器 ~1.0–1.4 GiB）。
+
+---
+
 
 ## 0. 部署架构
 
