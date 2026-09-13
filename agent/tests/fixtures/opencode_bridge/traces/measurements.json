@@ -1,0 +1,1460 @@
+{
+  "scenarios": {
+    "a": {
+      "sessionID": "ses_f6a9a9317ffeo1Alav2Rm1C8mD",
+      "idle_ts": [
+        1789212855.861295
+      ],
+      "gaps_after_idle": [
+        0.012
+      ],
+      "continuations": 1,
+      "timed_out": true
+    },
+    "b": {
+      "sessionID": "ses_f6a95fecaffelTiW60rxfQ6Xm5",
+      "idle_ts": [
+        1789213164.067222,
+        1789213164.318995
+      ],
+      "gaps_after_idle": [
+        0.252
+      ],
+      "continuations": 1,
+      "timed_out": false,
+      "abort_status": 200,
+      "abort_body": true,
+      "abort_done": true
+    },
+    "c1": {
+      "sessionID": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "run": 1,
+      "idle_ts": [
+        1789213692.069437,
+        1789213747.7779589
+      ],
+      "gaps_after_idle": [
+        6.427
+      ],
+      "continuations": 1,
+      "timed_out": false
+    },
+    "c2": {
+      "sessionID": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "run": 2,
+      "idle_ts": [
+        1789213808.214796,
+        1789213847.5035388
+      ],
+      "gaps_after_idle": [
+        6.409
+      ],
+      "continuations": 1,
+      "timed_out": false
+    },
+    "d": {
+      "sessionID": "ses_f6a8a3fefffehhSWzDY3GXJNx7",
+      "idle_ts": [
+        1789213951.528343
+      ],
+      "gaps_after_idle": [],
+      "continuations": 0,
+      "timed_out": false,
+      "children_status": 200,
+      "children": [
+        {
+          "id": "ses_f6a8a2e8fffefJiIC5wAwAvFVQ",
+          "slug": "silent-mountain",
+          "projectID": "global",
+          "directory": "/private/tmp/oc-spike-workspace",
+          "path": "private/tmp/oc-spike-workspace",
+          "parentID": "ses_f6a8a3fefffehhSWzDY3GXJNx7",
+          "summary": {
+            "additions": 0,
+            "deletions": 0,
+            "files": 0
+          },
+          "cost": 0.00129024115,
+          "tokens": {
+            "input": 6908,
+            "output": 638,
+            "reasoning": 201,
+            "cache": {
+              "read": 11264,
+              "write": 0
+            }
+          },
+          "title": "Find SessionService construction (@explore subagent)",
+          "agent": "explore",
+          "model": {
+            "id": "qwen3.8-flash",
+            "providerID": "alibaba-cn",
+            "variant": "default"
+          },
+          "version": "1.18.30",
+          "time": {
+            "created": 1789213921648,
+            "updated": 1789213936809
+          },
+          "permission": [
+            {
+              "permission": "task",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "call_omo_agent",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "question",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_create",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_delete",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_shutdown_request",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_approve_shutdown",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_reject_shutdown",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_send_message",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_task_create",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_task_list",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_task_update",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_task_get",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_status",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "team_list",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "write",
+              "pattern": "*",
+              "action": "deny"
+            },
+            {
+              "permission": "edit",
+              "pattern": "*",
+              "action": "deny"
+            }
+          ]
+        }
+      ]
+    },
+    "g": {
+      "sessionID": "ses_f6a896aedffe7EDKaTlXQmiViS",
+      "idle_ts": [
+        1789214102.105184
+      ],
+      "gaps_after_idle": [],
+      "continuations": 0,
+      "timed_out": false
+    },
+    "h": {
+      "sessionID": "ses_f6a8732a1ffe0gr3ZzL1uH49Po",
+      "delete_status": 200,
+      "delete_body": true,
+      "session_deleted_event": true
+    },
+    "e": {
+      "sessionID": "ses_f6a85550fffer8jZYSRVsjwbHz",
+      "permission_found": true,
+      "permission_event_type": "permission.asked",
+      "permission_id": "per_0957ae606001z0XHrF7WhF4IAt",
+      "permission_props_keys": [
+        "always",
+        "id",
+        "metadata",
+        "patterns",
+        "permission",
+        "sessionID",
+        "tool"
+      ],
+      "respond_status": 200,
+      "respond_body": true,
+      "idle_ts": [
+        1789214260.866086
+      ],
+      "gaps_after_idle": [],
+      "continuations": 0,
+      "timed_out": false
+    }
+  },
+  "i_message_part_delta": {
+    "exists": true,
+    "property_key_sets": {
+      "delta,field,messageID,partID,sessionID": 946
+    },
+    "field_values": {
+      "text": 946
+    }
+  },
+  "f_idle_to_continuation": {
+    "n": 2,
+    "samples": [
+      {
+        "trace": "scenario_c_continuation_run1.jsonl",
+        "gap_s": 6.427,
+        "next_event": "message.updated"
+      },
+      {
+        "trace": "scenario_c_continuation_run2.jsonl",
+        "gap_s": 6.409,
+        "next_event": "message.updated"
+      }
+    ],
+    "min_s": 6.409,
+    "max_s": 6.427,
+    "p50_s": 6.427
+  },
+  "f2_natural_completion_to_next_event": {
+    "n": 2,
+    "samples": [
+      {
+        "trace": "scenario_c_continuation_run1.jsonl",
+        "gap_s": 6.427,
+        "next_event": "message.updated"
+      },
+      {
+        "trace": "scenario_c_continuation_run2.jsonl",
+        "gap_s": 6.409,
+        "next_event": "message.updated"
+      }
+    ],
+    "min_s": 6.409,
+    "max_s": 6.427,
+    "p50_s": 6.427
+  },
+  "g_stream_keepalive": {
+    "trace": "scenario_g_silent_tool.jsonl",
+    "heartbeat_interval_s": 10.01,
+    "heartbeats": 15
+  },
+  "g_intra_tool_silence": [
+    {
+      "trace": "scenario_a_multi_tool.jsonl",
+      "partID": "prt_095657a5a0010mSq0CRyYpYy3i",
+      "tool": "vibe-trading_list_skills",
+      "sid": "ses_f6a9a9317ffeo1Alav2Rm1C8mD",
+      "events_inside": 1,
+      "types_inside": {
+        "message.part.updated": 1
+      },
+      "max_gap_s": 0.188,
+      "duration_s": 0.323
+    },
+    {
+      "trace": "scenario_a_multi_tool.jsonl",
+      "partID": "prt_095657b33001mO5xzPA6IHOoPh",
+      "tool": "bash",
+      "sid": "ses_f6a9a9317ffeo1Alav2Rm1C8mD",
+      "events_inside": 2,
+      "types_inside": {
+        "message.part.updated": 2
+      },
+      "max_gap_s": 0.974,
+      "duration_s": 1.407
+    },
+    {
+      "trace": "scenario_b_abort.jsonl",
+      "partID": "prt_0956a3003001KKgiQj3C0HeLDU",
+      "tool": "bash",
+      "sid": "ses_f6a95fecaffelTiW60rxfQ6Xm5",
+      "events_inside": 4,
+      "types_inside": {
+        "message.part.updated": 1,
+        "session.error": 1,
+        "session.status": 1,
+        "session.idle": 1
+      },
+      "max_gap_s": 2.972,
+      "duration_s": 4.286
+    },
+    {
+      "trace": "scenario_c_continuation_run1.jsonl",
+      "partID": "prt_09571e210001zg9sqlUIPFXQRW",
+      "tool": "todowrite",
+      "sid": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "events_inside": 1,
+      "types_inside": {
+        "todo.updated": 1
+      },
+      "max_gap_s": 0.17,
+      "duration_s": 0.332
+    },
+    {
+      "trace": "scenario_c_continuation_run1.jsonl",
+      "partID": "prt_09571f6e8001YaWYGir0QZindT",
+      "tool": "bash",
+      "sid": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "events_inside": 1,
+      "types_inside": {
+        "message.part.updated": 1
+      },
+      "max_gap_s": 1.26,
+      "duration_s": 2.334
+    },
+    {
+      "trace": "scenario_c_continuation_run1.jsonl",
+      "partID": "prt_095722a27001alIc2PvFow4gTT",
+      "tool": "write",
+      "sid": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "events_inside": 0,
+      "types_inside": {},
+      "max_gap_s": 1.084,
+      "duration_s": 1.084
+    },
+    {
+      "trace": "scenario_c_continuation_run1.jsonl",
+      "partID": "prt_095723dca001WuvUMM3qHd6wyb",
+      "tool": "todowrite",
+      "sid": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "events_inside": 1,
+      "types_inside": {
+        "todo.updated": 1
+      },
+      "max_gap_s": 0.131,
+      "duration_s": 0.261
+    },
+    {
+      "trace": "scenario_c_continuation_run1.jsonl",
+      "partID": "prt_095728a7b001e6xj37pAXZ9GW2",
+      "tool": "todowrite",
+      "sid": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "events_inside": 1,
+      "types_inside": {
+        "todo.updated": 1
+      },
+      "max_gap_s": 0.18,
+      "duration_s": 0.316
+    },
+    {
+      "trace": "scenario_c_continuation_run1.jsonl",
+      "partID": "prt_09572a72c001ujEsAJ4ymqwuQ9",
+      "tool": "write",
+      "sid": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "events_inside": 0,
+      "types_inside": {},
+      "max_gap_s": 0.957,
+      "duration_s": 0.957
+    },
+    {
+      "trace": "scenario_c_continuation_run1.jsonl",
+      "partID": "prt_09572bc07001HJF3RSjaaHymMw",
+      "tool": "todowrite",
+      "sid": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "events_inside": 1,
+      "types_inside": {
+        "todo.updated": 1
+      },
+      "max_gap_s": 0.175,
+      "duration_s": 0.323
+    },
+    {
+      "trace": "scenario_c_continuation_run1.jsonl",
+      "partID": "prt_09572d0c0001CBJlO3FdcpCXTw",
+      "tool": "write",
+      "sid": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "events_inside": 0,
+      "types_inside": {},
+      "max_gap_s": 0.944,
+      "duration_s": 0.944
+    },
+    {
+      "trace": "scenario_c_continuation_run1.jsonl",
+      "partID": "prt_09572e2f7001e9WKqL84SiF4f4",
+      "tool": "bash",
+      "sid": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "events_inside": 7,
+      "types_inside": {
+        "message.part.updated": 7
+      },
+      "max_gap_s": 1.218,
+      "duration_s": 2.363
+    },
+    {
+      "trace": "scenario_c_continuation_run1.jsonl",
+      "partID": "prt_09573069e001QXgFvd10G5uy9F",
+      "tool": "todowrite",
+      "sid": "ses_f6a8e2988ffeaKJkYLEN52BY6r",
+      "events_inside": 1,
+      "types_inside": {
+        "todo.updated": 1
+      },
+      "max_gap_s": 0.127,
+      "duration_s": 0.253
+    },
+    {
+      "trace": "scenario_c_continuation_run2.jsonl",
+      "partID": "prt_0957394d9001NX1f0BJkUOT01w",
+      "tool": "todowrite",
+      "sid": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "events_inside": 1,
+      "types_inside": {
+        "todo.updated": 1
+      },
+      "max_gap_s": 0.18,
+      "duration_s": 0.333
+    },
+    {
+      "trace": "scenario_c_continuation_run2.jsonl",
+      "partID": "prt_09573bfde0017yt6cac4bfEfMa",
+      "tool": "bash",
+      "sid": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "events_inside": 1,
+      "types_inside": {
+        "message.part.updated": 1
+      },
+      "max_gap_s": 1.225,
+      "duration_s": 2.302
+    },
+    {
+      "trace": "scenario_c_continuation_run2.jsonl",
+      "partID": "prt_09573d3d100138hXp4rwpRlD8C",
+      "tool": "write",
+      "sid": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "events_inside": 0,
+      "types_inside": {},
+      "max_gap_s": 1.056,
+      "duration_s": 1.056
+    },
+    {
+      "trace": "scenario_c_continuation_run2.jsonl",
+      "partID": "prt_09573fbd800126RPOkTbYIdXwX",
+      "tool": "todowrite",
+      "sid": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "events_inside": 1,
+      "types_inside": {
+        "todo.updated": 1
+      },
+      "max_gap_s": 0.176,
+      "duration_s": 0.313
+    },
+    {
+      "trace": "scenario_c_continuation_run2.jsonl",
+      "partID": "prt_0957441a60012BhvhfhxG1iZEb",
+      "tool": "todowrite",
+      "sid": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "events_inside": 1,
+      "types_inside": {
+        "todo.updated": 1
+      },
+      "max_gap_s": 0.158,
+      "duration_s": 0.296
+    },
+    {
+      "trace": "scenario_c_continuation_run2.jsonl",
+      "partID": "prt_0957456ec001qVI4L0nvF1VHFs",
+      "tool": "write",
+      "sid": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "events_inside": 0,
+      "types_inside": {},
+      "max_gap_s": 0.936,
+      "duration_s": 0.936
+    },
+    {
+      "trace": "scenario_c_continuation_run2.jsonl",
+      "partID": "prt_0957465ed001M0vqTHv0YLkhnN",
+      "tool": "todowrite",
+      "sid": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "events_inside": 1,
+      "types_inside": {
+        "todo.updated": 1
+      },
+      "max_gap_s": 0.177,
+      "duration_s": 0.311
+    },
+    {
+      "trace": "scenario_c_continuation_run2.jsonl",
+      "partID": "prt_095747b18001Uqg0yZzw3XmDoH",
+      "tool": "write",
+      "sid": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "events_inside": 0,
+      "types_inside": {},
+      "max_gap_s": 0.897,
+      "duration_s": 0.897
+    },
+    {
+      "trace": "scenario_c_continuation_run2.jsonl",
+      "partID": "prt_095748bae001FM6ptsyMiCaRUk",
+      "tool": "todowrite",
+      "sid": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "events_inside": 2,
+      "types_inside": {
+        "todo.updated": 1,
+        "message.part.updated": 1
+      },
+      "max_gap_s": 0.18,
+      "duration_s": 0.309
+    },
+    {
+      "trace": "scenario_c_continuation_run2.jsonl",
+      "partID": "prt_0957495f6001Xx7wBrvvHNIYtx",
+      "tool": "bash",
+      "sid": "ses_f6a8c7406ffePMxd6JpuWy46w4",
+      "events_inside": 7,
+      "types_inside": {
+        "message.part.updated": 7
+      },
+      "max_gap_s": 1.235,
+      "duration_s": 2.367
+    },
+    {
+      "trace": "scenario_d_subagent.jsonl",
+      "partID": "prt_09575cd13001MeoBwURgye0Ak8",
+      "tool": "task",
+      "sid": "ses_f6a8a3fefffehhSWzDY3GXJNx7",
+      "events_inside": 0,
+      "types_inside": {},
+      "max_gap_s": 16.494,
+      "duration_s": 16.494
+    },
+    {
+      "trace": "scenario_d_subagent.jsonl",
+      "partID": "prt_09575e2c4001sCbMCmFEOP4bDO",
+      "tool": "grep",
+      "sid": "ses_f6a8a2e8fffefJiIC5wAwAvFVQ",
+      "events_inside": 1,
+      "types_inside": {
+        "message.part.updated": 1
+      },
+      "max_gap_s": 0.277,
+      "duration_s": 0.411
+    },
+    {
+      "trace": "scenario_d_subagent.jsonl",
+      "partID": "prt_09575e47e001v5EFC1VcYliPUl",
+      "tool": "grep",
+      "sid": "ses_f6a8a2e8fffefJiIC5wAwAvFVQ",
+      "events_inside": 1,
+      "types_inside": {
+        "message.part.updated": 1
+      },
+      "max_gap_s": 0.185,
+      "duration_s": 0.333
+    },
+    {
+      "trace": "scenario_d_subagent.jsonl",
+      "partID": "prt_09575e6b1001TrRxjDqY1mkSsA",
+      "tool": "lsp_symbols",
+      "sid": "ses_f6a8a2e8fffefJiIC5wAwAvFVQ",
+      "events_inside": 1,
+      "types_inside": {
+        "message.part.updated": 1
+      },
+      "max_gap_s": 0.569,
+      "duration_s": 0.599
+    },
+    {
+      "trace": "scenario_d_subagent.jsonl",
+      "partID": "prt_09575ef56001PsfnF4Ufarch5v",
+      "tool": "read",
+      "sid": "ses_f6a8a2e8fffefJiIC5wAwAvFVQ",
+      "events_inside": 1,
+      "types_inside": {
+        "message.part.updated": 1
+      },
+      "max_gap_s": 0.15,
+      "duration_s": 0.291
+    },
+    {
+      "trace": "scenario_d_subagent.jsonl",
+      "partID": "prt_09575f0d0001YTMF10FwW5Kxly",
+      "tool": "lsp_find_references",
+      "sid": "ses_f6a8a2e8fffefJiIC5wAwAvFVQ",
+      "events_inside": 1,
+      "types_inside": {
+        "message.part.updated": 1
+      },
+      "max_gap_s": 0.332,
+      "duration_s": 0.332
+    },
+    {
+      "trace": "scenario_e_permission.jsonl",
+      "partID": "prt_0957ae0d8001vLwGWuV6T4bQcp",
+      "tool": "bash",
+      "sid": "ses_f6a85550fffer8jZYSRVsjwbHz",
+      "events_inside": 4,
+      "types_inside": {
+        "permission.asked": 1,
+        "permission.replied": 1,
+        "message.part.updated": 2
+      },
+      "max_gap_s": 3.234,
+      "duration_s": 4.713
+    },
+    {
+      "trace": "scenario_g_silent_tool.jsonl",
+      "partID": "prt_09576a289001WZdyQHIqXXDfXR",
+      "tool": "bash",
+      "sid": "ses_f6a896aedffe7EDKaTlXQmiViS",
+      "events_inside": 1,
+      "types_inside": {
+        "message.part.updated": 1
+      },
+      "max_gap_s": 120.754,
+      "duration_s": 121.826
+    }
+  ],
+  "assertions": {
+    "a": {
+      "frames": 94,
+      "event_types": [
+        "message.part.delta",
+        "message.part.updated",
+        "message.updated",
+        "server.heartbeat",
+        "session.created",
+        "session.diff",
+        "session.idle",
+        "session.status",
+        "session.updated",
+        "tui.toast.show"
+      ],
+      "natural_completions": [
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095656de90011BSdAWol34auFa"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095656de90011BSdAWol34auFa"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_095658220001lNSYGzWTqZzJak"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_095658220001lNSYGzWTqZzJak"
+        }
+      ],
+      "idle_count": 1,
+      "session_error_followed_by_idle": [],
+      "delta_count": 17,
+      "status_transitions": [
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "idle"
+      ]
+    },
+    "b": {
+      "frames": 129,
+      "event_types": [
+        "message.part.delta",
+        "message.part.updated",
+        "message.updated",
+        "server.heartbeat",
+        "session.created",
+        "session.diff",
+        "session.error",
+        "session.idle",
+        "session.status",
+        "session.updated",
+        "tui.toast.show"
+      ],
+      "natural_completions": [
+        {
+          "finish": null,
+          "error": {
+            "name": "MessageAbortedError",
+            "data": {
+              "message": "Aborted"
+            }
+          },
+          "messageID": "msg_0956a021c001zkFtiL9hl1IEcq"
+        }
+      ],
+      "idle_count": 2,
+      "session_error_followed_by_idle": [
+        true
+      ],
+      "delta_count": 102,
+      "status_transitions": [
+        "busy",
+        "busy",
+        "idle",
+        "idle"
+      ]
+    },
+    "c1": {
+      "frames": 539,
+      "event_types": [
+        "file.edited",
+        "file.watcher.updated",
+        "message.part.delta",
+        "message.part.updated",
+        "message.updated",
+        "server.heartbeat",
+        "session.created",
+        "session.diff",
+        "session.idle",
+        "session.status",
+        "session.updated",
+        "todo.updated",
+        "tui.toast.show"
+      ],
+      "natural_completions": [
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09571d7a2001oKvhV8VXhH0xQ6"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09571d7a2001oKvhV8VXhH0xQ6"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09571eb68001rTnnrYR3gTLPrr"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09571eb68001rTnnrYR3gTLPrr"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095720156001ZUr2lmxuvCjMC9"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095720156001ZUr2lmxuvCjMC9"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095723127001GEUHzr7KGZ9JbU"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095723127001GEUHzr7KGZ9JbU"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_09572463f0011f0Pl8oRoxUBDT"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_09572463f0011f0Pl8oRoxUBDT"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_0957269bb0018HlUE58c9WSwRP"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_0957269bb0018HlUE58c9WSwRP"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_0957294e50018bYewpgXpgY9Ms"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_0957294e50018bYewpgXpgY9Ms"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09572ad42001W54KGMZUw46bbP"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09572ad42001W54KGMZUw46bbP"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09572c5d000125bQ9YIyena4ym"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09572c5d000125bQ9YIyena4ym"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09572d71400139ZSFD6RjgKBWv"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09572d71400139ZSFD6RjgKBWv"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09572f0ab001MfjPfHU3d0zLPO"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09572f0ab001MfjPfHU3d0zLPO"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_09573102f0013DkEXu6I3D1Oub"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_09573102f0013DkEXu6I3D1Oub"
+        }
+      ],
+      "idle_count": 2,
+      "session_error_followed_by_idle": [],
+      "delta_count": 299,
+      "status_transitions": [
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "idle",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "idle"
+      ],
+      "injected_user_messages": [
+        {
+          "messageID": "msg_09571d67e00117q8L34XuojXVh",
+          "synthetic": null,
+          "time_created": 1789213660798
+        },
+        {
+          "messageID": "msg_09571d67e00117q8L34XuojXVh",
+          "synthetic": null,
+          "time_created": 1789213660798
+        },
+        {
+          "messageID": "msg_09571d67e00117q8L34XuojXVh",
+          "synthetic": null,
+          "time_created": 1789213660798
+        },
+        {
+          "messageID": "msg_09571d67e00117q8L34XuojXVh",
+          "synthetic": null,
+          "time_created": 1789213660798
+        },
+        {
+          "messageID": "msg_09571d67e00117q8L34XuojXVh",
+          "synthetic": null,
+          "time_created": 1789213660798
+        },
+        {
+          "messageID": "msg_09571d67e00117q8L34XuojXVh",
+          "synthetic": null,
+          "time_created": 1789213660798
+        },
+        {
+          "messageID": "msg_09571d67e00117q8L34XuojXVh",
+          "synthetic": null,
+          "time_created": 1789213660798
+        },
+        {
+          "messageID": "msg_0957269b1001ZFXOwTft3XCJYU",
+          "synthetic": null,
+          "time_created": 1789213698481
+        },
+        {
+          "messageID": "msg_0957269b1001ZFXOwTft3XCJYU",
+          "synthetic": null,
+          "time_created": 1789213698481
+        },
+        {
+          "messageID": "msg_0957269b1001ZFXOwTft3XCJYU",
+          "synthetic": null,
+          "time_created": 1789213698481
+        },
+        {
+          "messageID": "msg_0957269b1001ZFXOwTft3XCJYU",
+          "synthetic": null,
+          "time_created": 1789213698481
+        },
+        {
+          "messageID": "msg_0957269b1001ZFXOwTft3XCJYU",
+          "synthetic": null,
+          "time_created": 1789213698481
+        },
+        {
+          "messageID": "msg_0957269b1001ZFXOwTft3XCJYU",
+          "synthetic": null,
+          "time_created": 1789213698481
+        },
+        {
+          "messageID": "msg_0957269b1001ZFXOwTft3XCJYU",
+          "synthetic": null,
+          "time_created": 1789213698481
+        },
+        {
+          "messageID": "msg_0957269b1001ZFXOwTft3XCJYU",
+          "synthetic": null,
+          "time_created": 1789213698481
+        },
+        {
+          "messageID": "msg_0957269b1001ZFXOwTft3XCJYU",
+          "synthetic": null,
+          "time_created": 1789213698481
+        }
+      ]
+    },
+    "c2": {
+      "frames": 506,
+      "event_types": [
+        "file.edited",
+        "file.watcher.updated",
+        "message.part.delta",
+        "message.part.updated",
+        "message.updated",
+        "server.heartbeat",
+        "session.created",
+        "session.diff",
+        "session.idle",
+        "session.status",
+        "session.updated",
+        "todo.updated",
+        "tui.toast.show"
+      ],
+      "natural_completions": [
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095738ceb001pi7L8n63YABebi"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095738ceb001pi7L8n63YABebi"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095739f8b001sUgKRdhISOr5mX"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095739f8b001sUgKRdhISOr5mX"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09573ca33001fb1ywXvbkpS4Mj"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09573ca33001fb1ywXvbkpS4Mj"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09573da810014etohciAQ7AiiH"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09573da810014etohciAQ7AiiH"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_0957404f1001cFKWffEOiJeR8M"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_0957404f1001cFKWffEOiJeR8M"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095742f5b001gDsFoXdYlSPESE"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095742f5b001gDsFoXdYlSPESE"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095744c2e001T5Q6oowH3a4flM"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095744c2e001T5Q6oowH3a4flM"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095745d5a001GWZf1iRf5Pzape"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095745d5a001GWZf1iRf5Pzape"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095747069001q9xoEvnhD0NGV4"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095747069001q9xoEvnhD0NGV4"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095748135001fzwMC3BYQv31KH"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095748135001fzwMC3BYQv31KH"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_09574a28e001BBORam2RqUdSf1"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_09574a28e001BBORam2RqUdSf1"
+        }
+      ],
+      "idle_count": 2,
+      "session_error_followed_by_idle": [],
+      "delta_count": 279,
+      "status_transitions": [
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "idle",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "idle"
+      ],
+      "injected_user_messages": [
+        {
+          "messageID": "msg_095738c04001dm3fN8AwzRS74d",
+          "synthetic": null,
+          "time_created": 1789213772804
+        },
+        {
+          "messageID": "msg_095738c04001dm3fN8AwzRS74d",
+          "synthetic": null,
+          "time_created": 1789213772804
+        },
+        {
+          "messageID": "msg_095738c04001dm3fN8AwzRS74d",
+          "synthetic": null,
+          "time_created": 1789213772804
+        },
+        {
+          "messageID": "msg_095738c04001dm3fN8AwzRS74d",
+          "synthetic": null,
+          "time_created": 1789213772804
+        },
+        {
+          "messageID": "msg_095738c04001dm3fN8AwzRS74d",
+          "synthetic": null,
+          "time_created": 1789213772804
+        },
+        {
+          "messageID": "msg_095738c04001dm3fN8AwzRS74d",
+          "synthetic": null,
+          "time_created": 1789213772804
+        },
+        {
+          "messageID": "msg_095738c04001dm3fN8AwzRS74d",
+          "synthetic": null,
+          "time_created": 1789213772804
+        },
+        {
+          "messageID": "msg_095742f52001diLNgg4q1BIIqI",
+          "synthetic": null,
+          "time_created": 1789213814611
+        },
+        {
+          "messageID": "msg_095742f52001diLNgg4q1BIIqI",
+          "synthetic": null,
+          "time_created": 1789213814611
+        },
+        {
+          "messageID": "msg_095742f52001diLNgg4q1BIIqI",
+          "synthetic": null,
+          "time_created": 1789213814611
+        },
+        {
+          "messageID": "msg_095742f52001diLNgg4q1BIIqI",
+          "synthetic": null,
+          "time_created": 1789213814611
+        },
+        {
+          "messageID": "msg_095742f52001diLNgg4q1BIIqI",
+          "synthetic": null,
+          "time_created": 1789213814611
+        },
+        {
+          "messageID": "msg_095742f52001diLNgg4q1BIIqI",
+          "synthetic": null,
+          "time_created": 1789213814611
+        },
+        {
+          "messageID": "msg_095742f52001diLNgg4q1BIIqI",
+          "synthetic": null,
+          "time_created": 1789213814611
+        },
+        {
+          "messageID": "msg_095742f52001diLNgg4q1BIIqI",
+          "synthetic": null,
+          "time_created": 1789213814611
+        }
+      ]
+    },
+    "d": {
+      "frames": 324,
+      "event_types": [
+        "message.part.delta",
+        "message.part.updated",
+        "message.updated",
+        "server.heartbeat",
+        "session.created",
+        "session.diff",
+        "session.idle",
+        "session.status",
+        "session.updated",
+        "tui.toast.show"
+      ],
+      "natural_completions": [
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09575d17d0011Dr0XQ5dK72Of4"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09575d17d0011Dr0XQ5dK72Of4"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09575eb130013AJVValB7dQoCx"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09575eb130013AJVValB7dQoCx"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_09575f427001mDWpGL4AErynb3"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_09575f427001mDWpGL4AErynb3"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09575c0fd001Ezb9soNCXRD4DN"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_09575c0fd001Ezb9soNCXRD4DN"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_09576110b001VqrtRFc8ZyEvyk"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_09576110b001VqrtRFc8ZyEvyk"
+        }
+      ],
+      "idle_count": 3,
+      "session_error_followed_by_idle": [],
+      "delta_count": 203,
+      "status_transitions": [
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "idle",
+        "idle",
+        "busy",
+        "busy",
+        "busy",
+        "idle"
+      ],
+      "task_parts": [
+        {
+          "partID": "prt_09575cd13001MeoBwURgye0Ak8",
+          "status": "pending",
+          "metadata_sessionId": null,
+          "metadata_keys": []
+        },
+        {
+          "partID": "prt_09575cd13001MeoBwURgye0Ak8",
+          "status": "running",
+          "metadata_sessionId": null,
+          "metadata_keys": []
+        },
+        {
+          "partID": "prt_09575cd13001MeoBwURgye0Ak8",
+          "status": "completed",
+          "metadata_sessionId": "ses_f6a8a2e8fffefJiIC5wAwAvFVQ",
+          "metadata_keys": [
+            "agent",
+            "description",
+            "load_skills",
+            "model",
+            "prompt",
+            "requested_subagent_type",
+            "run_in_background",
+            "sessionId",
+            "spawnDepth",
+            "sync",
+            "taskId",
+            "truncated"
+          ]
+        }
+      ]
+    },
+    "e": {
+      "frames": 163,
+      "event_types": [
+        "catalog.updated",
+        "integration.updated",
+        "message.part.delta",
+        "message.part.updated",
+        "message.updated",
+        "permission.asked",
+        "permission.replied",
+        "plugin.added",
+        "reference.updated",
+        "server.heartbeat",
+        "session.created",
+        "session.diff",
+        "session.idle",
+        "session.status",
+        "session.updated",
+        "tui.toast.show"
+      ],
+      "natural_completions": [
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_0957ab2d7001bTdz3kmz0UVZ17"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_0957ab2d7001bTdz3kmz0UVZ17"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_0957af488001Uk7td32IAVn78X"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_0957af488001Uk7td32IAVn78X"
+        }
+      ],
+      "idle_count": 1,
+      "session_error_followed_by_idle": [],
+      "delta_count": 16,
+      "status_transitions": [
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "idle"
+      ]
+    },
+    "g": {
+      "frames": 87,
+      "event_types": [
+        "message.part.delta",
+        "message.part.updated",
+        "message.updated",
+        "server.heartbeat",
+        "session.created",
+        "session.diff",
+        "session.idle",
+        "session.status",
+        "session.updated",
+        "tui.toast.show"
+      ],
+      "natural_completions": [
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095769622001l78yIAwn4wUFBP"
+        },
+        {
+          "finish": "tool-calls",
+          "error": null,
+          "messageID": "msg_095769622001l78yIAwn4wUFBP"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_0957881270016p8S2Rrzj2BjOW"
+        },
+        {
+          "finish": "stop",
+          "error": null,
+          "messageID": "msg_0957881270016p8S2Rrzj2BjOW"
+        }
+      ],
+      "idle_count": 1,
+      "session_error_followed_by_idle": [],
+      "delta_count": 30,
+      "status_transitions": [
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "busy",
+        "idle"
+      ]
+    },
+    "h": {
+      "frames": 2,
+      "event_types": [
+        "session.created",
+        "session.deleted"
+      ],
+      "natural_completions": [],
+      "idle_count": 0,
+      "session_error_followed_by_idle": [],
+      "delta_count": 0,
+      "status_transitions": []
+    }
+  }
+}
