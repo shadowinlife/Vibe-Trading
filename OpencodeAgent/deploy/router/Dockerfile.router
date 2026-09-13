@@ -1,0 +1,58 @@
+# =============================================================================
+# Dockerfile.router — the thin tenant router (plan T11) as a container.
+#
+# Deliberately tiny: python-slim + the pinned static docker CLI (the wake
+# backend shells out to it) + three libraries that the repo already depends on
+# (httpx / starlette / uvicorn — no new project dependency).
+#
+# SECURITY POSTURE: this image runs as root because it mounts
+# /var/run/docker.sock, which is root-equivalent by nature. The router holds no
+# tenant credential (the registry stores token SHA-256s; serve's password is
+# read inside the tenant container by `docker exec`), but socket access means
+# container control — isolate this container from tenant networks and never
+# expose its admin surface publicly.
+#
+# Build/run: see docker-compose.router.yml and README.md.
+# =============================================================================
+FROM python:3.12-slim
+
+ARG DOCKER_CLI_VERSION=27.3.1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pinned static docker CLI (no apt repo, no daemon in this image).
+RUN curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" \
+        -o /tmp/docker.tgz \
+    && tar -xzf /tmp/docker.tgz -C /tmp \
+    && install -m 0755 /tmp/docker/docker /usr/local/bin/docker \
+    && rm -rf /tmp/docker /tmp/docker.tgz \
+    && docker --version
+
+WORKDIR /app
+
+# Build context is OpencodeAgent/deploy (see docker-compose.router.yml).
+# Mirrors the repo's existing dependency floors (pyproject.toml): httpx>=0.28,
+# fastapi/uvicorn[standard]>=0.24 — starlette ships with fastapi there.
+COPY router/requirements.router.txt ./requirements.router.txt
+RUN pip install --no-cache-dir -r requirements.router.txt
+
+# Only the modules: README/Dockerfile/compose stay out of the image.
+COPY router/*.py ./router/
+
+# Pre-create the registry mount point so a bind mount (or `docker cp`) has a
+# target; the router fails closed (503 + warning) when the table is absent.
+RUN mkdir -p /etc/vt-router
+
+ENV VT_ROUTER_HOST=0.0.0.0 \
+    VT_ROUTER_PORT=28080 \
+    VT_ROUTER_REGISTRY=/etc/vt-router/tenant_registry.json \
+    PYTHONUNBUFFERED=1
+
+EXPOSE 28080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -sf "http://127.0.0.1:${VT_ROUTER_PORT}/router-healthz" || exit 1
+
+CMD ["python", "-m", "router.cli", "serve"]

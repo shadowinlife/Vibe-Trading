@@ -1,0 +1,52 @@
+# =============================================================================
+# docker-compose.router.yml — the thin tenant router as a container.
+#
+# Production shape. Two things differ from the local (host-run) rig used by the
+# T11 E2E:
+#
+#   1. tenant upstreams must be CONTAINER NAMES on a shared network, not
+#      127.0.0.1 host ports — provision with:
+#        provision_tenant.py --upstream http://vt-tenant-acme:8080 …
+#   2. the wake backend needs the docker socket (mounted below). On ECS use
+#      VT_ROUTER_BACKEND=ecs — documented in router/backend.py, not implemented
+#      (the plan forbids ECS API calls against real infrastructure).
+#
+# The registry is mounted read-only from a DIRECTORY that holds only the
+# registry: provisioning writes it on the host and the router hot-reloads on
+# mtime change, so a new tenant needs no restart. Two reasons for a dedicated
+# directory rather than a single-file mount:
+#   1. Docker Desktop does not reliably bind-mount single files (it materializes
+#      a directory at the target — observed on this rig, IsADirectoryError);
+#   2. mounting the tenants dir would also expose every tenant.env (plaintext
+#      API_AUTH_KEY) to the router, which only ever needs the SHA-256.
+# So provision with: --registry <ROUTER_CONFIG_DIR>/tenant_registry.json
+# =============================================================================
+services:
+  router:
+    build:
+      context: .
+      dockerfile: router/Dockerfile.router
+    image: vt-tenant-router:1.0.0
+    container_name: vt-tenant-router
+    restart: unless-stopped
+    ports:
+      - "${ROUTER_PORT:-28080}:28080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${ROUTER_CONFIG_DIR:-./router-config}:/etc/vt-router:ro
+    environment:
+      - VT_ROUTER_REGISTRY=/etc/vt-router/tenant_registry.json
+      - VT_ROUTER_HOST=0.0.0.0
+      - VT_ROUTER_PORT=28080
+      - VT_ROUTER_BACKEND=docker-cli
+      # Fail closed: with no admin token sha256 the admin surface answers 403.
+      - VT_ROUTER_ADMIN_TOKEN_SHA256=${ROUTER_ADMIN_TOKEN_SHA256:-}
+      - VT_ROUTER_WAKE_TIMEOUT_S=${ROUTER_WAKE_TIMEOUT_S:-300}
+      - VT_ROUTER_IDLE_TTL_S=${ROUTER_IDLE_TTL_S:-10800}
+      - VT_ROUTER_RECLAIM_INTERVAL_S=${ROUTER_RECLAIM_INTERVAL_S:-0}
+      - VT_ROUTER_LOG_LEVEL=${ROUTER_LOG_LEVEL:-INFO}
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
