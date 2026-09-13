@@ -105,7 +105,7 @@ def _ensure_registered() -> None:
             "backtest.loaders.baostock_loader",
             "backtest.loaders.tencent_loader",
             "backtest.loaders.mootdx_loader",
-            "backtest.loaders.clickhouse_loader",
+            "backtest.loaders.clickhouse",
             "backtest.loaders.ccxt_loader",
             "backtest.loaders.futu",
             "backtest.loaders.eastmoney_loader",
