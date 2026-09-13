@@ -127,10 +127,14 @@ Settings HTTP 面是**引擎无关**的（契约由 `agent/tests/test_settings_e
 
 ## 待接入（后续 todo + 已知残余）
 
-- **T13 — `scheduled_research` MCP wrapper**（冻结门控，Phase 4）：救活 IM confirm 流（`runtime.py:198-217`）；wrapper 输出须将 `proposal_id` 置于前 200 字符内（D5 preview 截断 + 中继正则）。与工具面相交（治理清单冻结——先查冻结状态，冻结中顺延）。非降级清单项，是工具面复活。
-- **T14 — goal 绑定 E2E**（Phase 4）：验证降级项 **7**（模型遵从 D8① 注入，≥10 回合，<80% → 升级别名映射）与 **12**（`goal.*` SSE 缺席 → REST 重取面板可见）。prompt 注入（D8①）已落地（T5）；遵从率 + 面板 E2E 待跑。
-- **llm_usage Run Detail 工件**（清单第 2 项）：要在 opencode 下服务 `RunDetailResponse.llm_usage`，桥须在 terminal 写 `run_dir/llm_usage.json`（从 `message.updated` tokens 累积）——需 `translator/`/`service.py` 编辑（本 wave 由并行修复 agent 拥有）。前端当前不渲染它（`RunData` 类型无 `llm_usage`），故为潜在增强、非可见缺口。记录于此而非编辑（无冲突）。
-- **T8-1 — 活体引擎死亡检测**（已知残余，**修复进行中**）：杀 `opencode serve` 中途，attempt 不在预算内落 `failed`——`OpencodeDriver.events()` 无限重连（backoff 0.5→30s），pump 不抛，`_fail_all_pending` 不触发；IM 挂到 600s 轮询预算（实测 590.28s，T8 s2 xfail）。T6 重启对账可治愈（Phase B，0.0s → interrupted）。修复（并行 agent，`driver.py`/`service_persistence.py`）：有界重连预算 / 连续失败阈值使其抛出（pump 死 → `_fail_all_pending` 触发），或 attempt 级引擎活性看门狗；验收 attempt 落 `failed` + IM 显式失败回复 **<30s**。
+> 2026-09-13 收口：T13/T14/T8-1 三项已全部落地，本节只剩真实残余。
+
+- ~~**T13 — `scheduled_research` MCP wrapper**~~ **已落地**（`0c4ca311`）：冻结预检 LAPSED→PROCEED（8 引用）；78/83 工具、proposal_id 前 200 字符双断言、IM confirm 流 E2E 复活、6 README 计数同步、eval 地板逐位持平（0.4367，19 域零变化，定向组 0/8→6/8）。
+- ~~**T14 — goal 绑定 E2E**~~ **已落地**（`02731637`）：遵从率 **12/12=100%**（门 ≥80%，别名映射升级不需要）；面板 REST 重取可见性全链绿；降级项 12 诚实佐证（MCP 侧写入无 `goal.*` SSE 帧）。
+- ~~**T8-1 — 活体引擎死亡检测**~~ **已修复**（`90a4378a`）：`stream_liveness` 双有界信号（4 零帧连接周期 ≈3.5s / 15s 无帧窗，`server.heartbeat` 10s 为存活基准）；实测杀 serve 后 **8.03s** 落 failed + IM 同刻显式失败回复（原 590s 挂起）；引擎回归免网关重启自愈（`_ensure_pumps`）；scenario g 真实数据无误杀守卫。有界残余（诚实记录）：<3.5s 快死快活的僵尸回合按长静默工具等待。
+- **llm_usage Run Detail 工件**（清单第 2 项，唯一遗留增强）：要在 opencode 下服务 `RunDetailResponse.llm_usage`，桥须在 terminal 写 `run_dir/llm_usage.json`（从 `message.updated` tokens 累积）——需 `translator/`/`service.py` 编辑。前端当前不渲染它（`RunData` 类型无 `llm_usage`），故为潜在增强、非可见缺口。
+- **VT_ROUTER_RECLAIM_INTERVAL_S 未接线**（T12 发现，记录不修）：env 已解析但 router 内无周期循环——生产形态用 cron/systemd timer 触发回收，或 ~10 行 router 特性提交补周期循环。
+- **nano-search-mcp 容器内降级**（T10 发现）：mcp v1 API 与 VT 拉入的 mcp 2.2.0 不兼容 → 容器内 12 个辅助中文财经搜索工具缺席（核心 VT MCP 82→83 工具不受影响）；修复 = 独立的 fastmcp-4.x 迁移，用户门控。
 
 ## 开发历史
 
@@ -139,12 +143,15 @@ Settings HTTP 面是**引擎无关**的（契约由 `agent/tests/test_settings_e
 - 2026-09-13 T6 恢复对账 + 级联生命周期落地（`8fc1fe75`，本卡创建）；T7 工厂开关 + Web E2E 汇合门（`225ba2f3`，八组 67 检查全绿，含两处治理现实修复）。
 - 2026-09-13 Wave 3：T8 IM 零改动验证（`84293175`，s0/s1/s3/s4 PASS、s2 xfail = T8-1 修复进行中）∥ T9 IM 流式彩蛋（`361e1a41`，`_stream_delta` 首产者、mock 3/3 PASS）。
 - 2026-09-13 T15 收尾：Settings 面引擎能力契约（`test_settings_engine_capability.py`）+ 降级清单 14 项定版 + 认证配方/B5 裁决/回滚程序成文（本卡扩写）。
+- 2026-09-13 T8-1 修复（`90a4378a`，stream_liveness 双有界信号，8.03s 落终态）+ T14 goal 绑定（`02731637`，遵从 12/12）。**Phase 0-2 里程碑并回 mymain（merge `50675965`）+ F8 账本记账（`9bf579ab`）**。
+- 2026-09-13 Phase 3：T10 租户容器（`06507813`，钉版 1.18.30/4.19.4/base v3.0.0-tenant、supervisord 双进程、B5/B6 修正实证、前端 dist 入镜像、Rosetta amd64 compose E2E 全绿含崩溃自愈）→ T13 wrapper（`0c4ca311`）∥ T11 router+provisioning（`05c8058b`，双租户 E2E 59/59）→ T12 隔离矩阵（`dc64dffc`，**93/93 零跨租户可达，Phase 3 门 PASS**）。
+- 2026-09-13 **计划执行完毕：15/15 todos 全绿**；第二次里程碑并回 mymain；剩余全部为用户门控项（部署/凭据/迁移/上游提交时机）。
 
 ## 验证
 
-- 桥测试套件 **222 passed / 6 skipped**（T9 基线，`pytest -k opencode_bridge`；s2 xfail = T8-1，并行修复 agent 落地后翻绿——HEAD 移动则复跑）。
+- 桥测试套件 **241 passed / 7 skipped**（终态基线，含 T13 wrapper/confirm 流测试；s2 已从 xfail 翻真断言 **8.03s PASS**）。OpencodeAgent 套件 **169 passed / 1 skipped**（config render 47 + router/provision + tenancy matrix）。全套件 **12070 passed**，失败集 = 已知 9 既有基线严格子集（零新增）。
 - T15 Settings 契约：`agent/tests/test_settings_engine_capability.py` **6 passed**（sse_timeout 两引擎服务 + env 驱动 + LLM/data-sources 形状引擎全等 + opencode 下 gateway 侧热应用）；既有 `test_settings_api.py` **33 passed**（native 行为不变）。
-- T7 Web E2E：八组 67 检查全绿（活体 rig，opencode 1.18.30 + OmO 4.19.4）；T8 IM：5 passed/1 xfailed（903s）；T9 流式：mock 3/3 PASS。
+- T7 Web E2E：八组 67 检查全绿（活体 rig，opencode 1.18.30 + OmO 4.19.4）；T8 IM：s2 修复后全绿（原 5 passed/1 xfailed）；T9 流式：mock 3/3 PASS；T10 容器 compose E2E 全绿（无 key 拒启/Web 9⁄9/崩溃自愈 9/9/B2 200⁄403/SPA/持久性）；T11 双租户 59/59；**T12 隔离矩阵 93/93（零跨租户可达）**；T14 goal 遵从 12/12。
 - 关键测试：恢复三分支 + golden trace 重挂重放 + `replay=active` 死回合不重播 + 级联删除 + reconcile 幂等（T6）；run_dir bash 收割 + D8② tool-agnostic（T7）；D4 94 轮询全空 + B3 57 heartbeat（T8）；`_stream_end` 不带 `_stream_delta` + 一次性 `_streamed` tagger（T9）。
 - 工件：计划 `.omo/plans/opencode-engine-bridge-v2.md`（D3-D11 正典）、`OpencodeAgent/docs/spike_report.md`（§7h DELETE 级联）、`OpencodeAgent/docs/baseline_memo.md`（§2.3 B5、F2 恢复分叉）、FINDINGS `.omo/evidence/opencode-engine-bridge-v2/{t7-e2e,t8-im,t9-im-stream}/`、traces `agent/tests/fixtures/opencode_bridge/traces/`（只读夹具）。
 
@@ -152,4 +159,4 @@ Settings HTTP 面是**引擎无关**的（契约由 `agent/tests/test_settings_e
 
 - 本分支独有，**不回流**（计划 guardrail：NO 上游 PR，候选记入 [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) 待裁决）。上游候选（计划 T15）：**SessionService Protocol 抽取**（D6 契约面）、**scheduled_research wrapper**（T13）、**ChannelRuntime `_streamed` 原生修复**（T9 FINDINGS #3：runtime 在 inbound 带 `_wants_stream` 时设 `_streamed`，`base.py:225-226` 已 stamp——channels/ 改动，本 wave 冻结）。
 - 保护区零触碰：`src/agent/`、`src/session/`、`src/providers/`、`src/channels/`（16 适配器 + runtime/manager/base/bus/pairing）、`frontend/`、`src/api/state.py` 均零 diff；对原生 oracle 只 import 复用（`_format_interrupted_message` 等静态方法），不修改。
-- 已知残余边界：T8-1（活体引擎死亡检测，见§待接入，修复进行中）。
+- 已知残余边界（全部成文，无进行中项）：T8-1 已修复（8.03s，<3.5s 快死快活僵尸回合为有界残余）；llm_usage Run Detail 工件为潜在增强；VT_ROUTER_RECLAIM_INTERVAL_S 未接线（生产用 cron/systemd）；nano-search-mcp 容器内降级（独立迁移，用户门控）。
