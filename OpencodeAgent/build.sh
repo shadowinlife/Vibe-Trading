@@ -76,17 +76,23 @@ fi
 # ---------------------------------------------------------------------------
 VT_SOURCE="${VT_SOURCE:-..}"
 VENDOR_DIR="$SCRIPT_DIR/vendor/Vibe-Trading"
+# The bridge module + all engine-bridge fixes live ONLY on mymain-engine-bridge
+# (merge-back to mymain is a user-gated step). The tenant image must vendor that
+# branch — every prior image predates the bridge (T2 baseline_memo §5).
+EXPECTED_VT_BRANCH="${EXPECTED_VT_BRANCH:-mymain-engine-bridge}"
 
 if [[ "$VT_SOURCE" == http* ]]; then
-    echo "=== Cloning Vibe-Trading from $VT_SOURCE (mymain branch) ==="
+    echo "=== Cloning Vibe-Trading from $VT_SOURCE ($EXPECTED_VT_BRANCH branch) ==="
+    echo "NOTE: $EXPECTED_VT_BRANCH must be pushed to the remote for the http path;"
+    echo "      it is local-only until the user-gated merge-back. Prefer the local path."
     rm -rf "$VENDOR_DIR"
-    git clone --depth 1 -b mymain "$VT_SOURCE" "$VENDOR_DIR"
+    git clone --depth 1 -b "$EXPECTED_VT_BRANCH" "$VT_SOURCE" "$VENDOR_DIR"
     echo "=== VT cloned: $(find "$VENDOR_DIR" -type f -name '*.py' | wc -l) Python files ==="
 elif [ -d "$VT_SOURCE" ]; then
-    echo "=== Vendoring Vibe-Trading from $VT_SOURCE (mymain branch) ==="
+    echo "=== Vendoring Vibe-Trading from $VT_SOURCE ($EXPECTED_VT_BRANCH branch) ==="
     VT_BRANCH=$(cd "$VT_SOURCE" && git branch --show-current 2>/dev/null || echo "unknown")
-    if [ "$VT_BRANCH" != "mymain" ]; then
-        echo "WARNING: VT source is on branch '$VT_BRANCH', expected 'mymain'"
+    if [ "$VT_BRANCH" != "$EXPECTED_VT_BRANCH" ]; then
+        echo "WARNING: VT source is on branch '$VT_BRANCH', expected '$EXPECTED_VT_BRANCH'"
     fi
     # Fresh copy of the COMMITTED tree via git archive — guarantees no
     # untracked dev artifacts (.omo/.qoder sessions, screenshots, caches)
@@ -98,15 +104,35 @@ elif [ -d "$VT_SOURCE" ]; then
     rm -rf "$VENDOR_DIR/frontend" "$VENDOR_DIR/node_modules" "$VENDOR_DIR/tests" \
            "$VENDOR_DIR/agent/tests" "$VENDOR_DIR/assets" "$VENDOR_DIR/.codex" \
            "$VENDOR_DIR/OpencodeAgent"
+    # Frontend SPA: git archive carries frontend SOURCES (tracked) but NOT dist
+    # (gitignored build artifact). Build it on the host (native arch → the dist is
+    # arch-independent static assets) and land ONLY dist where helpers.py::
+    # _FRONTEND_DIST and api_server.py expect it: <VT-root>/frontend/dist. Without
+    # this the gateway degrades API-only (T2 §4.2 gap). Building ≠ editing source.
+    echo "=== Building frontend SPA (npm ci && npm run build) ==="
+    ( cd "$VT_SOURCE/frontend" && npm ci && npm run build )
+    mkdir -p "$VENDOR_DIR/frontend"
+    cp -r "$VT_SOURCE/frontend/dist" "$VENDOR_DIR/frontend/dist"
+    echo "=== Frontend dist landed: $(find "$VENDOR_DIR/frontend/dist" -type f | wc -l) files ==="
     echo "=== VT vendored: $(find "$VENDOR_DIR" -type f -name '*.py' | wc -l) Python files ==="
 else
     echo "ERROR: Vibe-Trading source not found at $VT_SOURCE"
     exit 1
 fi
 
+# Source provenance for the image label (record the archived commit so a build is
+# traceable; a parallel T14 commit may move HEAD — rebuild if it lands).
+VT_COMMIT=$(git -C "$VT_SOURCE" rev-parse "$VT_BRANCH" 2>/dev/null || echo "unknown")
+VT_COMMIT_SHORT=$(git -C "$VT_SOURCE" rev-parse --short "$VT_BRANCH" 2>/dev/null || echo "unknown")
+BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+echo "=== Vendored source commit: ${VT_COMMIT_SHORT} (${VT_BRANCH}) built ${BUILD_DATE} ==="
+
 echo "=== Building app image: ${IMAGE_NAME}:${IMAGE_TAG} ==="
 run docker build \
   ${PLATFORM_ARG[@]+"${PLATFORM_ARG[@]}"} \
+  --build-arg VT_SOURCE_COMMIT="$VT_COMMIT" \
+  --build-arg VT_SOURCE_BRANCH="$VT_BRANCH" \
+  --build-arg BUILD_DATE="$BUILD_DATE" \
   -t "${IMAGE_NAME}:${IMAGE_TAG}" \
   -f "$SCRIPT_DIR/Dockerfile" \
   "$SCRIPT_DIR"

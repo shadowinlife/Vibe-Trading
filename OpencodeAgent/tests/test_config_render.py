@@ -329,3 +329,116 @@ class TestResearchScenariosSkill:
     def test_playbook_sections_present(self, marker):
         body = SCENARIOS_SKILL_PATH.read_text(encoding="utf-8")
         assert marker in body, marker
+
+
+# ============================================================================
+# T10 tenant-container invariants: version pins (B1), uploads reachability (B6),
+# and MCP-subprocess env parity (B5/B6). These lock the freeze enforcement and
+# the volume/state alignment so a future edit cannot silently regress them.
+# ============================================================================
+
+DOCKERFILE_PATH = OPENCODE_AGENT_DIR / "Dockerfile"
+DOCKERFILE_BASE_PATH = OPENCODE_AGENT_DIR / "Dockerfile.base"
+ENTRYPOINT_PATH = OPENCODE_AGENT_DIR / "entrypoint.sh"
+
+OPENCODE_PIN = "opencode-ai@1.18.30"
+OMO_PIN = "oh-my-openagent@4.19.4"
+CONTAINER_HOME = "/home/opencode"
+CONTAINER_VT_HOME = "/home/opencode/.vibe-trading"
+CONTAINER_UPLOADS = "/home/opencode/.vibe-trading/uploads"
+CONTAINER_VT_MEMORY = "/home/opencode/.vibe-trading/.vt-memory"
+
+
+class TestVersionPins:
+    """B1 / D10: the `@latest` specs are fictitious pins (T2 §1.3/§1.4). All four
+    freeze-compat loci must carry the exact validated versions, and no `@latest`
+    may survive anywhere in the image recipes."""
+
+    def test_dockerfile_pins_opencode_cli(self):
+        text = DOCKERFILE_PATH.read_text(encoding="utf-8")
+        assert OPENCODE_PIN in text
+        assert "opencode-ai@latest" not in text
+
+    def test_dockerfile_base_pins_opencode_cli(self):
+        text = DOCKERFILE_BASE_PATH.read_text(encoding="utf-8")
+        assert OPENCODE_PIN in text
+        assert "opencode-ai@latest" not in text
+
+    def test_template_pins_omo_plugin(self):
+        text = TEMPLATE_PATH.read_text(encoding="utf-8")
+        assert OMO_PIN in text
+        assert "oh-my-openagent@latest" not in text
+
+    def test_rendered_plugin_entry_is_pinned(self):
+        assert _rendered()["plugin"] == [OMO_PIN]
+
+    def test_entrypoint_fallback_pins_omo_plugin(self):
+        # The minimal-fallback block (entrypoint.sh) is the SECOND @latest site
+        # (T2 freeze-compat row 4) — pinning only the tmpl would leave it live.
+        text = ENTRYPOINT_PATH.read_text(encoding="utf-8")
+        assert OMO_PIN in text
+        assert "oh-my-openagent@latest" not in text
+
+    def test_base_image_pinned_off_latest_tag(self):
+        # T2 §1.1: `opencode-serve-base:latest` is TWO different images (local vs
+        # registry split-brain). The app Dockerfile must not FROM the moving tag.
+        text = DOCKERFILE_PATH.read_text(encoding="utf-8")
+        assert "FROM opencode-serve-base:latest" not in text
+        assert "opencode-serve-base:v3.0.0-tenant" in text
+
+
+class TestMcpEntryShape:
+    """GolemBot #42: a Claude-style `{command:"str"}` entry makes opencode refuse
+    to boot. Every MCP entry must be `{type:"local", command:[...]}`."""
+
+    def test_every_mcp_entry_is_local_with_array_command(self):
+        for name, server in _rendered()["mcp"].items():
+            assert server["type"] == "local", name
+            assert isinstance(server["command"], list), name
+            assert server["command"] and all(isinstance(c, str) for c in server["command"]), name
+
+
+class TestUploadsReachability:
+    """B6 / D9: the server-generated config's `external_directory` ALLOW entries
+    cover UPLOADS_DIR, as an OBJECT (never a string — kimaki deep-merge trap),
+    and never via session scope."""
+
+    def test_external_directory_is_object_not_string(self):
+        ext = _rendered()["permission"]["external_directory"]
+        assert isinstance(ext, dict), "external_directory must be an object"
+
+    def test_external_directory_allows_uploads(self):
+        ext = _rendered()["permission"]["external_directory"]
+        assert ext.get(f"{CONTAINER_UPLOADS}/*") == "allow"
+
+    def test_allow_rule_is_last_for_findlast(self):
+        # opencode resolves permissions with findLast (last match wins). The
+        # uploads allow must come after the broad `*` rule or it is dead.
+        keys = list(_rendered()["permission"]["external_directory"].keys())
+        assert keys.index(f"{CONTAINER_UPLOADS}/*") > keys.index("*")
+
+
+class TestMcpEnvParity:
+    """B5/B6: the MCP subprocess env (fixed at spawn by the rendered config) must
+    carry HOME/VIBE_TRADING_HOME identical to the gateway, and VT memory must live
+    inside the persisted home volume."""
+
+    def test_mcp_env_home_matches_container(self):
+        vt_env = _rendered()["mcp"]["vibe-trading"]["env"]
+        assert vt_env["HOME"] == CONTAINER_HOME
+
+    def test_mcp_env_vibe_trading_home_matches_container(self):
+        vt_env = _rendered()["mcp"]["vibe-trading"]["env"]
+        assert vt_env["VIBE_TRADING_HOME"] == CONTAINER_VT_HOME
+
+    def test_vt_memory_base_dir_inside_persisted_volume(self):
+        vt_env = _rendered()["mcp"]["vibe-trading"]["env"]
+        assert vt_env["VT_MEMORY_BASE_DIR"] == CONTAINER_VT_MEMORY
+        # Consolidated INSIDE the runtime root (the tenant volume), not /workspace.
+        assert vt_env["VT_MEMORY_BASE_DIR"].startswith(CONTAINER_VT_HOME + "/")
+
+    def test_memory_tools_stay_enabled(self):
+        # Freeze-compat row 5: VT_MEMORY_MCP_TOOLS=1 is the frozen ON state.
+        vt_env = _rendered()["mcp"]["vibe-trading"]["env"]
+        assert vt_env["VT_MEMORY"] == "full"
+        assert vt_env["VT_MEMORY_MCP_TOOLS"] == "1"

@@ -26,7 +26,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g opencode-ai@latest
+# PINNED (B1 / freeze-compat row 3): was the `@latest` spec — a fictitious pin
+# (T2 §1.4: `@latest` re-resolves on every cache-busted rebuild AND went stale via
+# layer-cache hits). 1.18.30 is the version all bridge validation ran on. The app
+# Dockerfile re-installs the same pin on top; changing either REQUIRES the
+# drift-alarm replay (record_traces.py + diff, spike_report §8).
+RUN npm install -g opencode-ai@1.18.30
 
 RUN mkdir -p /root/.config/pip && \
     printf '[global]\nindex-url=https://mirrors.aliyun.com/pypi/simple/\n\n[install]\ntrusted-host=mirrors.aliyun.com\n' \

@@ -1,31 +1,83 @@
+# =============================================================================
+# docker-compose.yml — SINGLE-TENANT full-stack container (plan T10 / D2)
+#
+# This is the NEW multi-tenant container form (per-tenant full stack), NOT the
+# host-direct production form (see docs/DEPLOY-GUIDE.md §0 for that history).
+# One container = one tenant: vt gateway + opencode serve + VT MCP, all state
+# in one persisted home volume.
+#
+# PORT PLAN (documented per T10 — the plan ruling fixes serve on internal 4096):
+#   opencode serve  -> 127.0.0.1:4096   container-INTERNAL ONLY, NOT published
+#   vt gateway      -> 0.0.0.0:8080     the SINGLE public port (EXPOSE 8080)
+#   host mapping    -> 24096:8080       (T10 rig isolation owns host 24096/28080;
+#                                        T14 owns 14096/18080 — never collide)
+# A thin router (T11) terminates the public 443/4096 and forwards here per tenant.
+#
+# VOLUME/STATE (B5): the named volume mounts at /home/opencode (the runtime
+# user's home), so EVERY stateful path is volume-backed and survives recreation:
+#   .vibe-trading/.env (Settings, ENV_PATH=Path.home()/.vibe-trading/.env)
+#   .vibe-trading/{sessions,runs,uploads,goals,...} (runtime root)
+#   .vibe-trading/.vt-memory (VT_MEMORY_BASE_DIR, consolidated inside the volume)
+#   .local/share/opencode, .local/state, .cache (opencode server state)
+#   .opencode/node_modules (OmO plugin install cache — no @latest re-resolution)
+# VIBE_TRADING_HOME is set EXACTLY equal to /home/opencode/.vibe-trading (the
+# ENV_PATH base) so Settings writes never diverge into the ephemeral layer.
+# =============================================================================
 services:
-  opencode-web:
-    image: opencode-serve:latest
-    container_name: opencode-web
+  opencode-tenant:
+    image: opencode-serve:v3.0.0-tenant
+    container_name: opencode-tenant
+    platform: linux/amd64
     restart: unless-stopped
     ports:
-      - "4096:4096"
+      - "24096:8080"          # gateway public port (serve 4096 stays internal)
     env_file:
       - .env
     environment:
       - TZ=Asia/Shanghai
+      # B5: runtime root == ENV_PATH base (helpers.py:31 hardcodes Path.home()).
+      - VIBE_TRADING_HOME=/home/opencode/.vibe-trading
+      - VT_MEMORY_BASE_DIR=/home/opencode/.vibe-trading/.vt-memory
+      # Engine bridge (D1): gateway is a pure HTTP client of the internal serve.
+      - VIBE_TRADING_ENGINE=opencode
+      - OPENCODE_BASE_URL=http://127.0.0.1:4096
+      - GATEWAY_PORT=8080
+      # B2/D9: the REAL env var (env_schema.py:312 via security.py:113).
+      # EXTRA_LOOPBACK_HOSTS is an internal monkeypatch key, NOT an env var.
+      # T11 provisioning sets this to the tenant's public host (router preserves it).
+      - API_ALLOWED_HOSTS=${API_ALLOWED_HOSTS:-localhost}
+      # IM adapters start only when a tenant configures bot creds (T11 renders
+      # agent.json channels + flips this). No creds = harmless no-op.
+      - VIBE_TRADING_CHANNELS_AUTO_START=${VIBE_TRADING_CHANNELS_AUTO_START:-false}
     volumes:
-      - ./volumes/cron-state:/workspace/cron_jobs/state
-      - ./volumes/cron-logs:/workspace/cron_jobs/logs
-      - ./volumes/vt-memory:/workspace/.vt-memory
+      - vt-tenant-home:/home/opencode
+      # Named volumes (NOT host bind mounts): macOS Docker cannot chown host
+      # bind-mount sources to the container user (permission denied), and named
+      # volumes are the multi-tenant standard (per-tenant, seeded from the image's
+      # opencode-owned dirs). Still volume-backed per B5.
+      - vt-cron-state:/workspace/cron_jobs/state
+      - vt-cron-logs:/workspace/cron_jobs/logs
     deploy:
       resources:
         limits:
           memory: 6G
-          cpus: '0.8'
+          cpus: '2.0'
     logging:
       driver: json-file
       options:
         max-size: "50m"
         max-file: "3"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:4096/health || exit 1"]
+      # Gateway /health is unauthenticated and only answers AFTER the lifespan
+      # preflight (bridge -> serve tool-map + reconcile) succeeds, so green here
+      # implies the full stack is wired.
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 180s
+
+volumes:
+  vt-tenant-home:
+  vt-cron-state:
+  vt-cron-logs:

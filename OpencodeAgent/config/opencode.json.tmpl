@@ -26,8 +26,16 @@
         "CLICKHOUSE_LLM_PASSWORD": "{{ CLICKHOUSE_LLM_PASSWORD }}",
         "VT_MEMORY": "full",
         "VT_MEMORY_MCP_TOOLS": "1",
-        "VT_MEMORY_BASE_DIR": "/workspace/.vt-memory"
+        "VT_MEMORY_BASE_DIR": "/home/opencode/.vibe-trading/.vt-memory",
+        "HOME": "/home/opencode",
+        "VIBE_TRADING_HOME": "/home/opencode/.vibe-trading"
       }
+    }
+  },
+  "permission": {
+    "external_directory": {
+      "*": "ask",
+      "/home/opencode/.vibe-trading/uploads/*": "allow"
     }
   },
   "agent": {
@@ -45,6 +53,6 @@
     }
   },
   "plugin": [
-    "oh-my-openagent@latest"
+    "oh-my-openagent@4.19.4"
   ]
 }
