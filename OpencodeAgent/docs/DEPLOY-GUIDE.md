@@ -2,6 +2,131 @@
 
 > 当前线上形态（2026-08-28 晚起）：**宿主机 systemd 直部署 `opencode web`**，对外由 **nginx :4096 固定串码网关**代理，取代此前的 `opencode serve` 直出方案与更早的 Docker 容器方案。
 > 容器化构建文件（`Dockerfile` / `build.sh` / `docker-compose.yml`）仍保留在仓库中，见附录 B。
+>
+> **🆕 多租户容器形态（T10，`v3.0.0-tenant`）见下方「§T10」专章** —— 那是 engine-bridge
+> 多租户未来的部署单元（每租户一个全栈容器 + 薄路由），与本文件的宿主机直部署形态**并存**；
+> 宿主机直部署仍是当前线上事实生产，回退方式见 F8 卡（`ENGINE=native` 一键）。
+
+---
+
+## §T10. 多租户容器形态（engine-bridge，`opencode-serve:v3.0.0-tenant`）
+
+> 本章描述 **新的单租户全栈容器**（plan `opencode-engine-bridge-v2` T10 / D2）。
+> 它是多租户架构的部署单元：每租户一个容器（vt gateway + opencode serve + VT MCP + home
+> 同容器），上游由薄 router（T11）按 Host/token 路由。**与上方宿主机直部署形态并存**——
+> 宿主机直部署是当前线上事实生产（§0），本容器形态是多租户未来；两者经 F8 卡的回退程序
+> （`VIBE_TRADING_ENGINE=native` 一键）互相兜底。
+
+### T10.0 架构（双进程，supervisord 监管）
+
+| 进程 | 监听 | 角色 |
+|------|------|------|
+| `opencode serve` | **127.0.0.1:4096**（容器内部，**不对外暴露**） | headless 引擎；桥的 legacy `/session` + `GET /event` SSE 后端 |
+| vt gateway（uvicorn `api_server`） | **0.0.0.0:8080**（**唯一公开端口**，`EXPOSE 8080`） | React SPA + REST/SSE；`VIBE_TRADING_ENGINE=opencode`，作为 serve 的**纯 HTTP 客户端**（经 engine bridge），**不自 spawn serve** |
+
+- **进程模型裁决**（plan T10，消除 Oracle 二轮注 1 的自相矛盾）：supervisord 管理双进程；
+  serve 绑固定 `127.0.0.1:4096`；gateway 为纯 HTTP 客户端。serve 崩溃由 supervisord
+  `autorestart` 拉起，桥经 T6 存活对账 + `_ensure_pumps` 在**下一次发送时自愈，无需重启
+  gateway**（T8-1 修复 `90a4378a` 实证 8.03s 落终态）。
+- **端口规划**（compose 内成文）：容器内 serve=4096（内部）/ gateway=8080（公开）；
+  compose 宿主映射 `24096:8080`（T10 rig 隔离占用宿主 24096/28080；T14 占用 14096/18080，
+  互不冲突）。生产由薄 router 终结公网 443/4096 后按租户转发到各容器的 8080。
+
+### T10.1 版本钉死（B1 / D10 —— 冻结的执行，非违反）
+
+| 面 | 旧（虚构钉版） | 新（精确钉版） | 依据 |
+|----|------|------|------|
+| opencode CLI | `opencode-ai@latest`（Dockerfile + Dockerfile.base） | **`opencode-ai@1.18.30`** | 全部桥验证跑在 1.18.30（T1 golden traces / T7 web E2E 67 检查 / T8 IM parity / T8-1 liveness）。备选 1.18.18(镜像)/1.18.23(宿主生产) 须先按 drift-alarm 复跑（见 T10.5） |
+| OmO 插件 | `oh-my-openagent@latest`（tmpl + entrypoint 兜底块，**两处**） | **`oh-my-openagent@4.19.4`** | T2 §1.3：自 2026-08-01 起事实生产；5.0.0-beta 每 1-2 天发版 = 活体翻牌风险，钉版即为此 |
+| base 镜像 | `FROM opencode-serve-base:latest`（移动 tag，本地/registry **两个不同镜像** split-brain） | **`FROM opencode-serve-base:v3.0.0-tenant`**（= 本地 `ea738ee663d1`，config digest `sha256:ea738ee663d1…`） | T2 §1.1。字面 `@sha256:<manifest-digest>` 需 registry push（用户门控，未做）；版本化 tag + 记录 config digest = 本地不可变等价，消除 `:latest` split-brain |
+
+> ⚠️ **改任一钉版前必须跑 drift-alarm 复演**（见 T10.5）。`@latest` 不得残留在任何一处
+> （Dockerfile / Dockerfile.base / tmpl / entrypoint 兜底 —— T2 冻结兼容清单全部 4 面）。
+
+### T10.2 volume 与状态对齐（B5）
+
+命名卷挂在 **`/home/opencode`**（运行用户的 home），使**每一条有状态路径**都落卷、跨容器重建存续：
+
+| 状态 | 容器内路径 | 是否落卷 |
+|------|-----------|:--:|
+| Settings `.env`（`ENV_PATH`，helpers.py:31 硬编码 `Path.home()`） | `/home/opencode/.vibe-trading/.env` | ✅ |
+| 运行时根（sessions/goals/runs/uploads/swarm/FTS） | `/home/opencode/.vibe-trading/` | ✅ |
+| VT 记忆（`VT_MEMORY_BASE_DIR`，**已并入卷内**，原 `/workspace/.vt-memory`） | `/home/opencode/.vibe-trading/.vt-memory` | ✅ |
+| opencode server 状态（会话库/auth） | `/home/opencode/.local/share/opencode`、`.local/state`、`.cache` | ✅ |
+| OmO 插件安装缓存（不再 `@latest` 重解析） | `/home/opencode/.opencode/node_modules` | ✅ |
+| cron 状态/日志 | `/workspace/cron_jobs/{state,logs}` | ✅（bind mount） |
+
+- **`VIBE_TRADING_HOME` 必须不设或恰好等于 `/home/opencode/.vibe-trading`**（= `ENV_PATH`
+  基）。分叉则 Settings 写入落容器临时层、重建即丢——entrypoint 启动**硬校验**，分叉即
+  `exit 1`（fail-closed）。
+- 镜像层预创建上述 home 子目录并 `chown opencode:opencode`（本地 base `ea738ee663d1` 早于
+  Dockerfile.base 的状态目录预创建，T2 §2.2）；命名卷首挂时从镜像播种，opencode 随后以
+  `opencode` 身份写入（绝不 root → 无 EACCES 锁死）。
+
+### T10.3 认证（D9 / B2 —— fail-closed）
+
+- **`API_AUTH_KEY` 缺失 → entrypoint 拒绝启动**（`exit 1`，gateway 永不拉起）。理由：gateway
+  把 loopback peer 视为 local（零认证）；薄 router 转发时 peer 可能是 loopback，缺 key =
+  公网面零认证（`security.py:507-518`）。
+- **`API_ALLOWED_HOSTS`**（**真实 env 名**，`env_schema.py:312` 经 `security.py:113
+  _get_extra_loopback_hosts` 生效）由 compose env 注入；T11 开通脚本按租户公网域名设置
+  （router 保留公网 Host）。**`EXTRA_LOOPBACK_HOSTS` 是内部 monkeypatch 注册键，不是 env
+  变量**——写错则 router 转发的每个请求被 `_reject_untrusted_loopback_host` 403。
+- 镜像/compose **不含任何真实密钥**：`.env`（gitignored）承载 `API_AUTH_KEY` /
+  `OPENCODE_SERVER_PASSWORD` / `DASHSCOPE_API_KEY` / `CLICKHOUSE_*`；`.env.example` 仅占位符。
+
+### T10.4 上传可达性（B6）+ MCP env 一致性
+
+- server 生成配置（渲染后的 `opencode.json`）的 `permission.external_directory` 为**对象**
+  （非字符串——kimaki deep-merge 陷阱），其 ALLOW 条目覆盖 `UPLOADS_DIR`
+  （`/home/opencode/.vibe-trading/uploads/*` → `allow`，置于 `*`→`ask` 之后以满足 opencode
+  findLast 覆盖序）。**永不进 session scope**（D9）。
+- MCP 子进程 env（spawn 时由渲染配置固定）显式携带 `HOME=/home/opencode` +
+  `VIBE_TRADING_HOME=/home/opencode/.vibe-trading`，与 gateway **逐字一致**（entrypoint 启动
+  断言并打印 parity）；goal/session/run 路径因此解析到同一持久化根。
+
+### T10.5 改钉版时的 drift-alarm 复演程序（D10 / spike §8）
+
+任何 opencode CLI 钉版变更（1.18.30 → 其他）**必须**先复演，否则桥的事件词汇/形状假设可能静默漂移：
+
+```bash
+# 1. 对钉版目标起 serve（与 T1 rig 同构），复跑录制脚本
+python agent/tests/fixtures/opencode_bridge/record_traces.py   # 8 类场景 golden traces
+# 2. diff 词汇/形状（重点：permission.asked payload 字段、新事件类型存在性 —— spike §8 标 MED 敏感）
+python agent/tests/fixtures/opencode_bridge/analyze_traces.py
+# 3. 桥 golden 套件必须全绿（translator allowlist 使未知事件类型无害，但形状漂移会失败）
+pytest agent/tests/opencode_bridge -q
+```
+
+OmO 钉版变更同理（continuation 的 6.4s re-prompt 间隙是 OmO 版本敏感项，spike §8）。
+
+### T10.6 构建与运行（单租户本地）
+
+```bash
+cd OpencodeAgent
+# base 镜像（本地已存在则跳过；digest-pin 见 T10.1）
+docker tag ea738ee663d1 opencode-serve-base:v3.0.0-tenant   # 仅首次
+# app 镜像（vendoring mymain-engine-bridge + 构建前端 SPA + 钉版）
+DOCKER_PLATFORM=linux/amd64 ./build.sh --app --tag v3.0.0-tenant
+# 配置（scratch key，绝不用生产凭据）
+cp .env.example .env   # 填 API_AUTH_KEY / OPENCODE_SERVER_PASSWORD / DASHSCOPE_API_KEY / CLICKHOUSE_*
+# 起（宿主 24096 → 容器 gateway 8080）
+docker compose up -d
+curl -sf http://localhost:24096/health    # gateway /health（preflight 成功后才应答）
+```
+
+> **本地 arm64 Mac 运行时**：amd64 容器经 **Rosetta** 仿真运行（已实证 `opencode --version`
+> 正常打印，非 QEMU SIGILL）。生产工件仍是 amd64；ECS（amd64）原生运行。
+
+### T10.7 与宿主机直部署形态的关系
+
+- 本容器形态**不取代**当前线上宿主机直部署（§0）；两者并存。多租户上线经 T11 router +
+  T12 隔离矩阵验收后逐租户迁移。
+- 回退：容器内 `VIBE_TRADING_ENGINE=native` 切回 Python 引擎（F8 卡一键回退程序）；或整体
+  回退到宿主机直部署（§10 处置表的回滚路径）。
+
+---
+
 
 ## 0. 部署架构
 

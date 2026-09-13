@@ -1,10 +1,62 @@
 # opencode-serve 镜像使用说明书
 
-> **版本**: v2.1.0-mymain  
-> **架构**: AMD64 (Linux)  
-> **基础镜像**: Ubuntu 22.04 + Python 3.12 + Node.js 20
+> **当前镜像族**:
+> - **`v3.0.0-tenant`（T10，多租户全栈容器）** —— 见下方「§0 租户镜像形态」专章（**新形态，操作者以此为准**）
+> - `v2.1.x-mymain` / `v2.2.0-harness-evolution`（legacy 单进程 `opencode serve`）—— 本文 §1 起描述，保留作历史/回退参考
+>
+> **架构**: AMD64 (Linux)　**基础镜像**: Ubuntu 22.04 + Python 3.12 + Node.js 20
 
 ---
+
+## 0. 租户镜像形态（`v3.0.0-tenant`，T10）
+
+> plan `opencode-engine-bridge-v2` T10 / D2 的交付物：**每租户一个全栈容器**（vt gateway +
+> opencode serve + VT MCP + home 同容器）。这是 engine-bridge 多租户架构的部署单元，与
+> legacy 单进程镜像（§1 起）形态不同。操作者部署多租户时**以本章为准**；§1-14 描述 legacy
+> `opencode serve` 直出形态（宿主机直部署回退用，见 DEPLOY-GUIDE §0/§10）。
+
+### 0.1 与 legacy 形态的关键差异
+
+| 面 | legacy（v2.1.x/v2.2.0） | **v3.0.0-tenant（T10）** |
+|----|------|------|
+| 进程 | 单进程 `exec opencode serve`（0.0.0.0:4096） | **双进程 supervisord**：`opencode serve` 127.0.0.1:4096（内部）+ **vt gateway** uvicorn `api_server` 0.0.0.0:8080（唯一公开端口） |
+| 公开端口 | 4096（opencode web 直出） | **8080**（vt gateway：React SPA + REST/SSE）；serve 4096 仅容器内部 |
+| 引擎 | opencode 原生 web UI | **`VIBE_TRADING_ENGINE=opencode`**：vt React 前端 + engine bridge（`OpencodeSessionService`）接 headless serve |
+| opencode CLI 钉版 | `@latest`（虚构钉版，事实 1.18.18） | **`opencode-ai@1.18.30`**（B1，全部桥验证版本） |
+| OmO 钉版 | `@latest`（事实 4.19.4） | **`oh-my-openagent@4.19.4`**（tmpl + entrypoint 兜底两处） |
+| base 镜像 | `FROM opencode-serve-base:latest`（移动 tag，split-brain） | **`FROM opencode-serve-base:v3.0.0-tenant`**（= 本地 `ea738ee663d1`，config digest `sha256:ea738ee663d1…`） |
+| VT 源码 | mymain（pre-bridge，73/78 工具） | **mymain-engine-bridge**（含 bridge 模块，**77 OFF / 82 ON** 工具，治理 deny 真实生效） |
+| 前端 dist | **无**（API-only 降级） | **有**（build.sh 构建 SPA 落 `frontend/dist`，gateway 经 SPAStaticFiles 服务） |
+| `VT_MEMORY_BASE_DIR` | `/workspace/.vt-memory`（独立 mount） | **`/home/opencode/.vibe-trading/.vt-memory`**（并入 home 卷，B5） |
+| 状态持久化 | 仅 `.vt-memory` + cron 落卷；Settings/opencode 状态/插件缓存**临时层** | **命名卷挂 `/home/opencode`**：Settings `.env`、运行时根、opencode 状态、OmO 插件缓存、VT 记忆**全部落卷**（B5） |
+| 认证 | opencode `OPENCODE_SERVER_PASSWORD`（nginx 串码网关） | **fail-closed `API_AUTH_KEY`**（缺失拒绝启动）+ `API_ALLOWED_HOSTS`（D9/B2）；serve 仍 `OPENCODE_SERVER_PASSWORD`（内部 127.0.0.1） |
+| channels extras | 未装 | **`.[channels]`**（16 IM 适配器，T2 §4.1：218 包 linux/amd64 零冲突） |
+| 上传可达性 | n/a（无 gateway） | `permission.external_directory` ALLOW 覆盖 `uploads/`（对象非字符串，B6）；MCP env `HOME`/`VIBE_TRADING_HOME` 与 gateway 逐字一致 |
+
+### 0.2 进程模型与恢复（plan T10 裁决）
+
+supervisord（`/etc/supervisord.conf`）管理双进程，**gateway 为 serve 的纯 HTTP 客户端，不自
+spawn**（opencode-runtime `process.py` 进程卫生仅在未来启用 gateway 自 spawn 模式时适用，默认
+不用）。serve 崩溃 → supervisord `autorestart` 拉起 → 桥经 T6 存活对账 + `_ensure_pumps` 在
+**下一次发送时自愈，无需重启 gateway**（T8-1 `90a4378a` 实证 8.03s 落终态）。冷启动时
+`gateway-start.sh` 先等 serve `/health` 就绪再 exec uvicorn，避免 preflight 竞态。
+
+### 0.3 构建 / 运行 / 验证
+
+构建、运行、端口规划、volume 布局、认证、drift-alarm 复演程序见 **DEPLOY-GUIDE.md §T10**
+（操作者地面真相）。本地 arm64 Mac 经 **Rosetta** 仿真跑 amd64 容器（已实证 `opencode
+--version` 正常，非 QEMU SIGILL）；生产工件仍 amd64。改任一钉版前**必须**跑 drift-alarm
+复演（`record_traces.py` 复跑 + diff，spike_report §8 / DEPLOY-GUIDE §T10.5）。
+
+### 0.4 镜像标签（provenance）
+
+`v3.0.0-tenant` 镜像带 OCI 标签记录溯源：`dev.vibe-trading.source-branch` /
+`source-commit`（vendoring 时的 `mymain-engine-bridge` HEAD）/ `build-date` /
+`opencode-pin`（`opencode-ai@1.18.30`）/ `omo-pin`（`oh-my-openagent@4.19.4`）。
+`docker inspect opencode-serve:v3.0.0-tenant --format '{{json .Config.Labels}}'` 可查。
+
+---
+
 
 ## 目录
 
