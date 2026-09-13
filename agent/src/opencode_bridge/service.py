@@ -330,7 +330,9 @@ class OpencodeSessionService(BridgePersistence, BridgeEventPlumbing):
     def _build_prompt_injection(self, session: Session) -> str:
         """Build the D8 gateway-context block prepended to every engine prompt.
 
-        Part ① binds goal tools to the vt session (the MCP
+        Part ① binds the session-bound MCP tools (goal tools +
+        scheduled_research, whose proposals the IM/Web confirm surfaces look
+        up by vt session id) to the vt session (the MCP
         ``_resolve_session_id`` fallback chain is untouched — an explicit
         ``session_id=`` always wins). Part ② resolves ``uploads/<name>``
         relative paths to the absolute uploads directory because the engine's
@@ -347,11 +349,11 @@ class OpencodeSessionService(BridgePersistence, BridgeEventPlumbing):
         blocks = [
             "[gateway context]\n"
             f"vt_session_id={session.session_id}\n"
-            "When calling research-goal tools (start_research_goal, "
+            "When calling session-bound tools (start_research_goal, "
             "add_goal_evidence, update_research_goal_status, "
-            "get_research_goal), pass session_id="
-            f"'{session.session_id}' so goal state binds to this "
-            "conversation.",
+            "get_research_goal, scheduled_research), pass session_id="
+            f"'{session.session_id}' so goal and proposal state binds to "
+            "this conversation.",
             "Uploaded files: a relative path uploads/<name> in this "
             f"conversation resolves to {get_uploads_dir()}/<name>. Read it "
             "via that ABSOLUTE path with a file-reading tool (the built-in "

@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 77 tools (82 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, strategy discovery,
+Surfaces 78 tools (83 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
 backtest/factor/options/pattern
 analysis, market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_margin_trading /
@@ -758,6 +758,52 @@ def update_research_goal_status(
         return _json_error(str(exc), error_type="stale_goal")
     except ValueError as exc:
         return _json_error(str(exc), error_type="validation")
+
+
+# ---------------------------------------------------------------------------
+# Scheduled research tools
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool
+def scheduled_research(
+    action: str,
+    job_id: str = "",
+    draft: _lenient_dict_any_opt = None,
+    session_id: str = "",
+    ctx: Context | None = None,
+) -> str:
+    """Inspect scheduled research and prepare create/cancel proposals.
+
+    This is the only scheduled-research tool and is READ-ONLY: propose_create
+    and propose_cancel never change jobs. A human must confirm the proposal in
+    the current surface before it is committed.
+
+    A propose_* result carries ``proposal_id`` (``srp_...``) inside its first
+    bytes; surfaces relay a short preview of this output, so the id must stay
+    near the front for the confirmation card / IM confirm flow to pick it up.
+
+    Args:
+        action: One of status, list_jobs, get_job, list_playbooks,
+            propose_create, propose_cancel.
+        job_id: Job id; required for get_job and propose_cancel.
+        draft: Create draft; required for propose_create. Keys: title,
+            source (kind=prompt|playbook with prompt or playbook_slug +
+            variables), schedule (expression, optional timezone), end_at
+            (RFC3339 text or epoch milliseconds), delivery (mode=in_app|
+            origin|configured with optional target_ref).
+        session_id: Optional conversation id. Omit it unless the client tracks
+            its own sessions; this server then uses one id per process. A
+            proposal binds to this id, and the confirming surface looks it up
+            by the same id.
+    """
+    params: dict[str, Any] = {"action": action}
+    if job_id.strip():
+        params["job_id"] = job_id.strip()
+    if draft is not None:
+        params["draft"] = draft
+    params["session_id"] = _resolve_session_id(session_id, ctx)
+    return _get_registry().execute("scheduled_research", params)
 
 
 # ---------------------------------------------------------------------------
