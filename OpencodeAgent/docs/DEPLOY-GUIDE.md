@@ -293,7 +293,7 @@ fork 仓库为 public，HTTPS 匿名 clone 即可，无需在目标机配置 git
 ```
 
 - Python 3.11.15；`vibe-trading-ai` 以 editable 方式安装（当前 0.1.14 @ mymain）。
-- `sqlglot` 是 `ch_*` 工具 AST 守卫的硬依赖，缺失会导致 3 个 ch_* 工具静默缺席（MCP 计数从 82 塌缩）——`pip install -e` 会自动拉取，验证时务必确认。
+- `sqlglot` 是 `ch_*` 工具 AST 守卫的硬依赖，缺失会导致 3 个 ch_* 工具静默缺席（MCP 计数从 83 塌缩）——`pip install -e` 会自动拉取，验证时务必确认。
 - MCP server 启动方式：`/opt/miniconda3/envs/legonanobot/bin/python /opt/my-vibe-trading/repo/agent/mcp_server.py`（由渲染后的 opencode.json 调起）。
 
 ## 4. opencode 与 oh-my-openagent
@@ -331,7 +331,7 @@ set -a && source /opt/my-vibe-trading/.env && set +a
 | `config/opencode.json.tmpl` | `/opt/venv/bin/*` → `/opt/miniconda3/envs/legonanobot/bin/*`；`/opt/vibe-trading/agent/mcp_server.py` → `repo/agent/mcp_server.py`；`VT_MEMORY_BASE_DIR` `/workspace/.vt-memory` → `/opt/my-vibe-trading/.vt-memory` |
 | `config/subagents.json` + `config/prompts/` | 原样同步到 `.opencode/`（prompt 引用为配置目录相对路径，渲染器自动落位，无需改路径） |
 | `cron_jobs/trigger.sh`、`cron_jobs/manage.py` | `OPENCODE_API` 默认端口 `4096` → `4097`（repo 内 4096 是容器内端口，勿改 repo） |
-| `OpencodeAgent/AGENTS.md`（repo 侧） | 计数口径随 mymain 演进同步（当前 MCP OFF=77 / ON=82、技能 91） |
+| `OpencodeAgent/AGENTS.md`（repo 侧） | 计数口径随 mymain 演进同步（当前 MCP OFF=78 / ON=83、技能 91） |
 
 ## 6. 环境变量（`/opt/my-vibe-trading/.env`，chmod 600）
 
@@ -344,7 +344,7 @@ set -a && source /opt/my-vibe-trading/.env && set +a
 | `CLICKHOUSE_USER` / `CLICKHOUSE_PASSWORD` | ✅ | 读写账户（default），供 loader/脚本。`<见服务器 .env>` |
 | `CLICKHOUSE_DATABASE` | ✅ | `ashare` |
 | `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | ✅ | `llm_role` 只读账户，专供 `ch_*` 语义层工具；缺失时 ch_* 报错且**绝不回退** default。`<见服务器 .env>` |
-| `VT_MEMORY` / `VT_MEMORY_MCP_TOOLS` / `VT_MEMORY_BASE_DIR` | ✅ | `full` / `1` / `/opt/my-vibe-trading/.vt-memory` —— 记忆体系全开（MCP 工具 77→82） |
+| `VT_MEMORY` / `VT_MEMORY_MCP_TOOLS` / `VT_MEMORY_BASE_DIR` | ✅ | `full` / `1` / `/opt/my-vibe-trading/.vt-memory` —— 记忆体系全开（MCP 工具 78→83） |
 | `LANGCHAIN_PROVIDER` / `LANGCHAIN_MODEL_NAME` | ✅ | `dashscope` / `qwen3.8-max` |
 | `DASHSCOPE_BASE_URL` | ✅ | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
 | `TZ` | 可选 | `Asia/Shanghai` |
@@ -427,7 +427,7 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:4096/                 
 curl -s -o /dev/null -w '%{http_code}\n' -u "vibe:$OPENCODE_WEB_GATE_CODE" http://127.0.0.1:4096/   # → 200
 curl -s -o /dev/null -w '%{http_code}\n' --connect-timeout 8 http://120.26.181.156:4097/health    # → 000/拒绝（4097 不公网）
 
-# 3) MCP 工具计数（记忆全开应为 82）
+# 3) MCP 工具计数（记忆全开应为 83）
 cd /opt/my-vibe-trading/repo
 VT_MEMORY=full VT_MEMORY_MCP_TOOLS=1 VT_MEMORY_BASE_DIR=/tmp/vtm-check \
   /opt/miniconda3/envs/legonanobot/bin/python -c "

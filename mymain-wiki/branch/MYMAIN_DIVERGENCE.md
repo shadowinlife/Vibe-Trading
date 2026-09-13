@@ -26,7 +26,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | # | Feature | 能力 | 核心文件 | 开关 | 上游关系 |
 |---|---|---|---|---|---|
 | **F1** | 反思课程存储 | 按策略类型 append-only JSONL 课程库；标签/子串检索；置信度更新；`auto_reflect_from_run_dir` | `agent/src/memory/reflections.py`（新增）+ 测试 | `VT_MEMORY_REFLECTIONS`（被 `VT_MEMORY=full` 预设隐含） | 上游无对应（remember_tool / memory CLI 是不同暴露面） |
-| **F2** | MCP 记忆工具 | 五个 MCP 工具 memory_save / recall / reinforce / reflect / status；never-raise dict 包络适配层；memory-lifecycle SKILL 工作流 | `agent/src/memory/mcp_adapter.py`（新增）、`agent/mcp_server.py`（注册段）、`agent/src/skills/memory-lifecycle/SKILL.md` | `VT_MEMORY_MCP_TOOLS`（默认 OFF；当前分支 OFF=77 / ON=82，其中 3 个为语义层 ch_* 工具） | 上游无 MCP 面记忆工具（上游 MCP 面 62→70 后本轮零新增） |
+| **F2** | MCP 记忆工具 | 五个 MCP 工具 memory_save / recall / reinforce / reflect / status；never-raise dict 包络适配层；memory-lifecycle SKILL 工作流 | `agent/src/memory/mcp_adapter.py`（新增）、`agent/mcp_server.py`（注册段）、`agent/src/skills/memory-lifecycle/SKILL.md` | `VT_MEMORY_MCP_TOOLS`（默认 OFF；当前分支 OFF=78 / ON=83，其中 3 个为语义层 ch_* 工具、1 个为 scheduled_research wrapper） | 上游无 MCP 面记忆工具（上游 MCP 面 62→70 后本轮零新增） |
 | **F3** | 回测反思钩子 | `run_backtest` 成功后 fire-and-forget 提取 run_card 课程（MCP 与 in-process 入口均覆盖，非致命）；附延迟基准（bench marker，p50<200ms / p95<500ms）与 5 会话并发测试 | `agent/src/tools/backtest_tool.py`（钩子段）、`agent/tests/memory/test_latency_bench.py`、`test_concurrent_mcp.py`、`conftest.py`、`pyproject.toml` | 随 F1 联动 | 上游 post-backtest attribution 是 prompt 驱动，机制不同 |
 | **F4** | MemoryGuard + 项目目录存储 | FastMCP middleware：工具调用后自动 memory_save + memory_reflect（零 LLM）；`VT_MEMORY_BASE_DIR` 支持记忆存项目目录；默认路径跟随 `get_runtime_root()`（`VIBE_TRADING_HOME` 感知） | `agent/src/memory/memory_guard.py`（新增）、`agent/src/memory/persistent.py`（`_default_memory_base`）、`agent/src/config/env_schema.py`（`MemoryConfig.base_dir`） | middleware **无条件注册**（债务 D1） | 上游 memory 仍锚定 `~/.vibe-trading`（上游对 persistent.py 的改动——FTS5 排序衰减、FTS5 tokenizer 下限——均不同关注面，两者并存） |
 | **F5** | ClickHouse A 股数据源 + 语义层 | CH HTTP connector + OHLCV loader（DataLoaderProtocol）+ 基本面 Provider（回退 Tushare）+ 四只资金流工具 CH 优先回退；A 股 chain 与路由以 clickhouse 为首选。**语义层 Phase 0–2**（2026-08-12）：56 表 DDL 快照 + 9 表 444 列 COMMENT + 单位 registry（`clickhouse_units.py`）+ 显式 199 列（`clickhouse_columns.py`）+ `get_valuation` + llm_role 受约束灵活性通道（`ch_list_tables` / `ch_describe_table` / `ch_query`，sqlglot AST 守卫） | `agent/src/clickhouse_connector.py`、`agent/backtest/loaders/clickhouse.py`、`agent/src/tools/clickhouse_fallbacks.py`、`schema/clickhouse/`、`agent/src/tools/clickhouse_query_tool.py`、`agent/src/tools/clickhouse_explore_tools.py`、`agent/src/tools/valuation_tool.py` 等 97 文件 | `CLICKHOUSE_*`（DataConfig）；灵活性通道 `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | 个人部署独有，不回流 |
@@ -105,7 +105,7 @@ python -m pytest agent/tests/memory/test_latency_bench.py -m bench
 ### 3.2 端到端冒烟（本地）
 
 ```bash
-# MCP 工具计数门控：OFF=77 / ON=82（上游基数 74 + 本分支 3 个 ch_* 语义层工具 + 5 个 memory_* 工具）
+# MCP 工具计数门控：OFF=78 / ON=83（上游基数 74 + 本分支 3 个 ch_* 语义层工具 + 1 个 scheduled_research wrapper + 5 个 memory_* 工具；上游基数于 f84b2977 实测仍为 74）
 cd agent
 python -c "import asyncio, mcp_server; print(len(asyncio.run(mcp_server.mcp.list_tools())))"
 VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.run(mcp_server.mcp.list_tools())))"
