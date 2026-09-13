@@ -4,7 +4,7 @@ description: mymain 分支持久知识库的人类入口；agent 请走 AGENTS.m
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-08-30
+updated: 2026-09-13
 tags: [index]
 ---
 
@@ -18,7 +18,8 @@ tags: [index]
 | 目录 | 内容 |
 |---|---|
 | [branch/](branch/) | 分支治理：差异追踪（MYMAIN_DIVERGENCE）与发布记录（MYMAIN_README） |
-| [features/](features/) | 迭代功能卡 F1-F5、F7（能力 / 开发历史 / 验证 / 上游关系） |
+| [features/](features/) | 迭代功能卡 F1-F5、F7、F8（能力 / 开发历史 / 验证 / 上游关系） |
 | [harness-evolution/](harness-evolution/) | harness 演进研究档案（17 份文档 + 评测代码与裁决证据，归档态） |
 | [clickhouse/](clickhouse/) | ClickHouse A 股数据源与语义层研究档案 |
+| [multitenant/](multitenant/) | 多租户服务化差距台账（FE-/IM-/BASE-/SEC-/OPS- 编号差距表，engine-bridge 计划动机文档） |
 | [history/](history/) | 分支编年史 |

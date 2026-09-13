@@ -1,10 +1,10 @@
 ---
-title: 功能卡索引（mymain 独有特性 F1-F5、F7）
-description: mymain 分支相对上游的独有功能索引。改代码前确认能力归属、查上游回流计划、定位验证基线时先读这里。触发词：F1、F2、F3、F4、F5、F7、功能卡、feature、reflections、memory MCP、MemoryGuard、ClickHouse、OpencodeAgent。
+title: 功能卡索引（mymain 独有特性 F1-F5、F7、F8）
+description: mymain 分支相对上游的独有功能索引。改代码前确认能力归属、查上游回流计划、定位验证基线时先读这里。触发词：F1、F2、F3、F4、F5、F7、F8、功能卡、feature、reflections、memory MCP、MemoryGuard、ClickHouse、OpencodeAgent、engine-bridge、opencode 引擎桥。
 type: index
 status: active
 created: 2026-08-30
-updated: 2026-08-30
+updated: 2026-09-13
 tags: [index, features, mymain]
 related: [../branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -24,6 +24,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 | F4 | MemoryGuard + 项目目录存储 | FastMCP middleware 自动记忆（零 LLM）+ VT_MEMORY_BASE_DIR | 路径部分队列 ①；中间件部分队列 ⑤（先解决债务 D1/D2） | [f4-memory-guard.md](f4-memory-guard.md) |
 | F5 | ClickHouse A 股数据源 + 语义层 | CH 为 A 股首选数据源；语义层 Phase 0-2 含 ch_* 受约束查询通道 | 个人部署独有，不回流 | [f5-clickhouse-data-source.md](f5-clickhouse-data-source.md) |
 | F7 | OpencodeAgent harness 层 | opencode + omo + 本仓库 MCP 的独立部署 harness（含 12 子代理花名册） | 个人部署独有，不回流 | [f7-opencode-agent.md](f7-opencode-agent.md) |
+| F8 | opencode 引擎桥 | SessionService 接缝整体置换：opencode serve 为外置引擎，前端 + 16 IM 适配器零改动（`VIBE_TRADING_ENGINE=opencode`，默认 native 零行为变化） | 个人部署独有，不回流；上游候选三件记队列 ⑦ | [f8-engine-bridge.md](f8-engine-bridge.md) |
 
 ## 为什么没有 F6
 

@@ -138,12 +138,14 @@ Settings HTTP 面是**引擎无关**的（契约由 `agent/tests/test_settings_e
 
 ## 开发历史
 
+> 考古注：本节与全卡引用的任务级 SHA（`14bf3fe3..163f6852`）与里程碑 merge（`50675965`/`4e0e7662`）为 2026-09-13 restructure+rebase 之前的原史，完整保留于备份分支 `backup/mymain-pre-restructure-20260913`；当前线性历史中，引擎桥本体以单一功能 commit `feat(engine-bridge): F8 opencode engine bridge (SessionService seam replacement)` 落账，Phase 3 四件（租户容器/wrapper/router/隔离矩阵）各为独立功能 commit。
+
 - 2026-09-12 Phase 0：T2 基线盘点 memo（`14bf3fe3`）+ T1 spike GO 与三份强制条件（`aaad7546`，8 份 golden traces）。
 - 2026-09-12 Wave 2：T3 driver（`03332696`）→ T5 service（`6530a7f3`）→ T4 translator（`7967210f`）。
 - 2026-09-13 T6 恢复对账 + 级联生命周期落地（`8fc1fe75`，本卡创建）；T7 工厂开关 + Web E2E 汇合门（`225ba2f3`，八组 67 检查全绿，含两处治理现实修复）。
 - 2026-09-13 Wave 3：T8 IM 零改动验证（`84293175`，s0/s1/s3/s4 PASS、s2 xfail = T8-1 修复进行中）∥ T9 IM 流式彩蛋（`361e1a41`，`_stream_delta` 首产者、mock 3/3 PASS）。
 - 2026-09-13 T15 收尾：Settings 面引擎能力契约（`test_settings_engine_capability.py`）+ 降级清单 14 项定版 + 认证配方/B5 裁决/回滚程序成文（本卡扩写）。
-- 2026-09-13 T8-1 修复（`90a4378a`，stream_liveness 双有界信号，8.03s 落终态）+ T14 goal 绑定（`02731637`，遵从 12/12）。**Phase 0-2 里程碑并回 mymain（merge `50675965`）+ F8 账本记账（`9bf579ab`）**。
+- 2026-09-13 T8-1 修复（`90a4378a`，stream_liveness 双有界信号，8.03s 落终态）+ T14 goal 绑定（`02731637`，遵从 12/12）。**Phase 0-2 里程碑并回 mymain（原 merge `50675965`，2026-09-13 restructure+rebase 后以功能 commit 线性落账）+ F8 账本记账**。
 - 2026-09-13 Phase 3：T10 租户容器（`06507813`，钉版 1.18.30/4.19.4/base v3.0.0-tenant、supervisord 双进程、B5/B6 修正实证、前端 dist 入镜像、Rosetta amd64 compose E2E 全绿含崩溃自愈）→ T13 wrapper（`0c4ca311`）∥ T11 router+provisioning（`05c8058b`，双租户 E2E 59/59）→ T12 隔离矩阵（`dc64dffc`，**93/93 零跨租户可达，Phase 3 门 PASS**）。
 - 2026-09-13 **计划执行完毕：15/15 todos 全绿**；第二次里程碑并回 mymain；剩余全部为用户门控项（部署/凭据/迁移/上游提交时机）。
 

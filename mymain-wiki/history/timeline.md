@@ -4,7 +4,7 @@ description: mymain 分支从 2026-07 记忆工作起步到当前的完整时间
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-08-31
+updated: 2026-09-13
 tags: [history, timeline, changelog, mymain]
 related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 ---
@@ -12,10 +12,12 @@ related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 # mymain 分支编年史
 
 > 倒序表。发布细节见 [../branch/MYMAIN_README.md](../branch/MYMAIN_README.md)，差异与验证基线见 [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md)（表中简称 DIVERGENCE），功能细节见 [../features/README.md](../features/README.md)。
-> 注：2026-08-11（merge+carve）与 2026-08-28（rebase）两次历史重整改写了分支上的 commit SHA；表内 pre-carve SHA 可在备份分支 `backup/mymain-pre-rebase-20260804` 查到，当前分支 SHA 以 `git log main..mymain` 为准。
+> 注：2026-08-11（merge+carve）与 2026-08-28（rebase）两次历史重整改写了分支上的 commit SHA；表内 pre-carve SHA 可在备份分支 `backup/mymain-pre-rebase-20260804` 查到，当前分支 SHA 以 `git log main..mymain` 为准。2026-09-13 restructure+rebase（功能粒度重整 + 对齐上游 `f84b2977`）再次改写了 2026-09-12 以后的全部 SHA：原任务级 commit（`14bf3fe3..163f6852`）与两次里程碑 merge（`50675965`/`4e0e7662`）完整保留于备份分支 `backup/mymain-pre-restructure-20260913`，当前线性历史中各功能以单一功能 commit 落账。
 
 | 日期 | 事件 | 证据 |
 |---|---|---|
+| 2026-09-13 | engine-bridge Phase 3-4 里程碑并回（原 --no-ff merge `4e0e7662`，5 任务级 commit；2026-09-13 restructure+rebase 后线性化为四个功能 commit——租户容器/wrapper/router/隔离矩阵——卡片收口并入引擎桥功能 commit，原 SHA 见 `backup/mymain-pre-restructure-20260913`）：**opencode-engine-bridge-v2 计划收口 15/15**——T10 租户容器（钉版 1.18.30/4.19.4、supervisord、B5/B6 实证、前端 dist、Rosetta E2E 含崩溃自愈）、T13 wrapper（MCP 78/83、eval 地板逐位持平、confirm 流复活）、T11 router（双租户 59/59）、T12 隔离矩阵（**93/93 零跨租户可达，Phase 3 门 PASS**；idle RSS ~1.04GB、唤醒 ~18.6s、IM 首响 2.1-6.1s）；余项全为用户门控（部署/凭据/迁移/上游时机） | [../features/f8-engine-bridge.md](../features/f8-engine-bridge.md)；`OpencodeAgent/docs/tenancy_report.md`；DIVERGENCE §5 2026-09-13 Phase 3-4 条 |
+| 2026-09-13 | engine-bridge Phase 0-2 里程碑并回（原 --no-ff merge `50675965`，12 任务级 commit；2026-09-13 restructure+rebase 后线性化为单一功能 commit `feat(engine-bridge): F8 opencode engine bridge`，原 SHA 见 `backup/mymain-pre-restructure-20260913`）：F8 opencode 引擎桥落地 mymain——`VIBE_TRADING_ENGINE` 默认 native 零行为变化；桥套件 233 绿；web E2E 67 检查 + IM parity + goal 遵从 12/12；引擎死亡 8.03s 落终态；T10 租户容器进行中 | [../features/f8-engine-bridge.md](../features/f8-engine-bridge.md)；DIVERGENCE §5 2026-09-13 条 |
 | 2026-08-31 | rebase 对齐上游 `899d3c75`（+1 commit：六 README 的 UK equities 新闻，docs-only）；38 个本地 commit 零冲突重放，全量门禁与 08-30 基线逐字一致；`--force-with-lease` 推送（保护窗口 ~30s），备份 `backup/mymain-pre-rebase-20260831` | [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-08-31 条 |
 | 2026-08-31 | 生产部署：ECS `120.26.181.156` 同步至 `273520d0`（含 D 批 12 领域子代理 + 主循环收敛）；宿主 `.opencode/` 补齐 `subagents.json`/`prompts/`/新 `render_config.py`/新版工具治理清单并重渲染；验证：MCP 82、网关 401/200、memory_status ok、ch_list_tables 57 表、task→market-data-agent 委派 e2e 通过；CH 数据追平至 20260828（stk_factor_pro/idx_weight/stk_margin 迟一日属上游发布延迟，fail-closed 次日重试） | 部署会话记录；[../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §3.3 |
 | 2026-08-30 | rebase 对齐上游 `fb5013c2`（`80ffdda4` 后 79 commit，34 个本地 commit 重放，1 处真冲突）；历史卫生：F2 的 `.omo` 会话文件与 Phase 2 的冲突标记经 edit 停点出史；release/mymain 2026-08-30 发布 | [../branch/MYMAIN_README.md](../branch/MYMAIN_README.md)；DIVERGENCE §5 2026-08-30 条 |
