@@ -31,8 +31,10 @@ _TRADING_DAYS = {
     "binance": 365,
     # Iranian crypto exchanges (24/7 markets, same annualisation as okx/ccxt)
     "nobitex": 365, "wallex": 365,
-    # A-share equity
+    # A-share equity (clickhouse = the local A-share warehouse; daily bars
+    # only, intraday rows below keep the table complete per the pykrx note)
     "baostock": 252, "tencent": 252, "eastmoney": 252, "sina": 252,
+    "clickhouse": 252,
     # US / international equity
     "yahoo": 252, "finnhub": 252, "alphavantage": 252, "tiingo": 252,
     "fmp": 252, "stooq": 252, "longbridge": 252,
@@ -61,6 +63,7 @@ _BARS_PER_DAY = {
             # A-share equity (4.0h session)
             "tushare": 240, "akshare": 240, "baostock": 240, "tencent": 240,
             "eastmoney": 240, "sina": 240, "mootdx": 240, "futu": 240,
+            "clickhouse": 240,
             # crypto (24h)
             "okx": 1440, "ccxt": 1440, "binance": 1440,
             "nobitex": 1440, "wallex": 1440,
@@ -76,6 +79,7 @@ _BARS_PER_DAY = {
             "local": 78, "qveris": 78,
             "tushare": 48,  "akshare": 48,  "baostock": 48,  "tencent": 48,
             "eastmoney": 48,  "sina": 48,  "mootdx": 48,  "futu": 48,
+            "clickhouse": 48,
             "okx": 288,  "ccxt": 288,  "binance": 288,
             "nobitex": 288,  "wallex": 288,
             "mt5": 288, "tickerall": 288,
@@ -87,6 +91,7 @@ _BARS_PER_DAY = {
             "local": 26, "qveris": 26,
             "tushare": 16,  "akshare": 16,  "baostock": 16,  "tencent": 16,
             "eastmoney": 16,  "sina": 16,  "mootdx": 16,  "futu": 16,
+            "clickhouse": 16,
             "okx": 96,   "ccxt": 96,   "binance": 96,
             "nobitex": 96,   "wallex": 96,
             "mt5": 96, "tickerall": 96,
@@ -98,6 +103,7 @@ _BARS_PER_DAY = {
             "local": 13, "qveris": 13,
             "tushare": 8,   "akshare": 8,   "baostock": 8,   "tencent": 8,
             "eastmoney": 8,   "sina": 8,   "mootdx": 8,   "futu": 8,
+            "clickhouse": 8,
             "okx": 48,   "ccxt": 48,   "binance": 48,
             "nobitex": 48,   "wallex": 48,
             "mt5": 48, "tickerall": 48,
@@ -109,6 +115,7 @@ _BARS_PER_DAY = {
             "local": 7, "qveris": 7,
             "tushare": 4,   "akshare": 4,   "baostock": 4,   "tencent": 4,
             "eastmoney": 4,   "sina": 4,   "mootdx": 4,   "futu": 4,
+            "clickhouse": 4,
             "okx": 24,   "ccxt": 24,   "binance": 24,
             "nobitex": 24,   "wallex": 24,
             "mt5": 24, "tickerall": 24,
@@ -120,6 +127,7 @@ _BARS_PER_DAY = {
             "local": 2, "qveris": 2,
             "tushare": 1,   "akshare": 1,   "baostock": 1,   "tencent": 1,
             "eastmoney": 1,   "sina": 1,   "mootdx": 1,   "futu": 1,
+            "clickhouse": 1,
             "okx": 6,    "ccxt": 6,    "binance": 6,
             "nobitex": 6,    "wallex": 6,
             "mt5": 6, "tickerall": 6,
@@ -131,6 +139,7 @@ _BARS_PER_DAY = {
             "local": 1, "qveris": 1,
             "tushare": 1,   "akshare": 1,   "baostock": 1,   "tencent": 1,
             "eastmoney": 1,   "sina": 1,   "mootdx": 1,   "futu": 1,
+            "clickhouse": 1,
             "okx": 1,    "ccxt": 1,    "binance": 1,
             "nobitex": 1,    "wallex": 1,
             "mt5": 1, "tickerall": 1,

@@ -5,8 +5,10 @@ fetch_dragon_tiger_ch, fetch_northbound_flow_ch) is tested against a
 live ClickHouse instance when available.  When CH is unreachable the
 tests are skipped via ``pytest.mark.skipif``.
 
-The fallback test (test 5) mocks CH as unreachable and verifies the
-tushare fallback path.
+The unavailability test (test 5) mocks CH as unreachable and verifies each
+function raises ``ClickHouseUnavailableError`` without touching tushare —
+the calling tool falls through to its own upstream provider chain, keeping
+envelope provenance labels truthful.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ import pytest
 
 from src.clickhouse_connector import ClickHouseConnector
 from src.tools.clickhouse_fallbacks import (
+    ClickHouseUnavailableError,
     fetch_dragon_tiger_ch,
     fetch_fund_flow_ch,
     fetch_margin_trading_ch,
@@ -169,87 +172,59 @@ class TestFetchNorthboundFlowCh:
 
 
 # ---------------------------------------------------------------------------
-# Test 5 — Fallback to tushare when CH is unreachable
+# Test 5 — Raise when CH is unavailable (tool falls through to its own chain)
 # ---------------------------------------------------------------------------
 
 
-class TestFallbackToTushare:
-    """When CH is unreachable, each function falls back to the tushare adapter."""
+class TestRaisesWhenUnavailable:
+    """CH unreachable → raise; the internal tushare forward is gone.
 
-    def test_fetch_fund_flow_falls_back(self):
-        """CH unreachable → tushare fallback is called."""
-        fallback = {
-            "symbol": "600519.SH",
-            "ts_code": "600519.SH",
-            "source": "tushare",
-            "rows": [{"timestamp": "2024-01-03", "main": 100.0}],
-        }
+    Forwarding internally made the tool hooks label tushare-served data as
+    ``source="clickhouse"`` — the upstream fallback tests (5fe512dc) reject
+    that, rightly. Raising lets each tool run its own eastmoney → tushare
+    chain and label the envelope truthfully.
+    """
+
+    def test_fetch_fund_flow_raises(self):
         with (
             _mock_ch_connector_unreachable(),
             patch(
                 "src.tools.clickhouse_fallbacks.tushare_fallbacks.fetch_fund_flow",
-                return_value=fallback,
             ) as mock_fallback,
         ):
-            result = fetch_fund_flow_ch("600519.SH", days=30)
-        mock_fallback.assert_called_once_with("600519.SH", days=30)
-        assert result["source"] == "tushare"
+            with pytest.raises(ClickHouseUnavailableError):
+                fetch_fund_flow_ch("600519.SH", days=30)
+        mock_fallback.assert_not_called()
 
-    def test_fetch_margin_trading_falls_back(self):
-        """CH unreachable → tushare fallback is called."""
-        fallback = {
-            "code": "000001",
-            "ts_code": "000001.SZ",
-            "rows": [{"trade_date": "2024-01-03", "financing_balance": 1.0}],
-        }
+    def test_fetch_margin_trading_raises(self):
         with (
             _mock_ch_connector_unreachable(),
             patch(
                 "src.tools.clickhouse_fallbacks.tushare_fallbacks.fetch_margin_trading",
-                return_value=fallback,
             ) as mock_fallback,
         ):
-            result = fetch_margin_trading_ch("000001.SZ", days=30)
-        mock_fallback.assert_called_once_with("000001.SZ", days=30)
-        assert result["code"] == "000001"
+            with pytest.raises(ClickHouseUnavailableError):
+                fetch_margin_trading_ch("000001.SZ", days=30)
+        mock_fallback.assert_not_called()
 
-    def test_fetch_dragon_tiger_falls_back(self):
-        """CH unreachable → tushare fallback is called."""
-        fallback = {
-            "date": "2024-01-02",
-            "count": 0,
-            "appearances": [],
-        }
+    def test_fetch_dragon_tiger_raises(self):
         with (
             _mock_ch_connector_unreachable(),
             patch(
                 "src.tools.clickhouse_fallbacks.tushare_fallbacks.fetch_dragon_tiger",
-                return_value=fallback,
             ) as mock_fallback,
         ):
-            result = fetch_dragon_tiger_ch("2024-01-02", "600519.SH")
-        mock_fallback.assert_called_once_with("2024-01-02", "600519.SH")
-        assert result["date"] == "2024-01-02"
+            with pytest.raises(ClickHouseUnavailableError):
+                fetch_dragon_tiger_ch("2024-01-02", "600519.SH")
+        mock_fallback.assert_not_called()
 
-    def test_fetch_northbound_flow_falls_back(self):
-        """CH unreachable → tushare fallback is called."""
-        fallback = {
-            "unit": "10k CNY",
-            "lookback_days": 30,
-            "realtime": {
-                "shanghai_connect": None,
-                "shenzhen_connect": None,
-                "total": None,
-            },
-            "history": [],
-        }
+    def test_fetch_northbound_flow_raises(self):
         with (
             _mock_ch_connector_unreachable(),
             patch(
                 "src.tools.clickhouse_fallbacks.tushare_fallbacks.fetch_northbound_flow",
-                return_value=fallback,
             ) as mock_fallback,
         ):
-            result = fetch_northbound_flow_ch(lookback_days=30)
-        mock_fallback.assert_called_once_with(lookback_days=30)
-        assert result["lookback_days"] == 30
+            with pytest.raises(ClickHouseUnavailableError):
+                fetch_northbound_flow_ch(lookback_days=30)
+        mock_fallback.assert_not_called()

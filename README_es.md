@@ -410,10 +410,11 @@ La mayoría de las ejecuciones siguen la misma ruta de evidencia: enrutar la sol
 
 ## 📡 Fuentes de Datos y Fallback Inteligente
 
-Una sola llamada `get_market_data`, **27 fuentes de datos de mercado**, una de ellas el mercado premium opcional **QVeris** (además del mercado premium opcional **QVeris**). Establece `source: "auto"`: el cargador elige según el símbolo y luego recorre una cadena por mercado ordenada por **riesgo de bloqueo de IP**: primero las fuentes públicas que nunca se bloquean, al final las limitadas o que requieren clave. Cero configuración, sin punto único de fallo.
+Una sola llamada `get_market_data`, **28 fuentes de datos de mercado**, una de ellas el mercado premium opcional **QVeris** (además del mercado premium opcional **QVeris**). Establece `source: "auto"`: el cargador elige según el símbolo y luego recorre una cadena por mercado ordenada por **riesgo de bloqueo de IP**: primero las fuentes públicas que nunca se bloquean, al final las limitadas o que requieren clave. Cero configuración, sin punto único de fallo.
 
 | Fuente | Mercados | Autenticación | Rol |
 |--------|---------|------|------|
+| `clickhouse` | acciones A | autoalojado | almacén ClickHouse local: historial completo T-1 con calibres de ajuste, sin exposición de IP; encabeza la cadena de acciones A cuando está configurado |
 | `tencent` · `mootdx` | A-share + HK | ninguna | nunca bloqueada por IP (`mootdx` = 通达信 TCP) |
 | `eastmoney` | A / EE. UU. / HK | ninguna | OHLCV + herramientas de fundamentales y flujo profundas (limitada) |
 | `baostock` · `akshare` | A (+ EE. UU./HK/futuros/macro/fx) | ninguna | fallbacks gratuitos |
@@ -1770,7 +1771,7 @@ Vibe-Trading/
 │   │
 │   └── backtest/                   # Motores de backtest
 │       ├── engines/                #   9 motores + motor compuesto multi-mercado + options_portfolio
-│       ├── loaders/                #   27 fuentes: tushare, okx, nobitex, wallex, binance, yfinance, akshare, baostock, tencent, mootdx, ccxt, futu, pykrx, local, eastmoney, sina, stooq, yahoo, finnhub, alphavantage, tiingo, fmp, longbridge, mt5, qveris, india_broker, tickerall
+│       ├── loaders/                #   28 fuentes: tushare, okx, nobitex, wallex, binance, yfinance, akshare, baostock, tencent, mootdx, clickhouse, ccxt, futu, pykrx, local, eastmoney, sina, stooq, yahoo, finnhub, alphavantage, tiingo, fmp, longbridge, mt5, qveris, india_broker, tickerall
 │       │   ├── base.py             #   Protocolo DataLoader
 │       │   └── registry.py         #   Registro + cadenas de fallback automáticas
 │       └── optimizers/             #   MVO, equal vol, max div, risk parity

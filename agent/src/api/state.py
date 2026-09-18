@@ -76,6 +76,31 @@ def _get_session_service():
     return _session_service
 
 
+async def engine_bridge_startup_hook() -> None:
+    """api_server startup hook: preflight the opencode bridge when enabled.
+
+    Lives here (not in the line-budgeted api_server module) so the engine
+    guard and the lazy ``src.opencode_bridge`` import stay out of the thin
+    assembler; the native path never imports the bridge package at startup.
+    """
+    if get_env_config().opencode_bridge.vibe_trading_engine == "opencode":
+        from src.opencode_bridge import preflight_engine_bridge
+
+        await preflight_engine_bridge(_get_session_service)
+
+
+async def engine_bridge_shutdown_hook() -> None:
+    """api_server shutdown hook: drain the bridge service if one was built.
+
+    Unconditional by design — ``stop_engine_bridge`` is a no-op for the
+    native ``SessionService`` (no ``aclose`` seam), and the side-effect-free
+    import at shutdown is the wiring module's documented contract.
+    """
+    from src.opencode_bridge import stop_engine_bridge
+
+    await stop_engine_bridge()
+
+
 #: Terminal attempt events a finished scheduled briefing can follow.
 _DELIVERY_TRIGGER_EVENTS = frozenset(
     {"attempt.completed", "attempt.failed", "attempt.cancelled"}

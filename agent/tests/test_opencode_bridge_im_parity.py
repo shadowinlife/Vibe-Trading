@@ -88,7 +88,7 @@ from tests.e2e_engine_bridge.imlib import (
 from tests.e2e_engine_bridge.riglib import GatewayApi
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-MERGE_BASE = "5eda88d1a762593ded46e50da5986392711681ff"  # mymain merge-base (plan)
+MERGE_BASE = "d3c29488abb7951a65d01713ce25e13aa804501e"  # main pin (2026-09-18)
 
 RIG_ENABLED = os.environ.get("ENGINE_BRIDGE_E2E") == "1"
 RIG_STATE_PATH = Path(

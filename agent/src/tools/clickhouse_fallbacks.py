@@ -1,9 +1,12 @@
-"""ClickHouse-backed flow data adapters that try ClickHouse first, falling back to tushare.
+"""ClickHouse-backed flow data adapters that try ClickHouse first.
 
 Each function mirrors the corresponding tushare_fallbacks function's signature and
-return dict shape. When ClickHouse is unreachable or returns no data, the call is
-transparently forwarded to the tushare fallback so the caller always receives a
-compatible envelope.
+return dict shape. When ClickHouse is unreachable or returns no data, the function
+raises :class:`ClickHouseUnavailableError` so the calling tool falls through to its
+own upstream provider chain (eastmoney -> tushare). The earlier design forwarded
+to tushare internally, but the tool hooks labelled every result ``source=
+"clickhouse"`` — a provenance lie the upstream fallback tests (5fe512dc) rightly
+reject. Raising keeps the labels truthful and the hooks purely additive.
 
 Unit conversions are metadata-driven (mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md P1.4): the
 factors come from ``src.clickhouse_units`` (``schema/clickhouse/comments.yaml``)
@@ -21,6 +24,15 @@ from src.clickhouse_connector import ClickHouseConnector
 from src.tools import tushare_fallbacks
 
 logger = logging.getLogger(__name__)
+
+
+class ClickHouseUnavailableError(RuntimeError):
+    """ClickHouse cannot serve this flow query (unreachable or empty).
+
+    Callers catch it and continue down their own provider chain, so a
+    tushare-served envelope is never labelled ``source="clickhouse"``.
+    """
+
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -57,7 +69,7 @@ def _dashed_date(value: Any) -> str | None:
 
 
 def fetch_fund_flow_ch(symbol: str, *, days: int) -> dict[str, Any]:
-    """Query ClickHouse ``stk_moneyflow``, falling back to tushare on failure.
+    """Query ClickHouse ``stk_moneyflow``; raise when CH cannot serve it.
 
     Returns the same dict shape as ``tushare_fallbacks.fetch_fund_flow``:
     ``{symbol, ts_code, source, rows: [{timestamp, main, small, medium, large, super_large}]}``.
@@ -72,13 +84,13 @@ def fetch_fund_flow_ch(symbol: str, *, days: int) -> dict[str, Any]:
         df = ch.get_moneyflow(ts_code, days=days)
     except Exception as exc:
         logger.debug("CH fund_flow unavailable for %s: %s", symbol, exc)
-        return tushare_fallbacks.fetch_fund_flow(symbol, days=days)
+        raise ClickHouseUnavailableError(
+            f"fund_flow unavailable for {symbol}: {exc}"
+        ) from exc
 
     if df.empty:
-        logger.debug(
-            "CH fund_flow returned empty for %s, falling back to tushare", symbol
-        )
-        return tushare_fallbacks.fetch_fund_flow(symbol, days=days)
+        logger.debug("CH fund_flow returned empty for %s", symbol)
+        raise ClickHouseUnavailableError(f"fund_flow empty for {symbol}")
 
     wan_to_yuan = clickhouse_units.moneyflow_amount_to_yuan_factor()
     rows: list[dict[str, Any]] = []
@@ -121,7 +133,7 @@ def _net_amount(row: Any, buy_key: str, sell_key: str, factor: float) -> float |
 
 
 def fetch_margin_trading_ch(code: str, *, days: int) -> dict[str, Any]:
-    """Query ClickHouse ``stk_margin``, falling back to tushare on failure.
+    """Query ClickHouse ``stk_margin``; raise when CH cannot serve it.
 
     Returns the same dict shape as ``tushare_fallbacks.fetch_margin_trading``:
     ``{code, ts_code, rows: [{trade_date, financing_balance, financing_buy, ...}]}``.
@@ -132,13 +144,13 @@ def fetch_margin_trading_ch(code: str, *, days: int) -> dict[str, Any]:
         df = ch.get_margin(ts_code, days=days)
     except Exception as exc:
         logger.debug("CH margin_trading unavailable for %s: %s", code, exc)
-        return tushare_fallbacks.fetch_margin_trading(code, days=days)
+        raise ClickHouseUnavailableError(
+            f"margin_trading unavailable for {code}: {exc}"
+        ) from exc
 
     if df.empty:
-        logger.debug(
-            "CH margin_trading returned empty for %s, falling back to tushare", code
-        )
-        return tushare_fallbacks.fetch_margin_trading(code, days=days)
+        logger.debug("CH margin_trading returned empty for %s", code)
+        raise ClickHouseUnavailableError(f"margin_trading empty for {code}")
 
     rows: list[dict[str, Any]] = []
     for _, row in df.iterrows():
@@ -163,7 +175,7 @@ def fetch_margin_trading_ch(code: str, *, days: int) -> dict[str, Any]:
 
 
 def fetch_dragon_tiger_ch(trade_date: str, code: str | None) -> dict[str, Any]:
-    """Query ClickHouse ``stk_top_list``, falling back to tushare on failure.
+    """Query ClickHouse ``stk_top_list``; raise when CH cannot serve it.
 
     Returns the same dict shape as ``tushare_fallbacks.fetch_dragon_tiger``:
     ``{date, count, appearances, code?, seats?}``.
@@ -182,15 +194,13 @@ def fetch_dragon_tiger_ch(trade_date: str, code: str | None) -> dict[str, Any]:
         df = ch.get_top_list(dashed, ts_code=ts_code)
     except Exception as exc:
         logger.debug("CH dragon_tiger unavailable for %s/%s: %s", dashed, code, exc)
-        return tushare_fallbacks.fetch_dragon_tiger(trade_date, code)
+        raise ClickHouseUnavailableError(
+            f"dragon_tiger unavailable for {dashed}/{code}: {exc}"
+        ) from exc
 
     if df.empty:
-        logger.debug(
-            "CH dragon_tiger returned empty for %s/%s, falling back to tushare",
-            dashed,
-            code,
-        )
-        return tushare_fallbacks.fetch_dragon_tiger(trade_date, code)
+        logger.debug("CH dragon_tiger returned empty for %s/%s", dashed, code)
+        raise ClickHouseUnavailableError(f"dragon_tiger empty for {dashed}/{code}")
 
     appearances_raw = df.to_dict("records")
     appearances = [
@@ -249,7 +259,7 @@ def fetch_dragon_tiger_ch(trade_date: str, code: str | None) -> dict[str, Any]:
 
 
 def fetch_northbound_flow_ch(*, lookback_days: int) -> dict[str, Any]:
-    """Query ClickHouse ``stk_moneyflow_hsgt``, falling back to tushare on failure.
+    """Query ClickHouse ``stk_moneyflow_hsgt``; raise when CH cannot serve it.
 
     Returns the same dict shape as ``tushare_fallbacks.fetch_northbound_flow``:
     ``{unit, lookback_days, realtime: {shanghai_connect, shenzhen_connect, total}, history: [{...}]}``.
@@ -267,11 +277,11 @@ def fetch_northbound_flow_ch(*, lookback_days: int) -> dict[str, Any]:
         df = ch.get_moneyflow_hsgt(lookback_days=lookback_days)
     except Exception as exc:
         logger.debug("CH northbound_flow unavailable: %s", exc)
-        return tushare_fallbacks.fetch_northbound_flow(lookback_days=lookback_days)
+        raise ClickHouseUnavailableError(f"northbound_flow unavailable: {exc}") from exc
 
     if df.empty:
-        logger.debug("CH northbound_flow returned empty, falling back to tushare")
-        return tushare_fallbacks.fetch_northbound_flow(lookback_days=lookback_days)
+        logger.debug("CH northbound_flow returned empty")
+        raise ClickHouseUnavailableError("northbound_flow empty")
 
     raw_to_wan = clickhouse_units.northbound_raw_to_wan_factor()
     history: list[dict[str, Any]] = []
