@@ -95,6 +95,10 @@ related: [MYMAIN_DIVERGENCE.md, ../features/f8-engine-bridge.md, ../history/time
 | CH loader 注册 bug | `LOADER_REGISTRY` 实测（修复前 27 无 clickhouse / 修复后 28） | ✅ 潜伏 bug 实锤并修复：`_loader_modules` 条目 `clickhouse_loader` ≠ 实际模块 `clickhouse.py`；F5 链路面自落地起未生效，旧门禁（直接 import loader 的 CH 测试 + 不对 registry 断言的旧 README pin）双重掩盖 |
 | flow 工具 provenance 错标 | 上游 4 个 fallback 测试失败现场（`assert 'clickhouse' == 'tushare'`）+ `fetch_*_ch` 源码 | ✅ 实锤并修复：内置 tushare 回退 + 钩子硬编码标签；旧分支门禁从未暴露（测试环境缺 `clickhouse-connect`，钩子 ImportError 自禁用） |
 
+### 勘误（2026-09-18 晚，北向资金实证后追加）
+
+本审查 §2.3 曾把「northbound ×100 修复」列为最高价值上游 PR 候选，依据是分支 2026-08-12 的验证记录（`north_money=375048.34 ≈ 37.5亿元净买入`）。当日晚间对 tushare/HKEX/eastmoney/akshare 四源交叉实证推翻该前提：**tushare 北向字段自 2024-08-30 起语义已切换为成交额（百万元）**——375048.34 实为 3750 亿成交额而非 37.5 亿净买入；×100 在旧时代（净额、百万元→万元）是对的，在新时代（成交额）是错的，「一刀切去 ×100」与「保留 ×100」都不成立。正确的上游修复为「直通 + `CNY million` 单位 + 语义边界 note」，已随 PR [#1484](https://github.com/HKUDS/Vibe-Trading/pull/1484) 提交（Issue [#1481](https://github.com/HKUDS/Vibe-Trading/issues/1481)）；分支侧 `fetch_northbound_flow(_ch)` 的同源错标列入待办。南向字段（`ggt_ss/ggt_sz/south_money`）亦漂移为累计存量，不可作日度流量——新工具 `get_southbound_flow`（PR [#1486](https://github.com/HKUDS/Vibe-Trading/pull/1486)）据此不接 tushare。
+
 ## 4. 收缩优先级与上游 PR 候选
 
 按（价值 / 体量）排序：
