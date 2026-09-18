@@ -4,7 +4,7 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F7
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-08-31
+updated: 2026-09-18
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -321,3 +321,26 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - **吸收核查**：`gh pr list --author shadowinlife` 无新合入（#1286 子代理 PR 仍 OPEN，保留为分歧面）；F1–F7 无取代风险（docs-only commit）。
 - 验证基线（与 08-30 逐字一致）：memory **309/3**、ClickHouse **137/11**、schema 门禁 **53/1 + comments gate exit 0**、README+manifest 门禁 **76 passed**、env gate **exit 0**、market_data/registry/source_order/settings_api **133 passed**、OpencodeAgent config render **33 passed**、MCP **OFF=77 / ON=82**。
 - 推送：§4.2 保护窗口 ~30s（PUT protection allow_force_pushes → `--force-with-lease` 817c6a7d→6f35b026 → 立即恢复）；备份分支 `backup/mymain-pre-rebase-20260831` 已推 fork。
+
+### 2026-09-18 rebase（基线 `d3c29488`，engine-bridge 分支）
+
+- 上游前进 **417 commit**（`899d3c75` → `d3c29488`）：**v0.1.15 发布**（cc54832c，nobitex/wallex 伊朗 Toman 源 → 27 数据源）、券商连接器 15→17（KIS/Upbit/Toss/Scalable Capital）、README 数据源区新增三族**动态锚定 pin 测试**（a44ed6e8：loader tree line / 数据源表 / prose 计数全部对 registry 断言，六 README 强制可见）、grounding/factors/backtest/portfolio 修复批次（#1463/#1464/#1470/#1471 等）。
+- **本轮 rebase**：`mymain-engine-bridge` 56 个本地 commit（memory + ClickHouse + OpencodeAgent + engine-bridge 全栈）逐一重放，4 个真冲突停点：
+  - `5a189faf`（memory MCP 工具）：`agent/SKILL.md` 计数区——采上游 0.1.15/27 源 + 本地增量 91 技能；
+  - `6a52dd88`（CH 主数据源）：SKILL.md（28 源含 clickhouse）、`registry.py`（保留上游 `_registration_lock` 双检结构，clickhouse 入 loader 列表 + a_share 链首）；
+  - `8da9d04a`（CH Phase 1）：`market_data.py` **语义级合并**——上游已重构为 per-symbol fallback 链（`remaining`/`partial`/`symbol_sources`），本地 CH provenance 相应改为逐符号解析（`symbol_source == "clickhouse"` 才附加 `extra_provenance`）；
+  - `c4e353bb`（reconcile）：SKILL.md 28 源 pin、`test_registry.py` 链 pin（clickhouse 领头 + 上游多行格式）。
+- **rebase 后全量门禁首跑 25 失败 → 本轮 reconcile 全部修复**（7 类）：
+  1. **潜伏 bug①（本轮最大发现）**：registry `_loader_modules` 自 F5 起写的是 `backtest.loaders.clickhouse_loader`，而实际模块名是 `clickhouse.py`——CH loader **从未注册进 LOADER_REGISTRY**，a_share 链的 clickhouse 链首在所有环境被静默跳过（`resolve_loader` 抛 Unknown source → continue），F5「CH 主力数据源」的链路面自落地起未生效；旧验证未暴露因为 CH 测试直接 import loader 模块（装饰器注册）、且旧 README pin 不对 registry 断言。修为 `backtest.loaders.clickhouse` 后 registry=28。
+  2. **潜伏 bug②（provenance 错标）**：`fetch_*_ch` 四函数内置 tushare 回退，使工具钩子把 tushare 数据标成 `source="clickhouse"`——上游 5fe512dc 的四个 fallback 测试（旧基线已存在，因测试环境缺 `clickhouse-connect` 令钩子 ImportError 自禁用而从未在本地门禁暴露）正确拒绝该行为。改为抛 `ClickHouseUnavailableError`（不可达/空结果两路），钩子 `except: pass` 回落上游 eastmoney→tushare 链：标签真实、钩子纯增量、上游测试原样通过；`test_clickhouse_flow.py` Test 5 改 pin raise 语义 + tushare 零调用。
+  3. **api_server.py 行数预算**：上游 pin `<400`，分支缝合后 401。引擎钩子下沉 `state.py`（`engine_bridge_startup_hook` / `engine_bridge_shutdown_hook`，懒 import 保持「native 启动路径不 import bridge 包」不变量），api_server 经 `_api_state` 单行调用 → **399 行**。
+  4. **metrics.py 年化表**：clickhouse 补入 `_TRADING_DAYS`(252) + `_BARS_PER_DAY` 全部 7 层（A 股口径 240/48/16/8/4/1/1，日频仓库存量、intraday 行按 pykrx 先例保表完整）——修复 F5 起的潜伏缺口（旧门禁清单从未跑 test_metrics）。
+  5. **parity 测试 MERGE_BASE**：`5eda88d1`（旧 mymain 基线）→ `d3c29488`；保护区（channels/agent/session/providers/frontend）零 diff pin 继续生效，本轮实测全空。
+  6. **六 README 数据源区**：prose 计数 27→28、loader tree line +clickhouse（28 sources）、数据源表 +clickhouse 行（en 五行共用英文行、es 西语行）——上游新 pin 三族全绿。
+  7. **环境**：uv 管理 venv 补装分支依赖 `clickhouse-connect 1.8.0` + `sqlglot 30.18.0`（venv 无 pip，走 `uv pip install --python`）。注意：CH 不可达环境 health_check 吃满 30s 超时（172.24.165.51 丢包型过滤）；测试面零影响（数据层测试全 mock resolver，241 passed/8s），生产 ECS 有 CH 为毫秒级；无 CH 的 dev 环境 a_share 链每进程首查付 30s 探测——已知代价，如需收敛可后续给 health_check 加独立短超时。
+- **取代核查**（用户指定两轮，明细见 [UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md](UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md)）：
+  - **engine-bridge 11 能力**：KEEP×7（工厂开关、事件翻译器、SSE 客户端、崩溃恢复的 re-attach/backfill/引擎死亡检测、租户路由、子代理名册、驱动管道）；PARTIAL×4（会话缝合层——上游无 Protocol 抽取；`_stream_delta`——消费侧原生/生产者独有；goal 绑定——原语全在上游、注入是桥胶水；scheduled_research MCP 面——**整个子系统上游原生**，分支仅剩 ~120 行 wrapper）。保护区零 diff 实证（session/channels/agent/goal/scheduled_research/providers/frontend）。
+  - **utils/tools/skills**：memory 核心栈**已被上游吸收**（REPLACE——6/7 文件与上游逐字节一致，`fix(memory)` 系列维护中）；reflections/mcp_adapter/memory_guard/`VT_MEMORY_BASE_DIR` KEEP；clickhouse 全家 KEEP（上游零等价，`local` loader 仅角色部分重叠）；`tushare_fallbacks.py` 上游已收敛（5fe512dc），残余实质 diff 仅 **northbound ×100 修复**（上游 bug 仍在 192-194 行，最高价值 PR 候选）；moneyflow ×10⁴「移除」声称不成立（两树同为有意保留的万元→元归一）；**`get_valuation` 孤儿**（native `__init__` 与 `_MIRRORED_TOOL_SOURCES` 均未注册，仅测试引用——待接线或随 CH 裁决退役）；memory-lifecycle skill 上游零重叠 KEEP。
+  - 上游 PR 候选队列（按价值/体量排序）：①scheduled_research MCP wrapper ②northbound ×100 修复 ③`VT_MEMORY_BASE_DIR` ④SessionService Protocol 抽取 ⑤ChannelRuntime `_streamed` 戳 ⑥装饰性 black 重排回退（~8 hunks 零行为）。
+- 验证基线：全量 `pytest --ignore=tests/e2e_backtest --tb=short -q` = **14094 passed / 119 skipped / 0 failed（20:01）**，对照 rebase 后首跑 25 failed / 14069 passed——25 个失败全部关闭且无新增回归；数据面焦点（readme_counts/registry/market_data/source_order/settings_api）**241 passed / 8s**；flow 四工具 + clickhouse_flow（含改写 Test 5）+ parity + metrics + api_infrastructure 焦点轮 **241 passed / 9 skipped / 11:38**（CH 真实连接尝试 30s×N 为主要耗时）。
+- 推送：`mymain-engine-bridge` **首推** fork（远端原无此分支，非 force）；备份分支 `backup/engine-bridge-pre-rebase-20260918`（rebase 前 `d2b121a8`）同推 fork。

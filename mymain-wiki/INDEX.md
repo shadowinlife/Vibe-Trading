@@ -4,7 +4,7 @@ description: wiki 内每份文档的一行式索引（路径 + 一句话 + 状�
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-08-31
+updated: 2026-09-18
 tags: [index]
 ---
 
@@ -22,6 +22,7 @@ tags: [index]
 
 - [branch/MYMAIN_DIVERGENCE.md](branch/MYMAIN_DIVERGENCE.md) — 与上游差异权威台账：F1-F7、贡献队列、验证门禁、债务 D1-D4 — active
 - [branch/MYMAIN_README.md](branch/MYMAIN_README.md) — 发布 changelog：基线/迭代/验证基线/ tag 约定 — active
+- [branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md](branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md) — 2026-09-18 上游可替换性审查：engine-bridge 11 能力 + memory/CH/valuation/skills 逐项 REPLACE/PARTIAL/KEEP 判定、人工复核清单、PR 候选队列 — active
 
 ## features/ — 迭代功能卡
 
