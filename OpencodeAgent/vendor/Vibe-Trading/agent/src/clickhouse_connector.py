@@ -12,7 +12,7 @@ ClickHouse instance.
 Environment Variables
 ---------------------
 CLICKHOUSE_HOST : str
-    ClickHouse host (default ``172.24.165.51``).
+    ClickHouse host (default ``localhost``).
 CLICKHOUSE_PORT : int
     HTTP port (default ``8123``).
 CLICKHOUSE_USER : str
@@ -57,7 +57,7 @@ class ClickHouseConnector:
         value.
     """
 
-    _DEFAULT_HOST = "172.24.165.51"
+    _DEFAULT_HOST = "localhost"
     _DEFAULT_PORT = 8123
     _DEFAULT_USER = ""
     _DEFAULT_PASSWORD = ""

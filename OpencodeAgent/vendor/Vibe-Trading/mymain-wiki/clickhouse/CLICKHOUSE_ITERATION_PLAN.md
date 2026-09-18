@@ -13,7 +13,7 @@ related: [CLICKHOUSE_SEMANTIC_LAYER_REPORT.md, CLICKHOUSE_SYNC_DIAGNOSIS.md]
 
 > **状态：D0–D3 决策已锁定（2026-08-12），待批准执行 Phase 0** — 所有触及生产库的步骤均为「dry-run 出稿 → 人工批准 → 执行 → 验证」。
 > **依据**：[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md)（正式调研结论，2026-08-12）。
-> **验证**：2026-08-12 于 `root@47.98.53.40` 现场只读核验（全部为 SELECT/系统表查询，零变更）。
+> **验证**：2026-08-12 于 `root@<CH_PUBLIC_IP>` 现场只读核验（全部为 SELECT/系统表查询，零变更）。
 
 ---
 
@@ -24,11 +24,11 @@ related: [CLICKHOUSE_SEMANTIC_LAYER_REPORT.md, CLICKHOUSE_SYNC_DIAGNOSIS.md]
 | 项 | 实测值 |
 |---|---|
 | 实例 | ClickHouse **24.8.14.39**，容器 `clickhouse`（Up 2 weeks），8123/9000 映射 0.0.0.0 |
-| 网络 | 公网 `47.98.53.40:8123/9000` 被安全组拦截（实测不可达 ✅）；VPC IP **172.24.165.51**（= connector 代码默认地址，即该机 eth0）内网**无密码可达** ⚠️ |
+| 网络 | 公网 `<CH_PUBLIC_IP>:8123/9000` 被安全组拦截（实测不可达 ✅）；VPC IP **<CH_VPC_IP>**（= connector 代码默认地址，即该机 eth0）内网**无密码可达** ⚠️ |
 | 数据 | `ashare` 库 **56 张 MergeTree 表**；`stk_factor_pro` 18,295,590 行 × 6,119 标的，区间 1990-12-19 ~ **2026-07-28** |
 | 用户 | 仅 `default`（**无密码**、全权限含 ACCESS MANAGEMENT/DROP/TRUNCATE、networks=`::/0`）；无 llm_role、无任何 role |
 | 同步管道 | `/opt/qdata/sync/`（host cron `30 18 * * 1-5`，conda env `legonanobot`），**非 git 仓库**；`schema.py` 持 `CREATE TABLE IF NOT EXISTS`（DDL 真源）、`engine.py`/`migration.py` 持 `TRUNCATE`（快照表全量覆盖） |
-| 运行时可达性 | 调用机器（MCP 运行时）位于**同 VPC 的其他 ECS/ECI**，直连 172.24.165.51:8123 无障碍（宿主机进程可用即通）；本地开发机走**公网 + 白名单**访问宿主机（SSH） |
+| 运行时可达性 | 调用机器（MCP 运行时）位于**同 VPC 的其他 ECS/ECI**，直连 <CH_VPC_IP>:8123 无障碍（宿主机进程可用即通）；本地开发机走**公网 + 白名单**访问宿主机（SSH） |
 
 ### 0.2 假设核对（对照 RESEARCH.md）
 

@@ -123,7 +123,7 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 
 | 场景 | 登录/接入方式 |
 |---|---|
-| **远端 ClickHouse**（F5 数据源） | `agent/.env` 配置 `CLICKHOUSE_HOST`（个人部署缺省 `172.24.165.51`）、`CLICKHOUSE_PORT=8123`、`CLICKHOUSE_USER`、`CLICKHOUSE_PASSWORD`、`CLICKHOUSE_DATABASE=ashare`；HTTP 接口，无 TLS，密码仅存本地 `.env`（不入 commit）。灵活性通道（ch_* 工具）另需 `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD`（SELECT-only `llm_role`，30s/2GB/100 万行/50MB profile，绝不回退 default 用户） |
+| **远端 ClickHouse**（F5 数据源） | `agent/.env` 配置 `CLICKHOUSE_HOST`（个人部署缺省 `<CH_VPC_IP>`）、`CLICKHOUSE_PORT=8123`、`CLICKHOUSE_USER`、`CLICKHOUSE_PASSWORD`、`CLICKHOUSE_DATABASE=ashare`；HTTP 接口，无 TLS，密码仅存本地 `.env`（不入 commit）。灵活性通道（ch_* 工具）另需 `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD`（SELECT-only `llm_role`，30s/2GB/100 万行/50MB profile，绝不回退 default 用户） |
 | **远端 MCP 服务**（F2 工具暴露） | 服务端 `python mcp_server.py --transport http --host 0.0.0.0 --port 8900`，并设 `VIBE_TRADING_MCP_ALLOWED_HOSTS=<客户端可见的主机名/IP>`（缺省仅放行 loopback，DNS-rebinding 防护 GHSA-p3c9）；客户端指向 `http://<host>:8900/mcp`（Streamable HTTP，单端点；旧客户端可用 `--transport sse`） |
 | **远端 Web UI / API** | `vibe-trading serve` + `agent/.env` 设 `API_AUTH_KEY`；远端浏览器首次进入 Settings 输入一次 key，API 请求携带 `Authorization: Bearer <key>`；未带 key 的非 loopback 客户端敏感端点一律 403 |
 | **GitHub fork 推送** | SSH 认证（`git@github.com:shadowinlife/Vibe-Trading.git`，本机 SSH key）；API 操作走 `gh` CLI（已登录 token）；注意 mymain 分支保护，见 §4.2 |

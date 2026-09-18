@@ -19,7 +19,7 @@ query time.
 Deployment facts (no credentials are stored in this repository):
 
 - ClickHouse 24.8.14.39, database `ashare`, 56 MergeTree tables (~1279 columns).
-- Public/ECS host `47.98.53.40`; VPC address `172.24.165.51:8123` (the
+- Public/ECS host `<CH_PUBLIC_IP>`; VPC address `<CH_VPC_IP>:8123` (the
   default used by `agent/src/clickhouse_connector.py` via `CLICKHOUSE_HOST`
   / `CLICKHOUSE_PORT`).
 

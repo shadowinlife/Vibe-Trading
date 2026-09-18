@@ -20,7 +20,7 @@ Modes
 
 Credentials mirror ``agent/src/clickhouse_connector.py``:
 
-    CLICKHOUSE_HOST      default 172.24.165.51
+    CLICKHOUSE_HOST      default localhost
     CLICKHOUSE_PORT      default 8123
     CLICKHOUSE_USER      default "" (ClickHouse ``default`` user)
     CLICKHOUSE_PASSWORD  default ""
@@ -53,7 +53,7 @@ import yaml
 # Defaults — mirror agent/src/clickhouse_connector.py
 # ---------------------------------------------------------------------------
 
-DEFAULT_HOST = "172.24.165.51"
+DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8123
 DEFAULT_USER = ""
 DEFAULT_PASSWORD = ""

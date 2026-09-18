@@ -1,5 +1,5 @@
 1. 当前项目在开发时需要使用`legonanobot`这个`conda env`
-2. 2. tushare的token是`4656856ecdd7b737e0dd182a965289133190e515b1b56c3431afac43`, 这个token可用于本地调试, 不能写入到commit中
+2. tushare 的 token 一律从 `TUSHARE_TOKEN` 环境变量读取（本地调试用 tushare 个人中心 token，仅存本机 `.env`；严禁写入任何 commit、文档或日志）
 3. 3. 整个项目的编码风格必须符合开源社区硬性标准, 所有提交需要先经过通过`code-review`的skills进行复核
 4. 4. 最终输出给我的内容使用`:zh`中文`
 5. 5. 对 GitHub PR/Issue 进行评论时, 使用 `gh` CLI (如 `gh pr comment <number> --repo <owner/repo> --body '...'`) 而非 GitHub API MCP 工具, 因为 PAT token 对上游仓库没有写入权限

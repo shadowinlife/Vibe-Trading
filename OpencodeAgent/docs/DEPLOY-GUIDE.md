@@ -235,12 +235,12 @@ T12 的隔离矩阵直接复用 `deploy/e2e_rig.py`（`Rig`/`RouterProcess`/`Rec
 
 | 角色 | 地址 | 说明 |
 |------|------|------|
-| 部署目标机 | `120.26.181.156`（公网） | 阿里云 ECS，Alibaba Cloud Linux 8，systemd 托管 |
-| ├ 对外入口 | `http://120.26.181.156:4096` | **nginx**（`conf.d/opencode-web.conf`）：固定串码 Basic Auth（用户 `vibe`），注入后端凭证后反代 |
+| 部署目标机 | `<ECS_PUBLIC_IP>`（公网） | 阿里云 ECS，Alibaba Cloud Linux 8，systemd 托管 |
+| ├ 对外入口 | `http://<ECS_PUBLIC_IP>:4096` | **nginx**（`conf.d/opencode-web.conf`）：固定串码 Basic Auth（用户 `vibe`），注入后端凭证后反代 |
 | └ 内部服务 | `127.0.0.1:4097` | `opencode-web.service`：`opencode web`，**仅监听回环**，不直接暴露公网 |
-| ClickHouse 数据仓库 | `47.98.53.40`（公网）/ `172.24.165.51`（VPC 内网） | Docker 容器 `clickhouse`（clickhouse-server:24.8），HTTP `:8123` / native `:9000`，库 `ashare`（57 张表） |
+| ClickHouse 数据仓库 | `<CH_PUBLIC_IP>`（公网）/ `<CH_VPC_IP>`（VPC 内网） | Docker 容器 `clickhouse`（clickhouse-server:24.8），HTTP `:8123` / native `:9000`，库 `ashare`（57 张表） |
 
-访问链路：浏览器/CLI → `http://120.26.181.156:4096`（nginx 校验串码，注入 `Authorization: Basic <opencode 后端凭证>`）→ `127.0.0.1:4097` opencode web → VT MCP server（`ch_*` 语义层工具经 `llm_role` 只读账户走 VPC 内网访问 `172.24.165.51:8123`）。
+访问链路：浏览器/CLI → `http://<ECS_PUBLIC_IP>:4096`（nginx 校验串码，注入 `Authorization: Basic <opencode 后端凭证>`）→ `127.0.0.1:4097` opencode web → VT MCP server（`ch_*` 语义层工具经 `llm_role` 只读账户走 VPC 内网访问 `<CH_VPC_IP>:8123`）。
 
 > **凭证管理**：本仓库为 public fork，所有密钥/口令**不写入本文档、不提交入库**。
 > 全部凭证存放于目标机 `/opt/my-vibe-trading/.env`（`chmod 600`），本文以 `<见服务器 .env>` 引用。
@@ -340,7 +340,7 @@ set -a && source /opt/my-vibe-trading/.env && set +a
 | `DASHSCOPE_API_KEY` | ✅ | DashScope key（qwen3.8-max 推理）。**不入库** —— `<见服务器 .env>` |
 | `OPENCODE_SERVER_PASSWORD` | ✅ | HTTP Basic Auth 密码（用户名 `opencode`）。`<见服务器 .env>` |
 | `TUSHARE_TOKEN` | ✅ | Tushare Pro token（数据联邦当日补数）。**不入库** —— `<见服务器 .env>` |
-| `CLICKHOUSE_HOST` / `CLICKHOUSE_PORT` | ✅ | `172.24.165.51` / `8123`（同 VPC 内网地址） |
+| `CLICKHOUSE_HOST` / `CLICKHOUSE_PORT` | ✅ | `<CH_VPC_IP>` / `8123`（同 VPC 内网地址） |
 | `CLICKHOUSE_USER` / `CLICKHOUSE_PASSWORD` | ✅ | 读写账户（default），供 loader/脚本。`<见服务器 .env>` |
 | `CLICKHOUSE_DATABASE` | ✅ | `ashare` |
 | `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | ✅ | `llm_role` 只读账户，专供 `ch_*` 语义层工具；缺失时 ch_* 报错且**绝不回退** default。`<见服务器 .env>` |
@@ -425,7 +425,7 @@ ss -tlnp | grep 4096                       # → 0.0.0.0:4096（nginx）
 # 2) 网关三重检查（串码见 .env 的 OPENCODE_WEB_GATE_CODE）
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:4096/                       # → 401（无串码）
 curl -s -o /dev/null -w '%{http_code}\n' -u "vibe:$OPENCODE_WEB_GATE_CODE" http://127.0.0.1:4096/   # → 200
-curl -s -o /dev/null -w '%{http_code}\n' --connect-timeout 8 http://120.26.181.156:4097/health    # → 000/拒绝（4097 不公网）
+curl -s -o /dev/null -w '%{http_code}\n' --connect-timeout 8 http://<ECS_PUBLIC_IP>:4097/health    # → 000/拒绝（4097 不公网）
 
 # 3) MCP 工具计数（记忆全开应为 82）
 cd /opt/my-vibe-trading/repo
@@ -441,7 +441,7 @@ opencode run --attach "http://opencode:$OPENCODE_SERVER_PASSWORD@127.0.0.1:4097"
 ```
 
 端到端预期：`memory_status` 返回 `status: ok`；`ch_list_tables` 返回 `ok: true, database: ashare, count: 57`。
-从外部机器访问：浏览器开 `http://120.26.181.156:4096`（用户 `vibe` + 串码）；CLI 用 `opencode run --attach "http://vibe:$OPENCODE_WEB_GATE_CODE@120.26.181.156:4096"`（nginx 代为注入后端凭证）。
+从外部机器访问：浏览器开 `http://<ECS_PUBLIC_IP>:4096`（用户 `vibe` + 串码）；CLI 用 `opencode run --attach "http://vibe:$OPENCODE_WEB_GATE_CODE@<ECS_PUBLIC_IP>:4096"`（nginx 代为注入后端凭证）。
 
 ## 9. 日常运维
 
@@ -449,13 +449,13 @@ opencode run --attach "http://opencode:$OPENCODE_SERVER_PASSWORD@127.0.0.1:4097"
 journalctl -u opencode-web -f              # 日志
 systemctl restart opencode-web             # 重启
 nginx -t && systemctl reload nginx         # 改网关配置后
-docker exec clickhouse ...                 # （在 47.98.53.40 上）CH 运维
+docker exec clickhouse ...                 # （在 <CH_PUBLIC_IP> 上）CH 运维
 ```
 
 - **升级代码**：见 §2；`git pull` 后必须重跑 `pip install -e`（依赖可能新增）再重启服务。
 - **修改配置**：改 `.opencode/opencode.json.tmpl` 或 `.env` 后，重跑 §5 渲染命令再重启。
 - **周期任务**：`cron_jobs/manage.py`（注册/暂停/验证），每次执行必须发钉钉通知（见 AGENTS.md 周期任务规范）。
-- **数据同步**：CH 数据由 47.98.53.40 上的外部同步进程维护，本机不含同步逻辑；`ashare.table_sync_state` 可查每日同步状态，`is_sync=0`（如"partial-write suspected"）属 fail-closed 设计，次日自动重试。
+- **数据同步**：CH 数据由 <CH_PUBLIC_IP> 上的外部同步进程维护，本机不含同步逻辑；`ashare.table_sync_state` 可查每日同步状态，`is_sync=0`（如"partial-write suspected"）属 fail-closed 设计，次日自动重试。
 
 ## 10. 旧部署处置（2026-08-28 记录）
 
@@ -471,7 +471,7 @@ docker exec clickhouse ...                 # （在 47.98.53.40 上）CH 运维
 1. **:4096 公网监听**，前置 nginx 固定串码 Basic Auth（用户 `vibe`），后端 `opencode web` 只绑 `127.0.0.1:4097` 且自带 `OPENCODE_SERVER_PASSWORD` 由 nginx 注入——双层认证；务必在阿里云安全组按源 IP 收敛 4096 的入方向。4097 已不再监听公网（收敛前若有安全组规则可一并移除）。
 2. 全部凭证仅存 `/opt/my-vibe-trading/.env`（0600），含 `OPENCODE_WEB_GATE_CODE` 串码备份；htpasswd 文件 `/etc/nginx/opencode-web.htpasswd` 为 `root:nginx 640`（nginx worker 需可读，过严会出现 401→500）。本仓库（public fork）中不得出现任何密钥/口令/串码。
 3. `ch_*` 工具强制使用 `llm_role` 只读账户，与读写账户隔离；不要为图方便把 default 账户填进 `CLICKHOUSE_LLM_*`。
-4. CH 实例（47.98.53.40）8123/9000 监听 `0.0.0.0`，同样建议安全组收敛至 VPC 内网 + 运维 IP。
+4. CH 实例（<CH_PUBLIC_IP>）8123/9000 监听 `0.0.0.0`，同样建议安全组收敛至 VPC 内网 + 运维 IP。
 
 ## 附录 B：旧容器化部署（保留参考）
 

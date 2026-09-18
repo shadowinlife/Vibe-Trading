@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 # Must stay aligned with agent/src/config/env_schema.py (DataConfig).
-DEFAULT_HOST = "172.24.165.51"
+DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8123
 DEFAULT_USER = "default"
 DEFAULT_PASSWORD = ""
