@@ -156,6 +156,11 @@ AGENTS.md
 # OpencodeAgent's AGENTS.md files are harness behavior contracts, copied into
 # the Docker image at build time — they must stay tracked
 !OpencodeAgent/**/AGENTS.md
+# mymain-wiki/AGENTS.md is not a generated alias either: it is the hand-written
+# routing entry point that the root AGENTS.md §8 tells every agent to read
+# first, and two more wiki files link to it. Ignoring it left all three
+# references dangling in the pushed tree.
+!mymain-wiki/AGENTS.md
 
 .DS_Store
 
