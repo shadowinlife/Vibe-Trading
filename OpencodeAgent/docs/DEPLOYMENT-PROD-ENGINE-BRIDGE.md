@@ -4,7 +4,7 @@
 > 本文记录 engine-bridge 架构在阿里云 ECS 上的**事实生产部署全貌**，用于后续跟踪与 CICD 工程迭代。
 > 取代了原 `opencode-web.service`（native opencode web UI，`mymain` 分支）。
 > 凭证一律以 `<见服务器 .env>` 引用，本文不含任何密钥明文。
-> **2026-09-20 更新**：§11.1 修正用户报错 403 的真实根因（nginx `$host` 剥端口，**已部署**）；§11.2 实测回环信任模型与暴露面；§13 补充迭代项；**新增 §15 用户认证系统章节——该系统仅存在于工作树，生产尚未部署**。
+> **2026-09-20 更新**：§11.1 修正用户报错 403 的真实根因（nginx `$host` 剥端口，**已部署**）；§11.2 实测回环信任模型与暴露面；§13 补充迭代项；**新增 §15 用户认证系统章节——该系统已于 2026-09-20 部署上线并通过端到端验证（§15.11）**。
 
 ---
 
@@ -203,6 +203,7 @@ gateway 预检 5/7 就绪：Tushare/akshare/ccxt/Content-Filter OK；**OKX**(con
 | 7 | `.env` DASHSCOPE → liteLLM | server1:`/opt/my-vibe-trading/.env` | 备份 `*.pre-engine-bridge-bak` |
 | 8 | **nginx 强制字面量 `X-Forwarded-For 127.0.0.1`** | server1:`/etc/nginx/conf.d/opencode-web.conf` | ⚠️ **原诊断（"此改动解决了 403"）已被 §11.1 实证推翻**：该改动令 `_is_local_client()`=True、只修好了 **GET**，POST/PUT/DELETE 在其之后仍持续 403（真正根因是 `Host $host` 剥端口，即本表 #9）。但它仍是当前「无需在 Settings 填密钥」的**唯一承重墙**——机制是公网客户端全部伪装成回环（§11.2），防线只剩共享串码。**CICD 复现时必须与 §15 用户认证开关联动**：删 `auth_basic` 而不启用 `VIBE_TRADING_USER_AUTH=1` 等于完整 API 裸露公网 |
 | 9 | **nginx `Host $host` → `Host $http_host`（2026-09-19 19:00:58 生产修复，用户报错 403 的真实解）** | server1:`/etc/nginx/conf.d/opencode-web.conf` | 备份 `/etc/nginx/conf.d/opencode-web.conf.pre-hostfix-20260919-190058`；`nginx -t` 通过后 reload。完整根因、对照实验与已排除假设见 §11.1。**禁止回退成 `$host`**（否则所有 POST/PUT/DELETE 重新 403）。**CICD 必复现** |
+| 10 | **移除 nginx `auth_basic` 串码网关 + `X-Forwarded-For` 由字面量 `127.0.0.1` 改为 `$remote_addr`（2026-09-20，随 §15 用户认证上线）** | server1:`/etc/nginx/conf.d/opencode-web.conf`、`/etc/systemd/system/vt-gateway.service`、`/opt/my-vibe-trading/.env` | 备份 `opencode-web.conf.pre-userauth-20260920-122204`、`vt-gateway.service.pre-userauth-*`、`.env.pre-userauth-*`。**顺序不可逆**：必须先 `VIBE_TRADING_USER_AUTH=1` + `API_AUTH_KEY` 就位并验证登录，才删串码（§15.9）。`$remote_addr` 为**覆盖**语义，客户端自带 XFF 无法伪造回环（§15.11 实测）。**CICD 必复现** |
 
 ### 11.1 用户报错「远程 API 访问需要 API 密钥」的真实根因（2026-09-19 19:00 实证定论，更正原 §11#8 诊断）
 
@@ -287,7 +288,7 @@ systemctl enable --now opencode-web
 
 | # | 项 | 现状 | 后续 |
 |---|----|------|------|
-| 1 | **多租户** | Phase 1 = **仅认证 + 共享工作区**（用户裁决 2026-09-19）：用户有独立账号/会话，但全部操作同一工作区；`Principal.tenant` 已填充但**零过滤**（§15，工作树仅、未部署） | 后续迭代：per-tenant 数据隔离（sessions/runs/memory/uploads 过滤）、T10 容器（每租户全栈）、T11 薄路由生产接线 |
+| 1 | **多租户** | Phase 1 = **仅认证 + 共享工作区**（用户裁决 2026-09-19）：用户有独立账号/会话，但全部操作同一工作区；`Principal.tenant` 已填充但**零过滤**（§15，**已部署**，见 §15.11） | 后续迭代：per-tenant 数据隔离（sessions/runs/memory/uploads 过滤）、T10 容器（每租户全栈）、T11 薄路由生产接线 |
 | 2 | **工作目录/多租户对齐** | HOME=VIBE_TRADING_HOME 基=`/opt/my-vibe-trading`（单实例） | 多租户下需 per-tenant 卷/目录；ENV_PATH 与 Settings 写入路径需复核 |
 | 3 | **opencode 子代理** | 已关（用户要求暂不开启） | 后续探索开启 12 领域子代理（render_config 传 subagents.json 即恢复） |
 | 4 | **OKX/yfinance 取数** | ECS 外网受限→FAIL（crypto/美港 backtest 取数不可用） | 如需，配代理或走内网数据源；A 股/CH 不受影响 |
@@ -329,9 +330,9 @@ systemctl restart vt-opencode-serve vt-gateway
 
 ---
 
-## 15. 用户认证系统（工作树已实现，**生产未部署**）
+## 15. 用户认证系统（**2026-09-20 已部署生产并端到端验证**，实录见 §15.11）
 
-> ⚠️ **状态边界**：§11.1 的 `$http_host` 修复**已上线生产**（2026-09-19 19:00:58）；本节整个用户认证系统**仅存在于本地工作树**（分支 `mymain-engine-bridge`，未 commit、未部署 server1）——当前服务器上**没有** `/auth/login` 等端点，nginx 串码仍是唯一防线。设计全文：`.omo/plans/vibe-trading-user-auth.md`（含 Oracle 对抗性复审 6 阻断项与采纳台账 §4.5）。
+> ✅ **状态边界（2026-09-20 更新）**：§11.1 的 `$http_host` 修复于 2026-09-19 19:00:58 上线；本节用户认证系统已于 **2026-09-20 部署 server1 并端到端验证通过**（§15.11）——`/auth/login` 等端点已在生产可用，**nginx 串码已移除**，防线改为每用户 session token + 邀请码注册闸门。设计全文：`.omo/plans/vibe-trading-user-auth.md`（含 Oracle 对抗性复审 6 阻断项与采纳台账 §4.5）。
 
 ### 15.1 目标
 
@@ -398,3 +399,48 @@ flag=1 时**写端点**锁 admin：settings（含 connection/portfolio/qveris �
 | **nginx 改动之后** | 同上 | ⚠️ 单设 flag=0 **不够**：D14 已让 XFF 携带真实 IP ⇒ client=公网 IP ⇒ loopback 分支不命中 ⇒ 结果是**全员 403 而不是恢复**。必须**先恢复 nginx 备份**（`cp -a .pre-userauth-bak` → `nginx -t` → reload，串码 + XFF 字面量一起回来）**再** flag=0 + 重启 |
 | 任意 | 前端登录页坏了 | `cp -a frontend/dist.pre-userauth frontend/dist`（无需重启，按请求读盘） |
 | 任意 | users.db 损坏 | 删除后重新 `create-admin`（全部会话失效、邀请码需重新生成）；HTTP break-glass 走 `API_AUTH_KEY`（§15.6） |
+
+### 15.11 部署实录（2026-09-20，server1，全绿）
+
+**代码传输**：本地 4 个 commit（`7a7abfd8` CH 探针 / `43e297a6` 后端 / `ba86f453` 前端 / `27e32932` 文档）→ push fork → 服务器 `git pull --ff-only` 至 `27e32932`，脏项 0。依赖清单零变更 ⇒ **无需 `pip install`**（editable install 自动识别新模块）。
+
+**前端产物**：服务器 node 为 **v20.20.2**，不满足 `frontend/package.json` 的 `engines >=22.22.0`（vite 8.2.2 自身只要求 `^20.19.0 || >=22.12.0`，故是项目声明不满足而非 vite 不可运行）。为不承担该不确定性，**dist 在本机 node v24 构建后 tar-over-ssh 投递**（134 文件 / 4.6M），同时避开服务器 `npm ci` 的 npmmirror 网络依赖与 §11#2 记载的 OOM 风险。
+> ⚠️ macOS `tar` 会写入 `._*` AppleDouble 伴生文件（实测解出 270 文件而非 134）并透传本地 uid（`502 games`）。投递后必须 `find dist -name '._*' -delete` + `chown -R root:root dist`。后续投递宜用 `COPYFILE_DISABLE=1 tar`。
+
+**凭证落位（关键安全细节）**：`/etc/systemd/system/vt-gateway.service` 实测为 **0644 全局可读**，`/opt/my-vibe-trading/.env` 为 **0600**。故 `API_AUTH_KEY`（`openssl rand -hex 32`，64 字符）**只写入 `.env`**，unit 中 `API_AUTH_KEY` 行数为 **0**；非敏感的 `VIBE_TRADING_USER_AUTH=1` 写入 unit 第 19 行（`systemctl cat` 可见，便于运维）。管理员初始密码与邀请码分别写入 `/opt/my-vibe-trading/{admin-initial-password,invite-codes.txt}`（均 0600），**全程未进入任何日志或对话**。
+
+**管理员与邀请码**：`create-admin admin` 与 `invite --uses 10` 经 pty 驱动（CLI 仅接受 `getpass`，拒绝命令行参数）。`users.db` 落在 `/opt/my-vibe-trading/.vibe-trading/users.db`（0600 root:root），**未**误落到 `/root/.vibe-trading/`——证明 `HOME` / `VIBE_TRADING_HOME` 传递正确。
+
+**验证结果（全部实测）**：
+
+| 验证项 | 结果 |
+|---|---|
+| 启动期不变量 | 未触发（flag=1 且 key 就位）；gateway 18s 内 healthy，active/enabled |
+| `GET /auth/mode`（经 nginx，无凭证） | `200 {"user_auth":true}` |
+| **loopback 信任已关** | 回环直连无凭证 `GET /sessions` → **401**（改造前为 200）；`/health` 仍 200 |
+| **中间态：串码在、flag=1** | 带串码但无 session token 的 6 个端点 **全部 401** ⇒ 证明 XFF 谎报已不能换取访问权，串码此时已是冗余层 |
+| 公网登录 | `POST /auth/login` → **200**，`role=admin`，token 43 字符 |
+| **需求 1** | `POST /sessions` 仅带 session token（**无任何 API key**）→ **201** |
+| **需求 3** | `GET /settings/runtime` → 200 且**仅** `{provider, model_name, sse_timeout_seconds}`，无 `api_key_hint`/`env_path`/`providers` |
+| 真实对话（原故障点） | `POST /sessions/{sid}/messages` → **200**，助手 ~24s 回复「2」⇒ engine bridge → serve → omo → liteLLM 全链路通 |
+| SSE | `POST /auth/sse-ticket` → 200 |
+| 错误密码 | 401 `{"detail":"Invalid username or password"}`（统一文案，无枚举） |
+| 共享 key break-glass | `GET /settings/llm` 带 `API_AUTH_KEY` → 200（T11 router / 桌面端 / CLI 通道未断） |
+| **XFF 伪造防护** | 客户端自带 `X-Forwarded-For: 127.0.0.1` / `127.0.0.1, 127.0.0.1` / `::1` → **全部 401**，且日志记真实公网 IP ⇒ `$remote_addr` **覆盖**语义生效（若用 `$proxy_add_x_forwarded_for` 追加 + `FORWARDED_ALLOW_IPS=*` 则可被伪造） |
+| **审计日志** | 客户端 IP 由改造前的全量 `127.0.0.1:0` 变为真实公网 IP（`:0` 端口仍标记地址来自 XFF）⇒ 日志首次具备取证价值 |
+| 服务健康 | vt-gateway / vt-opencode-serve / nginx 全 active；6 分钟窗口 gateway 日志 error/traceback/500 计数 **0** |
+
+**本次部署产生的备份（回滚依据）**：
+
+| 备份 | 路径 |
+|---|---|
+| 应用全量（1.5G） | `/opt/my-vibe-trading-backup-20260920-122204/` |
+| nginx conf | `/etc/nginx/conf.d/opencode-web.conf.pre-userauth-20260920-122204` |
+| systemd unit | `/etc/systemd/system/vt-gateway.service.pre-userauth-20260920-122204` |
+| `.env` | `/opt/my-vibe-trading/.env.pre-userauth-20260920-122204` |
+| 前端 dist | `/opt/my-vibe-trading/dist.pre-userauth-20260920-122204/`（已移出 repo 保持 git 干净） |
+| 服务器原已暂存的 CH 补丁 | `/opt/my-vibe-trading/ch-healthcheck-staged-20260920-122204.patch`（内容已由 `7a7abfd8` 承载，`git diff` 逐字比对一致后才丢弃） |
+
+> ⚠️ **部署前必须清理服务器 repo 的已暂存本地补丁**：`git status --porcelain` 显示 `M ` 时 M 在**第一列 = staged**，`git diff` 看不到（只显未暂存），必须用 `git diff --cached`。本次即因此差点漏判，若直接 pull 会静默回退 CH 探针修复 → CH 强制鉴权下健康检查误判不可达 → 回测 loader 降级到网络源。
+
+**遗留风险（部署后新增，需运维知悉）**：`/auth/login` 现已公网可达且**无限流**（用户裁决本轮不做，plan D11）。scrypt `n=2**14` 每次约 16MB 内存，构成未认证的 CPU/内存放大器；server1 仅 7.4G 内存且**同机运行独立的 invest-assistant 生产栈**，持续洪泛有波及邻居的风险。零应用代码的补救：nginx `http` 段加 `limit_req_zone $binary_remote_addr zone=vt_auth:10m rate=10r/m;`，并在 `location` 内对 `/auth/login`、`/auth/register` 加 `limit_req zone=vt_auth burst=5 nodelay;`。另：管理员用户名 `admin` 可预测，在无登录限流的前提下建议改为不可猜测的用户名（`create-user --role admin` 建新号后 `deactivate admin`）。
