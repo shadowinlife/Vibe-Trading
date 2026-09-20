@@ -2,7 +2,7 @@
 # docker-compose.yml — SINGLE-TENANT full-stack container (plan T10 / D2)
 #
 # This is the NEW multi-tenant container form (per-tenant full stack), NOT the
-# host-direct production form (see docs/DEPLOY-GUIDE.md §0 for that history).
+# host-direct production form (see docs/archive/DEPLOY-GUIDE-opencode-web-host-direct.md §0 for that history — archived 2026-09-20).
 # One container = one tenant: vt gateway + opencode serve + VT MCP, all state
 # in one persisted home volume.
 #

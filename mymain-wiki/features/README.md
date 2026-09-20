@@ -1,10 +1,10 @@
 ---
-title: 功能卡索引（mymain 独有特性 F1-F5、F7）
-description: mymain 分支相对上游的独有功能索引。改代码前确认能力归属、查上游回流计划、定位验证基线时先读这里。触发词：F1、F2、F3、F4、F5、F7、功能卡、feature、reflections、memory MCP、MemoryGuard、ClickHouse、OpencodeAgent。
+title: 功能卡索引（mymain 独有特性 F1-F5、F7-F8）
+description: mymain 分支相对上游的独有功能索引。改代码前确认能力归属、查上游回流计划、定位验证基线时先读这里。触发词：F1、F2、F3、F4、F5、F7、F8、功能卡、feature、reflections、memory MCP、MemoryGuard、ClickHouse、OpencodeAgent、engine-bridge、opencode_bridge、VIBE_TRADING_ENGINE、降级清单、认证配方、回滚。
 type: index
 status: active
 created: 2026-08-30
-updated: 2026-08-30
+updated: 2026-09-20
 tags: [index, features, mymain]
 related: [../branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -24,6 +24,11 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 | F4 | MemoryGuard + 项目目录存储 | FastMCP middleware 自动记忆（零 LLM）+ VT_MEMORY_BASE_DIR | 路径部分队列 ①；中间件部分队列 ⑤（先解决债务 D1/D2） | [f4-memory-guard.md](f4-memory-guard.md) |
 | F5 | ClickHouse A 股数据源 + 语义层 | CH 为 A 股首选数据源；语义层 Phase 0-2 含 ch_* 受约束查询通道 | 个人部署独有，不回流 | [f5-clickhouse-data-source.md](f5-clickhouse-data-source.md) |
 | F7 | OpencodeAgent harness 层 | opencode + omo + 本仓库 MCP 的独立部署 harness（含 12 子代理花名册） | 个人部署独有，不回流 | [f7-opencode-agent.md](f7-opencode-agent.md) |
+| F8 | opencode 引擎桥 | vt 网关把 opencode 当外置 agent 引擎，SessionService 接缝下整体置换原生 loop（driver/translator/service/recovery 四层，前端/IM/调度器零改动） | 本分支独有不回流（上游候选已记 DIVERGENCE 待裁决）；⚠️ 台账 F8 是用户认证系统，编号双口径见下节 | [f8-engine-bridge.md](f8-engine-bridge.md) |
+
+## F8 编号的两个口径
+
+台账 [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §2.1 的权威 F8 是**用户认证系统**（多租户 Phase 1，2026-09-19；可上游、贡献队列 ⑨；2026-09-20 已部署 server1 并端到端验证——部署实录 `OpencodeAgent/docs/DEPLOYMENT-PROD-ENGINE-BRIDGE.md` §15 与 §15.11，设计 `.omo/plans/vibe-trading-user-auth.md`），该系统在本目录下**没有独立卡片**。上表 F8 行与卡片 `f8-engine-bridge.md` 承载的 **opencode 引擎桥**于 2026-09-13 编号（早于台账 F8 行的建立），引擎桥栈的差异与可替换性裁决载于台账 §5 2026-09-18 rebase 条目与 [../branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md](../branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md)。两者不一致时以台账为准；规范引用一律用能力名（用户认证 / engine-bridge），**不重编号**。
 
 ## 为什么没有 F6
 
@@ -32,5 +37,5 @@ F6 不曾是独立特性：ClickHouse 语义层（Phase 0-2）在 2026-08-12 落
 ## 阅读建议
 
 - 改某个功能前：先读对应卡片的「关键文件与开关」与「状态与上游关系」两节，再回 DIVERGENCE 查最新计数基线与贡献队列细节。
-- 验证基线数字以 DIVERGENCE §3 与各发布记录为准，卡片只引用当前最新一轮（2026-08-28）。
+- 验证基线数字以 DIVERGENCE §3 与各发布记录为准，卡片只引用当前最新一轮（2026-09-19）。
 - 分支级大事顺序见 [../history/timeline.md](../history/timeline.md)。

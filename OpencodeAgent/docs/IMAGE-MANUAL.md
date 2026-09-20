@@ -13,7 +13,7 @@
 > plan `opencode-engine-bridge-v2` T10 / D2 的交付物：**每租户一个全栈容器**（vt gateway +
 > opencode serve + VT MCP + home 同容器）。这是 engine-bridge 多租户架构的部署单元，与
 > legacy 单进程镜像（§1 起）形态不同。操作者部署多租户时**以本章为准**；§1-14 描述 legacy
-> `opencode serve` 直出形态（宿主机直部署回退用，见 DEPLOY-GUIDE §0/§10）。
+> `opencode serve` 直出形态（宿主机直部署回退用，见已归档的 archive/DEPLOY-GUIDE-opencode-web-host-direct.md §0/§10）。
 
 ### 0.1 与 legacy 形态的关键差异
 
@@ -43,10 +43,10 @@ spawn**（opencode-runtime `process.py` 进程卫生仅在未来启用 gateway �
 
 ### 0.3 构建 / 运行 / 验证
 
-构建、运行、端口规划、volume 布局、认证、drift-alarm 复演程序见 **DEPLOY-GUIDE.md §T10**
+构建、运行、端口规划、volume 布局、认证、drift-alarm 复演程序见 **TENANT-IMAGE-GUIDE.md §T10**
 （操作者地面真相）。本地 arm64 Mac 经 **Rosetta** 仿真跑 amd64 容器（已实证 `opencode
 --version` 正常，非 QEMU SIGILL）；生产工件仍 amd64。改任一钉版前**必须**跑 drift-alarm
-复演（`record_traces.py` 复跑 + diff，spike_report §8 / DEPLOY-GUIDE §T10.5）。
+复演（`record_traces.py` 复跑 + diff，spike_report §8 / TENANT-IMAGE-GUIDE.md §T10.5）。
 
 ### 0.4 镜像标签（provenance）
 

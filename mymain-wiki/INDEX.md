@@ -4,7 +4,7 @@ description: wiki 内每份文档的一行式索引（路径 + 一句话 + 状�
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-09-18
+updated: 2026-09-20
 tags: [index]
 ---
 
@@ -20,7 +20,7 @@ tags: [index]
 
 ## branch/ — 分支治理
 
-- [branch/MYMAIN_DIVERGENCE.md](branch/MYMAIN_DIVERGENCE.md) — 与上游差异权威台账：F1-F7、贡献队列、验证门禁、债务 D1-D4 — active
+- [branch/MYMAIN_DIVERGENCE.md](branch/MYMAIN_DIVERGENCE.md) — 与上游差异权威台账：F1-F8、贡献队列 ①-⑪、验证门禁、债务 D1-D4 — active
 - [branch/MYMAIN_README.md](branch/MYMAIN_README.md) — 发布 changelog：基线/迭代/验证基线/ tag 约定 — active
 - [branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md](branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md) — 2026-09-18 上游可替换性审查：engine-bridge 11 能力 + memory/CH/valuation/skills 逐项 REPLACE/PARTIAL/KEEP 判定、人工复核清单、PR 候选队列 — active
 
@@ -33,6 +33,7 @@ tags: [index]
 - [features/f4-memory-guard.md](features/f4-memory-guard.md) — MemoryGuard 中间件 + 项目目录存储 — active
 - [features/f5-clickhouse-data-source.md](features/f5-clickhouse-data-source.md) — ClickHouse A 股数据源 + 语义层 Phase 0-2 — active
 - [features/f7-opencode-agent.md](features/f7-opencode-agent.md) — OpencodeAgent harness 层（含 12 领域子代理） — active
+- [features/f8-engine-bridge.md](features/f8-engine-bridge.md) — opencode 引擎桥（SessionService 置换层：启动恢复三分支、14 项降级清单、认证配方、ENGINE=native 回滚） — active
 
 ## harness-evolution/ — harness 演进研究档案（2026-08-21~30）
 
@@ -65,3 +66,12 @@ tags: [index]
 ## history/
 
 - [history/timeline.md](history/timeline.md) — 分支编年史（发布/rebase/大事件，倒序） — active
+
+## wiki 外指针（跨边界权威文档，不由本目录维护）
+
+> 上方条目只登记 `mymain-wiki/` 内的文档；以下是 wiki 内容指向的权威记录，位于本目录之外，不纳入 wiki 的状态维护。
+
+- `OpencodeAgent/docs/DEPLOYMENT-PROD-ENGINE-BRIDGE.md` — 生产部署权威实录（ECS 宿主机裸部署：拓扑、配置、运维命令、事故记录；§15 用户认证系统 2026-09-20 已部署上线，§15.11 端到端验证）
+- `.omo/plans/vibe-trading-user-auth.md` — 用户认证系统设计正典（台账 DIVERGENCE §2.1 F8 行 / 贡献队列 ⑨）
+- `.omo/plans/opencode-engine-bridge-v2.md` — engine-bridge 计划正典（D3-D11 决策；[features/f8-engine-bridge.md](features/f8-engine-bridge.md) 降级清单与配方的来源）
+- 根 `AGENTS.md` §8 — 分支约定（与上游关系、社区提交约束）；本 wiki agent 路由入口见 [AGENTS.md](AGENTS.md)

@@ -93,7 +93,7 @@ copied in, attached to the tenant's compose network, upstream
   no-cache, no-transform`, no content-length; on client close the container
   logged `sse client disconnect tenant=a`
 
-Two operational traps found and documented (README + DEPLOY-GUIDE §T11.2):
+Two operational traps found and documented (README + TENANT-IMAGE-GUIDE §T11.2):
 
 1. With the router **in a container**, `127.0.0.1:<host-port>` upstreams point at
    the router's own loopback → connect failure → a pointless wake attempt

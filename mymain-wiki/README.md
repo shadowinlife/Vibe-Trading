@@ -18,7 +18,7 @@ tags: [index]
 | 目录 | 内容 |
 |---|---|
 | [branch/](branch/) | 分支治理：差异追踪（MYMAIN_DIVERGENCE）与发布记录（MYMAIN_README） |
-| [features/](features/) | 迭代功能卡 F1-F5、F7（能力 / 开发历史 / 验证 / 上游关系） |
+| [features/](features/) | 迭代功能卡 F1-F5、F7-F8（能力 / 开发历史 / 验证 / 上游关系） |
 | [harness-evolution/](harness-evolution/) | harness 演进研究档案（17 份文档 + 评测代码与裁决证据，归档态） |
 | [clickhouse/](clickhouse/) | ClickHouse A 股数据源与语义层研究档案 |
 | [history/](history/) | 分支编年史 |

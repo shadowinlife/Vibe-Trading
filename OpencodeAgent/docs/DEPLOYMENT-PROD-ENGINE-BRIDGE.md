@@ -14,10 +14,10 @@
 |----|----|
 | 部署目标 | 阿里云 ECS `<ECS_PUBLIC_IP>`（hostname `server1`，VPC `<ECS_VPC_IP>`，Alibaba Cloud Linux，4C/7G） |
 | 部署形态 | 宿主机裸部署（systemd 双进程），**非** T10 容器（容器构建太慢，改为裸部署验证架构可行性） |
-| 代码分支 | `mymain-engine-bridge` @ `fc41781f`（fork: shadowinlife/Vibe-Trading） |
+| 代码分支 | `mymain-engine-bridge` @ `9cc51e9a`（fork: shadowinlife/Vibe-Trading；初次部署为 `fc41781f`，2026-09-20 随用户认证推进至 `9cc51e9a`） |
 | 工作目录 | `/opt/my-vibe-trading`（= 原 opencode web 默认工作目录；HOME 对齐到此） |
 | 引擎模式 | `VIBE_TRADING_ENGINE=opencode`（vt gateway 经 engine bridge 接 headless opencode serve） |
-| 对外入口 | `http://<ECS_PUBLIC_IP>:4096`（nginx 固定串码网关，用户 `vibe`，**URL 与替换前一致**） |
+| 对外入口 | `http://<ECS_PUBLIC_IP>:4096`（nginx **纯反代**，**URL 与替换前一致**）→ 未认证自动跳 `/login`。鉴权由**应用层用户认证**承担；**nginx 固定串码已于 2026-09-20 移除**（§11#10、实录 §15.11） |
 | 与生产关系 | **直接替换**原 `opencode-web.service`（已 stop+disable，unit 保留作回滚） |
 | 多租户 | 暂单实例；多租户（T10 容器 + T11 薄路由）为后续迭代项 |
 
@@ -40,12 +40,12 @@
 
 | 单元 / 组件 | 监听 | 角色 | 状态 |
 |------|------|------|------|
-| `nginx`（`conf.d/opencode-web.conf`） | `0.0.0.0:4096` | 固定串码 Basic Auth 网关（用户 `vibe`）→ 反代 gateway；`proxy_set_header Host $http_host`（2026-09-19 19:00:58 修复——`$host` 剥端口会让全部非安全方法 403，§11.1）+ **字面量 `X-Forwarded-For 127.0.0.1`**——uvicorn 默认 `proxy_headers=True` 采信该头并重写 `scope["client"]` ⇒ **每个公网客户端都伪装成回环** ⇒ `Principal(LOOPBACK_TRUST)` 零凭证放行，**挡在公网与完整 API 之间的只有共享串码本身**（机制与取证标记见 §11.2，勿按「同机部署天然回环」理解）；SSE 长连接 | active/enabled |
+| `nginx`（`conf.d/opencode-web.conf`） | `0.0.0.0:4096` | **纯反代 → gateway，自身不做鉴权**（`auth_basic` 已于 2026-09-20 移除，§11#10）。两个必须保留的头部：`proxy_set_header Host $http_host`（2026-09-19 19:00:58 修复——`$host` 剥端口会让全部非安全方法 403，§11.1，**禁止回退**）+ `X-Forwarded-For $remote_addr`（**覆盖**语义，客户端自带 XFF 无法伪造回环，§15.11 实测三种伪造值全 401；**禁止改成 `$proxy_add_x_forwarded_for` 追加**）。鉴权全部在应用层：每用户 session token + `API_AUTH_KEY`（§15）。SSE 长连接 | active/enabled |
 | `vt-gateway.service` | `127.0.0.1:8081`（仅回环） | VT gateway（uvicorn `api_server.serve_main`）：React SPA + REST/SSE；`ENGINE=opencode`，作为 serve 的纯 HTTP 客户端 | active/enabled |
 | `vt-opencode-serve.service` | `127.0.0.1:4098`（仅回环） | headless `opencode serve`：engine bridge 的后端引擎；装载 omo 插件 + 派生 VT MCP / search MCP | active/enabled |
 | `opencode-web.service`（旧生产） | ~~`127.0.0.1:4097`~~ | 原 native opencode web UI | **inactive/disabled**（unit 保留回滚） |
 
-进程关系：`浏览器/CLI → nginx:4096（串码）→ vt-gateway:8081 → engine bridge → opencode-serve:4098 → omo(qwen3.8-max) → liteLLM:4000 → DashScope MaaS`；MCP 工具由 serve 派生（`mcp_server.py` 经 VPC 内网读 CH `<CH_VPC_IP>:8123`）。
+进程关系：`浏览器/CLI → nginx:4096（纯反代，鉴权在应用层）→ vt-gateway:8081 → engine bridge → opencode-serve:4098 → omo(qwen3.8-max) → liteLLM:4000 → DashScope MaaS`；MCP 工具由 serve 派生（`mcp_server.py` 经 VPC 内网读 CH `<CH_VPC_IP>:8123`）。
 
 - `vt-gateway` 经 `/opt/my-vibe-trading/gateway-start.sh` 启动：先轮询 serve `/mcp` 就绪（最长 300s，覆盖首启 omo 插件安装），再 exec uvicorn。
 - `vt-gateway` `Requires=`/`After=vt-opencode-serve`；serve 崩溃由 systemd `Restart=on-failure` 拉起，bridge 经存活对账 + `_ensure_pumps` 在下次发送时自愈（无需重启 gateway）。
@@ -56,7 +56,7 @@
 
 | 端口 | 占用 | 说明 |
 |------|------|------|
-| `0.0.0.0:4096` | nginx | 对外唯一入口（串码网关） |
+| `0.0.0.0:4096` | nginx | 对外唯一入口（纯反代；串码网关已于 2026-09-20 移除，鉴权移至应用层用户认证） |
 | `127.0.0.1:8081` | vt-gateway | 内部；nginx 反代目标（8080 被 nginx reports 占用，故用 8081） |
 | `127.0.0.1:4098` | opencode-serve | 内部 headless 引擎（4096 被 nginx 占、4097 旧生产，故用 4098） |
 | `<CH_VPC_IP>:4000` | liteLLM（47 主机） | LLM 网关，VPC 内网 |
@@ -138,7 +138,7 @@
 | `CLICKHOUSE_*` | host `<CH_VPC_IP>`、port 8123、db ashare、default+llm_role（复用） |
 | `VT_MEMORY` / `VT_MEMORY_MCP_TOOLS` / `VT_MEMORY_BASE_DIR` | `full` / `1` / `/opt/my-vibe-trading/.vt-memory`（**记忆全开**） |
 | `TUSHARE_TOKEN` | 复用服务器 .env（与本机 `agent/.env` 同源） |
-| `OPENCODE_SERVER_PASSWORD` / `OPENCODE_WEB_GATE_CODE` | serve 内部 basic auth / nginx 串码（复用） |
+| `OPENCODE_SERVER_PASSWORD` / `OPENCODE_WEB_GATE_CODE` | serve 内部 basic auth / ~~nginx 串码~~。⚠️ **`OPENCODE_WEB_GATE_CODE` 自 2026-09-20 起已无消费者**（nginx `auth_basic` 移除，§11#10）——`.env` 中该行保留但**失效**，清理前需确认无其他脚本引用 |
 
 ---
 
@@ -165,7 +165,7 @@
 | vibe-trading-ai | `0.1.15`（editable from repo） | engine-bridge 分支版本 |
 | Python / Node | conda `legonanobot` py3.11.15 / node v20.20.2 | 复用既有环境 |
 
-> 改任一钉版前须按 DEPLOY-GUIDE §T10.5 跑 drift-alarm 复演（record_traces → analyze → pytest opencode_bridge）。本次未改钉版。
+> 改任一钉版前须按 TENANT-IMAGE-GUIDE §T10.5 跑 drift-alarm 复演（record_traces → analyze → pytest opencode_bridge）。本次未改钉版。
 
 ---
 
@@ -181,8 +181,8 @@
 | 6 | 记忆 `memory_status` | ✅ **48 条记忆**，状态健康（替换前记忆已保留） |
 | 7 | liteLLM 5 模型 roundtrip | ✅ qwen3.8-max/flash、glm-5.2、deepseek-v4-flash-0731、deepseek-v4.1-flash 全 OK |
 | 8 | 端到端 bridge 会话（loopback） | ✅ tool_trail=`[memory_status, ch_list_tables]`，回复正确 |
-| 9 | 端到端会话（**公网 :4096 串码网关**） | ✅ 创建会话+发消息+回复「1+1 等于 2。」 |
-| 10 | 网关鉴权 | ✅ 无串码→401，带串码→200 |
+| 9 | 端到端会话（**公网 :4096 串码网关**）〔2026-09-19 当时形态；串码已于 09-20 移除，改由用户认证复验，见 §15.11〕 | ✅ 创建会话+发消息+回复「1+1 等于 2。」 |
+| 10 | 网关鉴权〔2026-09-19 当时形态〕 | ✅ 无串码→401，带串码→200；**09-20 起改为**：未认证→401、`POST /auth/login`→200（§15.11） |
 | 11 | 外部访问（Mac→公网 IP:4096） | ✅ 200，VT SPA |
 | 12 | 子代理关闭 | ✅ opencode.json agent 仅 explore/multimodal-looker |
 
@@ -201,7 +201,7 @@ gateway 预检 5/7 就绪：Tushare/akshare/ccxt/Content-Filter OK；**OKX**(con
 | 5 | 新增 systemd 单元 vt-opencode-serve / vt-gateway + gateway-start.sh | server1:`/etc/systemd/system/`、`/opt/my-vibe-trading/` | 旧 opencode-web unit 保留 |
 | 6 | nginx :4096 反代 4097→8081 + 移除 opencode basic-auth 注入 | server1:`/etc/nginx/conf.d/opencode-web.conf` | 备份 `*.pre-eb-bak` |
 | 7 | `.env` DASHSCOPE → liteLLM | server1:`/opt/my-vibe-trading/.env` | 备份 `*.pre-engine-bridge-bak` |
-| 8 | **nginx 强制字面量 `X-Forwarded-For 127.0.0.1`** | server1:`/etc/nginx/conf.d/opencode-web.conf` | ⚠️ **原诊断（"此改动解决了 403"）已被 §11.1 实证推翻**：该改动令 `_is_local_client()`=True、只修好了 **GET**，POST/PUT/DELETE 在其之后仍持续 403（真正根因是 `Host $host` 剥端口，即本表 #9）。但它仍是当前「无需在 Settings 填密钥」的**唯一承重墙**——机制是公网客户端全部伪装成回环（§11.2），防线只剩共享串码。**CICD 复现时必须与 §15 用户认证开关联动**：删 `auth_basic` 而不启用 `VIBE_TRADING_USER_AUTH=1` 等于完整 API 裸露公网 |
+| 8 | ~~**nginx 强制字面量 `X-Forwarded-For 127.0.0.1`**~~ → **已被本表 #10 取代（2026-09-20）** | server1:`/etc/nginx/conf.d/opencode-web.conf` | ⚠️ **原诊断（"此改动解决了 403"）已被 §11.1 实证推翻**：该改动令 `_is_local_client()`=True、只修好了 **GET**，POST/PUT/DELETE 在其之后仍持续 403（真正根因是 `Host $host` 剥端口，即本表 #9）。它**曾**是「无需在 Settings 填密钥」的承重墙——机制是公网客户端全部伪装成回环（§11.2 历史快照），防线只剩共享串码。**#10 把 XFF 改为 `$remote_addr` 后该机制不再成立**，串码亦已移除，承重墙改为应用层用户认证 + `API_AUTH_KEY`（§15）。**CICD 复现 #8 已无意义，直接复现 #9 + #10** |
 | 9 | **nginx `Host $host` → `Host $http_host`（2026-09-19 19:00:58 生产修复，用户报错 403 的真实解）** | server1:`/etc/nginx/conf.d/opencode-web.conf` | 备份 `/etc/nginx/conf.d/opencode-web.conf.pre-hostfix-20260919-190058`；`nginx -t` 通过后 reload。完整根因、对照实验与已排除假设见 §11.1。**禁止回退成 `$host`**（否则所有 POST/PUT/DELETE 重新 403）。**CICD 必复现** |
 | 10 | **移除 nginx `auth_basic` 串码网关 + `X-Forwarded-For` 由字面量 `127.0.0.1` 改为 `$remote_addr`（2026-09-20，随 §15 用户认证上线）** | server1:`/etc/nginx/conf.d/opencode-web.conf`、`/etc/systemd/system/vt-gateway.service`、`/opt/my-vibe-trading/.env` | 备份 `opencode-web.conf.pre-userauth-20260920-122204`、`vt-gateway.service.pre-userauth-*`、`.env.pre-userauth-*`。**顺序不可逆**：必须先 `VIBE_TRADING_USER_AUTH=1` + `API_AUTH_KEY` 就位并验证登录，才删串码（§15.9）。`$remote_addr` 为**覆盖**语义，客户端自带 XFF 无法伪造回环（§15.11 实测）。**CICD 必复现** |
 
@@ -248,7 +248,9 @@ gateway 预检 5/7 就绪：Tushare/akshare/ccxt/Content-Filter OK；**OKX**(con
 
 > **版本漂移注记**：生产 conda 环境 uvicorn **0.48.0** vs `requirements-lock.txt:3845` 钉 `uvicorn==0.52.4`。两版本 `proxy_headers` 默认均为 `True`，本节结论不依赖具体版本，但漂移本身应择机对齐。
 
-### 11.2 回环信任的真实机制与暴露面实测（2026-09-19，`nginx -T` / `ss -tlnp` / journalctl）
+### 11.2 回环信任的真实机制与暴露面实测（2026-09-19 **历史快照**，`nginx -T` / `ss -tlnp` / journalctl）
+
+> ⚠️ **本节描述的是 2026-09-20 之前的形态，现已不成立**：XFF 已改为 `$remote_addr`（覆盖）、`auth_basic` 已移除、`VIBE_TRADING_USER_AUTH=1` 已启用（§11#10、§15.11）。保留本节是因为它是 #10 那两项改动的**实证依据**（为什么必须覆盖而非追加、为什么 loopback 信任必须关），**勿按现状阅读**。
 
 「无需 API 密钥」**不是**「nginx 与 gateway 同机带来的天然回环信任」，而是**头部谎报**：
 
@@ -295,7 +297,7 @@ systemctl enable --now opencode-web
 | 5 | **cron 周期任务** | 旧 `cron_jobs` 指向 `127.0.0.1:4097`（旧 opencode web） | 如启用周期任务，需改指新 gateway/serve 端点 |
 | 6 | **CH health_check 修复** | 本地重应用于 engine-bridge 工作树 | **上游候选**：应并入 `mymain-engine-bridge` 分支（health_check 发凭证） |
 | 7 | **liteLLM 工作区** | 临时重指到 `<LITELLM_WORKSPACE>`（原 dev 工作区） | 长期应恢复/新购生产专用工作区额度，或确认此工作区可承载生产多租户负载与计费 |
-| 8 | **版本钉死** | opencode 1.18.30 / omo 4.19.4 | 升级须跑 drift-alarm 复演（DEPLOY-GUIDE §T10.5） |
+| 8 | **版本钉死** | opencode 1.18.30 / omo 4.19.4 | 升级须跑 drift-alarm 复演（TENANT-IMAGE-GUIDE §T10.5） |
 | 9 | **GitHub 可达性** | ECS→github.com 间歇超时（443） | 部署改用 git bundle/OSS 桥接兜底；本次经重试 fetch 成功 |
 | 10 | **SSH 通道** | 本机→ECS SSH 可用但间歇 `Bad file descriptor`（本地网络抖动） | CICD 宜用 OSS 桥接/云助手；本次靠重试完成 |
 | 11 | **TLS 缺失** | 入口仍是明文 `http://<ECS_PUBLIC_IP>:4096`；§15 用户认证上线后为**真实用户名/密码明文过公网**（用户普遍复用密码） | 强烈建议申请子域（如 `<VT_TLS_SUBDOMAIN>`）+ Let's Encrypt（同机 invest-assistant 已有 `<EXISTING_TLS_DOMAIN>` :443 先例）；`security.py:238-241` 明确把 HSTS 责任留给 TLS 终止层 ⇒ 上 TLS 后须在 nginx 补 HSTS |
@@ -325,7 +327,10 @@ cd /opt/my-vibe-trading/repo && git fetch origin mymain-engine-bridge && git che
 cd frontend && npm ci --registry=https://registry.npmmirror.com && npm run build
 systemctl restart vt-opencode-serve vt-gateway
 # 访问
-浏览器: http://<ECS_PUBLIC_IP>:4096 （用户 vibe + 串码<见 .env OPENCODE_WEB_GATE_CODE>）
+浏览器: http://<ECS_PUBLIC_IP>:4096  → 自动跳 /login（用户名 + 密码）
+#   管理员初始密码: cat /opt/my-vibe-trading/admin-initial-password   (0600)
+#   邀请码(注册用): cat /opt/my-vibe-trading/invite-codes.txt          (0600)
+#   ⚠️ 串码已废：OPENCODE_WEB_GATE_CODE 不再被 nginx 消费（§11#10）
 ```
 
 ---

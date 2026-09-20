@@ -15,7 +15,7 @@
 | Image | ID | Built (+08:00) | Registry tags (digest) | Role |
 |---|---|---|---|---|
 | `opencode-serve:v2.1.0-mymain` | `2cce00b4fa18…` | 2026-08-18 10:55 | `…jiefengnewsv2/opencode-serve:v2.1.0-mymain` **and `:latest`** (`sha256:40ea24d5b07e…`) | first mymain-lineage package; has the root-owned `/home/opencode` ownership bug |
-| `opencode-serve:v2.1.1-mymain` | `b215de7151b6…` | 2026-08-18 16:37 | `…jiefengnewsv2/opencode-serve:v2.1.1-mymain` (`sha256:2382403f6475…`) | home-ownership fix rebuild; **last mymain-lineage image actually run on ECS** (stopped 2026-08-28, kept for rollback per DEPLOY-GUIDE §10) |
+| `opencode-serve:v2.1.1-mymain` | `b215de7151b6…` | 2026-08-18 16:37 | `…jiefengnewsv2/opencode-serve:v2.1.1-mymain` (`sha256:2382403f6475…`) | home-ownership fix rebuild; **last mymain-lineage image actually run on ECS** (stopped 2026-08-28, kept for rollback per archive/DEPLOY-GUIDE-opencode-web-host-direct.md §10) |
 | `opencode-serve:v2.2.0-harness-evolution` | `59db50ae8e0f…` | 2026-08-23 15:43 | **none — never pushed** (`RepoDigests=[]`) | harness-evolution eval image, built from `NewAgentMain` branch |
 | `opencode-serve-base:latest` (local) | `ea738ee663d1…` | 2026-08-18 16:26 | none (never pushed under this ID) | registry base + 2 layers (`useradd -m opencode`, `mkdir /workspace`) |
 | `…jiefengnewsv2/opencode-serve-base:latest` (registry) | `437144c60370…` | 2026-08-18 10:31 | `sha256:2010b037ee57…` | base of the v2.1.0 build; **no `opencode` useradd -m layer** — same tag, *different image* than the local base |
@@ -62,7 +62,7 @@
 | Locus | Version | Source of truth |
 |---|---|---|
 | All 4 local images (incl. base) | **1.18.18** (published 2026-08-13) | measured `package.json` |
-| ECS host-direct production | **1.18.23** (documented; published 2026-08-25) | `docs/DEPLOY-GUIDE.md` §4 "当前部署版本 1.18.23"; corroborated by `render_config.py` docstring "probed on 1.18.23" |
+| ECS host-direct production | **1.18.23** (documented; published 2026-08-25) | `docs/archive/DEPLOY-GUIDE-opencode-web-host-direct.md` §4 "当前部署版本 1.18.23"（该文档已于 2026-09-20 归档）; corroborated by `render_config.py` docstring "probed on 1.18.23" |
 | npm `latest` today | 1.18.30 (published 2026-09-09) | `npm view opencode-ai dist-tags` |
 | Dev machine (`~/.opencode/bin`) | 1.18.30 | `opencode --version` on host |
 
@@ -156,7 +156,7 @@ QA-scenario check (plan T2 happy path): **`python -c "import src.api"` succeeds 
 **Question**: which image tag is most likely running on ECS?
 
 **Evidence chain**:
-1. `docs/DEPLOY-GUIDE.md` (rewritten 2026-08-28, current at HEAD) §0: "当前线上形态（2026-08-28 晚起）：**宿主机 systemd 直部署 `opencode web`**，对外由 nginx :4096 固定串码网关代理，取代此前的 `opencode serve` 直出方案与**更早的 Docker 容器方案**". §10 disposal table: container `opencode-serve` (**镜像 v2.1.1-mymain**, 4097→4096) → `docker stop` + `restart=no`, container and named volumes **retained for rollback** (`docker start opencode-serve`).
+1. `docs/archive/DEPLOY-GUIDE-opencode-web-host-direct.md` (rewritten 2026-08-28; was current at HEAD at survey time, **archived 2026-09-20** — superseded by `DEPLOYMENT-PROD-ENGINE-BRIDGE.md`) §0: "当前线上形态（2026-08-28 晚起）：**宿主机 systemd 直部署 `opencode web`**，对外由 nginx :4096 固定串码网关代理，取代此前的 `opencode serve` 直出方案与**更早的 Docker 容器方案**". §10 disposal table: container `opencode-serve` (**镜像 v2.1.1-mymain**, 4097→4096) → `docker stop` + `restart=no`, container and named volumes **retained for rollback** (`docker start opencode-serve`).
 2. `mymain-wiki/history/timeline.md` 2026-08-31: production deployment = ECS host repo synced to `273520d0` (D-batch 12 subagents + main-loop convergence), host `.opencode/` re-rendered with `subagents.json`/prompts/new `render_config.py`; verified **MCP 82**, gateway 401/200, memory_status ok, ch_list_tables 57. → The "12 subagents live since 2026-08-31" production is the **host-direct form**, which no image contains (subagents.json/prompts exist in zero images).
 3. Registry state: `…/opencode-serve:v2.1.1-mymain` pushed (digest `sha256:2382403f…`); **`…/opencode-serve:latest` = v2.1.0-mymain** (`2cce00b4fa18`, digest `sha256:40ea24d5…`) because `ecs-build.sh` defaults to `v2.1.0-mymain` and `build.sh` defaults to `--tag latest`. `docker-compose.yml` says `image: opencode-serve:latest` — a compose-driven ECS redeploy would pull **v2.1.0**, the generation with the root-owned-home bug and 73/78 tools.
 4. `v2.2.0-harness-evolution`: never pushed (`RepoDigests=[]`), built from the `NewAgentMain` eval branch — an **eval artifact, not a production candidate**, despite being the newest and the only image whose tool surface (77/82) matches the current freeze baseline.

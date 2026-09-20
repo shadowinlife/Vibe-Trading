@@ -1,5 +1,17 @@
 # opencode-engine-bridge-v2 - Work Plan
 
+> ⚠️ **状态：研究/隔离任务已执行并留证，但 T10 容器形态未进生产（2026-09-13 执行完毕）**
+> 本计划 15/15 todos 全绿；T12（Phase-3 出口门）**PASS — 93/93 矩阵检查绿、零跨租户可达**
+> （`OpencodeAgent/docs/tenancy_report.md`）。但**多租户容器形态（T10 容器 + T11 薄路由）未被
+> 生产采用**：实际生产是**宿主机裸部署（systemd 双进程），非 T10 容器**
+> （`OpencodeAgent/docs/DEPLOYMENT-PROD-ENGINE-BRIDGE.md:16`）；多租户为**后续迭代项**
+> （同文件 :22）。T1/T2/T11/T12 已执行并留证（`spike_report.md` / `baseline_memo.md` /
+> `.omo/evidence/opencode-engine-bridge-v2/t11-router/` / `tenancy_report.md`）。
+>
+> - **生产实际是什么** → `OpencodeAgent/docs/DEPLOYMENT-PROD-ENGINE-BRIDGE.md`。
+> - **§T10/§T11 多租户"容器 + 薄路由"规格** → `OpencodeAgent/docs/TENANT-IMAGE-GUIDE.md`
+>   （由 deprecated `DEPLOY-GUIDE.md` 中 §T10+§T11 抽取而成，勿再从 DEPLOY-GUIDE 取规程）。
+
 ## TL;DR (For humans)
 
 **What you'll get:** 在 mymain（opencode + OmO + vt MCP 生产 harness）之上补全"身体"：vibe-trading 的 React 前端和 16 个 IM channel 原样保留，通过一个新的引擎桥接模块（`OpencodeSessionService`）把会话运行时接到 headless `opencode serve` 上；再以"每租户一个全栈容器 + 薄路由"实现多租户。mymain 现有资产（OpencodeAgent 镜像、F2 记忆工具、F5 ClickHouse 层、12 子代理、工具治理）全部复用，不重做。
@@ -140,7 +152,7 @@ Your next move: **计划执行完毕（2026-09-13）——15/15 todos 全绿**�
   What to do: 盘点 OpencodeAgent 镜像：vt 源码分支（须为 mymain 血统，含 F2/F5）、**opencode CLI / OmO 实际版本——从运行中镜像提取**（`docker run --rm <image> opencode --version`；OmO 读其 node_modules/oh-my-openagent/package.json——Dockerfile/tmpl 当前为 `@latest`，无声明式钉版，记为"事实漂移风险"并把"@latest→精确版本"列为 T10 前置项，B1）、`VT_MEMORY_MCP_TOOLS` 状态、MCP 工具计数（77/82 校验）、nano-search-mcp 版本、**`ENV_PATH`/`HOME`/`VT_MEMORY_BASE_DIR` 与 volume 布局现状**（B5 输入）；验证 gateway 增量依赖可装入镜像：`pip install -e ".[channels]"` 干跑（或至少 telegram+dingtalk/feishu extras）、前端 dist 构建产物可被 SPAStaticFiles 服务、supervisord（或等价）可管理双进程。产出 `baseline_memo.md` + 冻结兼容清单（哪些面在评测窗口内禁触）+ 版本矩阵（实际值，非 Dockerfile 声明值）。
   Must NOT do: 不升级任何钉版；不改 render_config/工具治理；不实际推送镜像。
   Parallelization: Wave 1 | Blocked by: — | Blocks: T10, go/no-go
-  References: mymain-wiki/features/f7-opencode-agent.md、f2-mcp-memory-tools.md；OpencodeAgent/Dockerfile、entrypoint.sh、docs/DEPLOY-GUIDE.md；harness-evolution 冻结清单
+  References: mymain-wiki/features/f7-opencode-agent.md、f2-mcp-memory-tools.md；OpencodeAgent/Dockerfile、entrypoint.sh、docs/TENANT-IMAGE-GUIDE.md（原 docs/DEPLOY-GUIDE.md 已于 2026-09-20 拆分：§T10+§T11 抽出为该活文档，其余归档至 docs/archive/DEPLOY-GUIDE-opencode-web-host-direct.md）；harness-evolution 冻结清单
   Acceptance criteria: baseline_memo.md 落盘，含版本矩阵 + 依赖干跑结果 + 冻结清单
   QA scenarios: happy: 镜像内 `python -c "import src.api"` 成功且 channels extras 可解析；failure: 依赖冲突 → 记录为 T10 的镜像分层整改项
   Commit: Y | eval(engine-bridge): phase-0 image baseline and freeze-compat memo
