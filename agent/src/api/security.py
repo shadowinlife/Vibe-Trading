@@ -164,7 +164,16 @@ def _get_cors_origins() -> List[str]:
 
 
 async def _reject_untrusted_loopback_host(request: Request, call_next):
-    """Block DNS-rebinding Host headers before loopback auth bypasses run."""
+    """Block DNS-rebinding Host headers before loopback auth bypasses run.
+
+    User-auth note (``VIBE_TRADING_USER_AUTH=1`` behind a reverse proxy that
+    forwards real client IPs): ``_is_local_client()`` is then False for every
+    proxied request, so this guard is skipped for them. That is acceptable, not
+    a hole: the guard exists to protect the loopback-trust bypass, and user-auth
+    mode refuses to start without ``API_AUTH_KEY`` (startup invariant), which
+    makes key-first precedence (GHSA-7wgj) disable loopback trust entirely —
+    there is no bypass left for a rebinding Host header to reach.
+    """
     if _is_local_client(request) and not _is_allowed_loopback_host(request.headers.get("host", "")):
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -366,6 +375,17 @@ def _configured_api_key() -> str:
     )
 
 
+def user_auth_enabled() -> bool:
+    """Return whether per-user session auth is on (``VIBE_TRADING_USER_AUTH``).
+
+    Read at request time so the flag follows the cached-EnvConfig lifecycle.
+    Default off is the upstreamability contract: every branch gated on this
+    function is skipped entirely — zero new code paths, zero SQLite queries —
+    when the flag is unset.
+    """
+    return get_env_config().api.vibe_trading_user_auth
+
+
 def _auth_credential_from_header_or_query(
     cred: Optional[HTTPAuthorizationCredentials],
     query_api_key: Optional[str],
@@ -489,6 +509,20 @@ def _validate_api_auth(
     if request.method.upper() not in _SAFE_BROWSER_METHODS:
         _reject_cross_site_browser_request(request)
 
+    if user_auth_enabled():
+        # Session-first, gated on VIBE_TRADING_USER_AUTH=1 (plan D5 step 2).
+        # Must run BEFORE the shared-key check: with a key configured, a user
+        # session token would otherwise be mistaken for a wrong key and 401.
+        # Flag off ⇒ this branch never executes — zero new code paths, zero
+        # SQLite queries (the upstreamability contract).
+        from src.api.user_store import principal_for_session_token
+
+        session_principal = principal_for_session_token(
+            cred.credentials if (cred and cred.credentials) else ""
+        )
+        if session_principal is not None:
+            return session_principal
+
     api_key = _configured_api_key()
     if api_key:
         token = _auth_credential_from_header_or_query(cred, query_api_key, allow_query=allow_query)
@@ -605,6 +639,16 @@ async def require_event_stream_auth(
     if request.method.upper() not in _SAFE_BROWSER_METHODS:
         _reject_cross_site_browser_request(request)
 
+    if user_auth_enabled():
+        # Non-browser SSE clients may present the session token directly. The
+        # browser path needs no change: it exchanges credentials for a ticket
+        # via POST /auth/sse-ticket, which is guarded by require_auth and
+        # therefore already accepts session tokens.
+        from src.api.user_store import principal_for_session_token
+
+        if principal_for_session_token(cred.credentials if (cred and cred.credentials) else ""):
+            return
+
     api_key = _configured_api_key()
     if api_key:
         token = cred.credentials if (cred and cred.credentials) else ""
@@ -642,6 +686,18 @@ async def require_settings_write_auth(
     cred: Optional[HTTPAuthorizationCredentials] = Security(_security),
 ) -> None:
     """Require explicit authorization before changing credential-routing settings."""
+    if user_auth_enabled():
+        # Flag on ⇒ settings writes require an admin user session; the shared
+        # key stays accepted as break-glass (plan D7). Changing this body —
+        # rather than injecting at registration — is what covers the
+        # connection / portfolio / qveris write endpoints: their register
+        # helpers take no injection parameters and qveris delegates here via
+        # the host module. Flag off ⇒ the original body below runs unchanged.
+        from src.api.admin_auth import ensure_admin_principal
+
+        ensure_admin_principal(request=request, cred=cred)
+        return
+
     api_key = _configured_api_key()
     if api_key:
         token = _auth_credential_from_header_or_query(cred, None, allow_query=False)

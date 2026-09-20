@@ -34,10 +34,24 @@ def test_a_loopback_principal_is_not_attributable():
     assert principal.attributable is False
 
 
-def test_only_federated_identity_is_attributable():
-    assert ATTRIBUTABLE_AUTH_METHODS == frozenset({AuthMethod.FEDERATED_IDENTITY})
+def test_exactly_the_identity_naming_methods_are_attributable():
+    # Exact equality, not a superset check: admitting another attributable
+    # method must break this test deliberately, never as a side effect. The two
+    # tests above are the security property -- a shared secret and a loopback
+    # peer authorise without identifying, so neither may ever appear here.
+    #
+    # USER_SESSION is its own member rather than a reuse of FEDERATED_IDENTITY
+    # because a local password session names a real account but involves no
+    # external IdP. It is mintable only under VIBE_TRADING_USER_AUTH=1 (pinned
+    # by test_user_auth.py's flag-off zero-query case).
+    assert ATTRIBUTABLE_AUTH_METHODS == frozenset({
+        AuthMethod.FEDERATED_IDENTITY,
+        AuthMethod.USER_SESSION,
+    })
     named = Principal(subject="alice@example.com", auth_method=AuthMethod.FEDERATED_IDENTITY)
     assert named.attributable is True
+    local_account = Principal(subject="alice", auth_method=AuthMethod.USER_SESSION)
+    assert local_account.attributable is True
 
 
 def test_attributable_cannot_be_set_by_the_caller():

@@ -348,6 +348,21 @@ class APIConfig(_EnvBase):
         alias="VIBE_TRADING_API_URL", default="http://127.0.0.1:8000",
     )
     futu_trade_pwd_md5: str = Field(alias="FUTU_TRADE_PWD_MD5", default="")
+    # --- Opt-in username/password auth layer (default off = upstream behavior
+    # unchanged). VIBE_TRADING_USER_AUTH=1 with an empty API_AUTH_KEY is a
+    # startup-refusing misconfiguration (see admin_auth startup invariant).
+    vibe_trading_user_auth: EnvBool = Field(
+        alias="VIBE_TRADING_USER_AUTH", default=False,
+    )
+    vibe_trading_users_db_path: str = Field(
+        alias="VIBE_TRADING_USERS_DB_PATH", default="",
+    )
+    vibe_trading_session_ttl_days: int = Field(
+        alias="VIBE_TRADING_SESSION_TTL_DAYS", default=7, ge=1,
+    )
+    vibe_trading_allow_self_register: EnvBool = Field(
+        alias="VIBE_TRADING_ALLOW_SELF_REGISTER", default=True,
+    )
 
 
 # ---------------------------------------------------------------------------

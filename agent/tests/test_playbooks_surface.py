@@ -23,14 +23,16 @@ patching the route module's singleton (REST).
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any, List
 
 import pytest
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 import api_server
 from cli.commands import research_playbook, slash_router
 from src.api import scheduled_routes
+from src.api.admin_auth import unwrap_auth_dep
 from src.scheduled_research.playbooks import get_playbook, list_playbooks
 from src.scheduled_research.store import ScheduledResearchJobStore
 
@@ -329,6 +331,16 @@ def _scheduled_routes_under_test() -> List[Any]:
     ]
 
 
+def _declares_require_auth(route: Any) -> bool:
+    """Whether *route* declares ``api_server.require_auth`` — directly, or via
+    a transparent admin-gate wrapper (``unwrap_auth_dep`` follows the
+    ``__vt_wrapped_auth__`` chain the gates attach at construction)."""
+    return any(
+        unwrap_auth_dep(dep.call) is api_server.require_auth
+        for dep in route.dependant.dependencies
+    )
+
+
 class TestRestAuth:
     def test_every_scheduled_route_declares_require_auth(self) -> None:
         """Structural guard: no route in this group may skip the dependency."""
@@ -336,8 +348,23 @@ class TestRestAuth:
         assert len(routes) >= 6  # 3 CRUD + 3 playbook routes
 
         for route in routes:
-            calls = {dep.call for dep in route.dependant.dependencies}
-            assert api_server.require_auth in calls, route.path
+            assert _declares_require_auth(route), route.path
+
+    def test_guard_rejects_a_route_without_require_auth(self) -> None:
+        """Negative control: an unrelated dependency must NOT pass the guard."""
+        probe = FastAPI()
+
+        async def unrelated() -> None:
+            return None
+
+        @probe.get("/synthetic", dependencies=[Depends(unrelated)])
+        async def synthetic() -> None:
+            return None
+
+        route = next(
+            r for r in probe.routes if getattr(r, "path", "") == "/synthetic"
+        )
+        assert not _declares_require_auth(route)
 
     @pytest.mark.parametrize(
         ("method", "path"),

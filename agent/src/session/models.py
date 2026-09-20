@@ -31,11 +31,22 @@ class AuthMethod(str, Enum):
     #: so downstream code branches on the enum rather than on a string it
     #: invented.
     FEDERATED_IDENTITY = "federated_identity"
+    #: A local username/password session minted by the opt-in user-auth layer
+    #: (``VIBE_TRADING_USER_AUTH``). Not federated -- no external IdP -- but it
+    #: names a real account, so it is the first reachable attributable method.
+    USER_SESSION = "user_session"
 
 
 #: Auth methods that can attribute an action to a named human. Everything else
 #: proves only that *somebody with the secret* acted.
 ATTRIBUTABLE_AUTH_METHODS: frozenset[AuthMethod] = frozenset({AuthMethod.FEDERATED_IDENTITY})
+# Extended by the opt-in user-auth layer (plan D6): a local username/password
+# session names a real account, so it is attributable too. Rebound as a new
+# frozenset, and the annotated line above stays byte-identical ON PURPOSE: the
+# T8 native-engine parity guard requires agent/src/session/ diffs to be purely
+# additive (zero deleted lines), which also keeps upstream rebases here
+# conflict-free.
+ATTRIBUTABLE_AUTH_METHODS = ATTRIBUTABLE_AUTH_METHODS | {AuthMethod.USER_SESSION}
 
 
 @dataclass(frozen=True)
@@ -54,6 +65,14 @@ class Principal:
     17a-4 attribution -- must check ``attributable`` and refuse rather than
     quote ``subject`` as if it were a person.
 
+    Update (opt-in user-auth layer, plan D6): ``AuthMethod.USER_SESSION`` is
+    now a wired-in attributable method for LOCAL accounts -- a user-session
+    principal names a real account, so ``attributable`` is True for it. The
+    paragraph above still holds verbatim for the two shared-secret methods,
+    and ``FEDERATED_IDENTITY`` remains reserved for an external IdP. (The
+    original text is kept byte-identical on purpose: the T8 native-parity
+    guard requires diffs under ``agent/src/session/`` to be purely additive.)
+
     Attributes:
         subject: Identifier for the actor. Under a shared secret this is a
             role label such as ``"shared-key-holder"``, not a person.
@@ -63,12 +82,18 @@ class Principal:
             caller-settable flag is a caller-settable lie.
         tenant: Optional tenant scope, for a future multi-tenant runtime root.
         display_name: Optional human-readable label for the UI.
+        role: Authorization role (``"user"`` | ``"admin"``) for USER_SESSION
+            principals, read fresh from the session-validation JOIN on every
+            request. Request-scoped by design: :meth:`to_dict` does NOT
+            serialize it, so a persisted record can never freeze a role that
+            has since been revoked.
     """
 
     subject: str
     auth_method: AuthMethod
     tenant: Optional[str] = None
     display_name: Optional[str] = None
+    role: str = "user"
     attributable: bool = field(init=False, default=False)
 
     def __post_init__(self) -> None:

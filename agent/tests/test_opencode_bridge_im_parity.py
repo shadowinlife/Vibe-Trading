@@ -10,8 +10,9 @@ contract), runtime.py:189,327,329,336-349, scheduled_routes.py:88,109-115,
 Scenario groups (execution order = definition order; scenario 2 KILLS the
 rig's opencode serve, so it runs LAST):
 
-* zero-diff guard — ``agent/src/channels/`` untouched since the mymain
-  merge-base (runs WITHOUT the rig; part of the default gate).
+* native-engine parity guard — ``channels/agent/providers`` zero-diff and
+  ``session/`` additive-only (models.py) since the mymain merge-base (runs
+  WITHOUT the rig; part of the default gate).
 * s0 gateway preamble — the production gateway host serves the seam
   (health / session create+delete / channels runtime status). No LLM.
 * s1 long turn — ~3-minute tool-sleep turn through the mock channel adapter;
@@ -85,6 +86,12 @@ from tests.e2e_engine_bridge.imlib import (
     verified_serve_pid,
     write_json,
 )
+from tests.e2e_engine_bridge.parity_guard import (
+    SESSION_ZONE,
+    STRICT_ZERO_DIFF_ZONES,
+    session_zone_violations,
+    strict_zone_violations,
+)
 from tests.e2e_engine_bridge.riglib import GatewayApi
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -156,16 +163,34 @@ def _stack_kwargs(scratch: Dict[str, Any], scenario: str) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Zero-diff guard (acceptance: adapters/runtime untouched — runs WITHOUT rig)
+# Native-engine parity guard (acceptance: native paths untouched — runs
+# WITHOUT rig; part of the default gate)
 # ---------------------------------------------------------------------------
 
 
-def test_channels_zero_diff_since_merge_base() -> None:
-    """`git diff <merge-base>..HEAD -- agent/src/channels/` must be empty.
+def test_native_engine_parity_zones_untouched() -> None:
+    """T8 acceptance: "bridge 增量、native 路径零触碰" — ``VIBE_TRADING_ENGINE=
+    native`` must remain a one-key rollback. Zone policy (user adjudication
+    2026-09-20; rationale lives in ``e2e_engine_bridge/parity_guard.py``):
 
-    Also guards the plan's other protected zones (agent|session|providers,
-    frontend, api/state.py beyond the T7-adjudicated switch) and the working
-    tree, so a dirty checkout cannot smuggle adapter edits past the suite.
+    * ``channels/`` ``agent/`` ``providers/`` — strict ZERO diff vs the merge
+      base, committed AND worktree (unchanged from the original guard, so a
+      dirty checkout cannot smuggle adapter edits past the suite).
+    * ``session/`` — additive-only, ``models.py``-only: the user-auth layer's
+      ``AuthMethod.USER_SESSION`` (new enum member) and ``Principal.role``
+      (new field WITH a default) change no existing construction or
+      comparison; zero deleted lines is the machine-checkable form of that,
+      and removing/rewriting an enum member still fails here.
+    * ``frontend/`` — deliberately NOT guarded here: the user-auth UI is a
+      separate feature from the engine bridge, and this guard's claim is the
+      native Python engine seam. The frontend has its own gate (``npm run
+      build`` + the vitest suite, including the D19 flag-off byte-identical
+      assertions). It was originally listed only because the engine-bridge
+      round happened to need no UI changes — a different claim, superseded.
+
+    The parsing helpers are unit-tested with fabricated diffs (including the
+    negative controls proving this guard still bites) in
+    ``tests/test_parity_guard.py``.
     """
 
     def git(*args: str) -> str:
@@ -173,19 +198,20 @@ def test_channels_zero_diff_since_merge_base() -> None:
             ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, check=True
         ).stdout.strip()
 
-    for zone in (
-        "agent/src/channels/",
-        "agent/src/agent/",
-        "agent/src/session/",
-        "agent/src/providers/",
-        "frontend/",
-    ):
-        committed = git("diff", "--name-only", f"{MERGE_BASE}..HEAD", "--", zone)
-        assert committed == "", f"committed diff in protected zone {zone}:\n{committed}"
-        worktree = git("status", "--porcelain", "--", zone)
-        assert (
-            worktree == ""
-        ), f"uncommitted changes in protected zone {zone}:\n{worktree}"
+    violations: List[str] = []
+    for zone in STRICT_ZERO_DIFF_ZONES:
+        violations += strict_zone_violations(
+            zone,
+            git("diff", "--name-only", f"{MERGE_BASE}..HEAD", "--", zone),
+            git("status", "--porcelain", "--", zone),
+        )
+    session_status = git("status", "--porcelain", "--", SESSION_ZONE).splitlines()
+    violations += session_zone_violations(
+        git("diff", "--numstat", f"{MERGE_BASE}..HEAD", "--", SESSION_ZONE),
+        git("diff", "--numstat", "HEAD", "--", SESSION_ZONE),
+        [line for line in session_status if line.startswith("??")],
+    )
+    assert not violations, "native-engine parity violations:\n" + "\n".join(violations)
 
 
 # ---------------------------------------------------------------------------

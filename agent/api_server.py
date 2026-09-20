@@ -33,41 +33,18 @@ for _s in ("stdout", "stderr"):
 # ---------------------------------------------------------------------------
 
 from src.api.security import (  # noqa: F401, E402
-    _API_KEY,
-    _CORS_ORIGINS,
-    _DEFAULT_CORS_ORIGINS,
-    _DEFAULT_LOOPBACK_HOSTS,
-    _EXTRA_LOOPBACK_HOSTS,
-    _SAFE_BROWSER_METHODS,
-    _apply_security_headers,
-    _auth_credential_from_header_or_query,
-    _configured_api_key,
-    _consume_sse_ticket,
-    _default_gateway_ips,
-    _env_shell_tools_enabled,
-    _host_without_port,
-    _is_allowed_loopback_host,
-    _is_local_client,
-    _is_loopback_bind_host,
-    _is_loopback_origin,
-    _mint_sse_ticket,
-    _origin_matches_request_host,
-    _parse_cors_origins,
-    _parse_extra_cors_origins,
-    _parse_extra_loopback_hosts,
-    _redact_query_secrets,
-    _reject_cross_site_browser_request,
-    _reject_untrusted_loopback_host,
-    _require_shutdown_authorization,
-    _security,
-    _shell_tools_enabled_for_request,
-    _trusted_docker_loopback_ip,
-    _validate_api_auth,
-    install_access_log_redaction_filter,
-    require_auth,
-    require_event_stream_auth,
-    require_local_or_auth,
-    require_settings_write_auth,
+    _API_KEY, _CORS_ORIGINS, _DEFAULT_CORS_ORIGINS, _DEFAULT_LOOPBACK_HOSTS,
+    _EXTRA_LOOPBACK_HOSTS, _SAFE_BROWSER_METHODS, _apply_security_headers,
+    _auth_credential_from_header_or_query, _configured_api_key, _consume_sse_ticket,
+    _default_gateway_ips, _env_shell_tools_enabled, _host_without_port,
+    _is_allowed_loopback_host, _is_local_client, _is_loopback_bind_host,
+    _is_loopback_origin, _mint_sse_ticket, _origin_matches_request_host,
+    _parse_cors_origins, _parse_extra_cors_origins, _parse_extra_loopback_hosts,
+    _redact_query_secrets, _reject_cross_site_browser_request,
+    _reject_untrusted_loopback_host, _require_shutdown_authorization, _security,
+    _shell_tools_enabled_for_request, _trusted_docker_loopback_ip, _validate_api_auth,
+    install_access_log_redaction_filter, require_auth, require_event_stream_auth,
+    require_local_or_auth, require_settings_write_auth
 )
 
 from src.api.models import (  # noqa: F401, E402
@@ -136,6 +113,8 @@ async def _run_startup_preflight() -> None:
     except Exception:  # pragma: no cover — best-effort
         logging.getLogger(__name__).warning("Legacy state migration failed", exc_info=True)
     run_preflight(console)
+    from src.api.admin_auth import enforce_user_auth_startup_invariant
+    enforce_user_auth_startup_invariant()  # D5: flag=1 without API_AUTH_KEY refuses to start
     _start_scheduled_research_executor()
     from src.config.accessor import get_env_config
 
@@ -217,7 +196,14 @@ from src.api.system_routes import _terminate_current_process  # noqa: F401, E402
 
 # --- Settings ---
 from src.api.settings_routes import register_settings_routes  # noqa: E402
-register_settings_routes(app)
+from src.api.admin_auth import make_admin_gate, make_admin_write_gate, make_live_admin_write_gate  # noqa: E402
+
+# Admin gates (D7/NB3): flag=1 ⇒ settings GETs + mutating live/channels/scheduled
+# endpoints require admin; status/list reads keep plain require_auth; flag=0 ⇒
+# every gate delegates to the original dependency unchanged. Settings WRITES need
+# no injection — require_settings_write_auth is itself flag-aware (covers
+# connection/portfolio/qveris, whose register helpers take no injection params).
+register_settings_routes(app, require_local_or_auth=make_admin_gate(require_local_or_auth))
 
 from src.api.settings_routes import (  # noqa: F401, E402
     _baostock_supported,
@@ -239,7 +225,7 @@ from src.api.uploads_routes import (  # noqa: F401, E402
 
 # --- Channels ---
 from src.api.channels_routes import register_channels_routes  # noqa: E402
-register_channels_routes(app)
+register_channels_routes(app, require_auth=make_admin_write_gate(require_auth))
 from src.api.qveris_routes import qveris_router  # noqa: E402  # QVERIS-INTEGRATION
 app.include_router(qveris_router)  # QVERIS-INTEGRATION
 
@@ -255,7 +241,7 @@ from src.api.swarm_routes import _get_swarm_runtime  # noqa: F401, E402
 
 # --- Live trading ---
 from src.api.live_routes import register_live_routes  # noqa: E402
-register_live_routes(app)
+register_live_routes(app, require_auth=make_live_admin_write_gate(require_auth))
 
 # --- Read-only portfolio dashboard ---
 from src.api.portfolio_routes import register_portfolio_routes  # noqa: E402
@@ -301,9 +287,9 @@ register_alpha_routes(app)
 from src.api.options_routes import register_options_routes  # noqa: E402
 register_options_routes(app)
 
-# --- Auth helpers (SSE tickets) ---
-from src.api.auth_routes import register_auth_routes  # noqa: E402
-register_auth_routes(app)
+# --- Auth helpers: SSE tickets + opt-in user auth (D17/D19) + runtime settings (D8) ---
+from src.api.user_auth_routes import register_auth_stack  # noqa: E402
+register_auth_stack(app)
 
 # --- OpenBB Workspace agent bridge (GET /agents.json, POST /v1/query) ---
 # No-op unless the optional `openbb` extra is installed; self-reports either way.
@@ -312,7 +298,8 @@ try_register_openbb_routes(app)
 
 # --- Scheduled research ---
 from src.api.scheduled_routes import register_scheduled_routes  # noqa: E402
-register_scheduled_routes(app)
+
+register_scheduled_routes(app, require_auth=make_admin_write_gate(require_auth))
 
 from src.api.scheduled_routes import (  # noqa: E402, F401
     CreateRunFromPlaybookRequest,
