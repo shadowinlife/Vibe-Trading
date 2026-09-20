@@ -34,6 +34,11 @@ tags: [index]
 - [features/f5-clickhouse-data-source.md](features/f5-clickhouse-data-source.md) — ClickHouse A 股数据源 + 语义层 Phase 0-2 — active
 - [features/f7-opencode-agent.md](features/f7-opencode-agent.md) — OpencodeAgent harness 层（含 12 领域子代理） — active
 - [features/f8-engine-bridge.md](features/f8-engine-bridge.md) — opencode 引擎桥（SessionService 置换层：启动恢复三分支、14 项降级清单、认证配方、ENGINE=native 回滚） — active
+- [features/user-auth-system.md](features/user-auth-system.md) — 用户认证系统（多租户 Phase 1：登录/注册/邀请码/admin 角色/capability 门控；2026-09-20 已部署生产） — active
+
+## engine-bridge/ — engine-bridge 知识域集中索引
+
+- [engine-bridge/README.md](engine-bridge/README.md) — engine-bridge 全部知识的导航入口：计划正典 / 19 份证据报告 / 研究文档 / 部署实录 / 功能卡 / 关键裁决速查 — active
 
 ## harness-evolution/ — harness 演进研究档案（2026-08-21~30）
 
@@ -70,8 +75,40 @@ tags: [index]
 ## wiki 外指针（跨边界权威文档，不由本目录维护）
 
 > 上方条目只登记 `mymain-wiki/` 内的文档；以下是 wiki 内容指向的权威记录，位于本目录之外，不纳入 wiki 的状态维护。
+> engine-bridge 全域的集中索引见 [engine-bridge/README.md](engine-bridge/README.md)。
 
-- `OpencodeAgent/docs/DEPLOYMENT-PROD-ENGINE-BRIDGE.md` — 生产部署权威实录（ECS 宿主机裸部署：拓扑、配置、运维命令、事故记录；§15 用户认证系统 2026-09-20 已部署上线，§15.11 端到端验证）
-- `.omo/plans/vibe-trading-user-auth.md` — 用户认证系统设计正典（台账 DIVERGENCE §2.1 F8 行 / 贡献队列 ⑨）
-- `.omo/plans/opencode-engine-bridge-v2.md` — engine-bridge 计划正典（D3-D11 决策；[features/f8-engine-bridge.md](features/f8-engine-bridge.md) 降级清单与配方的来源）
+### 生产部署与运维（活文档，随生产变动）
+
+| 文档 | 内容 |
+|---|---|
+| `OpencodeAgent/docs/DEPLOYMENT-PROD-ENGINE-BRIDGE.md` | 生产部署权威实录（ECS 宿主机裸部署：拓扑、配置、运维命令、事故记录；§15 用户认证 2026-09-20 已部署，§15.11 端到端验证） |
+| `OpencodeAgent/docs/TENANT-IMAGE-GUIDE.md` | 多租户容器镜像 + 薄路由规范（T10/T11，T12 已验证 93/93，未进生产） |
+| `OpencodeAgent/docs/IMAGE-MANUAL.md` | opencode-serve 镜像族操作手册 |
+| `OpencodeAgent/docs/archive/DEPLOY-GUIDE-opencode-web-host-direct.md` | 旧部署指南（已归档，两次取代） |
+
+### 研究证据（已完成一次性交付物）
+
+| 文档 | 内容 |
+|---|---|
+| `OpencodeAgent/docs/baseline_memo.md` | T2 基线盘点：镜像族版本矩阵、B1/B5 发现 |
+| `OpencodeAgent/docs/spike_report.md` | T1 spike：GO/NO-GO 门、三个强制条件 |
+| `OpencodeAgent/docs/tenancy_report.md` | T12 租户隔离矩阵：93/93 PASS |
+
+### 计划正典（`.omo/plans/`）
+
+| 文档 | 内容 |
+|---|---|
+| `.omo/plans/opencode-engine-bridge-v2.md` | engine-bridge 计划正典（D3-D11 决策、T1-T15 任务） |
+| `.omo/plans/vibe-trading-user-auth.md` | 用户认证系统设计正典（D1-D18 决策） |
+
+### 执行证据（`.omo/evidence/opencode-engine-bridge-v2/`）
+
+| 目录 | 内容 |
+|---|---|
+| `t7-e2e/` ~ `t14-goal/` | 按任务分组的 FINDINGS + 原始数据（json/jsonl/log/截图） |
+| `oracle-rereview-report.md` | Oracle 对抗复审（B1-B5 修正） |
+| `prior-art-report.md` | 先行技术调查（32 框架源码级） |
+
+### 其他
+
 - 根 `AGENTS.md` §8 — 分支约定（与上游关系、社区提交约束）；本 wiki agent 路由入口见 [AGENTS.md](AGENTS.md)

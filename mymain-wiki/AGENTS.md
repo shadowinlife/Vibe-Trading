@@ -1,6 +1,6 @@
 ---
 title: mymain-wiki agent 路由入口（AGENTS）
-description: mymain 分支持久知识库的路由层与使用协议：任务/触发词到正确文档的映射、权威级别与冲突裁决、harness-evolution 冻结区、wiki 外权威（生产部署/用户认证/engine-bridge 计划）边界。在本分支上工作先读此文件，未命中再去 INDEX 全文检索。触发词：分支知识库、mymain-wiki、路由、权威、台账、DIVERGENCE、功能差异、开发历史、验证证据、研究裁决、未落地、F8 编号、engine-bridge、用户认证、生产部署。
+description: mymain 分支持久知识库的路由层与使用协议：任务/触发词到正确文档的映射、权威级别与冲突裁决、harness-evolution 冻结区、wiki 外权威（生产部署/用户认证/engine-bridge 计划）边界。在本分支上工作先读此文件，未命中再去 INDEX 全文检索。触发词：分支知识库、mymain-wiki、路由、权威、台账、DIVERGENCE、功能差异、开发历史、验证证据、研究裁决、未落地、F8 编号、engine-bridge、用户认证、生产部署、证据、evidence、多租户、tenancy。
 type: index
 status: active
 created: 2026-09-20
@@ -24,6 +24,7 @@ related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 | **验证证据** | 当前测试基线是多少 / 门禁怎么跑 / 计数 pin 义务 | [branch/MYMAIN_DIVERGENCE.md](branch/MYMAIN_DIVERGENCE.md) §3（最新基线唯一出处，当前 2026-09-19 轮）与 §4.3 | 研究周期的实验证据 `harness-evolution/evals/`（已冻结，只读） |
 | **研究裁决** | 为什么这么设计 / 哪些本地能力可被上游替换 | [branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md](branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md)（REPLACE/PARTIAL/KEEP 判定） | ClickHouse 语义层 [clickhouse/README.md](clickhouse/README.md)（R1 裁决）；harness 四批实验 [harness-evolution/README.md](harness-evolution/README.md)（已冻结） |
 | **未落地资产** | 接下来做什么 / 挂起的 PR 前置 / 已知债务 / 残余 todo | [branch/MYMAIN_DIVERGENCE.md](branch/MYMAIN_DIVERGENCE.md) §2.3 贡献队列、§4.5 债务 D1-D4 | 各能力卡末节「状态与上游关系 / 待接入」（如 [features/f8-engine-bridge.md](features/f8-engine-bridge.md)） |
+| **engine-bridge 全域** | engine-bridge 计划/证据/部署/研究文档在哪 | [engine-bridge/README.md](engine-bridge/README.md)（集中索引） | 功能卡 [features/f8-engine-bridge.md](features/f8-engine-bridge.md)；用户认证 [features/user-auth-system.md](features/user-auth-system.md) |
 
 任务型路由：
 
@@ -35,7 +36,8 @@ related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 | 线上排障 / 部署变更 / 生产配置 | **wiki 外**：`OpencodeAgent/docs/DEPLOYMENT-PROD-ENGINE-BRIDGE.md`；接入方式背景 DIVERGENCE §3.3 |
 | ClickHouse 取数与语义层（F5） | [features/f5-clickhouse-data-source.md](features/f5-clickhouse-data-source.md) → [clickhouse/README.md](clickhouse/README.md) 及其四份研究文档；同步管道事故 [clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md](clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md) |
 | 记忆系统（F1-F4） | 对应功能卡 → DIVERGENCE §2.3 队列 ①-⑤ 前置 + §4.5 债务 D1-D4 |
-| engine-bridge（会话恢复/重挂/降级/回滚） | [features/f8-engine-bridge.md](features/f8-engine-bridge.md)（运维圣经）→ 计划正典 `.omo/plans/opencode-engine-bridge-v2.md` |
+| engine-bridge（会话恢复/重挂/降级/回滚） | [engine-bridge/README.md](engine-bridge/README.md)（全域索引）→ [features/f8-engine-bridge.md](features/f8-engine-bridge.md)（运维圣经） |
+| 用户认证（登录/注册/鉴权/admin） | [features/user-auth-system.md](features/user-auth-system.md)（功能卡）→ 部署实录 `OpencodeAgent/docs/DEPLOYMENT-PROD-ENGINE-BRIDGE.md` §15 |
 
 常见速查（答案所在，不在此复制）：
 
@@ -53,7 +55,8 @@ related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 | 目录 | 内容 | 状态 |
 |---|---|---|
 | `branch/` | `MYMAIN_DIVERGENCE.md`（权威台账：F1-F8、贡献队列、债务 D1-D4、验证门禁）、`MYMAIN_README.md`（发布 changelog 与 tag 约定）、`UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md`（上游可替换性审查） | active |
-| `features/` | `README.md` + 能力卡 f1-f5、f7、f8（F6 不存在，见 features/README「为什么没有 F6」） | active |
+| `features/` | `README.md` + 能力卡 f1-f5、f7、f8、user-auth-system（F6 不存在，见 features/README「为什么没有 F6」） | active |
+| `engine-bridge/` | `README.md` 集中索引：计划正典 / 19 份证据 / 研究文档 / 部署实录 / 功能卡 | active |
 | `clickhouse/` | `README.md` + 语义层 RESEARCH / REPORT / ITERATION_PLAN / SYNC_DIAGNOSIS | active |
 | `harness-evolution/` | 17 份 `HARNESS_EVOLUTION_*` 裁决文档 + `evals/`（研究代码与 jsonl 证据，9.3MB、占 wiki 97%） | **archived（冻结）** |
 | `history/` | `timeline.md` 分支编年史（倒序） | active |
