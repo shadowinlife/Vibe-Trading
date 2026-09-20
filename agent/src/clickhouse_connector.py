@@ -209,9 +209,17 @@ class ClickHouseConnector:
             Never raises.
         """
         try:
+            # Send credentials with the probe: servers that enforce auth
+            # reject an anonymous ``SELECT 1`` even though ``/ping`` passes,
+            # which previously made a healthy ClickHouse look unreachable.
+            params: dict[str, str] = {"query": "SELECT 1"}
+            if self.user:
+                params["user"] = self.user
+            if self.password:
+                params["password"] = self.password
             resp = requests.get(
                 self._base_url,
-                params={"query": "SELECT 1"},
+                params=params,
                 timeout=self._TIMEOUT,
             )
             return resp.ok
