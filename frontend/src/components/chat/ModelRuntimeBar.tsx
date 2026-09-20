@@ -1,9 +1,17 @@
 import { Cpu } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { LLMSettings } from "@/lib/api";
+import type { LLMProviderOption } from "@/lib/api";
+
+/** Fields the bar renders; both `LLMSettings` and the redacted runtime payload fit. */
+export interface ModelRuntimeSettings {
+  provider: string;
+  model_name: string;
+  reasoning_effort?: string;
+  providers?: LLMProviderOption[];
+}
 
 interface Props {
-  settings: LLMSettings | null;
+  settings: ModelRuntimeSettings | null;
   runtimeProvider?: string;
   runtimeModel?: string;
   runtimeReasoningEffort?: string;
@@ -19,7 +27,7 @@ export function ModelRuntimeBar({
   if (!settings) return null;
 
   const providerId = runtimeProvider || settings.provider;
-  const provider = settings.providers.find((item) => item.name === providerId);
+  const provider = settings.providers?.find((item) => item.name === providerId);
   const providerLabel = provider?.label || providerId || t("agent.unknownProvider");
   const model = runtimeModel || settings.model_name || t("agent.unknownModel");
   const effortLabels: Record<string, string> = {
@@ -29,9 +37,7 @@ export function ModelRuntimeBar({
     high: t("settings.reasoningEffortHigh"),
     max: t("settings.reasoningEffortMax"),
   };
-  const reasoningEffort = runtimeReasoningEffort !== undefined
-    ? runtimeReasoningEffort
-    : settings.reasoning_effort;
+  const reasoningEffort = runtimeReasoningEffort ?? settings.reasoning_effort ?? "";
   const effortLabel = effortLabels[reasoningEffort] || t("settings.providerDefault");
 
   return (

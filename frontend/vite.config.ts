@@ -10,6 +10,7 @@ const PROXY_PATHS = [
   "/swarm/runs",
   "/qveris",
   "/settings/llm",
+  "/settings/runtime",
   "/settings/data-sources",
   "/channels",
   "/mandate",

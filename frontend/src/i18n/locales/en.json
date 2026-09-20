@@ -2,6 +2,34 @@
   "app": {
     "version": "v0.1.15"
   },
+  "auth": {
+    "title": "Sign in",
+    "subtitle": "Sign in to continue to Vibe-Trading",
+    "tabSignIn": "Sign in",
+    "tabRegister": "Create account",
+    "username": "Username",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "inviteCode": "Invite code",
+    "inviteHint": "Registration requires an invite code from the operator.",
+    "signIn": "Sign in",
+    "register": "Create account",
+    "signingIn": "Signing in…",
+    "registering": "Creating account…",
+    "logout": "Sign out",
+    "account": "Account",
+    "adminBadge": "Admin",
+    "signedInAs": "Signed in as {{username}}",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "usernameTaken": "That username is already taken.",
+    "registerDisabled": "Registration is disabled on this deployment.",
+    "usernameInvalid": "Use 3–32 characters: letters, digits, underscores or hyphens.",
+    "passwordTooShort": "Password must be at least {{min}} characters.",
+    "passwordMismatch": "The passwords do not match.",
+    "requestFailed": "Request failed, please try again.",
+    "insecureTransport": "This page is served over plain HTTP — your password travels unencrypted. Use HTTPS or a trusted network.",
+    "checkingSession": "Checking your session…"
+  },
   "charts": {
     "noPriceData": "No price data for this symbol yet",
     "noCorrelationData": "Pick at least two symbols to compare",
@@ -334,8 +362,6 @@
   },
   "settings": {
     "title": "Settings",
-    "authRequired": "Authentication Required",
-    "authDesc": "Enter the API auth key to unlock settings.",
     "dataSources": "Data Sources",
     "llmBackend": "LLM Backend",
     "save": "Save",

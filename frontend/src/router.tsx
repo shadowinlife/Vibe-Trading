@@ -1,6 +1,9 @@
 import { Suspense, lazy, type ComponentType } from "react";
 import { createBrowserRouter } from "react-router";
+import { RequireAdmin, RequireAuth } from "@/components/auth/RequireAuth";
 import { Layout } from "@/components/layout/Layout";
+
+const Login = lazy(() => import("@/pages/Login").then((m) => ({ default: m.Login })));
 
 const Home = lazy(() => import("@/pages/Home").then((m) => ({ default: m.Home })));
 const Agent = lazy(() => import("@/pages/Agent").then((m) => ({ default: m.Agent })));
@@ -51,9 +54,26 @@ function wrap(Component: ComponentType) {
   );
 }
 
+/** `wrap` plus the operator-only gate that hides the Settings surface. */
+function wrapAdmin(Component: ComponentType) {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <RequireAdmin>
+        <Component />
+      </RequireAdmin>
+    </Suspense>
+  );
+}
+
 export const router = createBrowserRouter([
+  // Outside the Layout shell — no sidebar or session list before a session exists.
+  { path: "/login", element: wrap(Login) },
   {
-    element: <Layout />,
+    element: (
+      <RequireAuth>
+        <Layout />
+      </RequireAuth>
+    ),
     children: [
       { path: "/", element: wrap(Agent) },
       { path: "/about", element: wrap(Home) },
@@ -62,7 +82,7 @@ export const router = createBrowserRouter([
       { path: "/scheduled", element: wrap(Scheduled) },
       { path: "/reports", element: wrap(Reports) },
       { path: "/portfolio", element: wrap(Portfolio) },
-      { path: "/settings", element: wrap(Settings) },
+      { path: "/settings", element: wrapAdmin(Settings) },
       { path: "/runs/:runId", element: wrap(RunDetail) },
       { path: "/compare", element: wrap(Compare) },
       { path: "/correlation", element: wrap(Correlation) },

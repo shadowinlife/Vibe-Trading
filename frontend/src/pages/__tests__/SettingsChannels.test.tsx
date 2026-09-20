@@ -21,10 +21,14 @@ vi.mock("@/lib/api", async () => {
   };
 });
 
-vi.mock("@/lib/apiAuth", () => ({
-  getApiAuthKey: vi.fn(() => ""),
-  setApiAuthKey: vi.fn(),
-}));
+vi.mock("@/lib/apiAuth", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/apiAuth")>("@/lib/apiAuth");
+  return {
+    ...actual,
+    getApiAuthKey: vi.fn(() => ""),
+    setApiAuthKey: vi.fn(),
+  };
+});
 
 function llmSettings() {
   return {

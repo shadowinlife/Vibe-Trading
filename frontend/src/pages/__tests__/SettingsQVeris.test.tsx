@@ -22,11 +22,15 @@ vi.mock("@/lib/api", async () => {
   };
 });
 
-vi.mock("@/lib/apiAuth", () => ({
-  authHeaders: vi.fn(() => ({ Authorization: "Bearer local-test-key" })),
-  getApiAuthKey: vi.fn(() => "local-test-key"),
-  setApiAuthKey: vi.fn(),
-}));
+vi.mock("@/lib/apiAuth", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/apiAuth")>("@/lib/apiAuth");
+  return {
+    ...actual,
+    authHeaders: vi.fn(() => ({ Authorization: "Bearer local-test-key" })),
+    getApiAuthKey: vi.fn(() => "local-test-key"),
+    setApiAuthKey: vi.fn(),
+  };
+});
 
 vi.mock("sonner", () => ({
   toast: {

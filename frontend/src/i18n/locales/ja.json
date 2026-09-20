@@ -2,6 +2,34 @@
   "app": {
     "version": "v0.1.15"
   },
+  "auth": {
+    "title": "ログイン",
+    "subtitle": "ログインして Vibe-Trading を続ける",
+    "tabSignIn": "ログイン",
+    "tabRegister": "アカウント作成",
+    "username": "ユーザー名",
+    "password": "パスワード",
+    "confirmPassword": "パスワード（確認）",
+    "inviteCode": "招待コード",
+    "inviteHint": "登録には管理者が発行する招待コードが必要です。",
+    "signIn": "ログイン",
+    "register": "アカウント作成",
+    "signingIn": "ログインしています…",
+    "registering": "作成しています…",
+    "logout": "ログアウト",
+    "account": "アカウント",
+    "adminBadge": "管理者",
+    "signedInAs": "{{username}} でログイン中",
+    "sessionExpired": "セッションの有効期限が切れました。もう一度ログインしてください。",
+    "usernameTaken": "そのユーザー名は既に使用されています。",
+    "registerDisabled": "このデプロイでは登録が無効になっています。",
+    "usernameInvalid": "3〜32 文字の英数字・アンダースコア・ハイフンを使用してください。",
+    "passwordTooShort": "パスワードは {{min}} 文字以上にしてください。",
+    "passwordMismatch": "パスワードが一致しません。",
+    "requestFailed": "リクエストに失敗しました。もう一度お試しください。",
+    "insecureTransport": "このページは平文 HTTP で配信されています。パスワードは暗号化されずに送信されます。HTTPS か信頼できるネットワークを使用してください。",
+    "checkingSession": "セッションを確認しています…"
+  },
   "layout": {
     "home": "ホーム",
     "agent": "エージェント",
@@ -329,8 +357,6 @@
   },
   "settings": {
     "title": "設定",
-    "authRequired": "認証が必要です",
-    "authDesc": "設定のロックを解除するには API 認証キーを入力してください。",
     "dataSources": "データソース",
     "llmBackend": "LLM バックエンド",
     "save": "保存",

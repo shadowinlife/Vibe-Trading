@@ -7,8 +7,10 @@ import { useDarkMode } from "@/hooks/useDarkMode";
 import { api, type SessionItem } from "@/lib/api";
 import { safeGet, safeSet } from "@/lib/storage";
 import { useAgentStore } from "@/stores/agent";
+import { useAuthStore } from "@/stores/auth";
 import { BrandMark } from "@/components/common/BrandMark";
 import { ConnectionBanner } from "@/components/layout/ConnectionBanner";
+import { UserMenu } from "@/components/layout/UserMenu";
 import { SUPPORTED_LANGUAGES } from "@/i18n";
 
 // APP_VERSION is sourced from i18n locale files (app.version key) to keep a
@@ -18,7 +20,11 @@ export function Layout() {
   const { t } = useTranslation();
 
   // "/" is the product (chat); marketing moved to /about. The Agent entry
-  // matches both "/" and legacy "/agent" deep links.
+  // matches both "/" and legacy "/agent" deep links. Settings is an operator
+  // surface: admin-only once user auth is on, unrestricted without it (D19).
+  const userAuth = useAuthStore((state) => state.userAuth);
+  const role = useAuthStore((state) => state.role);
+  const canSeeSettings = !userAuth || role === "admin";
   const NAV = [
     { to: "/", icon: Bot, label: t('layout.agent') },
     { to: "/runtime", icon: Activity, label: t('layout.runtime') },
@@ -27,7 +33,7 @@ export function Layout() {
     { to: "/portfolio", icon: WalletCards, label: t('layout.portfolio') },
     { to: "/alpha-zoo", icon: Layers, label: t('layout.alphaZoo') },
     { to: "/options", icon: CandlestickChart, label: t('layout.optionsLab') },
-    { to: "/settings", icon: Settings, label: t('layout.settings') },
+    ...(canSeeSettings ? [{ to: "/settings", icon: Settings, label: t('layout.settings') }] : []),
     { to: "/correlation", icon: BarChart3, label: t('layout.correlation') },
   ];
   const { pathname } = useLocation();
@@ -261,6 +267,7 @@ export function Layout() {
         <div className={cn("mt-auto border-t border-border/60", collapsed ? "p-1 flex flex-col items-center gap-1" : "p-3 space-y-2 max-md:p-1 max-md:flex max-md:flex-col max-md:items-center max-md:gap-1 max-md:space-y-0")}>
           {collapsed ? (
             <>
+              <UserMenu collapsed />
               <button onClick={toggle} className="p-1.5 text-muted-foreground hover:text-foreground rounded transition-colors" title={dark ? t('layout.light') : t('layout.dark')}>
                 {dark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
               </button>
@@ -270,6 +277,7 @@ export function Layout() {
             </>
           ) : (
             <>
+              <UserMenu />
               <div className="flex items-center justify-between max-md:flex-col">
                 <button
                   onClick={toggle}

@@ -2,6 +2,34 @@
   "app": {
     "version": "v0.1.15"
   },
+  "auth": {
+    "title": "로그인",
+    "subtitle": "로그인하여 Vibe-Trading을 계속 사용하세요",
+    "tabSignIn": "로그인",
+    "tabRegister": "계정 만들기",
+    "username": "사용자 이름",
+    "password": "비밀번호",
+    "confirmPassword": "비밀번호 확인",
+    "inviteCode": "초대 코드",
+    "inviteHint": "등록에는 운영자가 발급한 초대 코드가 필요합니다.",
+    "signIn": "로그인",
+    "register": "계정 만들기",
+    "signingIn": "로그인 중…",
+    "registering": "계정 생성 중…",
+    "logout": "로그아웃",
+    "account": "계정",
+    "adminBadge": "관리자",
+    "signedInAs": "{{username}} 님으로 로그인됨",
+    "sessionExpired": "세션이 만료되었습니다. 다시 로그인해 주세요.",
+    "usernameTaken": "이미 사용 중인 사용자 이름입니다.",
+    "registerDisabled": "이 배포에서는 등록이 비활성화되어 있습니다.",
+    "usernameInvalid": "영문·숫자·밑줄·하이픈으로 3~32자까지 사용하세요.",
+    "passwordTooShort": "비밀번호는 최소 {{min}}자 이상이어야 합니다.",
+    "passwordMismatch": "비밀번호가 일치하지 않습니다.",
+    "requestFailed": "요청에 실패했습니다. 다시 시도해 주세요.",
+    "insecureTransport": "이 페이지는 평문 HTTP로 제공됩니다. 비밀번호가 암호화되지 않은 채 전송됩니다. HTTPS 또는 신뢰할 수 있는 네트워크를 사용하세요.",
+    "checkingSession": "세션을 확인하는 중…"
+  },
   "layout": {
     "home": "홈",
     "agent": "에이전트",
@@ -329,8 +357,6 @@
   },
   "settings": {
     "title": "설정",
-    "authRequired": "인증 필요",
-    "authDesc": "설정 잠금을 해제하려면 API 인증 키를 입력하세요.",
     "dataSources": "데이터 소스",
     "llmBackend": "LLM 백엔드",
     "save": "저장",

@@ -9,8 +9,9 @@ import {
   type AgentMessageMeta,
   type StoredAgentMessage,
 } from "@/stores/agent";
+import { useAuthStore } from "@/stores/auth";
 import { useSSE } from "@/hooks/useSSE";
-import { ApiError, AUTH_REQUIRED_MESSAGE, api, isAuthRequiredError, type GoalSnapshot, type MandateProposal, type MandateCommitted, type ScheduledResearchProposal, type LiveAction, type LiveHalted, type LLMSettings } from "@/lib/api";
+import { ApiError, api, isAuthRequiredError, type GoalSnapshot, type MandateProposal, type MandateCommitted, type ScheduledResearchProposal, type LiveAction, type LiveHalted, type RuntimeSettings } from "@/lib/api";
 import {
   extractUploadedAttachments,
   prependUploadedAttachments,
@@ -258,7 +259,7 @@ export function Agent() {
   const [groundingRevision, setGroundingRevision] = useState<GroundingRevision | null>(null);
   const [visibleRowCount, setVisibleRowCount] = useState(TIMELINE_WINDOW_SIZE);
   const visibleRowsSessionRef = useRef<string | null>(null);
-  const [llmSettings, setLlmSettings] = useState<LLMSettings | null>(null);
+  const [runtimeSettings, setRuntimeSettings] = useState<RuntimeSettings | null>(null);
   const [runtimeIdentity, setRuntimeIdentity] = useState<RuntimeIdentity>({});
 
   const messages = useAgentStore(s => s.messages);
@@ -1362,9 +1363,15 @@ export function Agent() {
   }, [doDisconnect]);
 
   useEffect(() => {
-    api.getLLMSettings().then((s) => {
+    // The chat page must not depend on the admin-only /settings/llm: with real
+    // accounts it reads the redacted runtime endpoint instead, while flag-off
+    // deployments keep today's full payload (D19).
+    const loadSettings = useAuthStore.getState().userAuth
+      ? api.getRuntimeSettings()
+      : api.getLLMSettings();
+    loadSettings.then((s) => {
       sseTimeoutMsRef.current = s.sse_timeout_seconds * 1000;
-      setLlmSettings(s);
+      setRuntimeSettings(s);
     }).catch(() => {});
   }, []);
 
@@ -1492,7 +1499,7 @@ export function Agent() {
     } catch (error) {
       archiveActivity("failed");
       act().setStatus("error");
-      const message = isAuthRequiredError(error) ? AUTH_REQUIRED_MESSAGE : t('agent.failedToSend');
+      const message = isAuthRequiredError(error) ? error.message : t('agent.failedToSend');
       toast.error(message);
       act().addMessage({ id: "", type: "error", content: message, timestamp: Date.now() });
     }
@@ -1581,7 +1588,7 @@ export function Agent() {
     } catch (error) {
       archiveActivity("failed");
       act().setStatus("error");
-      const message = isAuthRequiredError(error) ? AUTH_REQUIRED_MESSAGE : t('agent.failedToContinue');
+      const message = isAuthRequiredError(error) ? error.message : t('agent.failedToContinue');
       toast.error(message);
       act().addMessage({ id: "", type: "error", content: message, timestamp: Date.now() });
     }
@@ -1763,7 +1770,7 @@ export function Agent() {
   return (
     <div className="flex flex-col flex-1 min-w-0 overflow-hidden h-full">
       <ModelRuntimeBar
-        settings={llmSettings}
+        settings={runtimeSettings}
         runtimeProvider={visibleRuntimeIdentity.provider}
         runtimeModel={visibleRuntimeIdentity.model}
         runtimeReasoningEffort={visibleRuntimeIdentity.reasoningEffort}

@@ -1,5 +1,6 @@
 import i18n from "@/i18n";
 import { authHeaders, withAuthTicket } from "@/lib/apiAuth";
+import { expireSession, useAuthStore } from "@/stores/auth";
 import type {
   OptionsChainResponse,
   OptionsPayoffRequest,
@@ -18,21 +19,24 @@ export class ApiError extends Error {
   }
 }
 
-const AUTH_REQUIRED_MESSAGE_KEY = "agent.authRequired";
-
-function getAuthRequiredMessage(): string {
-  return i18n.t(AUTH_REQUIRED_MESSAGE_KEY as never);
+/** Legacy wording, reachable only with user auth off (D19). */
+function legacyAuthFailureMessage(): string {
+  return i18n.t("agent.authRequired");
 }
 
-// Keep the existing string export compatible with consumers while updating its
-// live ES-module binding whenever the active locale changes.
-export let AUTH_REQUIRED_MESSAGE = getAuthRequiredMessage();
-i18n.on("languageChanged", () => {
-  AUTH_REQUIRED_MESSAGE = getAuthRequiredMessage();
-});
+/** Session wording — a 401 is the only status that means the session is gone. */
+function sessionExpiredMessage(): string {
+  return i18n.t("auth.sessionExpired");
+}
 
-export function isAuthRequiredError(error: unknown): boolean {
+/** The auth layer rejected the request (401/403) — surface its detail verbatim. */
+export function isAuthRequiredError(error: unknown): error is ApiError {
   return error instanceof ApiError && (error.status === 401 || error.status === 403);
+}
+
+/** 401 only: the credential was refused because the session itself is gone. */
+export function isSessionExpiredError(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === 401;
 }
 
 export interface CorrelationResponse {
@@ -292,16 +296,39 @@ export interface PortfolioSettingsResponse {
   catalog: PortfolioSourceCatalogItem[];
 }
 
+/** Pull the backend's human-readable reason out of an error body, if any. */
+function backendDetailOf(body: unknown): string | null {
+  if (typeof body !== "object" || body === null) return null;
+  const record = body as Record<string, unknown>;
+  // Options endpoints report errors under an `error` key
+  // ({status:"error", error} / {ok:false, error}) rather than detail/message.
+  const candidate = record.detail ?? record.message ?? record.error;
+  return typeof candidate === "string" && candidate ? candidate : null;
+}
+
 async function errorFromResponse(res: Response): Promise<ApiError> {
   let detail = `HTTP ${res.status}`;
+  let hasBackendDetail = false;
   try {
-    const body = await res.json();
-    // Options endpoints report errors under an `error` key
-    // ({status:"error", error} / {ok:false, error}) rather than detail/message.
-    detail = body.detail || body.message || body.error || detail;
+    const backendDetail = backendDetailOf(await res.json());
+    if (backendDetail) {
+      detail = backendDetail;
+      hasBackendDetail = true;
+    }
   } catch { /* ignore */ }
-  if (res.status === 401 || res.status === 403) {
-    detail = getAuthRequiredMessage();
+  const userAuth = useAuthStore.getState().userAuth;
+  if (res.status === 401) {
+    // Only a 401 ends a session (admin_auth.py: a refused credential is 401).
+    // A 403 is a permission verdict — admin gate, or a cross-site rejection —
+    // and must leave a live session intact.
+    if (!hasBackendDetail) {
+      detail = userAuth ? sessionExpiredMessage() : legacyAuthFailureMessage();
+    }
+    expireSession();
+  } else if (res.status === 403 && !hasBackendDetail && !userAuth) {
+    // Flag-off keeps the historical wording; a real backend reason is never
+    // overwritten (masking one once cost hours of API-key debugging, §0.3).
+    detail = legacyAuthFailureMessage();
   }
   return new ApiError(detail, res.status);
 }
@@ -357,7 +384,67 @@ function appendQueryParam(url: string, key: string, value: string): string {
   return `${url}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
 }
 
+/** `GET /auth/mode` — backend capability probe; always registered, never authenticated. */
+export interface AuthModeResponse {
+  user_auth: boolean;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface RegisterRequest extends LoginRequest {
+  invite_code: string;
+}
+
+/** Response of `POST /auth/login` and `POST /auth/register`. */
+export interface AuthSessionResponse {
+  token: string;
+  username: string;
+  role: string;
+  display_name: string | null;
+}
+
+export interface AuthMeResponse {
+  username: string;
+  role: string;
+  display_name: string | null;
+}
+
+export interface ChangePasswordRequest {
+  old_password: string;
+  new_password: string;
+}
+
+/** `GET /settings/runtime` — `GET /settings/llm` without its secret-bearing fields. */
+export interface RuntimeSettings {
+  provider: string;
+  model_name: string;
+  sse_timeout_seconds: number;
+}
+
 export const api = {
+  auth: {
+    mode: () => request<AuthModeResponse>("/auth/mode"),
+    login: (credentials: LoginRequest) =>
+      request<AuthSessionResponse>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify(credentials),
+      }),
+    register: (registration: RegisterRequest) =>
+      request<AuthSessionResponse>("/auth/register", {
+        method: "POST",
+        body: JSON.stringify(registration),
+      }),
+    logout: () => request<Record<string, never>>("/auth/logout", { method: "POST" }),
+    me: () => request<AuthMeResponse>("/auth/me"),
+    changePassword: (passwords: ChangePasswordRequest) =>
+      request<Record<string, never>>("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify(passwords),
+      }),
+  },
   uploadFile,
   getCorrelation: (codes: string, days: number, method: "pearson" | "spearman") =>
     request<CorrelationResponse>(
@@ -501,6 +588,8 @@ export const api = {
   retrySwarmRun: (id: string) =>
     request<{ id: string; status: string; preset_name: string }>(`/swarm/runs/${id}/retry`, { method: "POST" }),
   getLLMSettings: () => request<LLMSettings>("/settings/llm"),
+  // Redacted + readable by any signed-in user, unlike the admin-only /settings/llm.
+  getRuntimeSettings: () => request<RuntimeSettings>("/settings/runtime"),
   updateLLMSettings: (settings: UpdateLLMSettingsRequest) =>
     request<LLMSettings>("/settings/llm", {
       method: "PUT",
@@ -610,6 +699,21 @@ export const api = {
       body: JSON.stringify({ broker }),
     }),
 };
+
+/**
+ * Resolve `GET /auth/mode` before the router mounts (D19). Every failure —
+ * offline, 5xx, or an HTML body from the SPA catch-all — means `false`, the
+ * legacy behaviour: a failed probe must never strand a user on a login page
+ * whose backend does not implement login.
+ */
+export async function loadAuthMode(): Promise<void> {
+  try {
+    const mode = await api.auth.mode();
+    useAuthStore.getState().setUserAuth(mode.user_auth === true);
+  } catch {
+    useAuthStore.getState().setUserAuth(false);
+  }
+}
 
 // --- Scheduled research types ---
 

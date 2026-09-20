@@ -1,5 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getApiAuthKey, setApiAuthKey, authHeaders, withAuthTicket } from "../apiAuth";
+import {
+  AuthTicketError,
+  authHeaders,
+  clearLegacyApiAuthKey,
+  getApiAuthKey,
+  getSessionToken,
+  setApiAuthKey,
+  setSessionToken,
+  withAuthTicket,
+} from "../apiAuth";
+
+const SESSION_KEY = "vibe_trading_session_token";
+const LEGACY_KEY = "vibe_trading_api_auth_key";
 
 describe("apiAuth", () => {
   beforeEach(() => {
@@ -10,57 +22,83 @@ describe("apiAuth", () => {
     vi.unstubAllGlobals();
   });
 
-  describe("getApiAuthKey", () => {
+  describe("session token", () => {
     it("returns empty string when nothing stored", () => {
-      expect(getApiAuthKey()).toBe("");
+      expect(getSessionToken()).toBe("");
     });
-    it("returns stored key", () => {
-      localStorage.setItem("vibe_trading_api_auth_key", "my-secret");
-      expect(getApiAuthKey()).toBe("my-secret");
+
+    it("stores the token under the session key, not the legacy one", () => {
+      setSessionToken("tok-123");
+      expect(localStorage.getItem(SESSION_KEY)).toBe("tok-123");
+      expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
+      expect(getSessionToken()).toBe("tok-123");
     });
+
+    it("trims the stored value", () => {
+      setSessionToken("  tok-123  ");
+      expect(getSessionToken()).toBe("tok-123");
+    });
+
+    it("removes the token when the value is empty or whitespace", () => {
+      setSessionToken("tok-123");
+      setSessionToken("   ");
+      expect(localStorage.getItem(SESSION_KEY)).toBeNull();
+    });
+
     it("returns empty string when storage access is blocked", () => {
       vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
         throw new DOMException("blocked", "SecurityError");
       });
-      expect(getApiAuthKey()).toBe("");
+      expect(getSessionToken()).toBe("");
     });
-  });
 
-  describe("setApiAuthKey", () => {
-    it("stores trimmed value", () => {
-      setApiAuthKey("  abc-123  ");
-      expect(localStorage.getItem("vibe_trading_api_auth_key")).toBe("abc-123");
-    });
-    it("removes key when value is empty/whitespace", () => {
-      setApiAuthKey("abc");
-      setApiAuthKey("   ");
-      expect(localStorage.getItem("vibe_trading_api_auth_key")).toBeNull();
-    });
-    it("removes key when value is empty string", () => {
-      setApiAuthKey("abc");
-      setApiAuthKey("");
-      expect(localStorage.getItem("vibe_trading_api_auth_key")).toBeNull();
-    });
     it("does not throw when storage writes are blocked", () => {
       vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
         throw new DOMException("blocked", "SecurityError");
       });
-      expect(() => setApiAuthKey("abc")).not.toThrow();
+      expect(() => setSessionToken("tok-123")).not.toThrow();
+    });
+  });
+
+  describe("legacy shared key", () => {
+    it("stays readable for flag-off deployments", () => {
+      localStorage.setItem(LEGACY_KEY, "my-secret");
+      expect(getApiAuthKey()).toBe("my-secret");
+    });
+
+    it("is cleared once the backend enables user auth", () => {
+      localStorage.setItem(LEGACY_KEY, "my-secret");
+      clearLegacyApiAuthKey();
+      expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
+    });
+
+    it("still trims and clears through setApiAuthKey", () => {
+      setApiAuthKey("  abc-123  ");
+      expect(localStorage.getItem(LEGACY_KEY)).toBe("abc-123");
+      setApiAuthKey("");
+      expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
     });
   });
 
   describe("authHeaders", () => {
-    it("returns empty object when no key set", () => {
+    it("returns empty object when no credential set", () => {
       expect(authHeaders()).toEqual({});
     });
-    it("returns Bearer header when key exists", () => {
-      setApiAuthKey("token-xyz");
-      expect(authHeaders()).toEqual({ Authorization: "Bearer token-xyz" });
+
+    it("prefers the session token over the legacy key", () => {
+      setApiAuthKey("shared-key");
+      setSessionToken("session-token");
+      expect(authHeaders()).toEqual({ Authorization: "Bearer session-token" });
+    });
+
+    it("falls back to the legacy key when no session token exists", () => {
+      setApiAuthKey("shared-key");
+      expect(authHeaders()).toEqual({ Authorization: "Bearer shared-key" });
     });
   });
 
   describe("withAuthTicket", () => {
-    it("returns url unchanged and makes no request when no key (dev/loopback)", async () => {
+    it("returns url unchanged and makes no request when no credential (dev/loopback)", async () => {
       const fetchSpy = vi.fn();
       vi.stubGlobal("fetch", fetchSpy);
       await expect(withAuthTicket("http://api/stream")).resolves.toBe("http://api/stream");
@@ -68,7 +106,7 @@ describe("apiAuth", () => {
     });
 
     it("mints a ticket via header-authed POST and appends ?ticket=", async () => {
-      setApiAuthKey("token-xyz");
+      setSessionToken("session-token");
       const fetchSpy = vi.fn().mockResolvedValue(
         new Response(JSON.stringify({ ticket: "TICKET-123" }), {
           status: 200,
@@ -84,11 +122,28 @@ describe("apiAuth", () => {
       const [path, init] = fetchSpy.mock.calls[0];
       expect(path).toBe("/auth/sse-ticket");
       expect(init.method).toBe("POST");
-      expect(init.headers).toEqual({ Authorization: "Bearer token-xyz" });
+      expect(init.headers).toEqual({ Authorization: "Bearer session-token" });
     });
 
-    it("never puts the raw API key in the returned URL", async () => {
-      setApiAuthKey("super-secret-key");
+    it("also mints a ticket for the legacy shared key", async () => {
+      setApiAuthKey("shared-key");
+      const fetchSpy = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ ticket: "T" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetchSpy);
+
+      await withAuthTicket("http://api/stream");
+
+      expect(fetchSpy.mock.calls[0][1].headers).toEqual({
+        Authorization: "Bearer shared-key",
+      });
+    });
+
+    it("never puts the raw credential in the returned URL", async () => {
+      setSessionToken("super-secret-token");
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue(
@@ -99,13 +154,13 @@ describe("apiAuth", () => {
         ),
       );
       const url = await withAuthTicket("http://api/stream");
-      expect(url).not.toContain("super-secret-key");
+      expect(url).not.toContain("super-secret-token");
       expect(url).not.toContain("api_key=");
       expect(url).toContain("ticket=one-shot");
     });
 
     it("joins with & when the url already has a query string", async () => {
-      setApiAuthKey("k");
+      setSessionToken("tok");
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue(
@@ -119,14 +174,21 @@ describe("apiAuth", () => {
       expect(url).toBe("http://api/stream?replay=active&ticket=t1");
     });
 
-    it("throws when the ticket endpoint returns a non-OK status", async () => {
-      setApiAuthKey("k");
+    it("throws a typed error carrying the status when the ticket endpoint rejects", async () => {
+      setSessionToken("tok");
       vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 401 })));
-      await expect(withAuthTicket("http://api/stream")).rejects.toThrow(/HTTP 401/);
+
+      const error = await withAuthTicket("http://api/stream").catch((thrown: unknown) => thrown);
+
+      expect(error).toBeInstanceOf(AuthTicketError);
+      expect(error).toMatchObject({
+        status: 401,
+        message: "Failed to obtain SSE ticket (HTTP 401)",
+      });
     });
 
     it("throws when the response is missing a ticket", async () => {
-      setApiAuthKey("k");
+      setSessionToken("tok");
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue(

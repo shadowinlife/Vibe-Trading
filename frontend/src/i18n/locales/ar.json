@@ -2,6 +2,34 @@
   "app": {
     "version": "v0.1.15"
   },
+  "auth": {
+    "title": "تسجيل الدخول",
+    "subtitle": "سجّل الدخول لمتابعة استخدام Vibe-Trading",
+    "tabSignIn": "تسجيل الدخول",
+    "tabRegister": "إنشاء حساب",
+    "username": "اسم المستخدم",
+    "password": "كلمة المرور",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "inviteCode": "رمز الدعوة",
+    "inviteHint": "التسجيل يتطلب رمز دعوة صادرًا من المشغّل.",
+    "signIn": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "signingIn": "جارٍ تسجيل الدخول…",
+    "registering": "جارٍ إنشاء الحساب…",
+    "logout": "تسجيل الخروج",
+    "account": "الحساب",
+    "adminBadge": "مشرف",
+    "signedInAs": "مسجّل الدخول باسم {{username}}",
+    "sessionExpired": "انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.",
+    "usernameTaken": "اسم المستخدم هذا مستخدم بالفعل.",
+    "registerDisabled": "التسجيل معطّل في هذا النشر.",
+    "usernameInvalid": "استخدم من 3 إلى 32 حرفًا: حروف أو أرقام أو شرطة سفلية أو شرطة.",
+    "passwordTooShort": "يجب ألا تقل كلمة المرور عن {{min}} أحرف.",
+    "passwordMismatch": "كلمتا المرور غير متطابقتين.",
+    "requestFailed": "فشل الطلب، يرجى المحاولة مرة أخرى.",
+    "insecureTransport": "تُقدَّم هذه الصفحة عبر HTTP غير المشفّر — تنتقل كلمة المرور دون تشفير. استخدم HTTPS أو شبكة موثوقة.",
+    "checkingSession": "جارٍ التحقق من الجلسة…"
+  },
   "layout": {
     "home": "الرئيسية",
     "agent": "الوكيل",
@@ -329,8 +357,6 @@
   },
   "settings": {
     "title": "الإعدادات",
-    "authRequired": "المصادقة مطلوبة",
-    "authDesc": "أدخل مفتاح مصادقة API لفتح الإعدادات.",
     "dataSources": "مصادر البيانات",
     "llmBackend": "واجهة LLM الخلفية",
     "save": "حفظ",

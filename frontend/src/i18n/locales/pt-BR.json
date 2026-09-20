@@ -2,6 +2,34 @@
   "app": {
     "version": "v0.1.15"
   },
+  "auth": {
+    "title": "Entrar",
+    "subtitle": "Entre para continuar no Vibe-Trading",
+    "tabSignIn": "Entrar",
+    "tabRegister": "Criar conta",
+    "username": "Usuário",
+    "password": "Senha",
+    "confirmPassword": "Confirmar senha",
+    "inviteCode": "Código de convite",
+    "inviteHint": "O cadastro exige um código de convite do operador.",
+    "signIn": "Entrar",
+    "register": "Criar conta",
+    "signingIn": "Entrando…",
+    "registering": "Criando conta…",
+    "logout": "Sair",
+    "account": "Conta",
+    "adminBadge": "Admin",
+    "signedInAs": "Conectado como {{username}}",
+    "sessionExpired": "Sua sessão expirou. Entre novamente.",
+    "usernameTaken": "Esse nome de usuário já está em uso.",
+    "registerDisabled": "O cadastro está desativado nesta implantação.",
+    "usernameInvalid": "Use de 3 a 32 caracteres: letras, dígitos, sublinhados ou hifens.",
+    "passwordTooShort": "A senha deve ter pelo menos {{min}} caracteres.",
+    "passwordMismatch": "As senhas não coincidem.",
+    "requestFailed": "A requisição falhou, tente novamente.",
+    "insecureTransport": "Esta página é servida por HTTP não criptografado — sua senha trafega em texto puro. Use HTTPS ou uma rede confiável.",
+    "checkingSession": "Verificando sua sessão…"
+  },
   "charts": {
     "noPriceData": "Ainda não há dados de preço para este símbolo",
     "noCorrelationData": "Escolha pelo menos dois símbolos para comparar",
@@ -334,8 +362,6 @@
   },
   "settings": {
     "title": "Configurações",
-    "authRequired": "Autenticação necessária",
-    "authDesc": "Insira a chave de autenticação da API para desbloquear as configurações.",
     "dataSources": "Fontes de dados",
     "llmBackend": "Backend de LLM",
     "save": "Salvar",

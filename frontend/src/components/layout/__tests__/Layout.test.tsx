@@ -1,5 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
+import { afterEach, beforeEach } from "vitest";
+import { useAuthStore } from "@/stores/auth";
 import { Layout } from "../Layout";
 
 const sessions = [
@@ -35,6 +37,10 @@ vi.mock("react-i18next", () => ({
       "layout.settings": "Settings",
       "layout.sidebar": "Vibe-Trading sidebar",
       "layout.skipToMain": "Skip to main content",
+      "auth.account": "Account",
+      "auth.adminBadge": "Admin",
+      "auth.logout": "Sign out",
+      "auth.signedInAs": "Signed in as",
     })[key] ?? key,
     i18n: {
       language: "en",
@@ -48,18 +54,14 @@ vi.mock("@/hooks/useDarkMode", () => ({
   useDarkMode: () => ({ dark: false, toggle: vi.fn() }),
 }));
 
-vi.mock("@/lib/api", () => ({
-  api: {
-    listSessions: vi.fn().mockResolvedValue([
-      {
-        session_id: "session-1",
-        title: "A very long session title that must truncate",
-      },
-    ]),
-    deleteSession: vi.fn().mockResolvedValue(undefined),
-    renameSession: vi.fn().mockResolvedValue(undefined),
-  },
+const apiMock = vi.hoisted(() => ({
+  listSessions: vi.fn(),
+  deleteSession: vi.fn(),
+  renameSession: vi.fn(),
+  auth: { logout: vi.fn() },
 }));
+
+vi.mock("@/lib/api", () => ({ api: apiMock }));
 
 vi.mock("@/stores/agent", () => ({
   useAgentStore: (selector: (state: {
@@ -86,6 +88,12 @@ function renderLayout() {
 }
 
 describe("Layout accessibility", () => {
+  beforeEach(() => {
+    apiMock.listSessions.mockResolvedValue(sessions);
+    apiMock.deleteSession.mockResolvedValue(undefined);
+    apiMock.renameSession.mockResolvedValue(undefined);
+  });
+
   it("labels landmarks, brand, main content, and the new-chat affordance", () => {
     renderLayout();
 
@@ -150,5 +158,78 @@ describe("Layout accessibility", () => {
     fireEvent(window, new StorageEvent("storage", { key: "qa-sidebar" }));
 
     expect(sidebar).toHaveClass("w-12");
+  });
+});
+
+describe("Layout auth-capability branches", () => {
+  const SIGNED_OUT = {
+    userAuth: false,
+    modeLoaded: true,
+    token: null,
+    username: null,
+    role: null,
+    displayName: null,
+  };
+
+  beforeEach(() => {
+    apiMock.listSessions.mockResolvedValue(sessions);
+    // The sidebar preference persists in localStorage across tests in this
+    // file; start every case from the expanded sidebar.
+    window.localStorage.setItem("qa-sidebar", "expanded");
+    useAuthStore.setState({ ...SIGNED_OUT });
+  });
+
+  afterEach(() => {
+    useAuthStore.setState({ ...SIGNED_OUT });
+  });
+
+  it("keeps the Settings entry visible while user auth is off", () => {
+    renderLayout();
+
+    expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
+  });
+
+  it("hides the Settings entry from a signed-in non-admin", () => {
+    useAuthStore.setState({ userAuth: true, role: "user", username: "alice" });
+
+    renderLayout();
+
+    expect(screen.queryByRole("link", { name: "Settings" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Agent" })).toBeInTheDocument();
+  });
+
+  it("keeps the Settings entry for an admin", () => {
+    useAuthStore.setState({ userAuth: true, role: "admin", username: "alice" });
+
+    renderLayout();
+
+    expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
+  });
+
+  it("shows no account menu without a session", () => {
+    renderLayout();
+
+    expect(screen.queryByRole("button", { name: "Account" })).not.toBeInTheDocument();
+  });
+
+  it("shows the signed-in account and signs out", async () => {
+    useAuthStore.setState({
+      userAuth: true,
+      role: "admin",
+      username: "alice",
+      displayName: "Alice",
+    });
+
+    renderLayout();
+
+    const account = screen.getByRole("button", { name: "Account" });
+    expect(account).toHaveTextContent("Alice");
+    expect(account).toHaveTextContent("Admin");
+
+    fireEvent.click(account);
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+
+    await waitFor(() => expect(apiMock.auth.logout).toHaveBeenCalledTimes(1));
+    expect(useAuthStore.getState().username).toBeNull();
   });
 });

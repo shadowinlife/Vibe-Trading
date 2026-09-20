@@ -3,10 +3,11 @@ import { Database, KeyRound, Loader2, MessageSquareMore, Play, RefreshCw, Rotate
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ModelPicker } from "@/components/settings/ModelPicker";
+import { LocalApiAccessSection } from "@/components/settings/LocalApiAccessSection";
 import { QVerisSettings } from "@/components/settings/QVerisSettings"; // QVERIS-INTEGRATION
 import { SourcePrioritySettings } from "@/components/settings/SourcePrioritySettings";
 import { api, isAuthRequiredError, type ChannelRuntimeStatus, type DataSourceSettings, type LLMProviderOption, type LLMSettings } from "@/lib/api";
-import { getApiAuthKey, setApiAuthKey } from "@/lib/apiAuth";
+import { useAuthStore } from "@/stores/auth";
 
 interface LLMFormState {
   provider: string;
@@ -38,6 +39,7 @@ function toForm(settings: LLMSettings): LLMFormState {
 export function Settings() {
   const { t } = useTranslation();
   const isDesktop = window.vibeDesktop?.isDesktop === true;
+  const userAuth = useAuthStore((state) => state.userAuth);
   const [settings, setSettings] = useState<LLMSettings | null>(null);
   const [dataSettings, setDataSettings] = useState<DataSourceSettings | null>(null);
   const [channelStatus, setChannelStatus] = useState<ChannelRuntimeStatus | null>(null);
@@ -46,7 +48,6 @@ export function Settings() {
   const [modelOptions, setModelOptions] = useState<string[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelListHint, setModelListHint] = useState<string | null>(null);
-  const [localApiKey, setLocalApiKeyState] = useState(() => getApiAuthKey());
   const [clearApiKey, setClearApiKey] = useState(false);
   const [tushareToken, setTushareToken] = useState("");
   const [clearTushareToken, setClearTushareToken] = useState(false);
@@ -208,13 +209,6 @@ export function Settings() {
     }
   };
 
-  const submitLocalApiKey = (event: FormEvent) => {
-    event.preventDefault();
-    setApiAuthKey(localApiKey);
-    toast.success(t("settings.localApiKeySaved"));
-    window.location.reload();
-  };
-
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!form) return;
@@ -286,39 +280,6 @@ export function Settings() {
     }
   };
 
-  const localApiAccessSection = (
-    <form onSubmit={submitLocalApiKey} className="rounded-lg border bg-card p-5 shadow-sm">
-      <div className="mb-4 space-y-1">
-        <div className="flex items-center gap-2">
-          <KeyRound className="h-4 w-4 text-primary" />
-          <h2 className="text-base font-semibold">{t("settings.localApiAccess")}</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">{t("settings.localApiAccessDesc")}</p>
-      </div>
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-        <label className="grid gap-2">
-          <span className={labelClass}>{t("settings.serverApiKey")}</span>
-          <input
-            type="password"
-            value={localApiKey}
-            onChange={(event) => setLocalApiKeyState(event.target.value)}
-            className={fieldClass}
-            placeholder={t("settings.storedInBrowser")}
-            autoComplete="current-password"
-          />
-        </label>
-        <button
-          type="submit"
-          className="inline-flex items-center justify-center gap-2 self-end rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-        >
-          <Save className="h-4 w-4" />
-          {t("settings.save")}
-        </button>
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">{t("settings.storedInBrowser")}</p>
-    </form>
-  );
-
   if (loading || !form || !settings || !dataSettings) {
     return (
       <div className="mx-auto max-w-5xl space-y-6 p-6">
@@ -326,7 +287,7 @@ export function Settings() {
           <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
           <p className="max-w-3xl text-sm text-muted-foreground">{t("settings.subtitle")}</p>
         </div>
-        {!isDesktop && localApiAccessSection}
+        {!userAuth && !isDesktop && <LocalApiAccessSection />}
         {/* QVERIS-INTEGRATION */}
         <QVerisSettings />
         <div className="flex min-h-32 items-center justify-center rounded-lg border bg-card p-5 text-sm text-muted-foreground">
@@ -482,7 +443,7 @@ export function Settings() {
         <p className="max-w-3xl text-sm text-muted-foreground">{t("settings.subtitle")}</p>
       </div>
 
-      {!isDesktop && localApiAccessSection}
+      {!userAuth && !isDesktop && <LocalApiAccessSection />}
 
       {/* QVERIS-INTEGRATION */}
       <QVerisSettings />

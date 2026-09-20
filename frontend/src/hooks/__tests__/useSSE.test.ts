@@ -1,4 +1,5 @@
 import { renderHook, act } from "@testing-library/react";
+import { useAuthStore } from "@/stores/auth";
 import { useSSE } from "../useSSE";
 
 // ── Mock EventSource ──────────────────────────────────────
@@ -334,6 +335,14 @@ describe("useSSE — Last-Event-ID resume", () => {
 describe("useSSE — SSE ticket auth (VT-003)", () => {
   afterEach(() => {
     localStorage.clear();
+    useAuthStore.setState({
+      userAuth: false,
+      modeLoaded: true,
+      token: null,
+      username: null,
+      role: null,
+      displayName: null,
+    });
   });
 
   it("stays synchronous and mints no ticket in dev mode (no stored key)", () => {
@@ -413,5 +422,111 @@ describe("useSSE — SSE ticket auth (VT-003)", () => {
     expect(MockEventSource.instances).toHaveLength(1);
     expect(MockEventSource.latest.url).toContain("session-b/events");
     expect(MockEventSource.latest.url).toContain("ticket=TICKET-B");
+  });
+
+  it("mints the ticket from the session token when one is stored", async () => {
+    localStorage.setItem("vibe_trading_session_token", "session-token");
+    const fetchSpy = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ticket: "SESSION-TICKET" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const { result } = renderHook(() => useSSE());
+    await act(async () => {
+      result.current.connect("http://test/events", {});
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetchSpy.mock.calls[0][1].headers).toEqual({
+      Authorization: "Bearer session-token",
+    });
+    expect(MockEventSource.latest.url).toContain("ticket=SESSION-TICKET");
+    expect(MockEventSource.latest.url).not.toContain("session-token");
+  });
+
+  it("routes a rejected ticket into re-auth instead of reconnecting forever", async () => {
+    useAuthStore.getState().setUserAuth(true);
+    useAuthStore.getState().setSession({
+      token: "stale-token",
+      username: "alice",
+      role: "user",
+      displayName: null,
+    });
+    const fetchSpy = vi.fn().mockResolvedValue(new Response("", { status: 401 }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const { result } = renderHook(() => useSSE());
+    await act(async () => {
+      result.current.connect("http://test/events", {});
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(useAuthStore.getState().token).toBeNull();
+
+    // A dead session must not be retried at all.
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps today's retry loop for a rejected ticket while user auth is off", async () => {
+    localStorage.setItem("vibe_trading_api_auth_key", "remote-key");
+    const fetchSpy = vi.fn().mockResolvedValue(new Response("", { status: 401 }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const { result } = renderHook(() => useSSE({ initialRetryMs: 100 }));
+    await act(async () => {
+      result.current.connect("http://test/events", {});
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetchSpy.mock.calls.length).toBeGreaterThan(1);
+    expect(localStorage.getItem("vibe_trading_api_auth_key")).toBe("remote-key");
+  });
+
+  it("keeps retrying — and the session — when the ticket endpoint answers 403", async () => {
+    useAuthStore.getState().setUserAuth(true);
+    useAuthStore.getState().setSession({
+      token: "live-token",
+      username: "alice",
+      role: "user",
+      displayName: null,
+    });
+    const fetchSpy = vi.fn().mockResolvedValue(new Response("", { status: 403 }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const { result } = renderHook(() => useSSE({ initialRetryMs: 100 }));
+    await act(async () => {
+      result.current.connect("http://test/events", {});
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // 403 is a permission verdict (e.g. a cross-site rejection), not session
+    // death: killing the stream here would strand a logged-in user.
+    expect(useAuthStore.getState().token).toBe("live-token");
+
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(fetchSpy.mock.calls.length).toBeGreaterThan(1);
+    expect(useAuthStore.getState().token).toBe("live-token");
   });
 });

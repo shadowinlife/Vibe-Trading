@@ -2,6 +2,34 @@
   "app": {
     "version": "v0.1.15"
   },
+  "auth": {
+    "title": "Anmelden",
+    "subtitle": "Melde dich an, um Vibe-Trading weiter zu nutzen",
+    "tabSignIn": "Anmelden",
+    "tabRegister": "Konto erstellen",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "inviteCode": "Einladungscode",
+    "inviteHint": "Für die Registrierung ist ein Einladungscode des Betreibers erforderlich.",
+    "signIn": "Anmelden",
+    "register": "Konto erstellen",
+    "signingIn": "Anmeldung läuft…",
+    "registering": "Konto wird erstellt…",
+    "logout": "Abmelden",
+    "account": "Konto",
+    "adminBadge": "Admin",
+    "signedInAs": "Angemeldet als {{username}}",
+    "sessionExpired": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",
+    "usernameTaken": "Dieser Benutzername ist bereits vergeben.",
+    "registerDisabled": "Die Registrierung ist in dieser Bereitstellung deaktiviert.",
+    "usernameInvalid": "Verwende 3–32 Zeichen: Buchstaben, Ziffern, Unterstriche oder Bindestriche.",
+    "passwordTooShort": "Das Passwort muss mindestens {{min}} Zeichen lang sein.",
+    "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+    "requestFailed": "Anfrage fehlgeschlagen, bitte erneut versuchen.",
+    "insecureTransport": "Diese Seite wird über unverschlüsseltes HTTP ausgeliefert — dein Passwort wird im Klartext übertragen. Nutze HTTPS oder ein vertrauenswürdiges Netzwerk.",
+    "checkingSession": "Sitzung wird geprüft…"
+  },
   "charts": {
     "noPriceData": "Noch keine Kursdaten für dieses Symbol",
     "noCorrelationData": "Wählen Sie mindestens zwei Symbole zum Vergleichen",
@@ -334,8 +362,6 @@
   },
   "settings": {
     "title": "Einstellungen",
-    "authRequired": "Authentifizierung erforderlich",
-    "authDesc": "Geben Sie den API-Authentifizierungsschlüssel ein, um die Einstellungen freizuschalten.",
     "dataSources": "Datenquellen",
     "llmBackend": "LLM-Backend",
     "save": "Speichern",
