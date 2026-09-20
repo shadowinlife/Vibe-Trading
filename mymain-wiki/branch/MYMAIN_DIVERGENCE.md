@@ -4,7 +4,7 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F7
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-09-18
+updated: 2026-09-20
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -31,6 +31,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **F4** | MemoryGuard + 项目目录存储 | FastMCP middleware：工具调用后自动 memory_save + memory_reflect（零 LLM）；`VT_MEMORY_BASE_DIR` 支持记忆存项目目录；默认路径跟随 `get_runtime_root()`（`VIBE_TRADING_HOME` 感知） | `agent/src/memory/memory_guard.py`（新增）、`agent/src/memory/persistent.py`（`_default_memory_base`）、`agent/src/config/env_schema.py`（`MemoryConfig.base_dir`） | middleware **无条件注册**（债务 D1） | 上游 memory 仍锚定 `~/.vibe-trading`（上游对 persistent.py 的改动——FTS5 排序衰减、FTS5 tokenizer 下限——均不同关注面，两者并存） |
 | **F5** | ClickHouse A 股数据源 + 语义层 | CH HTTP connector + OHLCV loader（DataLoaderProtocol）+ 基本面 Provider（回退 Tushare）+ 四只资金流工具 CH 优先回退；A 股 chain 与路由以 clickhouse 为首选。**语义层 Phase 0–2**（2026-08-12）：56 表 DDL 快照 + 9 表 444 列 COMMENT + 单位 registry（`clickhouse_units.py`）+ 显式 199 列（`clickhouse_columns.py`）+ `get_valuation` + llm_role 受约束灵活性通道（`ch_list_tables` / `ch_describe_table` / `ch_query`，sqlglot AST 守卫） | `agent/src/clickhouse_connector.py`、`agent/backtest/loaders/clickhouse.py`、`agent/src/tools/clickhouse_fallbacks.py`、`schema/clickhouse/`、`agent/src/tools/clickhouse_query_tool.py`、`agent/src/tools/clickhouse_explore_tools.py`、`agent/src/tools/valuation_tool.py` 等 97 文件 | `CLICKHOUSE_*`（DataConfig）；灵活性通道 `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | 个人部署独有，不回流 |
 | **F7** | OpencodeAgent harness 层 | opencode + omo + 本仓库 MCP 的独立部署 harness（Docker 镜像 `opencode-serve`）：问题处理协议（明确/开放/待澄清/宏观四类分流，Least-to-Most 收敛漏斗 + Step-Back 拆分 + 单轮 ≤3 问轮次预算）、防幻觉与诚实拒答纪律（数字溯源三来源、弃权一等公民、五要素拒答模板）、escape-top 微观结构信号（CH 数据层 + 7 门验证框架）、三层选股、VT 联邦行情 scanner、cron + 钉钉通知基础设施、nano-search-mcp（新浪财经/百炼搜索 12 工具） | `OpencodeAgent/`（整目录，源自独立仓库 vibetrading-opencode-instruct，2026-08-17 引入） | 容器 env（`CLICKHOUSE_*` / `CLICKHOUSE_LLM_*` / `DASHSCOPE_API_KEY` 等，见 `OpencodeAgent/.env.example`） | 个人部署独有，不回流；消费 F5/F6 语义层（ch_* 工具）与 F1–F4 记忆能力 |
+| **F8** | 用户认证系统（多租户 Phase 1，2026-09-19） | 本地用户名/密码（`hashlib.scrypt`，禁第三方依赖）+ 邀请码注册闸门 + 不透明 session token（DB 只存 sha256）+ 7 天滑动过期（续期写节流 60s，校验 JOIN `users.is_active`）；`AuthMethod.USER_SESSION` 填充 `Principal.attributable` 等待中的 True case；role admin 锁 settings/connection/portfolio/qveris/live/channels/scheduled **写端点**（读端点保持 `require_auth`）；脱敏 `GET /settings/runtime` + capability 端点 `GET /auth/mode`（SPA catch-all 使状态码探测不可能，见 `OpencodeAgent/docs/DEPLOYMENT-PROD-ENGINE-BRIDGE.md` §15.7）；管理 CLI `python -m src.api.user_admin`；前端登录门禁/路由/NAV 全部按后端 flag 门控 | `agent/src/api/{user_store.py,user_store_schema.py,password_hashing.py,user_auth_routes.py,admin_auth.py,runtime_settings_routes.py,user_admin.py}`（新增）、`security.py`（session 分支 + 启动期不变量 ~15 行）、`env_schema.py`（4 env）、`session/models.py`、`api_server.py`（注册+注入）、`frontend/`（Login/RequireAuth/auth store/8 locale）、`agent/tests/{test_user_auth.py,test_user_auth_api.py,test_auth_mode_endpoint.py}` | `VIBE_TRADING_USER_AUTH` 默认 `0` ⇒ **行为逐字节不变、默认路径零 SQLite 查询**（opt-in，可上游的硬前提）；启动期不变量：flag=1 且 `API_AUTH_KEY` 空 ⇒ **拒绝启动**（设计排除「公网裸奔」误配置象限）；伴 `VIBE_TRADING_USERS_DB_PATH`/`VIBE_TRADING_SESSION_TTL_DAYS`/`VIBE_TRADING_ALLOW_SELF_REGISTER` | 可上游（贡献队列 ⑨）；**当前仅工作树，生产未部署**（设计 `.omo/plans/vibe-trading-user-auth.md`，运维 DEPLOYMENT §15） |
 
 ### 2.2 已随对齐消除的历史分歧（上游已承接）
 
@@ -59,6 +60,9 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **⑥ 领域子代理层**（issue #1267 piece 2+3） | load_skill 技能白名单修复 + 内置 agent 子代理委派层 | **已提交 PR [#1286](https://github.com/HKUDS/Vibe-Trading/pull/1286)（Draft，2026-08-31）**：`feat/domain-subagents` 分支基于上游 899d3c75；commit 1 = load_skill allowlist（可独立 cherry-pick），commit 2 = `src/specialists/` 包（12 准入定义）+ `delegate_to_specialist` + `VIBE_TRADING_SPECIALISTS_ENABLED` 门控（默认关）；全量套件 11694 通过；2026-08-31 评审发现 B1-B5 并已修复推送（commit 范围 38e04d88..5a26eacc）；PR 维持 Draft 待 #1267 方向确认 | 待社区方向确认后再推进 piece 1（评测 harness）与主循环收敛（piece 3 后半）；本分支 OpencodeAgent 生产面不受影响（机制同名不同源） |
 | **⑦ 北向死源修复**（已提交） | `get_northbound_flow` 死数据短路 + tushare ×100 语义错标 | **Issue [#1481](https://github.com/HKUDS/Vibe-Trading/issues/1481) + PR [#1484](https://github.com/HKUDS/Vibe-Trading/pull/1484)（2026-09-18，`fix/northbound-dead-feed-shortcircuit` 基于 d3c29488）**：eastmoney kamt 北向净额 2024-08-30 起死数据（全 0+冻结累计）且 payload 形状漂移（`netBuyAmt`→`dayNetAmtIn`、`klines`→分通道数组），HTTP 成功致 fallback 永不触发、工具静默空包；tushare `hgt/sgt/north_money` 同日起语义切换为**成交额**（与 HKEX 官方 Total Turnover 三日逐分一致实证）。修复=死数据检测回落 tushare + 去 ×100 改 `CNY million` 直通 + 语义边界 note；全量 13680 passed | 合入后本分支需对齐：分支 `fetch_northbound_flow` docstring 的「375048.34≈37.5亿净买入」为**误诊**（实为 3750 亿成交额），CH 镜像 `stk_moneyflow_hsgt` 继承同一漂移语义，envelope `unit: 10k CNY` 需改 `CNY million`+note |
 | **⑧ 南向工具面**（已提交） | `get_southbound_flow` 新工具（上游无 CH 依赖） | **Issue [#1483](https://github.com/HKUDS/Vibe-Trading/issues/1483) + PR [#1486](https://github.com/HKUDS/Vibe-Trading/pull/1486)（2026-09-18，`feat/southbound-flow-tool` 基于 d3c29488）**：主源 eastmoney datacenter `RPT_MUTUAL_DEAL_HISTORY`(002/004) 经共享限流 client，fallback HKEX 官方日报（net=Buy−Sell，免 key）；**不接 tushare**——南向字段已漂移为累计净买入存量（`ggt_ss`=32165.59 与 EM `ACCUM_DEAL_AMT` 3.216559 万亿逐位一致，6 周变异系数 0.4%）；双源实调毫厘互证（25.0239亿=HKEX 2502.39M）；12 测试含 HKEX 十大成交表诱饵回归；六 README 74→75/107→108 + SKILL.md manifest + hk-connect-flow 技能数据路径；全量 13688 passed | 合入后本分支 CH 钩子可叠加为第三源（生产 ECS 上 CH 优先），随 ⑦ 一并对齐 |
+| **⑨ F8** | 用户认证系统（多租户 Phase 1） | 7 个新文件（user_store / user_store_schema / password_hashing / user_auth_routes / admin_auth / runtime_settings_routes / user_admin）；`security.py` D5 五步优先级 + 启动期不变量（~15 行 / 1-2 函数——key-first 优先级 GHSA-7wgj 已在 `API_AUTH_KEY` 已设时让 loopback 信任在全部调用点自动失效，无需 5 处条件化）；`env_schema.py` 4 env；`session/models.py` `AuthMethod.USER_SESSION`；`api_server.py` 注册 + `require_admin` 注入（`connection_routes`/`portfolio_routes` 无注入参数，靠 `require_settings_write_auth` 本体 flag-aware 覆盖）；前端 capability 门控套件 | **仅工作树，尚未部署验证（DEPLOYMENT §15.9 Phase 5）**；上游提交前置：`models.py` 自绑定改写项与两条维护注记见 §3.1 末尾；8 locale i18n 齐备；默认关零行为变更是卖点（`test_auth_precedence.py` 9 用例必须保持绿） |
+| **⑩ 反代 Origin 校验健壮性**（上游候选缺陷，2026-09-19 事故实证） | `_origin_matches_request_host()`（`security.py:400-420`）对反向代理不健壮 | `proxy_set_header Host $host;` 是 nginx 社区最常见写法（大量官方文档与教程使用），而 `$host` **剥掉端口** ⇒ **任何部署在反代 + 非标准端口后的实例，所有 POST/PUT/DELETE 全部 403**（`security.py:489-490` 只查非安全方法，故页面正常、交互失败）；且 `Cross-site request denied` detail 两个端口值都不打印，几乎不可诊断。建议：端口缺失时回退比对 `X-Forwarded-Port`/`X-Forwarded-Host`，或在 detail 中写出 `origin_port` 与 `request_port` 实际值 | 先提 Issue（附三组对照实验：Host 无端口 + Origin :4096 → **403**；Host 带端口 :4096 + Origin :4096 → **201**；双方无端口 80==80 → **201**，第三组排除其余解释）。部署侧热修 `Host $http_host` 已在生产落地（DEPLOYMENT §11.1），与本 patch 不冲突 |
+| **⑪ 前端 401/403 文案覆盖**（上游候选缺陷） | `frontend/src/lib/api.ts:295-307` `errorFromResponse()` 把**任何** 401/403 的 `detail` 无条件覆盖成通用 API-key 文案 | 系统性误导运维：2026-09-19 事故中真实 detail `Cross-site request denied` 被替换成「远程 API 访问需要 API 密钥」，调查被引向 API KEY/loopback/XFF 方向整整一天。建议：保留后端 detail，仅在 detail 缺失时回退通用文案 | 本分支 F8 的 D18 已含等价改造（401/403 触发全局登出 + toast 保留 detail），但被 capability flag 门控 ⇒ 上游 PR 需剥离为**独立**不依赖 F8 的修复 |
 | ✗ F5 | ClickHouse | — | 暂不回流（个人部署独有） |
 
 ### 2.4 已知上游缺陷（mymain 跟踪）
@@ -99,9 +103,33 @@ python -m pytest agent/tests/test_readme_counts.py agent/tests/test_distribution
 # env-var AST 门禁——基线 exit 0（4 条 WARN 来自上游 llm.py，与本分支无关）
 python tools/ci_env_var_gate.py
 
+# 全量门禁（含 F8 用户认证套件，排除 harness_eval）——2026-09-19 基线：**14117 passed / 119 skipped / 0 failed**
+python -m pytest agent/tests/ -q --ignore=agent/tests/harness_eval
+
+# 认证/基础设施面焦点（F8 落地后）——2026-09-19 基线：9 / 42 / 64 / 90 / 35 / 8
+python -m pytest agent/tests/test_auth_precedence.py -q                                        # 9 passed（GHSA-7wgj pin，flag=0 默认路径逐字节不变）
+python -m pytest agent/tests/test_api_infrastructure.py -q                                     # 42 passed（含 require_local_or_auth 的 `is` 身份断言）
+python -m pytest agent/tests/test_playbooks_surface.py -q                                      # 64 passed
+python -m pytest agent/tests/test_security_auth_api.py agent/tests/test_settings_api.py -q     # 90 passed
+python -m pytest agent/tests/test_user_auth.py agent/tests/test_user_auth_api.py agent/tests/test_auth_mode_endpoint.py -q  # 35 passed（F8 新套件）
+python -m pytest agent/tests/test_parity_guard.py -q                                           # 8 passed（additive-only 守卫）
+
+# 前端——2026-09-19 基线：build 干净 + 70 files / 671 passed
+cd frontend && npm run build && npm run test:run
+
+# OpencodeAgent harness——2026-09-19 基线：168 passed / 1 failed / 1 skipped
+#   唯一失败 test_router_proxy.py::test_buffered_response_passes_status_body_and_length
+#   （router 发紧凑 JSON、测试按默认分隔符算 Content-Length，'29' != '31'）为**分支既有**：
+#   在 HEAD（fc41781f）pristine git worktree 复跑同样失败，与 F8 / rebase 均无关
+python -m pytest OpencodeAgent/tests/ -q
+
 # 延迟基准（默认跳过，显式运行）
 python -m pytest agent/tests/memory/test_latency_bench.py -m bench
 ```
+
+**2026-09-19 维护注记（用户认证事故排查副产物）**：
+- **uvicorn 版本漂移**：生产 conda 环境实测 **0.48.0** vs `requirements-lock.txt:3845` 钉 **0.52.4**。两版本 `proxy_headers` 默认均为 `True`（生产 `Config.__init__` 签名实测），当前无任何行为依赖该漂移，但应择机对齐（诊断背景见 DEPLOYMENT §11.1）。
+- **F8 上游提交前置改写项**：`agent/src/session/models.py` 中 `ATTRIBUTABLE_AUTH_METHODS = ATTRIBUTABLE_AUTH_METHODS | {AuthMethod.USER_SESSION}` 是**故意的自重绑定**，仅用于满足本分支 additive-only parity guard；提上游 PR 时必须改写为普通字面成员（直接并入上方 frozenset），否则社区评审必拒。
 
 ### 3.2 端到端冒烟（本地）
 
