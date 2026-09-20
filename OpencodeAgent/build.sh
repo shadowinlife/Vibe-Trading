@@ -4,12 +4,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IMAGE_NAME="opencode-serve"
 IMAGE_TAG="latest"
-REGISTRY="registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2"
+# Push target for --push. Not defaulted on purpose: this is a public fork and a
+# registry namespace is infrastructure identity, not a build parameter. Export it
+# in the calling shell; do not re-hardcode it here. This script does not read .env.
+REGISTRY="${REGISTRY:-}"
 PLATFORM="${DOCKER_PLATFORM:-}"
 PUSH=false
 DRY_RUN=false
 MODE="app"
 
+INVOCATION_ARGS="$*"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --tag)        IMAGE_TAG="$2"; shift 2 ;;
@@ -27,13 +31,19 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --tag TAG     Image tag (default: latest)"
-      echo "  --push        Push to $REGISTRY after build"
+      echo "  --push        Push to \$REGISTRY after build (requires REGISTRY to be set)"
       echo "  --dry-run     Show commands without executing"
       exit 0
       ;;
     *) shift ;;
   esac
 done
+
+if $PUSH && [[ -z "$REGISTRY" ]]; then
+  echo "ERROR: --push requires REGISTRY to be set, e.g." >&2
+  echo "  REGISTRY=registry.<region>.aliyuncs.com/<namespace> $0 $INVOCATION_ARGS" >&2
+  exit 1
+fi
 
 run() {
   if $DRY_RUN; then

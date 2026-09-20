@@ -14,11 +14,11 @@
 
 | Image | ID | Built (+08:00) | Registry tags (digest) | Role |
 |---|---|---|---|---|
-| `opencode-serve:v2.1.0-mymain` | `2cce00b4fa18…` | 2026-08-18 10:55 | `…jiefengnewsv2/opencode-serve:v2.1.0-mymain` **and `:latest`** (`sha256:40ea24d5b07e…`) | first mymain-lineage package; has the root-owned `/home/opencode` ownership bug |
-| `opencode-serve:v2.1.1-mymain` | `b215de7151b6…` | 2026-08-18 16:37 | `…jiefengnewsv2/opencode-serve:v2.1.1-mymain` (`sha256:2382403f6475…`) | home-ownership fix rebuild; **last mymain-lineage image actually run on ECS** (stopped 2026-08-28, kept for rollback per archive/DEPLOY-GUIDE-opencode-web-host-direct.md §10) |
+| `opencode-serve:v2.1.0-mymain` | `2cce00b4fa18…` | 2026-08-18 10:55 | `<REGISTRY>/opencode-serve:v2.1.0-mymain` **and `:latest`** (`sha256:40ea24d5b07e…`) | first mymain-lineage package; has the root-owned `/home/opencode` ownership bug |
+| `opencode-serve:v2.1.1-mymain` | `b215de7151b6…` | 2026-08-18 16:37 | `<REGISTRY>/opencode-serve:v2.1.1-mymain` (`sha256:2382403f6475…`) | home-ownership fix rebuild; **last mymain-lineage image actually run on ECS** (stopped 2026-08-28, kept for rollback per archive/DEPLOY-GUIDE-opencode-web-host-direct.md §10) |
 | `opencode-serve:v2.2.0-harness-evolution` | `59db50ae8e0f…` | 2026-08-23 15:43 | **none — never pushed** (`RepoDigests=[]`) | harness-evolution eval image, built from `NewAgentMain` branch |
 | `opencode-serve-base:latest` (local) | `ea738ee663d1…` | 2026-08-18 16:26 | none (never pushed under this ID) | registry base + 2 layers (`useradd -m opencode`, `mkdir /workspace`) |
-| `…jiefengnewsv2/opencode-serve-base:latest` (registry) | `437144c60370…` | 2026-08-18 10:31 | `sha256:2010b037ee57…` | base of the v2.1.0 build; **no `opencode` useradd -m layer** — same tag, *different image* than the local base |
+| `<REGISTRY>/opencode-serve-base:latest` (registry) | `437144c60370…` | 2026-08-18 10:31 | `sha256:2010b037ee57…` | base of the v2.1.0 build; **no `opencode` useradd -m layer** — same tag, *different image* than the local base |
 
 ⚠️ Two distinct images share the tag `opencode-serve-base:latest` (local `ea738ee663d1` vs registry `437144c60370`), and the registry's `opencode-serve:latest` points at **v2.1.0**, not v2.1.1 (`deploy/ecs-build.sh` defaults `VERSION=v2.1.0-mymain`; `build.sh` defaults `--tag latest`). Any `FROM …:latest` / `image: …:latest` reference is therefore ambiguous — this is exactly the moving-tag surface T10 must convert to digests.
 

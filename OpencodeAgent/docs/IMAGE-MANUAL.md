@@ -227,8 +227,23 @@ curl http://localhost:4096/health
 | `--base` | 构建基础镜像（极少使用） |
 | `--app` | 构建 app 镜像（默认） |
 | `--tag TAG` | 镜像标签，默认 `latest` |
-| `--push` | 构建后推送到 registry |
+| `--push` | 构建后推送到 registry（**需先设置 `REGISTRY` 环境变量**，见下） |
 | `--dry-run` | 仅打印命令，不执行 |
+
+> **`REGISTRY` 环境变量（2026-09-20 起必需，仅 `--push` 路径）**
+> 推送目标不再硬编码在脚本里——本仓库是公开 fork，registry 命名空间属基础设施标识而非构建参数。
+> `build.sh` **不读取 `.env`**（`docker-compose.yml` 的 `env_file: .env` 只作用于容器运行时），
+> 必须在调用 shell 中导出：
+>
+> ```bash
+> export REGISTRY=registry.<region>.aliyuncs.com/<namespace>
+> ./build.sh --app --tag v3.0.0-tenant --push
+> ```
+>
+> 未设置而带 `--push` 时，脚本在**任何构建动作之前**立即失败并打印所需形式（不会白等十几分钟构建）。
+> 不带 `--push` 的本地构建无需设置。`deploy/ecs-build.sh` 两次调用 `--push`，故它无条件要求并
+> `export REGISTRY`。同理 `Dockerfile.amd64` 的基础镜像改为 `ARG BASE_IMAGE`（无默认值，需
+> `--build-arg BASE_IMAGE=<registry>/opencode-serve:0.0.6`）。
 
 ### 5.2 构建基础镜像
 

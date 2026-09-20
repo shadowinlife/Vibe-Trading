@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REGISTRY="registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2"
+export REGISTRY="${REGISTRY:?both build.sh calls below use --push, so REGISTRY must be set (e.g. registry.<region>.aliyuncs.com/<namespace>)}"
 VERSION="${1:-v2.1.0-mymain}"
 VT_BRANCH="mymain"
 

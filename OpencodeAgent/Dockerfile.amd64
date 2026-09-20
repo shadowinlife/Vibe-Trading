@@ -2,7 +2,12 @@
 # Dockerfile.amd64 — opencode-serve for x86_64 (Alibaba Cloud ECS)
 # 基于: opencode-serve:0.0.6 (AMD64) + ClickHouse 迁移
 # =============================================================================
-FROM registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode-serve:0.0.6
+# BASE_IMAGE has no default: opencode-serve:0.0.6 lives in a private registry, so
+# a defaulted name would only fail later and more confusingly. Pass it explicitly:
+#   docker build -f Dockerfile.amd64 \
+#     --build-arg BASE_IMAGE=<registry>/opencode-serve:0.0.6 .
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 USER root
 
