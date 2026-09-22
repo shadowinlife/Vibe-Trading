@@ -4,7 +4,7 @@ description: mymain 分支持久知识库的路由层与使用协议：任务/�
 type: index
 status: active
 created: 2026-09-20
-updated: 2026-09-20
+updated: 2026-09-22
 tags: [index, routing, mymain]
 related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -25,6 +25,7 @@ related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 | **研究裁决** | 为什么这么设计 / 哪些本地能力可被上游替换 | [branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md](branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md)（REPLACE/PARTIAL/KEEP 判定） | ClickHouse 语义层 [clickhouse/README.md](clickhouse/README.md)（R1 裁决）；harness 四批实验 [harness-evolution/README.md](harness-evolution/README.md)（已冻结） |
 | **未落地资产** | 接下来做什么 / 挂起的 PR 前置 / 已知债务 / 残余 todo | [branch/MYMAIN_DIVERGENCE.md](branch/MYMAIN_DIVERGENCE.md) §2.3 贡献队列、§4.5 债务 D1-D4 | 各能力卡末节「状态与上游关系 / 待接入」（如 [features/f8-engine-bridge.md](features/f8-engine-bridge.md)） |
 | **engine-bridge 全域** | engine-bridge 计划/证据/部署/研究文档在哪 | [engine-bridge/README.md](engine-bridge/README.md)（集中索引） | 功能卡 [features/f8-engine-bridge.md](features/f8-engine-bridge.md)；用户认证 [features/user-auth-system.md](features/user-auth-system.md) |
+| **ACS 沙箱部署路径** | opencode 后端接 ACS MicroVM / E2B SDK 怎么连 / 预热池与踩坑 | [acs-sandbox/ACS_SANDBOX_SMOKE_2026-09-22.md](acs-sandbox/ACS_SANDBOX_SMOKE_2026-09-22.md)（冒烟记录 + runbook） | 官方文档链接见该文附录 C；与 engine-bridge 关系见该文 §8.6 |
 
 任务型路由：
 
@@ -38,6 +39,7 @@ related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 | 记忆系统（F1-F4） | 对应功能卡 → DIVERGENCE §2.3 队列 ①-⑤ 前置 + §4.5 债务 D1-D4 |
 | engine-bridge（会话恢复/重挂/降级/回滚） | [engine-bridge/README.md](engine-bridge/README.md)（全域索引）→ [features/f8-engine-bridge.md](features/f8-engine-bridge.md)（运维圣经） |
 | 用户认证（登录/注册/鉴权/admin） | [features/user-auth-system.md](features/user-auth-system.md)（功能卡）→ 部署实录 `OpencodeAgent/docs/DEPLOYMENT-PROD-ENGINE-BRIDGE.md` §15 |
+| 测试 ACS Agent Sandbox 部署路径（MicroVM/E2B/预热池） | [acs-sandbox/ACS_SANDBOX_SMOKE_2026-09-22.md](acs-sandbox/ACS_SANDBOX_SMOKE_2026-09-22.md)（先读 §6 踩坑再动手） |
 
 常见速查（答案所在，不在此复制）：
 
@@ -58,6 +60,7 @@ related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 | `features/` | `README.md` + 能力卡 f1-f5、f7、f8、user-auth-system（F6 不存在，见 features/README「为什么没有 F6」） | active |
 | `engine-bridge/` | `README.md` 集中索引：计划正典 / 19 份证据 / 研究文档 / 部署实录 / 功能卡 | active |
 | `clickhouse/` | `README.md` + 语义层 RESEARCH / REPORT / ITERATION_PLAN / SYNC_DIAGNOSIS | active |
+| `acs-sandbox/` | ACS Agent Sandbox（MicroVM）部署路径知识域：冒烟验证记录 + runbook（2026-09-22 起） | active |
 | `harness-evolution/` | 17 份 `HARNESS_EVOLUTION_*` 裁决文档 + `evals/`（研究代码与 jsonl 证据，9.3MB、占 wiki 97%） | **archived（冻结）** |
 | `history/` | `timeline.md` 分支编年史（倒序） | active |
 | `INDEX.md` / `README.md` | 全量文档索引 / 人类入口 | active |
