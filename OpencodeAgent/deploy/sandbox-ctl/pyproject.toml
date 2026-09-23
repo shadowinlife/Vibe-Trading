@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "e2b-sandbox-ctl"
+version = "0.1.0"
+description = "Standalone CLI wrapping the E2B/kruise-agents SDK for ACS Agent Sandbox lifecycle ops (D7 shell-out carrier for the router's E2bSandboxBackend)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "e2b>=2.35,<2.38",
+    # Exact form pinned in the verified smoke venv (openkruise/agents, commit-pinned).
+    "kruise-agents @ git+https://github.com/openkruise/agents.git@10db25ac3ecb5cd40380f0d2738d2aa51fb78369#subdirectory=sdk/customized_e2b",
+    "httpx",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+e2b-sandbox-ctl = "sandbox_ctl.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["sandbox_ctl*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
