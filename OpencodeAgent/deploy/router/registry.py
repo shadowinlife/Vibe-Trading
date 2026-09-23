@@ -19,40 +19,124 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Self
 
 REGISTRY_VERSION = 1
 
+#: Lifecycle backend of a tenant record (plan T17, gate D11 shape (a)).
+#: Absent in an entry == ``docker``: existing tables load byte-for-byte as
+#: before, and no docker-era field changed meaning.
+BACKEND_DOCKER = "docker"
+BACKEND_E2B = "e2b"
+KNOWN_BACKENDS = (BACKEND_DOCKER, BACKEND_E2B)
+
+#: NETWORK-PATH-AGNOSTIC upstream (T17 hard constraint: the ACS cluster and
+#: the router's data plane live in different Aliyun accounts and the
+#: production ECS↔sandbox path is still under discussion). The upstream URL
+#: form is therefore PURE CONFIGURATION: the default below is the PoC form
+#: (kubectl port-forward of the kruise gateway); production swaps to the
+#: VPC/peering form by exporting ``VT_ROUTER_E2B_UPSTREAM_TEMPLATE`` — a
+#: config change at re-provision time, never a code change. No network host
+#: or port may be assumed anywhere else in the router.
+E2B_UPSTREAM_TEMPLATE_ENV = "VT_ROUTER_E2B_UPSTREAM_TEMPLATE"
+SANDBOX_ID_PLACEHOLDER = "{sandbox_id}"
+DEFAULT_E2B_UPSTREAM_TEMPLATE = (
+    f"http://localhost:8888/kruise/{SANDBOX_ID_PLACEHOLDER}/4096"
+)
+
 
 class RegistryError(RuntimeError):
     """The registry file is missing, malformed, or internally inconsistent."""
 
 
+def render_e2b_upstream(sandbox_id: str, template: str | None = None) -> str:
+    """Render one sandbox tenant's upstream from the configured URL template.
+
+    The env read is deliberately localized here (provisioning + schema
+    validation side, never the proxy data path), exactly like T16 localized
+    ``VT_ROUTER_E2B_CTL_BIN`` inside backend.py instead of widening config.py
+    — so the consumer modules stay untouched and the hot-reload path never
+    re-renders (the router reads what provisioning stored, keeping router and
+    provisioner decoupled from each other's environment).
+    """
+    if template is None:
+        template = (
+            os.environ.get(E2B_UPSTREAM_TEMPLATE_ENV, "").strip()
+            or DEFAULT_E2B_UPSTREAM_TEMPLATE
+        )
+    if SANDBOX_ID_PLACEHOLDER not in template:
+        raise RegistryError(
+            f"e2b upstream template must contain {SANDBOX_ID_PLACEHOLDER!r}: {template!r}"
+        )
+    if not sandbox_id.strip():
+        raise RegistryError("cannot render an e2b upstream without a sandbox id")
+    return template.replace(SANDBOX_ID_PLACEHOLDER, sandbox_id).strip().rstrip("/")
+
+
 @dataclass(frozen=True, slots=True)
 class Tenant:
-    """One tenant's routing record."""
+    """One tenant's routing record.
+
+    ``backend``/``sandbox_id`` extend the record for ACS-sandbox tenants
+    (T17). For ``backend == "e2b"`` the sandbox id is the lifecycle handle:
+    ``container`` must equal ``sandbox_id`` so wake/reclaim/fence keep calling
+    :class:`~router.backend.ContainerBackend` methods on the same field they
+    always did — the zero-consumer-change contract.
+    """
 
     tenant_id: str
     public_host: str
     upstream: str
     container: str
     volume: str = ""
+    backend: str = BACKEND_DOCKER
+    sandbox_id: str = ""
 
     @classmethod
     def from_json(cls, payload: Mapping[str, Any]) -> Self:
-        """Parse one ``tenants`` entry (boundary parse, not validation)."""
+        """Parse one ``tenants`` entry (boundary parse + backend validation)."""
         try:
-            return cls(
+            backend = str(payload.get("backend", BACKEND_DOCKER))
+            if backend not in KNOWN_BACKENDS:
+                raise RegistryError(
+                    f"tenant {payload['tenant_id']!r} has unknown backend {backend!r}"
+                )
+            sandbox_id = str(payload.get("sandbox_id", "")).strip()
+            tenant = cls(
                 tenant_id=str(payload["tenant_id"]),
                 public_host=normalize_host(str(payload["public_host"])),
                 upstream=str(payload["upstream"]).rstrip("/"),
                 container=str(payload["container"]),
                 volume=str(payload.get("volume", "")),
+                backend=backend,
+                sandbox_id=sandbox_id,
             )
         except KeyError as exc:
             raise RegistryError(f"tenant entry is missing key {exc}") from exc
+        if backend == BACKEND_E2B:
+            tenant._validate_sandbox()
+        return tenant
+
+    def _validate_sandbox(self) -> None:
+        """An e2b entry must name a live-enough record to route and wake.
+
+        ``sandbox_id`` (the backend handle), ``container`` equal to it, and a
+        rendered absolute upstream are required; a half-written entry fails
+        the load instead of silently 503-ing every request to it.
+        """
+        if not self.sandbox_id:
+            raise RegistryError(f"e2b tenant {self.tenant_id!r} has no sandbox_id")
+        if self.container != self.sandbox_id:
+            raise RegistryError(
+                f"e2b tenant {self.tenant_id!r}: container must equal sandbox_id"
+            )
+        if not self.upstream.startswith(("http://", "https://")):
+            raise RegistryError(
+                f"e2b tenant {self.tenant_id!r} has no resolvable upstream: {self.upstream!r}"
+            )
 
 
 # --- Resolution outcomes (matched exhaustively by the proxy) -----------------
@@ -220,6 +304,23 @@ class TenantRegistry:
         if by_host is not None:
             return Resolved(tenant=self._tenants[by_host])
         return UnknownHost(host=host_key or "(absent)")
+
+
+def read_registry_entries(path: Path) -> dict[str, dict[str, Any]]:
+    """Read the raw ``tenants`` map WITHOUT validation (provisioning merge side).
+
+    Provisioning merges into an existing table and must see the other tenants'
+    stored fields verbatim (unknown keys included), which the validated
+    :class:`Tenant` model intentionally drops. The router itself never calls
+    this: it reads through :meth:`TenantRegistry.load` only.
+    """
+    if not path.exists():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    entries = payload.get("tenants", {}) if isinstance(payload, dict) else {}
+    return {
+        key: dict(value) for key, value in entries.items() if isinstance(value, dict)
+    }
 
 
 def write_registry(path: Path, tenants: Mapping[str, dict[str, Any]]) -> None:

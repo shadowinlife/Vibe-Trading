@@ -76,9 +76,11 @@ def _show(settings: RouterSettings) -> int:
                 "registry": str(settings.registry_path),
                 "tenants": {
                     tenant_id: {
+                        "backend": tenant.backend,
                         "public_host": tenant.public_host,
                         "upstream": tenant.upstream,
                         "container": tenant.container,
+                        "sandbox_id": tenant.sandbox_id,
                         "volume": tenant.volume,
                     }
                     for tenant_id, tenant in registry.tenants.items()

@@ -20,6 +20,10 @@ container plus its routing record:
 
 Re-running is safe: secrets are reused, generated files are deterministic, and
 ``agent.json`` is written once so operator-filled credentials survive.
+
+Sandbox (e2b) tenants (plan T17) share this package's registry and token
+discipline but not the docker recipe: see :mod:`router.sandbox_provision`,
+re-exported here so ``router.provision`` stays the single provisioning seam.
 """
 
 from __future__ import annotations
@@ -31,11 +35,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .registry import (
+    BACKEND_E2B,
     RegistryError,
     TenantRegistry,
+    read_registry_entries,
     token_hint,
     token_sha256,
     write_registry,
+)
+from .sandbox_provision import (
+    ProvisionError,
+    SandboxProvisionResult,
+    SandboxReprovisionResult,
+    SandboxSpec,
+    provision_sandbox,
+    reprovision_sandbox,
 )
 from .spec import ProvisionResult, TenantSpec
 from .templates import (
@@ -52,10 +66,16 @@ from .templates import (
 __all__ = [
     "HOME_SKELETON",
     "PASSTHROUGH_ENV",
+    "ProvisionError",
     "ProvisionResult",
+    "SandboxProvisionResult",
+    "SandboxReprovisionResult",
+    "SandboxSpec",
     "TenantSpec",
     "provision",
+    "provision_sandbox",
     "read_tenant_key",
+    "reprovision_sandbox",
 ]
 
 
@@ -172,7 +192,7 @@ def _docker(*args: str, stdin_text: str | None = None) -> str:
 
 def _register(spec: TenantSpec, api_key: str) -> None:
     """Merge this tenant into the registry and rewrite it atomically."""
-    entries = _read_registry_entries(spec.registry_path)
+    entries = read_registry_entries(spec.registry_path)
     existing = entries.get(spec.tenant_id, {})
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     entries[spec.tenant_id] = {
@@ -198,17 +218,13 @@ def _write_fleet(spec: TenantSpec) -> None:
         registry = TenantRegistry.load(spec.registry_path)
     except RegistryError:
         return
-    _write(spec.out_dir / FLEET_FILENAME, render_fleet(spec.out_dir, registry.tenants))
-
-
-def _read_registry_entries(path: Path) -> dict[str, dict[str, object]]:
-    if not path.exists():
-        return {}
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    entries = payload.get("tenants", {}) if isinstance(payload, dict) else {}
-    return {
-        key: dict(value) for key, value in entries.items() if isinstance(value, dict)
-    }
+    # Sandbox tenants own no compose file: the fleet lists docker tenants only.
+    docker_ids = [
+        tenant_id
+        for tenant_id, tenant in registry.tenants.items()
+        if tenant.backend != BACKEND_E2B
+    ]
+    _write(spec.out_dir / FLEET_FILENAME, render_fleet(spec.out_dir, docker_ids))
 
 
 def _write(path: Path, content: str, mode: int = 0o644) -> None:
