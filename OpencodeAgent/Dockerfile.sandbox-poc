@@ -1,0 +1,118 @@
+# opencode-sandbox-poc — minimal opencode+omo image for the ACS Agent Sandbox
+# claim-time image-swap PoC (scope decision D9: NO MCP servers, NO VT gateway,
+# NO ClickHouse, NO supervisord — those live only in the full-stack lineage,
+# opencode-serve:v3.0.0-tenant, which this Dockerfile never touches).
+#
+# Design constraints (all empirically proven in wave-1 spikes, see
+# .omo/evidence/task-2-swap-spike.json):
+#   1. ENTRYPOINT/CMD must be a long-lived foreground process. Images whose CMD
+#      exits (ubuntu, bash) show "sandbox state is dead" and the claim FAILS
+#      (T2 trials 4-5). Here: `sleep infinity`.
+#   2. bash + coreutils (cp/mv/mkdir) are required by the platform-injected
+#      envd-run.sh postStart hook (creates a uid-1000 user, starts envd via
+#      nohup). node:20-bookworm-slim (Debian 12) provides both. envd itself is
+#      injected by the platform (agent-runtime sidecar) — NOT bundled here.
+#   3. NO secrets in this image. LLM auth is provided at runtime (auth.json /
+#      files.write / envVars via envd at claim time).
+#   4. `opencode serve` is launched LATER via envd commands, not at start.
+#
+# Version pins (drift discipline, identical to the production Dockerfile):
+#   opencode-ai@1.18.30 / oh-my-openagent@4.19.4
+#
+# Build (from repo root, arm64 host cross-building amd64 via emulation):
+#   docker build --platform=linux/amd64 \
+#     -f OpencodeAgent/Dockerfile.sandbox-poc \
+#     -t opencode-sandbox-poc:v0.1 OpencodeAgent/
+
+FROM node:20-bookworm-slim
+
+LABEL org.opencontainers.image.title="opencode-sandbox-poc" \
+      org.opencontainers.image.description="Minimal opencode+omo PoC image for ACS Agent Sandbox claim-time swap (D9 scope: no MCP/gateway/CH)" \
+      dev.vibe-trading.opencode-pin="opencode-ai@1.18.30" \
+      dev.vibe-trading.omo-pin="oh-my-openagent@4.19.4" \
+      dev.vibe-trading.scope="D9-minimal-poc"
+
+# --- opencode CLI (pinned) ----------------------------------------------------
+# npm only PLACES files; the binary itself is never executed to DO work at
+# build time, so there is no QEMU/Rosetta SIGILL problem (the production
+# OpencodeAgent/Dockerfile notes executing it for real at build DOES SIGILL;
+# here the package postinstall only hardlinks the chosen platform binary to
+# bin/opencode.exe and runs a benign `--version` probe, which passed under
+# emulation — see .omo evidence task-7-image-build.log).
+#
+# Prune: postinstall hardlinks the chosen binary into bin/ (that inode stays
+# reachable after the source packages are deleted; the launcher at
+# /usr/local/bin/opencode -> bin/opencode.exe never reads the nested optional
+# platform packages at runtime). Dropping them saves one 177 MB redundant
+# x86_64 binary variant and keeps the image inside the ≤1.5 GB PoC budget.
+RUN npm install -g opencode-ai@1.18.30 \
+    && test -x /usr/local/lib/node_modules/opencode-ai/bin/opencode.exe \
+    && rm -rf /usr/local/lib/node_modules/opencode-ai/node_modules \
+    && /usr/local/bin/opencode --version
+
+# --- OMO two-tier install (outcome recorded in /opt/omo-tier) ------------------
+# Tier A (preferred): build-time `npm install -g oh-my-openagent@4.19.4`.
+#   Only fails if an npm postinstall / native step EXECUTES x86 arch-specific
+#   code under --platform=linux/amd64 emulation on this arm64 host (SIGILL).
+# Tier B (fallback): omo is NOT in the image; opencode auto-installs the
+#   pinned plugin on first start inside the sandbox — native x86_64, no
+#   emulation (~30 s first boot). This is the proven pattern of the
+#   full-stack lineage (see production Dockerfile omo note).
+# The reference config below carries the plugin pin in BOTH tiers: it is the
+# Tier B mechanism and a harmless no-op safety net under Tier A.
+RUN set -eu; \
+    if npm install -g oh-my-openagent@4.19.4; then \
+      echo 'tier-a-build-time' > /opt/omo-tier; \
+    else \
+      npm uninstall -g oh-my-openagent || true; \
+      echo 'tier-b-runtime-plugin' > /opt/omo-tier; \
+      echo 'WARNING: omo build-time install failed under emulation; pinned runtime auto-install will handle first start'; \
+    fi
+
+# --- reference opencode config (NO keys) ---------------------------------------
+# Shape derived from repo files: OpencodeAgent/config/opencode.json.tmpl
+# (model default line 3, plugin pin lines 55-57) and the production host
+# template's provider block (alibaba-cn provider, OpenAI-compatible DashScope
+# base URL, qwen3.8-max model declaration). apiKey intentionally absent —
+# runtime auth via auth.json/env injected at claim time (constraint 3).
+# Baked as a REFERENCE at /opt/opencode-config/opencode.json; the claim-time
+# orchestrator copies/links it wherever `opencode serve` will run.
+RUN install -d -m 0755 /opt/opencode-config \
+    && printf '%s\n' \
+       '{' \
+       '  "$schema": "https://opencode.ai/config.json",' \
+       '  "model": "alibaba-cn/qwen3.8-max",' \
+       '  "provider": {' \
+       '    "alibaba-cn": {' \
+       '      "options": {' \
+       '        "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"' \
+       '      },' \
+       '      "models": {' \
+       '        "qwen3.8-max": {' \
+       '          "name": "Qwen3.8 Max",' \
+       '          "attachment": true,' \
+       '          "reasoning": true,' \
+       '          "tool_call": true,' \
+       '          "limit": { "context": 1000000, "output": 128000 }' \
+       '        }' \
+       '      }' \
+       '    }' \
+       '  },' \
+       '  "plugin": [' \
+       '    "oh-my-openagent@4.19.4"' \
+       '  ]' \
+       '}' \
+       > /opt/opencode-config/opencode.json \
+    && chmod 0644 /opt/opencode-config/opencode.json \
+    && node -e 'JSON.parse(require("fs").readFileSync("/opt/opencode-config/opencode.json","utf8")); console.log("sandbox-poc config: JSON valid")'
+
+# Agent work directory for the sandbox session (world-writable: the envd
+# postStart hook creates a uid-1000 runtime user that will own sessions).
+RUN install -d -m 0777 /workspace
+WORKDIR /workspace
+
+# --- long-lived foreground PID1 (T2 hard requirement) --------------------------
+# `sleep` is coreutils (present in the base). Never exits, so the sandbox
+# reaches Ready and envd can serve commands.run; `opencode serve` is started
+# later via envd, NOT here. Documented fallback: ["tail","-f","/dev/null"].
+ENTRYPOINT ["sleep","infinity"]

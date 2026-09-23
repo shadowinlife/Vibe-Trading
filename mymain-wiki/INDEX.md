@@ -43,6 +43,7 @@ tags: [index]
 ## acs-sandbox/ — ACS Agent Sandbox 部署路径（opencode 动态拉起后端）
 
 - [acs-sandbox/ACS_SANDBOX_SMOKE_2026-09-22.md](acs-sandbox/ACS_SANDBOX_SMOKE_2026-09-22.md) — 冒烟验证记录与 runbook：E2B 私有协议 + port-forward 全链路（预热池命中 create 0.2s）、材料清单、七项踩坑（e2b SDK 版本 405 / 商品 403 / webhook 拦删 Pod 等）、opencode 集成路径、清理与凭证轮换指引 — active
+- [acs-sandbox/POC_IMAGE_opencode-sandbox-poc.md](acs-sandbox/POC_IMAGE_opencode-sandbox-poc.md) — opencode-sandbox-poc:v0.1 最小 PoC 镜像血统卡（D9：仅 opencode+omo、无密钥参考配置、sleep infinity 长驻 ENTRYPOINT、tier-a 构建期 OMO、1.39GB vs 全家桶 4.7GB、本地制品不回流、T8 原生验证边界） — active
 
 ## harness-evolution/ — harness 演进研究档案（2026-08-21~30）
 

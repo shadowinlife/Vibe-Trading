@@ -4,7 +4,7 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F8
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-09-20
+updated: 2026-09-23
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -387,3 +387,8 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - ⚠️ **同类陷阱第二次触发（方法论教训）**：`OpencodeAgent/vendor/Vibe-Trading/` 的 2004 个文件于 08-11 入库、而 `.gitignore` 的 `vendor/` 规则 08-18 才加（晚 7 天）——`.gitignore` 对已跟踪路径无效，故该构建产物在 git 里冻结于提交时内容，而 `build.sh:100-102` 每次 `rm -rf` + `git archive` 重建工作树副本，可观测症状即文档漂移（vendor 内 `MYMAIN_DIVERGENCE.md` 323 行 vs 权威 380 行）。已 `git rm -r --cached` 取消跟踪（构建零影响：无 CI 依赖，`docker-build.yml` 的 `context: .` 是仓库根即上游 Dockerfile）。**同一轮内 `.gitignore:155` 的裸规则 `AGENTS.md` 又静默吞掉了新建的 `mymain-wiki/AGENTS.md`**——`git add` 不警告、`git status` 不显示，直到最终盘点才发现远端根本没有该文件、三处引用依旧悬空；已按 `!OpencodeAgent/**/AGENTS.md` 先例加 `!mymain-wiki/AGENTS.md` 豁免。**规约：新增可能被宽泛 ignore 规则匹配的文件后，用 `git ls-files <path>` 验证，不要信 `git add`。**
 - ⚠️ **扫描方法论漏洞（本轮自纠）**：判定「0 残留」时用的 `grep --include='*.md' --include='*.sh' ...` 过滤器不含 `Dockerfile*`，漏掉了 `Dockerfile.amd64:5`；改用 `git grep`（搜全部已跟踪文件）才抓全。**涉及全仓字符串清除时，权威判定一律用 `git grep`，不用带 `--include` 的 `grep -r`。**
 - **遗留（未擅自修，需裁决）**：`deploy/ecs-build.sh:6` 的 `VT_BRANCH="mymain"` 与 `build.sh:82` 的 `EXPECTED_VT_BRANCH` 默认 `mymain-engine-bridge` 不一致——该脚本会 clone/checkout `mymain`，`build.sh` 仅打 WARNING 后继续 vendor **缺 engine bridge 的错分支**。属功能性缺陷，修法取决于该脚本是否仍在使用（生产已改宿主机裸部署，容器路径未启用）。
+
+### 2026-09-23 ACS 沙箱 PoC 镜像（opencode-sandbox-poc:v0.1，worktree 分支 `feat/acs-sandbox-integration`）
+
+- **制品**：`OpencodeAgent/Dockerfile.sandbox-poc`（新增，不触碰既有 `Dockerfile`/`Dockerfile.base`/`build.sh`）——D9 裁决的最小 PoC 镜像：仅 `opencode-ai@1.18.30` + `oh-my-openagent@4.19.4`（构建期 tier-a 成功）+ 无密钥参考配置（alibaba-cn provider / DashScope 兼容模式 baseURL / `alibaba-cn/qwen3.8-max` 默认模型），`ENTRYPOINT ["sleep","infinity"]`（T2 spike 实证 claim-time 换装要求长驻前台 PID1，见 `.omo/evidence/task-2-swap-spike.json` trials 4–6），未压缩 **1.39GB**（对照全家桶 v3.0.0-tenant 4.7GB）。推送 `<ACR_NS>/opencode-sandbox-poc:v0.1`，digest `sha256:79bd36fc802ba2e991a472d742271326f301a1110db28a277b5efaf87480ed4a`；仓库可见性切换留待用户控制台（T6 实证集群侧无凭证）。血统卡：[../acs-sandbox/POC_IMAGE_opencode-sandbox-poc.md](../acs-sandbox/POC_IMAGE_opencode-sandbox-poc.md)；构建/验证/推送证据：主仓 `.omo/evidence/task-7-image-build.log`。
+- **裁决**：PoC 镜像 = **本地个人部署制品，不回流上游**（同 F5/F7/engine-bridge 范畴，不进贡献队列、不绑定社区 PR）；真实运行时验证（claim 换装 → envd 起 `opencode serve` → omo 首载）在 T8 原生 x86_64 MicroVM 完成，本地 QEMU 模拟证据不构成运行时承诺。
