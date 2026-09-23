@@ -39,6 +39,9 @@ class FakeClient:
     def stop(self, sid):
         return self._r("stop", {"paused": True, "already_paused": False, "pause_api_s": 1.4})
 
+    def set_timeout(self, sid, seconds):
+        return self._r("set_timeout", {"timeout_set": True, "seconds": seconds})
+
     def engine_get(self, sid, path):
         return self._r("engine_get", {"status": 200, "body": "[]", "password_path": "sandbox-env"})
 
@@ -75,6 +78,7 @@ class TestHappyPathsJSONStrictness:
             (["state", "sid-1"], "state"),
             (["start", "sid-1"], "started"),
             (["stop", "sid-1"], "paused"),
+            (["set-timeout", "sid-1", "1800"], "timeout_set"),
             (["engine-get", "sid-1", "/session"], "status"),
             (["create", "--template", "opencode-poc"], "sandbox_id"),
             (["kill", "sid-1"], "killed"),
@@ -93,6 +97,11 @@ class TestHappyPathsJSONStrictness:
                                  "--request-timeout", "90"])
         assert code == 0 and json.loads(out)["sandbox_id"] == "new-sandbox"
 
+    def test_set_timeout_forwards_seconds(self, capsys):
+        code, out = run(capsys, ["set-timeout", "sid-1", "90"])
+        assert code == 0
+        assert json.loads(out) == {"timeout_set": True, "seconds": 90}
+
     def test_route_wait_output(self, capsys):
         code, out = run(capsys, ["route-wait", "sid-1", "--budget", "5"])
         doc = json.loads(out)
@@ -105,6 +114,7 @@ class TestExitCodes:
         [
             (["start", "sid-1"], "start", Exit.BACKEND_UNAVAILABLE),
             (["stop", "sid-1"], "stop", Exit.SANDBOX_ABSENT),
+            (["set-timeout", "sid-1", "60"], "set_timeout", Exit.SANDBOX_ABSENT),
             (["engine-get", "sid-1", "/session"], "engine_get", Exit.AUTH_FAILURE),
             (["kill", "sid-1"], "kill", Exit.OPERATION_FAILED),
         ],
@@ -150,6 +160,17 @@ class TestUsage:
     def test_path_injection_chars_rejected(self, bad):
         with pytest.raises(SystemExit) as ei:
             cli.main(["engine-get", "sid-1", bad])
+        assert ei.value.code == 2
+
+    @pytest.mark.parametrize("bad", ["0", "-1", "abc", "1.5", ""])
+    def test_set_timeout_seconds_must_be_positive_int(self, bad):
+        with pytest.raises(SystemExit) as ei:
+            cli.main(["set-timeout", "sid-1", bad])
+        assert ei.value.code == 2
+
+    def test_set_timeout_missing_seconds_is_2(self):
+        with pytest.raises(SystemExit) as ei:
+            cli.main(["set-timeout", "sid-1"])
         assert ei.value.code == 2
 
     def test_unknown_subcommand_is_2(self):

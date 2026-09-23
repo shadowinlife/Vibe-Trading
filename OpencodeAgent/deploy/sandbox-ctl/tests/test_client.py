@@ -53,7 +53,19 @@ class FakeSandbox:
         return FakeSandbox._Commands(self)
 
     def set_timeout(self, timeout, **opts):
-        self.set_timeout_calls.append(timeout)
+        # Dual form mirrors the SDK's @class_method_variant: the instance call
+        # (sbx.set_timeout(n), used by start) arrives with self=instance; the
+        # class call (Sandbox.set_timeout(sid, n), used by the set-timeout op)
+        # arrives with self=sandbox_id.
+        if isinstance(self, FakeSandbox):
+            self.set_timeout_calls.append(timeout)
+            sid = self.sandbox_id
+        else:
+            sid = self
+        FakeSandbox.script.setdefault("timeout_calls", []).append((sid, timeout))
+        handler = FakeSandbox.script.get("set_timeout")
+        if handler:
+            handler(sid, timeout)
 
     # -- control plane classmethods ------------------------------------------
 
@@ -323,6 +335,44 @@ class TestStop:
         FakeSandbox.script["beta_pause"] = raise_to
         with pytest.raises(CtlError) as ei:
             client.stop("sid-1")
+        assert ei.value.exit_code == Exit.OPERATION_FAILED
+
+
+# ---------------------------------------------------------------- set-timeout
+
+
+class TestSetTimeout:
+    def test_renews_via_control_plane_without_connect(self, client):
+        out = client.set_timeout("sid-1", 1800)
+        assert out == {"timeout_set": True, "seconds": 1800}
+        assert FakeSandbox.script["timeout_calls"] == [("sid-1", 1800)]
+        assert FakeSandbox.script["connect_calls"] == []
+
+    def test_absent_maps_to_4(self, client):
+        def raise404(sid, timeout):
+            raise SandboxNotFoundException("gone")
+
+        FakeSandbox.script["set_timeout"] = raise404
+        with pytest.raises(CtlError) as ei:
+            client.set_timeout("sid-1", 60)
+        assert ei.value.exit_code == Exit.SANDBOX_ABSENT
+
+    def test_transport_death_maps_to_3(self, client):
+        def dead(sid, timeout):
+            raise httpx.ConnectError("gateway down")
+
+        FakeSandbox.script["set_timeout"] = dead
+        with pytest.raises(CtlError) as ei:
+            client.set_timeout("sid-1", 60)
+        assert ei.value.exit_code == Exit.BACKEND_UNAVAILABLE
+
+    def test_sdk_timeout_maps_to_5(self, client):
+        def raise_to(sid, timeout):
+            raise TimeoutException("api stalled")
+
+        FakeSandbox.script["set_timeout"] = raise_to
+        with pytest.raises(CtlError) as ei:
+            client.set_timeout("sid-1", 60)
         assert ei.value.exit_code == Exit.OPERATION_FAILED
 
 

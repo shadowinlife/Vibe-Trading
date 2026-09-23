@@ -199,6 +199,22 @@ class SandboxClient:
         # False == already paused (SDK 409 path) — idempotent success.
         return {"paused": True, "already_paused": not paused, "pause_api_s": pause_api_s}
 
+    # -- set-timeout (TTL keepalive ladder, T18) ------------------------------
+
+    def set_timeout(self, sandbox_id: str, seconds: int) -> dict[str, Any]:
+        """Renew the sandbox TTL through a pure control-plane call.
+
+        Uses the SDK's class-method variant (``Sandbox.set_timeout(sid, n)``),
+        the same call shape as ``beta_pause``/``kill``: no envd connect is
+        performed, so a keepalive aimed at a paused sandbox never wakes it as a
+        side effect (``connect`` would). The patched build treats the call as
+        an only-if-longer ladder (runbook 7.2): ``now + seconds`` is applied
+        only when it exceeds the current deadline — a cron cadence below
+        ``seconds`` therefore always ratchets ``end_at`` forward.
+        """
+        _call("set-timeout", Sandbox.set_timeout, sandbox_id, seconds, **self._opts)
+        return {"timeout_set": True, "seconds": seconds}
+
     # -- engine-get (SDK channel, independent of HTTP route, T9) ------------
 
     def engine_get(self, sandbox_id: str, path: str) -> dict[str, Any]:

@@ -29,6 +29,16 @@ def _valid_path(path: str) -> str:
     return path
 
 
+def _positive_seconds(value: str) -> int:
+    try:
+        seconds = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"seconds must be an integer, got {value!r}")
+    if seconds <= 0:
+        raise argparse.ArgumentTypeError(f"seconds must be > 0, got {seconds}")
+    return seconds
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="e2b-sandbox-ctl",
@@ -46,6 +56,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("stop", help="pause (beta_pause keep_memory=False)")
     p.add_argument("sandbox_id", **_ID)
+
+    p = sub.add_parser(
+        "set-timeout",
+        help="renew sandbox TTL (control-plane only; never connects/resumes)",
+    )
+    p.add_argument("sandbox_id", **_ID)
+    p.add_argument("seconds", type=_positive_seconds, help="new TTL floor, seconds > 0")
 
     p = sub.add_parser("engine-get", help="GET on in-pod serve via SDK envd channel")
     p.add_argument("sandbox_id", **_ID)
@@ -79,6 +96,8 @@ def _dispatch(client: SandboxClient, args: argparse.Namespace) -> dict:
             return client.start(args.sandbox_id, ttl_s=args.ttl)
         case "stop":
             return client.stop(args.sandbox_id)
+        case "set-timeout":
+            return client.set_timeout(args.sandbox_id, args.seconds)
         case "engine-get":
             return client.engine_get(args.sandbox_id, args.path)
         case "create":

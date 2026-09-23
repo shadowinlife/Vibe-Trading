@@ -42,6 +42,7 @@ diagnostics go to stderr. On failure stdout carries
 | `state <sid>` | `{"state":"running\|paused\|absent","raw":{...}}` | `inspect_state` |
 | `start <sid> [--ttl 1800]` | `{"started":true,"connect_s":…,"route_ready_s":…,"route_attempts":…,"relaunch_fired":false}` | `start` |
 | `stop <sid>` | `{"paused":true,"already_paused":false,"pause_api_s":…}` | `stop` |
+| `set-timeout <sid> <seconds>` | `{"timeout_set":true,"seconds":N}` | keepalive (T18, outside the Protocol) |
 | `engine-get <sid> <path>` | `{"status":200,"body":"…","password_path":"sandbox-env\|envs-param"}` | `engine_get` |
 | `create --template T [--timeout 1800] [--request-timeout 320]` | `{"sandbox_id":"…","claim_s":…}` | provisioning |
 | `kill <sid>` | `{"killed":true}` | reclaim |
@@ -63,6 +64,17 @@ stopped container — the truth check never resumes a sandbox as a side effect).
 | 6 | auth failure | API key missing/rejected, serve password rejected (401 ends route polling early) |
 
 ## Design notes
+
+### `set-timeout` is a control-plane call (T18)
+
+`set-timeout` uses the SDK's class-method variant (like `beta_pause`/`kill`),
+**not** `connect` — a keepalive aimed at a paused sandbox never wakes it as a
+side effect. The patched build treats it as an only-if-longer ladder
+(runbook 7.2): `now + seconds` applies only when it exceeds the current
+deadline, so a router keepalive cron firing below `seconds` always ratchets
+`end_at` forward. It is outside the router `ContainerBackend` Protocol
+(provisioning/keepalive is never the router's data-path job, D11) and maps to
+the T18 `router.cli keepalive` one-shot.
 
 ### One-step `start` (T11 verdict)
 
