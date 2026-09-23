@@ -13,7 +13,9 @@ asserted by the compose E2E (``deploy/e2e_multi_tenant.py``).
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
+import json
 import time
 from collections.abc import AsyncIterator, Callable, Iterable
 from dataclasses import dataclass
@@ -250,3 +252,107 @@ def sse_frames(body: bytes) -> list[str]:
         for line in body.decode("utf-8").splitlines()
         if line.startswith("event:")
     ]
+
+
+# --- sandbox (e2b) CLI fakes (T16/T17/T18 lifecycle tests) --------------------
+#
+# The e2b backend is a subprocess shell-out, so its doubles live at the
+# asyncio.create_subprocess_exec layer (same shape as
+# test_router_backend_e2b.py's local fakes, shared here for T18's two files).
+
+SANDBOX_CTL = "/fake/venv/bin/e2b-sandbox-ctl"
+SANDBOX_A = "default--opencode-poc-aaaa"
+SANDBOX_B = "default--opencode-poc-bbbb"
+SANDBOX_C = "default--opencode-poc-cccc"
+
+
+class FakeProc:
+    """Stands in for asyncio.subprocess.Process around communicate()."""
+
+    def __init__(self, code: int, out: str = "", err: str = "", hang: float = 0.0):
+        self._code, self._out, self._err, self._hang = code, out, err, hang
+        self.returncode: int | None = None
+        self.killed = False
+
+    async def communicate(self) -> tuple[bytes, bytes]:
+        if self._hang:
+            await asyncio.sleep(self._hang)
+        self.returncode = self._code
+        return self._out.encode(), self._err.encode()
+
+    def kill(self) -> None:
+        self.killed = True
+
+
+def cli_ok(payload: dict) -> FakeProc:
+    return FakeProc(0, json.dumps(payload))
+
+
+def cli_fail(code: int, name: str, message: str) -> FakeProc:
+    return FakeProc(
+        code, json.dumps({"ok": False, "error": {"code": name, "message": message}})
+    )
+
+
+def state_running() -> FakeProc:
+    return cli_ok({"state": "running", "raw": {}})
+
+
+def state_paused() -> FakeProc:
+    return cli_ok({"state": "paused", "raw": {}})
+
+
+def sessions_ms(updated_ms: int) -> FakeProc:
+    """A truth-check body: one root session last updated at *updated_ms*."""
+    return cli_ok(
+        {"status": 200, "body": json.dumps([{"time": {"updated": updated_ms}}])}
+    )
+
+
+class RoutingSpawn:
+    """Fake create_subprocess_exec: scripts keyed by (command, sandbox id).
+
+    ``"*"`` matches any sandbox for a command; an unscripted call is an
+    assertion error, so a test can never pass on an accidental silence.
+    """
+
+    def __init__(self, **scripts: dict[str, FakeProc]):
+        self.scripts = scripts
+        self.calls: list[tuple[str, ...]] = []
+
+    async def __call__(self, exe: str, *args: str, **kwargs: object) -> FakeProc:
+        self.calls.append((exe, *args))
+        cmd, sid = args[0], args[1]
+        script = self.scripts.get(cmd)
+        if script is None:
+            raise AssertionError(f"unscripted CLI command: {cmd}")
+        proc = script.get(sid, script.get("*"))
+        if proc is None:
+            raise AssertionError(f"unscripted call: {cmd} {sid}")
+        return proc
+
+
+def spawn_cli(monkeypatch, **scripts) -> RoutingSpawn:
+    recorder = RoutingSpawn(**scripts)
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", recorder)
+    return recorder
+
+
+def commands_of(recorder: RoutingSpawn, cmd: str) -> list[tuple[str, ...]]:
+    return [c for c in recorder.calls if len(c) > 1 and c[1] == cmd]
+
+
+def sandbox_tenant(tenant_id: str, sid: str) -> Tenant:
+    """An e2b registry record honoring the container==sandbox_id invariant."""
+    return Tenant(
+        tenant_id=tenant_id,
+        public_host=f"{tenant_id}.sandbox.local",
+        upstream=f"http://localhost:8888/kruise/{sid}/4096",
+        container=sid,
+        volume="",
+        backend="e2b",
+        sandbox_id=sid,
+    )
+
+
+DOCKER_TENANT = Tenant("dock", "dock.local", "http://127.0.0.1:28081", "vt-tenant-dock")

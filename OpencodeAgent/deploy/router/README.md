@@ -30,8 +30,9 @@ the same Bearer key against its own `API_AUTH_KEY`.
 | `router/fence.py` | per-tenant admission fence (openwork directory-fence) | 156 | 92 |
 | `router/wake.py` | wake-on-inbound + the timeout fallback page | 151 | 101 |
 | `router/reclaim.py` | idle reclaim with the engine truth check (opencode-router) | 240 | 178 |
-| `router/backend.py` | container control: docker CLI (local), ECS (documented) | 158 | 86 |
-| `router/cli.py` | `serve` / `show` / `reclaim [--dry-run]` | 140 | 113 |
+| `router/backend.py` | container control: docker CLI, e2b sandbox-ctl shell-out (T16), ECS (documented) | 338 | — |
+| `router/keepalive.py` | TTL keepalive one-shot for running e2b tenants (T18) | 212 | 132 |
+| `router/cli.py` | `serve` / `show` / `reclaim [--dry-run]` / `keepalive [--ttl N]` | 161 | 124 |
 | `router/spec.py` + `router/templates.py` + `router/provision.py` | provisioning: spec, rendered artifacts, orchestration | 91 / 206 / 217 | 64 / 161 / 156 |
 | `deploy/provision_tenant.py` | the operator CLI (thin launcher) | 132 | 103 |
 | `deploy/e2e_*.py` (7 modules) | the two-tenant E2E rig, check groups, evidence bundle | 91–367 | 71–290 |
@@ -166,6 +167,105 @@ defaulting to **0 = off**.
 (bounded), runs the action, then marks it disposed. Admission is an object
 rather than a context manager because an SSE stream outlives its handler.
 
+## Sandbox lifecycle (ACS/e2b) — plan T18, gate D11 shape (a)/ⓑ/ⓓ
+
+`backend: "e2b"` tenants run a **pause-only** lifecycle: idle → `beta_pause`
+(auto-pause), wake-on-inbound → one-step `start`, and `kill` only through
+`reprovision-sandbox`/retirement (T17). PVC/NAS checkpoint storage is
+deferred (no csi ticket) — pausing loses nothing (filesystem checkpoint,
+T11), so no pause-avoidance knob is needed.
+
+### The three cadences
+
+| Cadence | Command | What it does |
+|---|---|---|
+| keepalive **≤ TTL/2** (TTL 1800 → every ≤ 15 min) | `python -m router.cli keepalive` | running e2b tenants get `e2b-sandbox-ctl set-timeout` (only-if-longer ladder, runbook §7.2); paused tenants are skipped (retention is indefinite), absent ones reported for reprovision; exit code 1 = at least one tenant needs operator attention |
+| idle pass, e.g. every 15–30 min | `python -m router.cli reclaim` | truth check → idle tenants get `stop` = **beta_pause**; a reclaimed tenant stays registered — its next inbound request wakes it (connect, 0.75–0.86 s measured, T11) |
+| every inbound request | automatic (`wake.py`) | a failed route to a paused sandbox triggers `backend.start` = connect + route poll; `start` also refreshes the TTL to the 1800 s default |
+
+**Why the keepalive ladder is mandatory**: TTL platform-release is real
+(T10 — a `timeout=1800` sandbox was released at expiry *mid-experiment*) and
+wake-time renewal only reaches sessions that went through a wake; a long
+active session must be refreshed while it runs (runbook §7.4). The cadence
+must stay ≤ TTL/2 so every call is strictly longer than the remaining
+deadline and the ladder ratchets.
+
+`VT_ROUTER_RECLAIM_INTERVAL_S` remains **unwired by choice** (a parsed
+placeholder): both passes run as cron/systemd one-shots, as `reclaim` always
+has — the operator owns the interleaving (recommended order per cycle:
+reclaim first, keepalive second). No background loop is embedded in the app.
+
+Keepalive config is localized env reads (T16/T17 precedent — deliberately
+*not* config.py knobs):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `VT_ROUTER_E2B_TTL_S` | `1800` | ladder step in seconds; malformed or ≤ 0 fails fast (a typo must not silently disable the ladder) |
+| `VT_ROUTER_E2B_CTL_BIN` | the T16 stable-venv path | the one `e2b-sandbox-ctl` binary used for both the state probe and the set-timeout call |
+
+### Fail-closed idleness (why auto-pause is safe)
+
+`reclaim.py` delivers the ⓑ semantics for e2b tenants through the backend
+abstraction with **zero consumer edits** (the T16 exit-code contract is what
+makes this true): `engine_get` on the sandbox path answers `None` for a
+paused, absent, failed, or contract-breaking probe — engine silence **plus**
+an empty proxy ledger means KEEP, never a pause on a guess. A sandbox is
+paused only when its own engine reports a stale last activity. Pinned by
+`test_router_sandbox_lifecycle.py` (engine silence ⇒ no `stop` call ever
+reaches the CLI; fence serialization ⇒ a pause never races an in-flight
+request, and a disposal-marked tenant answers 410 until the next wake clears
+the mark).
+
+### Tenant key delivery (resolves the T17 follow-up ①)
+
+The tenant `API_AUTH_KEY` is a **router-edge credential and never enters the
+sandbox runtime**: the registry stores only its sha256 (token resolution,
+rule 1) and the plaintext lives in exactly one owner-only file
+(`<tenant>/tenant.env`, `0600`, ECS host) — handing the key to the tenant is
+reading that file. The router **reads** the bearer for resolution and
+forwards the `Authorization` header unchanged (`headers.py`, pinned by
+`test_authorization_header_passes_through_unchanged`): nothing is consumed,
+injected, or rewritten. Inside the sandbox, opencode serve authenticates
+with its own credential — the pool template's basic auth
+(`OPENCODE_SERVER_PASSWORD`, user literal `opencode`, shared across the
+pool; T9 matrix), which the router never holds and `e2b-sandbox-ctl` only
+touches through its dual password path for the truth check.
+
+Accurate consequence for the current direct-to-serve upstream (PoC form):
+one `Authorization` header carries one scheme. A client presenting the
+tenant Bearer key passes router resolution but is answered **401 by serve**
+(it speaks basic only); today a client reaches serve through the router by
+routing on its **registered Host** (rule 2) and presenting the pool basic
+credential, which serve judges. In the D11 shape-(a) production topology
+the per-tenant gateway (ECS side, Bearer re-validation against its own
+`API_AUTH_KEY`) stands in front of serve and the tenant-key chain lands as
+designed. Per-tenant serve credentials (rotating away from the
+pool-shared password) are **future hardening — recorded open, not built
+in T18**.
+
+### What kill means for data (D11 ⓓ — documented, not mitigated)
+
+Keepalive and auto-pause never kill; only reprovision/retirement does. A
+kill loses the sandbox's engine session store (T12:
+`/root/.local/share/opencode` is gone; the in-pod proxy user could not read
+it anyway). That is the accepted shape-(a) trade: the runner conversation is
+rebuildable, the **bridge transcript is safe on the ECS side**, and an
+interrupted in-flight turn surfaces through the bridge's branch-3
+"interrupted" semantics. Pause loses nothing.
+
+### Mixed-fleet limitation
+
+`VT_ROUTER_BACKEND` is one value per router **process** (wake/reclaim take
+the single injected backend), so a registry that mixes docker and e2b
+tenants needs one router process per backend form until per-tenant backend
+dispatch lands at the app level. The keepalive pass is mixed-fleet safe by
+construction: it dispatches on each tenant's `backend` field and never
+probes a docker tenant with the e2b CLI (pinned by test).
+
+Operator runbook: `mymain-wiki/acs-sandbox/ACS_SANDBOX_DEPLOY_RUNBOOK.md`
+Phase 7 (pause/TTL/kill/cost semantics; §7.4 is the approved auto-pause
+form this section wires).
+
 ## Provisioning
 
 ```bash
@@ -241,9 +341,9 @@ no restart (proven by the E2E). A failed reload keeps the last good table.
 | `WAKE_POLL_INTERVAL_S` | `1` | health poll cadence |
 | `DRAIN_TIMEOUT_S` | `30` | fence drain budget during disposal/reclaim |
 | `IDLE_TTL_S` | `10800` | reclaim threshold (policy owner: T12) |
-| `RECLAIM_INTERVAL_S` | `0` (off) | periodic reclaim loop interval |
+| `RECLAIM_INTERVAL_S` | `0` (off) | parsed placeholder — the interval policy runs as cron one-shots, not an in-app loop (see "Sandbox lifecycle") |
 | `ADMIN_TOKEN_SHA256` | `""` (admin surface **disabled**) | sha256 of the admin Bearer token |
-| `BACKEND` | `docker-cli` | `docker-cli` \| `ecs` (documented, unimplemented) |
+| `BACKEND` | `docker-cli` | `docker-cli` \| `e2b` (sandbox-ctl shell-out, T16) \| `ecs` (documented, unimplemented); one value per router process — see "Sandbox lifecycle" |
 | `DOCKER_BIN` / `SERVE_URL` / `HEALTH_PATH` | `docker` / `http://127.0.0.1:4096` / `/health` | backend + probe targets |
 | `LOG_LEVEL` | `INFO` | the router's own logger level |
 
@@ -254,6 +354,7 @@ cd OpencodeAgent/deploy
 VT_ROUTER_REGISTRY=/srv/vt-tenants/tenant_registry.json python -m router.cli serve --port 28080
 python -m router.cli show                 # routing table (no secrets)
 python -m router.cli reclaim --dry-run    # truth-check verdicts, stops nothing
+python -m router.cli keepalive            # TTL ladder for running e2b tenants (cron ≤ TTL/2)
 ```
 
 Containerized (`Dockerfile.router` + `docker-compose.router.yml`): the router
@@ -274,6 +375,7 @@ pytest OpencodeAgent/tests/ -q     # 157 passed, 1 skipped — docker-free
 | `test_router_streaming.py` | SSE headers, byte-for-byte relay, the synthetic error frame |
 | `test_router_fence.py` | admission counting, dispose-vs-in-flight serialization, drain timeout, refusal after disposal |
 | `test_router_reclaim.py` | the engine truth check (documented + wrapped + empty + unparsable payloads), fail-closed, fenced stop, multi-tenant pass |
+| `test_router_sandbox_lifecycle.py` | T18: keepalive pass (refresh/paused-skip/absent/per-tenant isolation/TTL env/exit codes) + reclaim on the real e2b backend (silence⇒KEEP, stale⇒beta_pause, fence serialization) — CLI subprocess fully mocked |
 | `test_router_wake.py` | cold start + body replay, unhealthy-but-running, timeout/missing-container/unusable-backend fallback pages, the admin surface |
 | `test_provision_tenant.py` | secrets, env seeds, passthrough allowlist, placeholders, compose shape, registry entry, idempotency |
 | `test_router_e2e.py` | docker-free app construction + `cli show`; the compose E2E gated on `VT_T11_E2E=1` |

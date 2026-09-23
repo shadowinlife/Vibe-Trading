@@ -1,4 +1,4 @@
-"""Operator entry points for the tenant router: serve / show / reclaim."""
+"""Operator entry points for the tenant router: serve / show / reclaim / keepalive."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from typing import assert_never
 from .backend import build_backend
 from .config import RouterSettings
 from .fence import TenantFence
+from .keepalive import ATTENTION_OUTCOMES, keepalive_pass
 from .reclaim import ActivityLedger, ReclaimContext, evaluate_tenant, reclaim_idle
 from .registry import RegistryError, TenantRegistry
 
@@ -29,6 +30,15 @@ def main(argv: list[str] | None = None) -> int:
     reclaim.add_argument(
         "--dry-run", action="store_true", help="evaluate only, stop nothing"
     )
+    keepalive = commands.add_parser(
+        "keepalive", help="one-shot TTL refresh for running e2b tenants"
+    )
+    keepalive.add_argument(
+        "--ttl",
+        type=int,
+        default=None,
+        help="TTL ladder step in seconds (default VT_ROUTER_E2B_TTL_S or 1800)",
+    )
     args = parser.parse_args(argv)
     settings = RouterSettings.from_env()
     match args.command:
@@ -38,6 +48,8 @@ def main(argv: list[str] | None = None) -> int:
             return _show(settings)
         case "reclaim":
             return asyncio.run(_reclaim(settings, args.dry_run))
+        case "keepalive":
+            return asyncio.run(_keepalive(settings, args.ttl))
         case unreachable:
             assert_never(unreachable)
 
@@ -123,6 +135,26 @@ async def _reclaim(settings: RouterSettings, dry_run: bool) -> int:
         decisions = await reclaim_idle(tenants, context)
     print(json.dumps([asdict(decision) for decision in decisions], indent=2))
     return 0
+
+
+async def _keepalive(settings: RouterSettings, ttl_s: int | None) -> int:
+    """Run one TTL keepalive pass over the e2b tenants (T18, gate D11 ⓑ).
+
+    A cron-friendly one-shot mirroring ``reclaim``: running tenants get their
+    ``end_at`` ratcheted to ``now + VT_ROUTER_E2B_TTL_S`` through the
+    sandbox-ctl set-timeout call, paused/absent/docker tenants are recorded
+    and skipped. Exit 1 means at least one tenant needs operator attention
+    (a TTL failure to refresh, an unreachable control plane, or a released
+    sandbox), so the monitor is the cron exit code, not stdout parsing.
+    """
+    try:
+        registry = TenantRegistry.load(settings.registry_path)
+    except RegistryError as exc:
+        print(f"registry error: {exc}")
+        return 1
+    decisions = await keepalive_pass(list(registry.tenants.values()), ttl_s=ttl_s)
+    print(json.dumps([asdict(decision) for decision in decisions], indent=2))
+    return 1 if any(d.outcome in ATTENTION_OUTCOMES for d in decisions) else 0
 
 
 if __name__ == "__main__":
