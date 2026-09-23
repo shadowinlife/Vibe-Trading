@@ -4,7 +4,7 @@ description: mymain 分支从 2026-07 记忆工作起步到当前的完整时间
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-09-22
+updated: 2026-09-23
 tags: [history, timeline, changelog, mymain]
 related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 ---
@@ -16,6 +16,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 
 | 日期 | 事件 | 证据 |
 |---|---|---|
+| 2026-09-23 | **ACS Agent Sandbox Stage A PoC 收官并沉淀部署正典**——`opencode + omo` 在 MicroVM 专用池端到端跑通（T1-T16，主仓 `.omo/evidence/` 15 份）：claim p50 0.151s、fresh-claim 路由地板 65-98s（预算 180s）、pause=原地检查点唤醒 0.75-0.86s、首消息 p95 0.191s、RSS 稳态 316-370MB、月成本情景 ¥45-449；用户新事实入册：**ACS 集群与 ClickHouse/liteLLM 跨账号**（免密拉取不成立根因，数据面列开放项）；D11 门裁决 Stage B 形态 (a) runner + pause-only；新知识产出 [../acs-sandbox/ACS_SANDBOX_DEPLOY_RUNBOOK.md](../acs-sandbox/ACS_SANDBOX_DEPLOY_RUNBOOK.md)（从 0 部署正典：Phase 0-8 + P01-P32 坑表 + 附录 A-F，同坑不重踩） | 主仓 `.omo/evidence/task-*.json`、`gate-materials.md`；[../acs-sandbox/ACS_SANDBOX_DEPLOY_RUNBOOK.md](../acs-sandbox/ACS_SANDBOX_DEPLOY_RUNBOOK.md) |
 | 2026-09-22 | **ACS Agent Sandbox（MicroVM）冒烟验证通过**——opencode 动态拉起后端的新部署路径起点：E2B 私有协议 + port-forward 全链路（预热池命中 create 0.2s / 冷启动 ~90s / 池补足 ~40s / SandboxClaim ~16s），五检查点 + 三获取路径全 PASS；沉淀七项踩坑（e2b SDK ≥2.35,<2.38 版本锁、商品开通 403、webhook 拦删 Pod 等）；新知识域 `acs-sandbox/` 建立 | [../acs-sandbox/ACS_SANDBOX_SMOKE_2026-09-22.md](../acs-sandbox/ACS_SANDBOX_SMOKE_2026-09-22.md) |
 | 2026-09-18 | 北向/南向资金链路四源实证（tushare 未下线、eastmoney 北向净额已死、tushare 北向字段变成交额、南向字段变累计存量）→ 上游 Issue [#1481](https://github.com/HKUDS/Vibe-Trading/issues/1481)/[#1483](https://github.com/HKUDS/Vibe-Trading/issues/1483) + PR [#1484](https://github.com/HKUDS/Vibe-Trading/pull/1484)（北向死源修复）/[#1486](https://github.com/HKUDS/Vibe-Trading/pull/1486)（`get_southbound_flow`）；同日敏感信息清理（token+三 IP，commit `5c967acd`） | [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §2.3 ⑦⑧、§5 2026-09-18 条 |
 | 2026-09-18 | **engine-bridge 分支** rebase 对齐上游 `d3c29488`（+417 commit，v0.1.15）：56 commit 重放、4 冲突停点；reconcile 修复 25 门禁失败，含两个 F5 潜伏 bug（CH loader 模块名写错从未注册、`fetch_*_ch` 内置回退致 provenance 错标）；两轮上游可替换性审查（bridge 11 能力 KEEP×7/PARTIAL×4；memory 核心栈已被上游吸收）；首推 fork + 备份 `backup/engine-bridge-pre-rebase-20260918` | [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-09-18 条；[../branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md](../branch/UPSTREAM_REPLACEMENT_REVIEW_2026-09-18.md) |

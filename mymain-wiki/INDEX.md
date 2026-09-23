@@ -4,7 +4,7 @@ description: wiki 内每份文档的一行式索引（路径 + 一句话 + 状�
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-09-22
+updated: 2026-09-23
 tags: [index]
 ---
 
@@ -44,6 +44,7 @@ tags: [index]
 
 - [acs-sandbox/ACS_SANDBOX_SMOKE_2026-09-22.md](acs-sandbox/ACS_SANDBOX_SMOKE_2026-09-22.md) — 冒烟验证记录与 runbook：E2B 私有协议 + port-forward 全链路（预热池命中 create 0.2s）、材料清单、七项踩坑（e2b SDK 版本 405 / 商品 403 / webhook 拦删 Pod 等）、opencode 集成路径、清理与凭证轮换指引 — active
 - [acs-sandbox/POC_IMAGE_opencode-sandbox-poc.md](acs-sandbox/POC_IMAGE_opencode-sandbox-poc.md) — opencode-sandbox-poc:v0.1 最小 PoC 镜像血统卡（D9：仅 opencode+omo、无密钥参考配置、sleep infinity 长驻 ENTRYPOINT、tier-a 构建期 OMO、1.39GB vs 全家桶 4.7GB、本地制品不回流、T8 原生验证边界） — active
+- [acs-sandbox/ACS_SANDBOX_DEPLOY_RUNBOOK.md](acs-sandbox/ACS_SANDBOX_DEPLOY_RUNBOOK.md) — **部署正典**：opencode+omo 在 ACS Agent Sandbox 的从 0 到 1 完整手册（Phase 0-8 + 附录 A-F）：跨账号拓扑、集群/商品/白名单搭建、SDK 钉版与 patch_e2b、共享池、镜像制作、ACR 拉取决策树、专用池+路由传播地板、pause/TTL/kill/成本、32 项坑速查表（P01-P32 编号症状根因修复证据） — active
 
 ## harness-evolution/ — harness 演进研究档案（2026-08-21~30）
 
