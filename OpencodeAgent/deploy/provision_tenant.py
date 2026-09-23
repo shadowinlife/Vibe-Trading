@@ -148,7 +148,7 @@ def _sandbox_parser(command: str) -> argparse.ArgumentParser:
         "or the stable sandbox-ctl venv)",
     )
     parser.add_argument(
-        "--route-budget", type=int, default=180, help="route-wait budget seconds"
+        "--route-budget", type=int, default=300, help="route-wait budget seconds"
     )
     parser.add_argument(
         "--create-timeout",

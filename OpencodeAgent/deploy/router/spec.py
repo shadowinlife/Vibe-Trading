@@ -99,9 +99,10 @@ DEFAULT_SANDBOX_TEMPLATE = "opencode-poc"
 DEFAULT_SANDBOX_CREATE_TIMEOUT_S = 360.0
 
 #: Fresh-claim route propagation is a gateway property with an observed floor
-#: band of 65-177 s (T8/T9/T15/T16) — 180 s is the CLI default and the budget
-#: provisioning waits with.
-DEFAULT_ROUTE_WAIT_BUDGET_S = 180
+#: band of 65-177 s (T8/T9/T15/T16) — but the band's upper tail is a floor not
+#: a guarantee: T19 measured 178.1-194.4 s on 2/2 fresh claims, which a 180 s
+#: budget fails. 300 s sits above the measured tail.
+DEFAULT_ROUTE_WAIT_BUDGET_S = 300
 
 
 @dataclass(frozen=True, slots=True)

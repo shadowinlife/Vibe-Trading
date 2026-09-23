@@ -60,15 +60,30 @@ class WakeUnavailable:
 WakeOutcome = Awake | WakeTimedOut | WakeUnavailable
 
 
-def make_http_probe(client: httpx.AsyncClient) -> HealthProbe:
-    """Build a /health probe over a shared client (connection errors = not ready)."""
+def make_http_probe(
+    client: httpx.AsyncClient, *, health_accept_unauthorized: bool = False
+) -> HealthProbe:
+    """Build a /health probe over a shared client (connection errors = not ready).
+
+    ``health_accept_unauthorized`` is the T19-B1(L2) shape switch: the
+    direct-serve form (opencode serve as PID1 behind the pool template's basic
+    auth) answers EVERY route — /health included — with 401 to an
+    unauthenticated poll, so the strict status<400 contract can never go green
+    there. A 401 on that form can only originate from serve itself (the kruise
+    gateway's own route errors are 502/404/503, measured in T19), so 401 IS
+    the proof that serve is up. The default keeps the docker/T10-gateway
+    contract exact: its /health is public (200 healthy / 503 not-ready) and
+    never answers 401.
+    """
 
     async def probe(url: str) -> bool:
         try:
             response = await client.get(url)
         except httpx.HTTPError:
             return False
-        return response.status_code < 400
+        return response.status_code < 400 or (
+            health_accept_unauthorized and response.status_code == 401
+        )
 
     return probe
 

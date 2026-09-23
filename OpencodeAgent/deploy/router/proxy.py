@@ -85,6 +85,7 @@ class Forwarder:
                 # request body is gone after the first send.
                 body=await request.body(),
             )
+            wake_trigger: str | None = None
             try:
                 upstream = await self._send(spec)
             except httpx.TransportError as first_error:
@@ -95,27 +96,7 @@ class Forwarder:
                 # RemoteProtocolError with an empty message. The wake asks the
                 # backend for the real container state, so a healthy tenant is
                 # never restarted by mistake.
-                outcome = await self._wake(tenant)
-                if not isinstance(outcome, Awake):
-                    return self._fallback_response(tenant, outcome)
-                try:
-                    upstream = await self._send(spec)
-                except httpx.HTTPError as retry_error:
-                    LOGGER.warning(
-                        "upstream unreachable after wake tenant=%s error=%s:%s",
-                        tenant.tenant_id,
-                        type(retry_error).__name__,
-                        retry_error,
-                    )
-                    return json_response(
-                        502,
-                        "upstream unreachable after wake",
-                        {
-                            "tenant": tenant.tenant_id,
-                            "first_error": f"{type(first_error).__name__}: {first_error}",
-                            "retry_error": f"{type(retry_error).__name__}: {retry_error}",
-                        },
-                    )
+                wake_trigger = f"{type(first_error).__name__}: {first_error}"
             except httpx.HTTPError as send_error:
                 # A request-level failure (bad upstream URL, etc.) that waking
                 # cannot fix: report it instead of letting it surface as a 500.
@@ -133,6 +114,42 @@ class Forwarder:
                         "error": f"{type(send_error).__name__}: {send_error}",
                     },
                 )
+            else:
+                if upstream.status_code in self._settings.wake_on_statuses:
+                    # T19-B1(L1): a gateway shape that ANSWERS an asleep tenant
+                    # — the kruise data-plane gateway 502s a paused/absent
+                    # sandbox ("healthy sandbox ... not found") instead of
+                    # producing no response. A configured status joins the same
+                    # wake-and-replay path below; the empty default keeps the
+                    # docker form transport-error-only.
+                    wake_trigger = f"HTTP {upstream.status_code}"
+
+            if wake_trigger is not None:
+                if upstream is not None:
+                    with contextlib.suppress(httpx.HTTPError):
+                        await upstream.aclose()
+                    upstream = None
+                outcome = await self._wake(tenant)
+                if not isinstance(outcome, Awake):
+                    return self._fallback_response(tenant, outcome)
+                try:
+                    upstream = await self._send(spec)
+                except httpx.HTTPError as retry_error:
+                    LOGGER.warning(
+                        "upstream unreachable after wake tenant=%s error=%s:%s",
+                        tenant.tenant_id,
+                        type(retry_error).__name__,
+                        retry_error,
+                    )
+                    return json_response(
+                        502,
+                        "upstream unreachable after wake",
+                        {
+                            "tenant": tenant.tenant_id,
+                            "first_error": wake_trigger,
+                            "retry_error": f"{type(retry_error).__name__}: {retry_error}",
+                        },
+                    )
 
             if is_sse(upstream.headers):
                 transferred = True

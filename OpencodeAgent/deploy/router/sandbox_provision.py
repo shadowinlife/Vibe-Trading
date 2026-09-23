@@ -8,7 +8,7 @@ stays the single CLI seam and existing docker imports are untouched.
 The recipe is a pure shell-out to ``e2b-sandbox-ctl`` (decision D7 — the e2b
 SDK never enters the router): ``create --template <pool>`` claims a pool
 sandbox, ``route-wait`` gates on the gateway route propagating (observed floor
-band 65-177 s, so the budget defaults to 180 s), then one registry entry is
+band 65-194 s, so the budget defaults to 300 s), then one registry entry is
 written — token digest, ``backend: "e2b"``, sandbox id, upstream rendered from
 the network-path-agnostic template (see :mod:`router.registry`).
 

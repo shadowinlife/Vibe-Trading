@@ -50,6 +50,21 @@ class RouterSettings:
     docker_bin: str = "docker"
     serve_url: str = DEFAULT_SERVE_URL
     health_path: str = "/health"
+    # T19-B1(L1): gateway shapes that ANSWER an asleep tenant with an ordinary
+    # HTTP response (the kruise data-plane gateway 502s a paused/absent
+    # sandbox) instead of producing no response at all (docker's refused/
+    # reset port -> TransportError). A response status in this set triggers
+    # the same wake-and-replay path. EMPTY = transport-error-only trigger,
+    # i.e. the docker form unchanged.
+    wake_on_statuses: frozenset[int] = frozenset()
+    # T19-B1(L2): the direct-serve form (opencode serve as PID1, pool template
+    # basic auth) answers EVERY route with 401 when unauthenticated, so the
+    # wake probe's status<400 contract can never go green. On that form a 401
+    # can only originate from serve itself (gateway route errors are 502/404/
+    # 503, T19 evidence), so 401 proves serve is up. Off by default: the
+    # docker/T10-gateway form's /health never 401s (public 200/503), so the
+    # strict contract stays exact there.
+    health_accept_unauthorized: bool = False
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Self:
@@ -74,6 +89,8 @@ class RouterSettings:
             docker_bin=_str(raw, "DOCKER_BIN", "docker"),
             serve_url=_str(raw, "SERVE_URL", DEFAULT_SERVE_URL),
             health_path=_str(raw, "HEALTH_PATH", "/health"),
+            wake_on_statuses=_status_set(raw, "WAKE_ON_STATUSES"),
+            health_accept_unauthorized=_bool(raw, "HEALTH_ACCEPT_UNAUTHORIZED"),
         )
 
 
@@ -92,3 +109,38 @@ def _int(raw: Mapping[str, str], name: str, default: int) -> int:
 
 def _float(raw: Mapping[str, str], name: str, default: float) -> float:
     return float(_lookup(raw, name, str(default)))
+
+
+def _status_set(raw: Mapping[str, str], name: str) -> frozenset[int]:
+    """Comma list of HTTP statuses; blank/absent = empty set, junk fails fast."""
+    value = _lookup(raw, name, "")
+    statuses: list[int] = []
+    for part in value.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            statuses.append(int(part))
+        except ValueError as exc:
+            raise ValueError(
+                f"{ENV_PREFIX}{name} must be a comma list of HTTP statuses, got {value!r}"
+            ) from exc
+    return frozenset(statuses)
+
+
+_TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
+_FALSE_VALUES = frozenset({"0", "false", "no", "off"})
+
+
+def _bool(raw: Mapping[str, str], name: str) -> bool:
+    value = _lookup(raw, name, "").lower()
+    if not value:
+        return False
+    if value in _TRUE_VALUES:
+        return True
+    if value in _FALSE_VALUES:
+        return False
+    raise ValueError(
+        f"{ENV_PREFIX}{name} must be a boolean (true/false/1/0/yes/no/on/off),"
+        f" got {value!r}"
+    )

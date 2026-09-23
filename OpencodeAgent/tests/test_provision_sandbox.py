@@ -115,7 +115,7 @@ def test_provision_sandbox_claims_waits_then_registers(
 
     assert fake.commands()[:2] == ["create", "route-wait"]
     assert fake.calls[0][0] == [CTL, "create", "--template", "opencode-poc"]
-    assert fake.calls[1][0] == [CTL, "route-wait", SID_OLD, "--budget", "180"]
+    assert fake.calls[1][0] == [CTL, "route-wait", SID_OLD, "--budget", "300"]
     assert result.sandbox_id == SID_OLD
     assert result.backend == "e2b"
     assert result.upstream == render_e2b_upstream(SID_OLD)

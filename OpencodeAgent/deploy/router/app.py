@@ -298,7 +298,13 @@ class Router:
             "wake begin tenant=%s container=%s", tenant.tenant_id, tenant.container
         )
         outcome = await wake_tenant(
-            tenant, self._backend, make_http_probe(self._client), self._settings
+            tenant,
+            self._backend,
+            make_http_probe(
+                self._client,
+                health_accept_unauthorized=self._settings.health_accept_unauthorized,
+            ),
+            self._settings,
         )
         match outcome:
             case Awake(elapsed_s=elapsed, started=started, state_before=state):

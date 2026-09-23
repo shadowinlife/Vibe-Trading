@@ -127,6 +127,28 @@ found by the E2E, not by reasoning — see `E2E_REPORT.md`).
 Measured on this rig (warm volume, amd64 under Rosetta): **19.7–40.9 s** from
 `docker stop` to a `201` with a real `session_id`.
 
+**Gateway shapes that ANSWER an asleep tenant (T19-B1).** The kruise data-plane
+gateway does not refuse or reset for a paused/absent sandbox — it returns an
+ordinary **HTTP 502** (`"API Error: healthy sandbox … not found"`, 39–150 ms),
+which the transport-error trigger above never sees. Two knobs compose the wake
+path for that form (both default-off, so the docker form is byte-identical):
+
+* `VT_ROUTER_WAKE_ON_STATUSES=502` — a response whose status is in this comma
+  list joins the same wake-and-replay path (body already buffered ⇒ wake ⇒
+  replay; `WakeTimedOut`/`WakeUnavailable` ⇒ the 503 + `Retry-After` page);
+* `VT_ROUTER_HEALTH_ACCEPT_UNAUTHORIZED=true` — the readiness probe also counts
+  an unauthenticated **401** as green. On the direct-serve form (opencode serve
+  as PID1 behind the pool template's basic auth) EVERY route 401s without
+  credentials, so the strict `status<400` contract can never go green there;
+  a 401 can only come from serve itself (gateway route errors are 502/404/503 —
+  T19 matrix), so it proves serve is up. The docker/T10-gateway `/health` is
+  public (200/503) and never 401s, so leaving the knob off keeps its
+  semantics exact.
+
+e2b deployment recipe: `VT_ROUTER_WAKE_ON_STATUSES=502` +
+`VT_ROUTER_HEALTH_ACCEPT_UNAUTHORIZED=true` (verified live in
+`.omo/evidence/task-19b-wake-fix.json`).
+
 **Production (ECS) wake path — documented, not implemented.** The plan forbids
 ECS API calls against real infrastructure, and an untested wake path is worse
 than a loud one: `EcsBackend.__init__` raises with the recipe in its docstring
@@ -181,7 +203,7 @@ T11), so no pause-avoidance knob is needed.
 |---|---|---|
 | keepalive **≤ TTL/2** (TTL 1800 → every ≤ 15 min) | `python -m router.cli keepalive` | running e2b tenants get `e2b-sandbox-ctl set-timeout` (only-if-longer ladder, runbook §7.2); paused tenants are skipped (retention is indefinite), absent ones reported for reprovision; exit code 1 = at least one tenant needs operator attention |
 | idle pass, e.g. every 15–30 min | `python -m router.cli reclaim` | truth check → idle tenants get `stop` = **beta_pause**; a reclaimed tenant stays registered — its next inbound request wakes it (connect, 0.75–0.86 s measured, T11) |
-| every inbound request | automatic (`wake.py`) | a failed route to a paused sandbox triggers `backend.start` = connect + route poll; `start` also refreshes the TTL to the 1800 s default |
+| every inbound request | automatic (`wake.py`) | a failed route to a paused sandbox triggers `backend.start` = connect + route poll; `start` also refreshes the TTL to the 1800 s default. The paused sandbox ANSWERS 502 (not a transport error), so this wake needs `VT_ROUTER_WAKE_ON_STATUSES=502` + `VT_ROUTER_HEALTH_ACCEPT_UNAUTHORIZED=true` — see "Wake-on-inbound" (T19-B1) |
 
 **Why the keepalive ladder is mandatory**: TTL platform-release is real
 (T10 — a `timeout=1800` sandbox was released at expiry *mid-experiment*) and
@@ -339,6 +361,8 @@ no restart (proven by the E2E). A failed reload keeps the last good table.
 | `WRITE_TIMEOUT_S` | `60` | request-body write budget |
 | `WAKE_TIMEOUT_S` | `300` | health-poll budget before the fallback page |
 | `WAKE_POLL_INTERVAL_S` | `1` | health poll cadence |
+| `WAKE_ON_STATUSES` | `""` (transport-error-only) | comma list of response statuses that also trigger the wake path — e2b/kruise form: `502` (T19-B1) |
+| `HEALTH_ACCEPT_UNAUTHORIZED` | `false` | count an unauthenticated 401 on the health probe as ready — direct-serve form only (T19-B1); malformed value fails fast |
 | `DRAIN_TIMEOUT_S` | `30` | fence drain budget during disposal/reclaim |
 | `IDLE_TTL_S` | `10800` | reclaim threshold (policy owner: T12) |
 | `RECLAIM_INTERVAL_S` | `0` (off) | parsed placeholder — the interval policy runs as cron one-shots, not an in-app loop (see "Sandbox lifecycle") |
