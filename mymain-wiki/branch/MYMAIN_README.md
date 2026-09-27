@@ -76,7 +76,7 @@ MCP **OFF=78 / ON=83**（上游基数 74 实测不变 + 3 ch_* + 1 scheduled_res
 
 #### 遗留（用户门控）
 
-- **镜像打包 + registry push**：生产形态改为镜像交付（不再 ECS host-direct 部署）；构建走 `OpencodeAgent/build.sh` → 主 `Dockerfile`（vendor git-archive），后续执行。
+- ~~**镜像打包 + registry push**~~ **已完成（2026-09-27）**：`opencode-serve:v3.1.0-mymain`（linux/amd64，4.43GB，28 层，digest `sha256:216d0cb0…`）已推送 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode`（凭据在 `OpencodeAgent/.env`，IP 白名单内构建机直推成功）。冒烟（amd64 容器内真 entrypoint）：render OK、**VT MCP 83 tools**、deny 三组（trading_*/qveris_*/iwencai_search）、模型 qwen3.8-max + flash 轻量档（explore/quick/unspecified-low）、serve 监听 :4096。镜像血统：v2.x=子代理时代 → v3.0.0-tenant=引擎桥线 → **v3.1.0-mymain=纯 opencode 路线首个镜像**（vendor 自 mymain `92889e48`）。
 
 ---
 
