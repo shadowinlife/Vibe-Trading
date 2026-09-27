@@ -54,7 +54,7 @@ RUN mkdir -p /workspace/analysis \
 RUN chown -R opencode:opencode /workspace
 
 ENV LANGCHAIN_PROVIDER=dashscope \
-    LANGCHAIN_MODEL_NAME=qwen3.7-max \
+    LANGCHAIN_MODEL_NAME=qwen3.8-max \
     DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1 \
     LANGCHAIN_TEMPERATURE=0.3 \
     TZ=Asia/Shanghai \

@@ -1,5 +1,7 @@
 {
   "disabled": [
-    "trading_*"
+    "trading_*",
+    "qveris_*",
+    "iwencai_search"
   ]
 }

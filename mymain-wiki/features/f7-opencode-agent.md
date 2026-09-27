@@ -18,7 +18,8 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 - 问题处理协议：明确/开放/待澄清/宏观四类分流，开放型走 Least-to-Most 收敛漏斗，待澄清型走槽位澄清，宏观型走 Step-Back 拆分；硬性轮次预算每意图 1 轮 ≤3 问
 - 防幻觉与诚实拒答纪律：数字溯源三来源、LLM 禁做数学、弃权一等公民、五要素拒答模板
 - 领域资产：escape-top 微观结构信号（CH 数据层 + 7 门验证框架）、三层选股、VT 联邦行情 scanner、cron + 钉钉通知
-- 工具治理：`render_config.py` 把工具清单编译为 opencode permission deny 项（启动时生效，被 deny 工具不进模型可见列表；当前策略仅 `trading_*`——纯研究部署无 broker connector），并按 agent 裁剪工具面（explore / multimodal-looker deny `vibe-trading_*`）
+- 工具治理：`render_config.py` 把工具清单编译为 opencode permission deny 项（启动时生效，被 deny 工具不进模型可见列表；当前策略 `trading_*`（无 broker connector）+ `qveris_*` / `iwencai_search`（付费面关闭，2026-09-27）——主循环可见 71/83），并按 agent 裁剪工具面（explore / multimodal-looker deny `vibe-trading_*`）
+- OMO 两级模型（2026-09-27 起，取代 O4 统一政策）：主力 `qwen3.8-max`（16 角色，含 multimodal-looker）+ 轻量 `qwen3.8-flash`（explore / quick / unspecified-low，effort medium）
 - **主循环直连全工具面（2026-09-27 起）**：12 领域子代理层已回退（`subagents.json` / `config/prompts/` / 委派节删除，被剥离的 13 个领域工具回归主面）；nano-search-mcp 已回退（通用检索 = VT `web_search` + `read_url`；A 股结构化检索为已知缺口，DIVERGENCE §4.6 R2）。裁决与证据：DIVERGENCE §5 2026-09-27 条
 
 ## 关键文件与开关
@@ -27,7 +28,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 |---|---|
 | `OpencodeAgent/`（整目录） | harness 本体：构建脚本、配置模板、部署文档 |
 | `OpencodeAgent/config/render_config.py` | entrypoint 渲染逻辑的单一事实源（24 项测试） |
-| `OpencodeAgent/opencode.json.tmpl` / `oh-my-openagent.json` | 工具面与模型配置（全部 agents 统一 qwen3.8-max） |
+| `OpencodeAgent/opencode.json.tmpl` / `oh-my-openagent.json` | 工具面与模型配置（两级：主力 qwen3.8-max / 轻量 qwen3.8-flash） |
 | `OpencodeAgent/.env.example` | 容器 env 清单（`CLICKHOUSE_*` / `CLICKHOUSE_LLM_*` / `DASHSCOPE_API_KEY` 等） |
 
 ## 开发历史

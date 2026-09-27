@@ -97,6 +97,14 @@ class TestToolGovernanceManifest:
         manifest = render_config.load_manifest(MANIFEST_PATH)
         assert "trading_*" in manifest["disabled"]
 
+    def test_paid_surface_stays_denied(self):
+        """Paid/key-gated surfaces are schema tax without credentials: the
+        QVeris marketplace (billable execution) and iWenCai (commercial key)
+        stay denied until keys are provisioned in the container .env."""
+        manifest = render_config.load_manifest(MANIFEST_PATH)
+        assert "qveris_*" in manifest["disabled"]
+        assert "iwencai_search" in manifest["disabled"]
+
     def test_disabled_entries_compile_to_permission_denies(self):
         config = _rendered()
         permission = config["permission"]
@@ -126,32 +134,47 @@ class TestPerAgentToolScoping:
 
 
 class TestOmoModelConfig:
-    """OMO runs on a single uniform model: qwen3.8-max is multimodal, so no
-    agent (including multimodal-looker) needs a different tier."""
+    """Two-tier model policy (aligned with the maintainer's local OMO roster):
+    qwen3.8-max is the primary model for every reasoning-heavy role; the
+    high-frequency, low-complexity, latency-sensitive roles (explore agent,
+    quick / unspecified-low categories) run on qwen3.8-flash. multimodal-looker
+    stays on the primary tier: qwen3.8-max is verified multimodal, flash is
+    not."""
 
-    UNIFORM_MODEL = "alibaba-cn/qwen3.8-max"
+    PRIMARY_MODEL = "alibaba-cn/qwen3.8-max"
+    LIGHT_MODEL = "alibaba-cn/qwen3.8-flash"
+    LIGHT_AGENTS = {"explore"}
+    LIGHT_CATEGORIES = {"quick", "unspecified-low"}
 
     def _omo_config(self) -> dict:
         with open(CONFIG_DIR / "oh-my-openagent.json", encoding="utf-8") as f:
             return json.load(f)
 
-    def test_all_agents_use_uniform_model(self):
+    def test_agents_follow_the_two_tier_policy(self):
         omo = self._omo_config()
         assert omo["agents"], "agents section must not be empty"
         for agent_name, spec in omo["agents"].items():
-            assert spec["model"] == self.UNIFORM_MODEL, agent_name
-            assert spec["reasoningEffort"] == "max", agent_name
+            if agent_name in self.LIGHT_AGENTS:
+                assert spec["model"] == self.LIGHT_MODEL, agent_name
+                assert spec["reasoningEffort"] == "medium", agent_name
+            else:
+                assert spec["model"] == self.PRIMARY_MODEL, agent_name
+                assert spec["reasoningEffort"] == "max", agent_name
 
-    def test_all_categories_use_uniform_model(self):
+    def test_categories_follow_the_two_tier_policy(self):
         omo = self._omo_config()
         assert omo["categories"], "categories section must not be empty"
         for category, spec in omo["categories"].items():
-            assert spec["model"] == self.UNIFORM_MODEL, category
-            assert spec["reasoningEffort"] == "max", category
+            if category in self.LIGHT_CATEGORIES:
+                assert spec["model"] == self.LIGHT_MODEL, category
+                assert spec["reasoningEffort"] == "medium", category
+            else:
+                assert spec["model"] == self.PRIMARY_MODEL, category
+                assert spec["reasoningEffort"] == "max", category
 
     def test_opencode_default_model_matches(self):
         config = _rendered()
-        assert config["model"] == self.UNIFORM_MODEL
+        assert config["model"] == self.PRIMARY_MODEL
 
 
 class TestAlwaysLoadedContextBudget:

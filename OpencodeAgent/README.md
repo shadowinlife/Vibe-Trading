@@ -61,7 +61,7 @@ OpencodeAgent/
 ├── config/                     # OpenCode configuration
 │   ├── opencode.json.tmpl      # Jinja2 template (rendered at runtime with ClickHouse creds)
 │   ├── render_config.py        # Config renderer: template + tool governance manifest → opencode.json
-│   ├── oh-my-openagent.json    # Agent/category model assignments (uniform qwen3.8-max)
+│   ├── oh-my-openagent.json    # Agent/category model assignments (primary qwen3.8-max; light tier qwen3.8-flash)
 │   ├── tui.json                # TUI plugin configuration
 │   ├── package.json            # OpenCode plugin dependencies
 │   └── vibe-trading-tools.json # Tool governance manifest (disabled VT tools → permission denies)

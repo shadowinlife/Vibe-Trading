@@ -27,7 +27,7 @@
 │   ├── opencode.json.tmpl             # 配置模板（Jinja2，宿主机路径版）
 │   ├── render_config.py               # 渲染器：模板 + 工具治理清单 → opencode.json
 │   ├── opencode.json                  # 渲染产物（含 CH 凭证，勿外传）
-│   ├── oh-my-openagent.json           # OMO 配置：全部 agent/subagent = alibaba-cn/qwen3.8-max
+│   ├── oh-my-openagent.json           # OMO 配置：主力 alibaba-cn/qwen3.8-max；轻量档 qwen3.8-flash
 │   ├── vibe-trading-tools.json        # 工具治理清单（disabled: trading_*）
 │   ├── tui.json / package.json
 │   └── skills/                        # 5 个 OpenCode skills（data-warehouse / html-report /
@@ -74,7 +74,7 @@ npm install -g opencode-ai@latest     # 当前部署版本 1.18.23
 ```
 
 - OMO 以 opencode 插件形式装载：opencode.json 中 `"plugin": ["oh-my-openagent@latest"]`，首次启动自动安装到 `.opencode/node_modules/`。
-- `.opencode/oh-my-openagent.json` 将**全部** agent/subagent（build / hephaestus / oracle / librarian / explore / multimodal-looker / prometheus / metis / momus / atlas 等）统一配置为 `alibaba-cn/qwen3.8-max` + `reasoningEffort: max`。
+- `.opencode/oh-my-openagent.json` 两级模型（与本机 OMO roster 一致）：**主力档** `alibaba-cn/qwen3.8-max` + `reasoningEffort: max`（build / hephaestus / oracle / librarian / multimodal-looker / prometheus / metis / momus / atlas / sisyphus-junior 及 visual-engineering / ultrabrain / deep / artistry / unspecified-high / writing 类别）；**轻量档** `alibaba-cn/qwen3.8-flash` + `reasoningEffort: medium`（explore agent 与 quick / unspecified-low 类别——高频、低复杂度、延迟敏感）。multimodal-looker 保持主力档：qwen3.8-max 多模态已验证，flash 未验证。
 - 模型供应商 `alibaba-cn` 的认证来自环境变量 `DASHSCOPE_API_KEY`（systemd EnvironmentFile 注入，不入任何配置文件）。
 
 ## 5. 配置目录（项目级 `.opencode/`，非默认全局目录）
