@@ -577,3 +577,109 @@ class TestFlagsOffNoBehaviorChange:
         # No FTS database file in the memory dir
         db_files = list(tmp_path.rglob("*.db"))
         assert db_files == []
+
+
+# ---------------------------------------------------------------------------
+# 10. Hierarchy: save -> recall -> remove round trip (regression for the
+#     bare-slug routing bug that wrote extension-less, invisible files)
+# ---------------------------------------------------------------------------
+
+
+class TestHierarchySaveRecallRoundTrip:
+    def test_add_is_visible_to_list_and_find_and_remove(self, tmp_path, monkeypatch):
+        """add() under hierarchy writes a .md file that scans can see."""
+        monkeypatch.setenv("VT_MEMORY_HIERARCHY", "true")
+        reset_env_config()
+
+        mem = PersistentMemory(tmp_path)
+        path = mem.add("routed note", "momentum lookback research content", "project")
+        assert path is not None
+        assert path.suffix == ".md"
+        assert path.parent == tmp_path / "project"
+
+        entries = mem.list_entries()
+        assert [e.title for e in entries] == ["routed note"]
+
+        results = mem.find_relevant("momentum lookback")
+        assert [e.title for e in results] == ["routed note"]
+
+        assert mem.remove("routed note") is True
+        assert mem.list_entries() == []
+        assert not path.exists()
+
+    def test_full_preset_add_then_recall(self, tmp_path, monkeypatch, fts_db):
+        """The user-facing repro: VT_MEMORY=full, add() then find_relevant()."""
+        monkeypatch.setenv("VT_MEMORY", "full")
+        reset_env_config()
+
+        mem = PersistentMemory(tmp_path)
+        assert mem.add("full preset note", "volatility targeting body") is not None
+        assert len(mem.list_entries()) == 1
+        assert [e.title for e in mem.find_relevant("volatility targeting")] == [
+            "full preset note"
+        ]
+
+    def test_legacy_extensionless_routed_entry_still_found(self, tmp_path, monkeypatch):
+        """Files written by the pre-fix add() (no .md) remain discoverable."""
+        monkeypatch.setenv("VT_MEMORY_HIERARCHY", "true")
+        reset_env_config()
+
+        legacy_dir = tmp_path / "project"
+        legacy_dir.mkdir(parents=True)
+        (legacy_dir / "legacy_routed").write_text(
+            "---\nname: legacy routed\ndescription: pre-fix entry\n"
+            "type: project\nid: ccc333\ncreated_at: 2025-01-01T00:00:00\n"
+            "updated_at: 2025-01-01T00:00:00\nkeywords: []\n"
+            "quality_score: 0.5\naccess_count: 0\n"
+            "last_accessed: 2025-01-01T00:00:00\nimportance: 0.5\n"
+            "related_memories: []\ncategory: project\n"
+            "compression_level: raw\n---\n\nLegacy routed content",
+            encoding="utf-8",
+        )
+        # Hidden files in category dirs must stay invisible.
+        (legacy_dir / ".DS_Store").write_bytes(b"\x00")
+
+        mem = PersistentMemory(tmp_path)
+        titles = {e.title for e in mem.list_entries()}
+        assert titles == {"legacy routed"}
+        assert mem.remove("legacy routed") is True
+
+
+# ---------------------------------------------------------------------------
+# 11. GC dry_run performs no content mutations even with compression on
+# ---------------------------------------------------------------------------
+
+
+class TestGcDryRunIsReadOnly:
+    def test_dry_run_does_not_compress(self, tmp_path, monkeypatch):
+        """run_gc(dry_run=True) must not rewrite aged entries."""
+        monkeypatch.setenv("VT_MEMORY_COMPRESSION", "true")
+        monkeypatch.setenv("VT_MEMORY_GC", "true")
+        reset_env_config()
+
+        mem = PersistentMemory(tmp_path)
+        path = mem.add(
+            "dry run memory",
+            "Sufficiently long content describing systematic strategies, "
+            "risk management, volatility targeting and position sizing so "
+            "the compression pipeline would consider it a candidate entry.",
+            "project",
+        )
+        assert path is not None
+
+        # Age the entry so compression would trigger on a real run.
+        ten_days_ago = time.strftime(
+            "%Y-%m-%dT%H:%M:%S", time.gmtime(time.time() - 10 * 86400)
+        )
+        text = path.read_text(encoding="utf-8")
+        for key in ("last_accessed", "created_at"):
+            current = text.split(f"{key}: ")[1].split(chr(10))[0]
+            text = text.replace(f"{key}: {current}", f"{key}: {ten_days_ago}")
+        path.write_text(text, encoding="utf-8")
+
+        before = path.read_text(encoding="utf-8")
+        MemoryLifecycle(mem).run_gc(dry_run=True)
+        after = path.read_text(encoding="utf-8")
+
+        assert after == before
+        assert "compression_level: raw" in after
