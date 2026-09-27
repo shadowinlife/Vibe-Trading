@@ -245,6 +245,19 @@ class DataConfig(_EnvBase):
     market_data_order_forex: str = Field(alias="MARKET_DATA_ORDER_FOREX", default="")
     market_data_order_index: str = Field(alias="MARKET_DATA_ORDER_INDEX", default="")
 
+    # ClickHouse (local A-share data warehouse)
+    clickhouse_host: str = Field(alias="CLICKHOUSE_HOST", default="172.24.165.51")
+    clickhouse_port: int = Field(alias="CLICKHOUSE_PORT", default=8123)
+    clickhouse_user: str = Field(alias="CLICKHOUSE_USER", default="default")
+    clickhouse_password: str = Field(alias="CLICKHOUSE_PASSWORD", default="")
+    clickhouse_database: str = Field(alias="CLICKHOUSE_DATABASE", default="ashare")
+    # Dedicated read-only ``llm_role`` credentials for the constrained
+    # ``ch_query`` exploration tool (mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md Phase 2).
+    # Empty defaults are intentional: when unset, ``ch_query`` must fail with
+    # an actionable error instead of falling back to the default user.
+    clickhouse_llm_user: str = Field(alias="CLICKHOUSE_LLM_USER", default="")
+    clickhouse_llm_password: str = Field(alias="CLICKHOUSE_LLM_PASSWORD", default="")
+
 
 # ---------------------------------------------------------------------------
 # OCR

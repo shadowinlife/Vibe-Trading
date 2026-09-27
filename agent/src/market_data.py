@@ -17,10 +17,12 @@ DEFAULT_MAX_ROWS = 250
 # fallback chain (registry.FALLBACK_CHAINS), so an unavailable preferred source
 # still degrades gracefully to the rest of the chain. US equities route to the
 # throttle-tolerant Yahoo public endpoint first (lower IP-ban risk than the
-# yfinance SDK), A-shares and HK equities to the never-banned Tencent endpoint.
+# yfinance SDK), A-shares to the ClickHouse local store first (degrading to
+# the never-banned Tencent endpoint when ClickHouse is unavailable), and HK
+# equities to the never-banned Tencent endpoint.
 _SOURCE_PATTERNS = [
     (re.compile(r"^local:", re.I), "local"),
-    (re.compile(r"^\d{6}\.(SZ|SH|BJ)$", re.I), "tencent"),
+    (re.compile(r"^\d{6}\.(SZ|SH|BJ)$", re.I), "clickhouse"),
     (re.compile(r"^[A-Z]+\.US$", re.I), "yahoo"),
     (re.compile(r"^\d{3,5}\.HK$", re.I), "tencent"),
     # India: NSE (RELIANCE.NS) / BSE (500325.BO). Tickers may carry '&' and '-'
@@ -176,6 +178,23 @@ def _json_safe(value: Any) -> Any:
     return value
 
 
+def _clickhouse_provenance() -> dict[str, Any]:
+    """Additive unit metadata for ClickHouse-served bars (P1.2).
+
+    Returns ``volume_unit`` / ``amount_unit`` / ``price_adjust`` / ``caliber``
+    from the unit registry (``schema/clickhouse/comments.yaml``). Fail-soft:
+    any failure yields an empty dict so the provenance envelope only ever
+    grows, never breaks.
+    """
+    try:
+        from src.clickhouse_units import clickhouse_bar_provenance
+
+        return clickhouse_bar_provenance("stk_factor_pro")
+    except Exception as exc:  # noqa: BLE001 — additive metadata is best-effort
+        logger.debug("clickhouse provenance metadata unavailable: %s", exc)
+        return {}
+
+
 def fetch_market_data(
     *,
     codes: list[str],
@@ -222,9 +241,7 @@ def fetch_market_data(
     results: dict[str, Any] = {}
     provenance: dict[str, dict[str, Any]] = {}
     result_aliases = {
-        code: code.split(":", 1)[1]
-        if code.lower().startswith("local:")
-        else code
+        code: code.split(":", 1)[1] if code.lower().startswith("local:") else code
         for code in codes
     }
 
@@ -312,7 +329,9 @@ def fetch_market_data(
             except NoAvailableSourceError as exc:
                 logger.debug("loader %r unavailable: %s", attempt_src, exc)
                 continue
-            except Exception as exc:  # noqa: BLE001 — resolver may raise for non-network reasons
+            except (
+                Exception
+            ) as exc:  # noqa: BLE001 — resolver may raise for non-network reasons
                 logger.debug("loader %r resolver failed: %s", attempt_src, exc)
                 continue
             try:
@@ -347,7 +366,9 @@ def fetch_market_data(
         if used_source and used_source != src:
             logger.info(
                 "market-data source %r unavailable for %s; fell back to %r",
-                src, src_codes, used_source,
+                src,
+                src_codes,
+                used_source,
             )
         served_elsewhere = sorted(
             {serve_src for serve_src, _ in symbol_sources.values()} - {used_source}
@@ -406,10 +427,16 @@ def fetch_market_data(
             symbol_source, symbol_provider_cls = symbol_sources.get(
                 symbol, (used_source, provider_cls)
             )
+            extra = (
+                _clickhouse_provenance()
+                if (symbol_source or src) == "clickhouse"
+                else None
+            )
             _emit(
                 symbol, df,
                 src=src, used_source=symbol_source, provider_cls=symbol_provider_cls,
                 market=market,
+                extra_provenance=extra,
             )
 
     unresolved = [
@@ -492,4 +519,6 @@ def fetch_market_data(
 
 def fetch_market_data_json(**kwargs: Any) -> str:
     """Fetch market data and return strict JSON."""
-    return json.dumps(fetch_market_data(**kwargs), ensure_ascii=False, indent=2, allow_nan=False)
+    return json.dumps(
+        fetch_market_data(**kwargs), ensure_ascii=False, indent=2, allow_nan=False
+    )

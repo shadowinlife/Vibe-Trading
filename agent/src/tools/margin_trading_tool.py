@@ -181,6 +181,22 @@ class MarginTradingTool(BaseTool):
         days = _clamp_days(kwargs.get("days", _DEFAULT_DAYS))
 
         try:
+            from src.tools.clickhouse_fallbacks import fetch_margin_trading_ch
+
+            fallback_data = fetch_margin_trading_ch(code, days=days)
+            return json.dumps(
+                {
+                    "ok": True,
+                    "market": "a_share",
+                    "source": "clickhouse",
+                    "data": fallback_data,
+                },
+                ensure_ascii=False,
+            )
+        except Exception:
+            pass
+
+        try:
             payload = eastmoney_client.get_json(
                 _DATACENTER_URL,
                 params={

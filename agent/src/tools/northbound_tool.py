@@ -216,6 +216,22 @@ class NorthboundFlowTool(BaseTool):
         lookback_days = _clamp_lookback(kwargs.get("lookback_days", _DEFAULT_LOOKBACK_DAYS))
 
         try:
+            from src.tools.clickhouse_fallbacks import fetch_northbound_flow_ch
+
+            fallback_data = fetch_northbound_flow_ch(lookback_days=lookback_days)
+            return json.dumps(
+                {
+                    "ok": True,
+                    "market": "China A",
+                    "source": "clickhouse",
+                    "data": fallback_data,
+                },
+                ensure_ascii=False,
+            )
+        except Exception:
+            pass
+
+        try:
             realtime_payload = get_json(
                 _REALTIME_URL,
                 params={"fields": _REALTIME_FIELDS},
