@@ -36,9 +36,53 @@ related: [MYMAIN_DIVERGENCE.md]
 
 ---
 
-### release/mymain · 2026-08-30 — 基线：上游 `fb5013c2`
+### release/mymain · 2026-09-27 — 基线：上游 `5e9ffd1a`
 
 - **发布 commit**：`release/mymain` tag 所指 commit（即本条发布记录 commit）
+- **上游基线**：`5e9ffd1a`（v0.1.15 后；本轮对齐覆盖 `f84b2977` 之后全部 371 个上游 commit。2026-09-13 restructure 与 engine-bridge 并回未曾发布，本条为覆盖它们的首次发布）
+- **差异总量**：588 个文件、+111,290/−168 行（复核命令 `git diff origin/main release/mymain --shortstat`；较上轮减少系 F8 引擎桥与多租户基础设施移出本分支）
+- **对齐方式**：**merge + carve**（临时分支一次性解 10 文件冲突 + 回退树手术后，从 `origin/main` 切出 8 个单一功能 commit：F1→F4 memory、F5 ClickHouse+语义层、scheduled_research wrapper、F7 OpencodeAgent、wiki docs；carve 树与手术树逐字节一致；回退点 `backup/mymain-pre-rebase-20260926`，仅本地，含旧明文 token，永不推送）
+- **路线裁决**：本分支定位为**纯粹 opencode + omo + VT MCP 集成**路线；前端兼容路线（F8 引擎桥/多租户）整体移出至 `mymain-engine-bridge` 分支独立演进，两线零兼容/零相互索引
+
+#### 核心变更（三项能力回退 + 安全修复 + 评审修复）
+
+1. **12 领域子代理层回退**（验证不够有效）：opencode 主循环直接集成 VT MCP 全工具面，被剥离的 13 个领域工具回归主面，治理清单回到仅 `trading_*` deny；OMO 内建子代理（explore/librarian/build/oracle）不属回退范围、保留。裁决证据链：specialist-arch iter3 终局（DIVERGENCE §5 2026-09-06 条）。
+2. **nano-search-mcp 回退**（验证不够有效）：整目录删除；通用检索由 VT `web_search`（上游 ddgs 多引擎 + cn.bing 回退）+ `read_url` 承接，A 股结构化检索（年报/公告/处罚/调研/政策）缺口立项 R2（DIVERGENCE §4.6）待未来替换引擎。
+3. **F8 引擎桥 + 多租户基础设施移出**：`agent/src/opencode_bridge/`（20 模块）、e2e/桥测试 14+2 模块、golden fixtures、state.py 工厂、api_server preflight、`OpencodeBridgeConfig`（5 env 变量）、tenant 容器栈（gateway/supervisord/router/provision）全部移出；scheduled_research MCP wrapper 作为纯 MCP 面增量保留（独立测试 8 passed，桥耦合测试随 F8 走）。
+4. **安全修复**：根 `AGENTS.md` 自 2026-08-11（`302d0518`）起携带的 tushare token 明文——已随 fork 公开历史暴露约 7 周——在新历史中消毒（改为指向 `agent/.env`）；**token 已于 2026-09-27 轮换完成**；新树/8 commit 全量 diff（116,838 行）/逐 commit 树三重扫描零命中（Oracle 复核）。
+5. **评审修复**（Oracle 对抗审查零 BLOCKING、六任务全 CLEAN；2 项 SHOULD-FIX 已修）：compose healthcheck 补 Basic Auth（设密码后不再永久 unhealthy）；删除死配置 `Dockerfile.amd64`（PyPI 安装与 entrypoint/tmpl 的 `/opt/vibe-trading` 路径矛盾，主 Dockerfile 已支持 `--platform` 跨架构）。
+6. **wiki 结构修复**：补建被 `.gitignore` 裸 `AGENTS.md` 规则吞掉的 `mymain-wiki/AGENTS.md` 路由入口（INDEX/README 自 2026-08-30 起一直引用）；f8 卡与 multitenant 台账转冻结墓碑。
+
+#### 计数基线
+
+MCP **OFF=78 / ON=83**（上游基数 74 实测不变 + 3 ch_* + 1 scheduled_research wrapper + 5 memory_*）、skills **91**（上游 90 + memory-lifecycle）、数据源 **29**（上游 28 含新 gildata + clickhouse）、引擎 **10**、agent tools **111**、README **七份**（上游新增 README_id.md，pin 测试现锚定全部七份）。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件（4 文件 + test_env_schema） | 316 passed / 3 skipped |
+| ClickHouse 套件（10 文件） | 137 passed / 11 skipped |
+| schema 门禁 + comments gate | 53 passed / 1 skipped + exit 0 |
+| README/manifest 计数门禁 | 115 passed |
+| env-var AST 门禁 | exit 0（3 WARN 来自上游 llm.py） |
+| MCP 运行时计数 | OFF=78 / ON=83 |
+| market_data/registry/source_order/settings_api | 150 passed |
+| agent_loop/backtest_tool/swarm/mcp_server 聚焦 | 436 passed |
+| OpencodeAgent config render | 24 passed |
+| scheduled_research wrapper | 8 passed |
+| black/ruff（15 个本地文件） | clean |
+| 提交规范 | 单一作者 shadowinlife + 8×DCO + 零 AI trailer |
+
+#### 遗留（用户门控）
+
+- **镜像打包 + registry push**：生产形态改为镜像交付（不再 ECS host-direct 部署）；构建走 `OpencodeAgent/build.sh` → 主 `Dockerfile`（vendor git-archive），后续执行。
+
+---
+
+### release/mymain · 2026-08-30 — 基线：上游 `fb5013c2`
+
+- **发布 commit**：`dc92b16d`（原历史已随 2026-09-13 restructure 与 2026-09-27 对齐重写：该 SHA 经 `fork/backup/mymain-pre-rebase-20260831` 可达）
 - **上游基线**：`fb5013c2`（v0.1.14 后第 79 commit；本轮对齐覆盖 `80ffdda4` 之后的全部上游 commit）
 - **差异总量**：626 个文件、+118,306/−140 行（复核命令 `git diff origin/main release/mymain --shortstat`；较上轮大增系 `mymain-wiki/` 知识库归档入库）
 - **对齐方式**：**rebase**（34 个本地 commit 重放；回退点 `backup/mymain-2026-08-30`）
