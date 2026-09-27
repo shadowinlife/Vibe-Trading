@@ -5,6 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IMAGE_NAME="opencode-serve"
 IMAGE_TAG="latest"
 REGISTRY="registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2"
+# IMAGE_REGISTRY (e.g. from OpencodeAgent/.env) overrides the push target as a
+# FULL image repository (only ":${IMAGE_TAG}" is appended); the legacy
+# REGISTRY/IMAGE_NAME composition stays as the fallback.
+IMAGE_REGISTRY="${IMAGE_REGISTRY:-}"
 PLATFORM="${DOCKER_PLATFORM:-}"
 PUSH=false
 DRY_RUN=false
@@ -112,7 +116,11 @@ run docker build \
   "$SCRIPT_DIR"
 
 if $PUSH; then
-  FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+  if [ -n "$IMAGE_REGISTRY" ]; then
+    FULL_IMAGE="${IMAGE_REGISTRY}:${IMAGE_TAG}"
+  else
+    FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+  fi
   run docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "$FULL_IMAGE"
   run docker push "$FULL_IMAGE"
   echo "=== Push complete: $FULL_IMAGE ==="
