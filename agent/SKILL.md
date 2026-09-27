@@ -133,7 +133,7 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (77)
+## Available MCP Tools (78)
 
 | Tool | Description | API Key |
 |------|-------------|---------|
@@ -143,6 +143,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `get_research_goal` | Read the current research goal | None |
 | `add_goal_evidence` | Attach evidence to a research goal | None |
 | `update_research_goal_status` | Update goal lifecycle status | None |
+| `scheduled_research` | Inspect scheduled research; prepare create/cancel proposals (human confirms on the surface) | None |
 | `backtest` | Run vectorized backtest engine | None* |
 | `factor_analysis` | IC/IR analysis + layered backtest | None* |
 | `alpha_zoo` | Browse bundled alpha metadata and registry health | None |
