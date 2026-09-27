@@ -1,0 +1,304 @@
+version: 1
+source: queries.yaml domain filter + queries_d_expansion.yaml
+entries:
+- id: D06-001
+  query: 你们有哪些预置的量化因子库
+  expected:
+    kind: tool
+    name: alpha_zoo
+  domain: D06
+  negatives:
+  - list_strategies
+  - alpha-zoo
+  arbitration_ref: K7
+- id: D06-002
+  query: Which strategies have computed evidence for bear markets?
+  expected:
+    kind: tool
+    name: query_strategies
+  domain: D06
+  negatives:
+  - list_strategies
+  - alpha_zoo
+  arbitration_ref: K7
+- id: D06-003
+  query: 浏览一下策略目录和各自的证据状态
+  expected:
+    kind: tool
+    name: list_strategies
+  domain: D06
+  negatives:
+  - query_strategies
+  - alpha_zoo
+  arbitration_ref: K7
+- id: D06-004
+  query: Bench the GTJA191 alpha zoo on CSI300 — IC and IR
+  expected:
+    kind: tool
+    name: alpha_bench
+  domain: D06
+  negatives:
+  - alpha_zoo
+  - factor_analysis
+  arbitration_ref: G8
+- id: D06-005
+  query: 我自己算好了因子CSV，做IC检验和分位分层回测
+  expected:
+    kind: tool
+    name: factor_analysis
+  domain: D06
+  negatives:
+  - alpha_bench
+  arbitration_ref: G8
+- id: D06-006
+  query: 这个策略在各市场状态下的回测证据给我看看
+  expected:
+    kind: tool
+    name: get_strategy_evidence
+  domain: D06
+  negatives:
+  - query_strategies
+  arbitration_ref: G8
+- id: D06-007
+  query: Walk me through browsing and picking alphas from the zoo
+  expected:
+    kind: skill
+    name: alpha-zoo
+  domain: D06
+  negatives:
+  - alpha_zoo
+  arbitration_ref: K7
+- id: D06-008
+  query: 多因子截面打分选A股，构建TopN组合
+  expected:
+    kind: skill
+    name: multi-factor
+  domain: D06
+  negatives:
+  - factor-research
+- id: D06-009
+  query: Turn this academic paper into a validated factor with decay monitoring
+  expected:
+    kind: skill
+    name: strategy-dev-manager
+  domain: D06
+  negatives:
+  - strategy-discovery
+  - factor-research
+  arbitration_ref: Q19
+- id: D06-010
+  query: Walk-forward machine learning prediction strategy with sklearn
+  expected:
+    kind: skill
+    name: ml-strategy
+  domain: D06
+- id: D07-001
+  query: 回测这个双均线策略，2023到2024年
+  expected:
+    kind: tool
+    name: backtest
+  domain: D07
+  negatives:
+  - strategy-generate
+- id: D07-002
+  query: Run the backtest for my RSI strategy config
+  expected:
+    kind: tool
+    name: backtest
+  domain: D07
+  negatives:
+  - strategy-generate
+- id: D07-003
+  query: 帮我写一个动量策略并回测评估
+  expected:
+    kind: skill
+    name: strategy-generate
+  domain: D07
+  negatives:
+  - backtest
+- id: D07-004
+  query: 回测表现太差了，帮我诊断根因
+  expected:
+    kind: skill
+    name: backtest-diagnose
+  domain: D07
+  negatives:
+  - backtest
+- id: D07-005
+  query: Model slippage and market impact for my backtest fills
+  expected:
+    kind: skill
+    name: execution-model
+  domain: D07
+- id: D07-006
+  query: 把回测策略导出成TradingView的Pine脚本
+  expected:
+    kind: skill
+    name: pine-script
+  domain: D07
+  negatives:
+  - vnpy-export
+- id: D07-007
+  query: Export my backtest strategy to a runnable vnpy CtaTemplate class
+  expected:
+    kind: skill
+    name: vnpy-export
+  domain: D07
+  negatives:
+  - pine-script
+- id: D07-008
+  query: A股加加密货币的混合组合，signal_engine怎么写
+  expected:
+    kind: skill
+    name: cross-market-strategy
+  domain: D07
+- id: D07-009
+  query: Write config.json into my backtest run directory
+  expected:
+    kind: tool
+    name: write_file
+  domain: D07
+  negatives:
+  - read_file
+  arbitration_ref: K22
+- id: D07-010
+  query: 读一下回测工作区里的signal_engine.py
+  expected:
+    kind: tool
+    name: read_file
+  domain: D07
+  negatives:
+  - write_file
+  arbitration_ref: Q3
+- id: D06-101
+  query: 看看 alpha101 里面有哪些反转类的因子
+  expected:
+    kind: tool
+    name: alpha_zoo
+  domain: D06
+- id: D06-102
+  query: 我根据一篇研报复现了一个因子，帮我注册起来并持续监控它的IC衰减
+  expected:
+    kind: skill
+    name: strategy-dev-manager
+  domain: D06
+- id: D06-103
+  query: Bench gtja191 and qlib158 on CSI300 side by side and compare IC means
+  expected:
+    kind: tool
+    name: alpha_bench
+  domain: D06
+  negatives:
+  - alpha_zoo
+- id: D06-104
+  query: 我算好的因子值存成了CSV，帮我算IC均值和IR
+  expected:
+    kind: tool
+    name: factor_analysis
+  domain: D06
+- id: D06-105
+  query: 筛出证据充分、交易成本能覆盖的策略给我
+  expected:
+    kind: tool
+    name: query_strategies
+  domain: D06
+  negatives:
+  - list_strategies
+- id: D06-106
+  query: 这个因子按五分位分组的多空价差帮我算出来
+  expected:
+    kind: tool
+    name: factor_analysis
+  domain: D06
+- id: D06-107
+  query: 策略发现的完整流程怎么走，从浏览目录到看证据
+  expected:
+    kind: skill
+    name: strategy-discovery
+  domain: D06
+  negatives:
+  - list_strategies
+- id: D06-108
+  query: 回测刚跑完，帮我把策略的收益率序列算一下 Sortino 比率和年化波动
+  expected:
+    kind: tool
+    name: quantlib_call
+  domain: D06
+  note: v2 修订（一致性修复并披露）——v1 为"算一下这个收益率序列的95% VaR和CVaR"，与基础语料 D09-001/D09-002（组合 VaR/deflated
+    Sharpe → direct）语义相同但标签相反，两名判官一致判 direct 暴露了该标注矛盾。 修订为"回测后分析"语境，与 D09 的"存量组合风险"语境区分开。
+- id: D06-109
+  query: Bench the academic zoo on SP500 over 2018-2025, top 10
+  expected:
+    kind: tool
+    name: alpha_bench
+  domain: D06
+- id: D06-110
+  query: 帮我研究一个基于换手率异常的新因子
+  expected:
+    kind: skill
+    name: factor-research
+  domain: D06
+- id: D07-101
+  query: 识别一下贵州茅台最近日线的K线形态，有没有头肩顶
+  expected:
+    kind: tool
+    name: pattern_recognition
+  domain: D07
+- id: D07-102
+  query: 帮我在回测目录下新建一个配置，标的BTC-USDT，区间去年全年
+  expected:
+    kind: tool
+    name: write_file
+  domain: D07
+- id: D07-103
+  query: 用1小时线回测这个突破策略，初始资金10万USDT
+  expected:
+    kind: tool
+    name: backtest
+  domain: D07
+- id: D07-104
+  query: 把回测目录里 metrics 那个结果文件的内容给我看看
+  expected:
+    kind: tool
+    name: read_file
+  domain: D07
+- id: D07-105
+  query: 帮我写一个布林带均值回复策略并跑一遍回测评估
+  expected:
+    kind: skill
+    name: strategy-generate
+  domain: D07
+- id: D07-106
+  query: 回测结果和基准差太多了，帮我定位一下哪里不对
+  expected:
+    kind: skill
+    name: backtest-diagnose
+  domain: D07
+- id: D07-107
+  query: 回测的时候把VWAP执行和冲击成本建摸进去
+  expected:
+    kind: skill
+    name: execution-model
+  domain: D07
+- id: D07-108
+  query: 把这个策略导出成同花顺能用的指标公式
+  expected:
+    kind: skill
+    name: pine-script
+  domain: D07
+  negatives:
+  - vnpy-export
+- id: D07-109
+  query: 把我回测过的策略转成vnpy的CtaTemplate类
+  expected:
+    kind: skill
+    name: vnpy-export
+  domain: D07
+  negatives:
+  - pine-script
+- id: D07-110
+  query: 怎么写一个同时做A股和美股的跨市场signal_engine
+  expected:
+    kind: skill
+    name: cross-market-strategy
+  domain: D07

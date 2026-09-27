@@ -162,6 +162,12 @@ AGENTS.md
 # OpencodeAgent's AGENTS.md files are harness behavior contracts, copied into
 # the Docker image at build time — they must stay tracked
 !OpencodeAgent/**/AGENTS.md
+# mymain-wiki's AGENTS.md is the branch knowledge-base routing entry, not a
+# generated tool alias — it must stay tracked
+!mymain-wiki/AGENTS.md
+# The root AGENTS.md on this branch carries the branch conventions (§8) and is
+# deliberately tracked — not a generated tool alias
+!/AGENTS.md
 
 .DS_Store
 

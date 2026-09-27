@@ -1,0 +1,63 @@
+{
+  "full_surface": {
+    "tools": 59,
+    "skills": 90,
+    "description_block_tokens": 11238
+  },
+  "subagents": {
+    "quant-agent": {
+      "surface": {
+        "tools": 11,
+        "skills": 12,
+        "description_block_tokens": 1366
+      },
+      "coverage": {
+        "subagent": "quant-agent",
+        "domains": [
+          "D06",
+          "D07"
+        ],
+        "total": 20,
+        "covered": 20,
+        "dead_ends": []
+      },
+      "corpus_file": "corpus_d_quant.yaml"
+    },
+    "web-docs-agent": {
+      "surface": {
+        "tools": 3,
+        "skills": 2,
+        "description_block_tokens": 243
+      },
+      "coverage": {
+        "subagent": "web-docs-agent",
+        "domains": [
+          "D19"
+        ],
+        "total": 6,
+        "covered": 6,
+        "dead_ends": []
+      },
+      "corpus_file": "corpus_d_webdocs.yaml"
+    }
+  },
+  "query_files": [
+    {
+      "file": "queries_d_quant.yaml",
+      "entries": 40
+    },
+    {
+      "file": "queries_d_webdocs.yaml",
+      "entries": 16
+    },
+    {
+      "file": "queries_d_routing.yaml",
+      "entries": 198,
+      "route_counts": {
+        "direct": 140,
+        "quant-agent": 40,
+        "web-docs-agent": 18
+      }
+    }
+  ]
+}

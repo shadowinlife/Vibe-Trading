@@ -1,0 +1,1 @@
+Twin arbitration (decide by verb): `read_url`/`read_document` TOOLS do the actual fetching and extraction; `web-reader`/`doc-reader` SKILLS are only the usage guides — load a skill when the question is "how do I read X", call the tool when the task is "read X".

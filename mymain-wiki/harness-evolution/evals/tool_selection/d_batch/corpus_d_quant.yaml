@@ -1,0 +1,170 @@
+schema_version: 1
+captured_at: '2026-08-27T07:46:41+00:00'
+source: d_batch filter of mcp_server.mcp.list_tools() (registration order) + skills
+subagent: quant-agent
+tools:
+- name: backtest
+  description: 'Run a vectorized backtest using config.json and code/signal_engine.py.
+
+
+    The run_dir must contain:
+
+    - config.json: backtest configuration (source, codes, dates, etc.)
+
+    - code/signal_engine.py: strategy signal generation code
+
+
+    Supported data sources (set in config.json "source" field):
+
+    - "yfinance": HK/US equities (free, no API key needed)
+
+    - "okx": cryptocurrency (free, no API key needed)
+
+    - "tushare": China A-shares (requires TUSHARE_TOKEN env var)
+
+    - "akshare": A-shares, US, HK, futures, forex (free, no API key)
+
+    - "ccxt": crypto from 100+ exchanges (free, no API key)
+
+    - "auto": auto-detect based on symbol format (with fallback)
+
+
+    Returns metrics (Sharpe, return, drawdown, etc.) and artifact paths.'
+- name: factor_analysis
+  description: 'Compute factor IC/IR analysis and layered backtest from prepared CSVs.
+
+
+    Analyzes factor predictive power using Spearman rank IC, IR (IC/std),
+
+    and quantile group return spreads.'
+- name: alpha_zoo
+  description: Browse the bundled Alpha Zoo registry.
+- name: alpha_bench
+  description: Benchmark one Alpha Zoo alpha or a complete zoo on a universe.
+- name: pattern_recognition
+  description: 'Detect technical chart patterns (head-and-shoulders, double top/bottom,
+
+    triangles, wedges, channels) in OHLCV data.
+
+
+    Reads price data from run_dir/artifacts/ohlcv_*.csv files.
+
+    Can be called before coding (to inform strategy) or after backtest (to analyse).'
+- name: write_file
+  description: 'Write content to a file in the Vibe-Trading backtest workspace (run_dir).
+
+
+    Relative paths resolve against the active run directory. Used to create
+
+    config.json and signal_engine.py for backtesting workflows. Host files and
+
+    source code belong to the host''s own file tools, not this one.'
+- name: read_file
+  description: 'Read a file from the Vibe-Trading backtest workspace (run_dir).
+
+
+    Relative paths resolve against the active run directory. Use it to inspect
+
+    backtest artifacts such as config.json, signal_engine.py, and result CSVs.
+
+    Host files and source code belong to the host''s own read tool, not this one.'
+- name: list_strategies
+  description: 'List discoverable strategies across the Alpha Zoo and the SDM strategy
+    store.
+
+
+    Read-only catalogue of what strategies exist and what state they are in.
+
+    Rows carry identification metadata plus evidence status; use
+
+    get_strategy_evidence for the per-regime evidence behind any strategy.
+
+    Nothing returned is a recommendation — rows below the evidence threshold
+
+    are flagged insufficient/marginal rather than recommended.'
+- name: query_strategies
+  description: 'Query strategies whose computed per-regime evidence passes the filters.
+
+
+    Evidence-gated discovery: strategies are ranked by per-regime evidence
+
+    rows from reproducible backtests instead of boolean scenario tags.
+
+    Strategies below the evidence thresholds (trade count, coverage) are
+
+    flagged insufficient/marginal rather than recommended, and the
+
+    sizing-corrected cost screen keeps only strategies that clear their
+
+    breakeven.'
+- name: get_strategy_evidence
+  description: 'Return the computed per-regime evidence rows for one strategy.
+
+
+    Read-only evidence detail: shows what reproducible backtests support the
+
+    strategy in each regime — trade count, coverage, Sharpe, and the
+
+    sizing-corrected cost breakeven. Rows below the evidence thresholds are
+
+    flagged insufficient/marginal rather than recommended; the facade refuses
+
+    regime assessments without computed evidence, so absent regimes are an
+
+    honest empty, not a guess.'
+- name: quantlib_call
+  description: 'Compute VaR/CVaR, Black-Scholes prices and Greeks, deflated Sharpe,
+    purged cross-validation, DCF / comps valuation — the single entry point to the
+    tested finance-math library (src/quantlib). Read-only and pure-compute: it fetches
+    no data and writes no files. Discovery: start with action=''list'' to see modules,
+    then action=''list'' with a module to see its functions, then action=''describe''
+    for a signature. Example: quantlib_call(action="call", module="risk", function="historical_var",
+    kwargs={"returns": [0.01, -0.02], "confidence": 0.95}).'
+skills:
+- name: alpha-zoo
+  description: Browse and bench the bundled alpha zoos — prebuilt cross-sectional
+    factor libraries (Kakushadze 101, GTJA 191, Qlib 158, Fama-French / Carhart).
+    Use when the user asks "which alphas exist", wants metadata on a named alpha,
+    or wants to run IC/IR on a whole zoo over a universe.
+- name: backtest-diagnose
+  description: Diagnose failed or underperforming backtests, locate the root cause,
+    and fix the issue
+- name: cross-market-strategy
+  description: Write signal_engine.py for portfolios spanning multiple markets (A-shares
+    + crypto, equity + forex, etc.)
+- name: execution-model
+  description: Trade execution modeling (backtest only) — slippage formulas (linear
+    / square-root impact), VWAP/TWAP execution logic, market-impact cost estimation,
+    and execution-assumption configuration.
+- name: factor-research
+  description: Factor research framework with IC/IR analysis, quantile backtesting,
+    and factor combination. Suitable for cross-sectional factor evaluation across
+    multiple instruments.
+- name: ml-strategy
+  description: Machine-learning predictive strategy based on sklearn walk-forward
+    training, feature engineering, and signal generation. Suitable for any OHLCV data.
+- name: multi-factor
+  description: Multi-factor cross-sectional stock ranking. Combines factor standardization,
+    equal-weight or IC-weighted scoring, and TopN portfolio construction. Suitable
+    for multi-instrument portfolio strategies.
+- name: pine-script
+  description: Export backtest strategies to indicator/strategy code for major trading
+    platforms — TradingView, 通达信, 同花顺, 东方财富, MT5.
+- name: strategy-dev-manager
+  description: '"Strategy Development Manager: convert academic papers and research
+    reports into validated factors and strategies with automated backtesting, persistent
+    storage, and decay monitoring."'
+- name: strategy-discovery
+  description: '"Strategy Discovery: evidence-gated facade over Alpha Zoo + the SDM
+    strategy store — answers what strategies exist and what state they are in, with
+    per-regime evidence instead of scenario tags; reports evidence freshness on every
+    returned row and rebuilds the disposable evidence cache from local backtest runs."'
+- name: strategy-generate
+  description: Create, modify, and optimize quantitative trading strategies, then
+    backtest and evaluate them.
+- name: vnpy-export
+  description: Export a Vibe-Trading backtest strategy to a runnable vnpy CtaTemplate
+    Python class — supports A-share equities, futures, and crypto via BarGenerator
+    + ArrayManager.
+tool_count: 11
+skill_count: 12

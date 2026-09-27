@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "harness_bench/preflight_report.schema.json",
+  "title": "Harness benchmark environment preflight report",
+  "description": "Output of scripts/preflight.sh. Every check carries a status, measured values, and - for any non-ok status - an explicit degradation decision and remediation options. Exit-code contract: the script exits 0 iff every check is ok or carries a recorded decision; a failed/degraded check without a decision exits non-zero.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "host", "timeouts_seconds", "checks", "overall"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "python"],
+      "properties": {
+        "platform": { "type": "string" },
+        "python": { "type": "string" },
+        "worktree": { "type": "string" }
+      }
+    },
+    "timeouts_seconds": {
+      "type": "object",
+      "description": "Bounded timeouts actually used by each probe class.",
+      "additionalProperties": { "type": "number", "minimum": 0 }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["docker", "huggingface", "disk", "opencode_serve"],
+      "properties": {
+        "docker": { "$ref": "#/definitions/check" },
+        "huggingface": { "$ref": "#/definitions/check" },
+        "disk": { "$ref": "#/definitions/check" },
+        "opencode_serve": { "$ref": "#/definitions/check" }
+      }
+    },
+    "overall": { "type": "string", "enum": ["ok", "degraded", "failed"] }
+  },
+  "definitions": {
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "measured", "decision", "remediation"],
+      "properties": {
+        "status": { "type": "string", "enum": ["ok", "degraded", "failed"] },
+        "measured": {
+          "type": "object",
+          "description": "Free-form measured values for this check.",
+          "additionalProperties": true
+        },
+        "decision": {
+          "description": "Degradation decision. Required (non-null) whenever status is not ok; null only for ok checks.",
+          "type": ["string", "null"]
+        },
+        "remediation": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Concrete remediation options. Non-empty whenever status is not ok."
+        }
+      }
+    }
+  }
+}
