@@ -26,7 +26,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g opencode-ai@latest
+# Pin the opencode version: the app image no longer reinstalls it (the old
+# duplicate `npm install -g opencode-ai@latest` in the app Dockerfile added a
+# ~594MB layer). Upgrade SOP: bump the version here, rebuild base, then app.
+RUN npm install -g opencode-ai@1.18.18
 
 RUN mkdir -p /root/.config/pip && \
     printf '[global]\nindex-url=https://mirrors.aliyun.com/pypi/simple/\n\n[install]\ntrusted-host=mirrors.aliyun.com\n' \

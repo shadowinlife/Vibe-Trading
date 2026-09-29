@@ -64,10 +64,10 @@ else
         echo "[entrypoint] Using fallback config: $FALLBACK"
     else
         echo "[entrypoint] ERROR: No fallback config at $FALLBACK, writing minimal config"
-        cat > "$TARGET" << 'EOFMIN'
+        cat > "$TARGET" << EOFMIN
 {
   "model": "alibaba-cn/qwen3.8-max",
-  "plugin": ["oh-my-openagent@latest"]
+  "plugin": ["oh-my-openagent@${OMO_VERSION:-5.1.0}"]
 }
 EOFMIN
     fi
@@ -105,19 +105,30 @@ else
     echo "[entrypoint] INFO: CLICKHOUSE_HOST not set, skipping ClickHouse probe"
 fi
 
-# ── Symlink pre-built plugin cache to runtime config location ──────────────────
-# The OMO plugin is installed during build at /workspace/.opencode/node_modules/
-# but opencode reads config from /home/opencode/.opencode/ at runtime.
-# Without this symlink, opencode re-downloads the plugin on first startup (~30s).
-if [ -d /workspace/.opencode/node_modules ] && [ ! -e /home/opencode/.opencode/node_modules ]; then
-    ln -sf /workspace/.opencode/node_modules /home/opencode/.opencode/node_modules
-    echo "[entrypoint] Plugin cache symlinked: /workspace/.opencode/node_modules → /home/opencode/.opencode/node_modules"
+# ── Verify the pre-baked OMO plugin cache is present ─────────────────────────
+# opencode >=1.18 loads config plugins from
+#   ~/.cache/opencode/packages/<spec>/node_modules/<name>
+# with zero network access when that directory exists (pre-baked in the
+# Dockerfile via npm install). A volume mounted over ~/.cache/opencode would
+# MASK the pre-baked cache and force a ~241MB registry download on the first
+# API request — warn loudly so the regression is visible in container logs.
+# (The old /workspace/.opencode/node_modules symlink targeted a pre-1.18
+# plugin path that opencode no longer reads — removed as dead code.)
+if ls -d /home/opencode/.cache/opencode/packages/oh-my-openagent@*/node_modules/oh-my-openagent >/dev/null 2>&1; then
+    echo "[entrypoint] OMO plugin cache present: $(ls -d /home/opencode/.cache/opencode/packages/oh-my-openagent@* | head -1)"
+else
+    echo "[entrypoint] WARNING: OMO plugin cache missing — opencode will download it on first request (needs npm registry access; see Dockerfile pre-bake)"
 fi
 
 # ── Verify VT MCP server is importable ────────────────────────────────────────
 # FastMCP >=2 no longer exposes the private ``_tool_manager`` attribute, so try
 # the public ``list_tools()`` API first and fall back to import-only reporting.
-VERIFY_VT=$(/opt/venv/bin/python3 -c "
+# The Dockerfile already gates this import at build time, so the runtime check
+# is log-visibility only; skip it with SKIP_VT_VERIFY=1 to save ~1.5-3s.
+if [ "${SKIP_VT_VERIFY:-0}" = "1" ]; then
+    echo "[entrypoint] SKIP_VT_VERIFY=1 — skipping VT MCP server verification (build-time gate already passed)"
+else
+    VERIFY_VT=$(/opt/venv/bin/python3 -c "
 import sys
 try:
     sys.path.insert(0, '/opt/vibe-trading/agent')
@@ -130,17 +141,37 @@ try:
 except Exception as e:
     print('FAIL:' + str(e))
 " 2>/dev/null || echo "FAIL:import_error")
-if echo "$VERIFY_VT" | grep -q "^OK:"; then
-    TOOL_COUNT=$(echo "$VERIFY_VT" | cut -d: -f2)
-    case "$TOOL_COUNT" in
-        ''|*[!0-9]*) echo "[entrypoint] VT MCP server OK (tool count unavailable in this FastMCP version)" ;;
-        *) echo "[entrypoint] VT MCP server OK — $TOOL_COUNT tools registered" ;;
-    esac
-    echo "[entrypoint] VT_MEMORY=full, VT_MEMORY_MCP_TOOLS=1 → memory tools enabled"
-    echo "[entrypoint] VT_MEMORY_BASE_DIR=$VT_MEMORY_BASE_DIR"
-else
-    echo "[entrypoint] WARNING: VT MCP server import failed: $VERIFY_VT"
+    if echo "$VERIFY_VT" | grep -q "^OK:"; then
+        TOOL_COUNT=$(echo "$VERIFY_VT" | cut -d: -f2)
+        case "$TOOL_COUNT" in
+            ''|*[!0-9]*) echo "[entrypoint] VT MCP server OK (tool count unavailable in this FastMCP version)" ;;
+            *) echo "[entrypoint] VT MCP server OK — $TOOL_COUNT tools registered" ;;
+        esac
+        echo "[entrypoint] VT_MEMORY=full, VT_MEMORY_MCP_TOOLS=1 → memory tools enabled"
+        echo "[entrypoint] VT_MEMORY_BASE_DIR=$VT_MEMORY_BASE_DIR"
+    else
+        echo "[entrypoint] WARNING: VT MCP server import failed: $VERIFY_VT"
+    fi
 fi
+
+# ── Background warmup of the app instance ─────────────────────────────────────
+# First bootstrap of a fresh container performs one-time LOCAL init (plugin
+# module load, skill index build, db setup). It is CPU-only — no downloads,
+# everything is pre-baked in the image — but it blocks the first API request
+# for seconds (native amd64) up to ~a minute (QEMU emulation). Fire a
+# read-only warmup request in the background so the first real client request
+# hits a warm instance. Retries until the server accepts connections.
+(
+    for _ in $(seq 1 90); do
+        if curl -sf --max-time 240 -u opencode:"${OPENCODE_SERVER_PASSWORD:-}" \
+            "http://localhost:4096/config?directory=/home/opencode" >/dev/null 2>&1; then
+            echo "[entrypoint] warmup complete — first client request will be fast"
+            exit 0
+        fi
+        sleep 2
+    done
+    echo "[entrypoint] WARNING: warmup did not complete within 180 retries"
+) &
 
 # ── Start opencode serve ──────────────────────────────────────────────────────
 exec opencode serve --port 4096 --hostname 0.0.0.0
