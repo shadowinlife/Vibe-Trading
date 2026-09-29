@@ -1,6 +1,6 @@
 # opencode-serve 镜像使用说明书
 
-> **版本**: v2.1.0-mymain  
+> **版本**: v3.2.0-mymain  
 > **架构**: AMD64 (Linux)  
 > **基础镜像**: Ubuntu 22.04 + Python 3.12 + Node.js 20
 
@@ -84,22 +84,25 @@
 ### 镜像分层策略
 
 ```
-┌─────────────────────────────────────────────┐
-│ opencode-serve:v2.1.0-mymain  (~5GB)       │
-│ ├── OMO plugin                              │
-│ ├── Vibe-Trading mymain (editable install)  │
-│ ├── 项目文件 (configs, skills, scripts)      │
-│ └── entrypoint.sh                           │
-├─────────────────────────────────────────────┤
-│ opencode-serve-base:latest  (4.19GB)        │
-│ ├── Ubuntu 22.04                            │
-│ ├── Python 3.12 (deadsnakes PPA)            │
-│ ├── Node.js 20                              │
-│ ├── OpenCode CLI                            │
-│ ├── playwright + chromium                   │
-│ └── pip 预装包 (plotly, ta, loguru, etc.)   │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│ opencode-serve:v3.2.0-mymain  (4.04GB)               │
+│ ├── OMO plugin 预烘焙缓存 (~/.cache/opencode/packages,│
+│ │   oh-my-openagent@5.1.0, ~241MB) + models.json     │
+│ ├── Vibe-Trading mymain (editable install)           │
+│ ├── 项目文件 (configs, skills, scripts)               │
+│ └── entrypoint.sh (渲染配置 + 后台预热)               │
+├──────────────────────────────────────────────────────┤
+│ opencode-serve-base:latest  (3GB)                    │
+│ ├── Ubuntu 22.04                                     │
+│ ├── Python 3.12 (deadsnakes PPA)                     │
+│ ├── Node.js 20                                       │
+│ ├── OpenCode CLI (pin 1.18.18)                       │
+│ ├── playwright + chromium                            │
+│ └── pip 预装包 (plotly, ta, loguru, etc.)            │
+└──────────────────────────────────────────────────────┘
 ```
+
+> **v3.2.0 零下载启动**：插件与模型目录已在构建期预烘焙，容器启动与首次请求**不访问 npm / models.dev / posthog**（离线 E2E 验证通过）。app 层不再重复安装 opencode-ai（旧版 ~594MB 冗余层已移除）。
 
 ---
 
@@ -141,10 +144,10 @@ docker tag registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-
 
 # 4. 构建 app 镜像
 # 方式 A: 从本地 VT 源码
-VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v2.1.0-mymain
+VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
 
 # 方式 B: 从 GitHub clone
-VT_SOURCE=https://github.com/shadowinlife/Vibe-Trading.git ./build.sh --app --tag v2.1.0-mymain
+VT_SOURCE=https://github.com/shadowinlife/Vibe-Trading.git ./build.sh --app --tag v3.2.0-mymain
 
 # 5. 启动
 docker compose up -d
@@ -184,9 +187,9 @@ curl http://localhost:4096/health
 
 ```bash
 # VT_SOURCE 环境变量指定 Vibe-Trading 源码位置
-VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v2.1.0-mymain        # 本地目录
+VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.2.0-mymain        # 本地目录
 VT_SOURCE=https://github.com/shadowinlife/Vibe-Trading.git ./build.sh # GitHub URL
-VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v2.1.0-mymain    # 预解压目录
+VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v3.2.0-mymain    # 预解压目录
 ```
 
 app 镜像构建时间约 5-8 分钟（基础镜像已缓存）。
@@ -195,7 +198,7 @@ app 镜像构建时间约 5-8 分钟（基础镜像已缓存）。
 
 ```bash
 # 在 ARM64 (Apple Silicon) 上构建 AMD64 镜像
-DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v2.1.0-mymain
+DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
 ```
 
 ---
@@ -232,6 +235,19 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v2.
 | `VT_MEMORY_BASE_DIR` | `/workspace/.vt-memory` | 记忆存储路径 |
 
 这些变量在 Dockerfile 中预设，通常无需手动修改。
+
+**启动行为变量（v3.2.0+ 镜像 ENV 预设，零下载启动）**：
+
+| 变量 | 镜像默认 | 说明 |
+|------|--------|------|
+| `OMO_VERSION` | `5.1.0` | 预烘焙插件版本（构建 ARG 提升为 ENV）；升级需同步改 Dockerfile ARG 与 opencode.json.tmpl 后重建 |
+| `OMO_DISABLE_POSTHOG` | `1` | 禁用 OMO PostHog 遥测（含每日 daily-active 打点） |
+| `OMO_SEND_ANONYMOUS_TELEMETRY` | `0` | 禁用 OMO 匿名遥测 |
+| `OPENCODE_DISABLE_MODELS_FETCH` | `1` | 禁用 models 目录后台刷新（目录已构建期固化于 `~/.cache/opencode/models.json`）；在线环境想恢复刷新，运行时覆盖为空值即可 |
+| `OPENCODE_DISABLE_AUTOUPDATE` | `1` | 禁用 opencode 自更新检查 |
+| `SKIP_VT_VERIFY` | `0` | 置 `1` 跳过 entrypoint 的 VT MCP 运行时校验（构建期已门禁，可省 ~1.5-3s 启动时间） |
+
+> **启动时序（v3.2.0+）**：entrypoint 渲染配置 → 校验插件缓存存在 → （可选）VT verify → 启动 `opencode serve` → **后台预热请求**触发首次 bootstrap（纯本地初始化，无任何下载）。注意：opencode 在 bootstrap 完成前会挂起入站 HTTP 请求（固有行为），生产侧应以 healthcheck 状态为准再接流量；预热完成后首次业务请求实测 <1s。
 
 ### 6.3 VT MCP 工具特性（v0.1.13 基线）
 
@@ -278,7 +294,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v2.
 # docker-compose.yml
 services:
   opencode-web:
-    image: opencode-serve:v2.1.0-mymain
+    image: opencode-serve:v3.2.0-mymain
     container_name: opencode-web
     restart: unless-stopped
     ports:
@@ -325,17 +341,17 @@ docker run -d \
   --memory 6g \
   --cpus 0.8 \
   --restart unless-stopped \
-  opencode-serve:v2.1.0-mymain
+  opencode-serve:v3.2.0-mymain
 ```
 
 ### 7.3 从 Registry 部署
 
 ```bash
 # 拉取镜像
-docker pull registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v2.1.0-mymain
+docker pull registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
 
 # 标记本地
-docker tag registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v2.1.0-mymain opencode-serve:v2.1.0-mymain
+docker tag registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain opencode-serve:v3.2.0-mymain
 
 # 启动
 docker compose up -d
@@ -557,7 +573,7 @@ docker exec opencode-web cat /workspace/cron_jobs/logs/<task_id>_<timestamp>.log
 cd ~ && \
 wget https://raw.githubusercontent.com/shadowinlife/vibetrading-opencode-instruct/main/deploy/ecs-build.sh && \
 chmod +x ecs-build.sh && \
-./ecs-build.sh v2.1.0-mymain
+./ecs-build.sh v3.2.0-mymain
 ```
 
 ### 11.2 手动构建
@@ -573,11 +589,11 @@ docker pull registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode
 docker tag registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve-base:latest opencode-serve-base:latest
 
 # 3. App 镜像
-VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v2.1.0-mymain
+VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
 
 # 4. 推送
-docker tag opencode-serve:v2.1.0-mymain registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v2.1.0-mymain
-docker push registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v2.1.0-mymain
+docker tag opencode-serve:v3.2.0-mymain registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
+docker push registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
 ```
 
 ### 11.3 OSS 桥接（当 GitHub clone 超时时）
@@ -595,7 +611,7 @@ cd ~/vibetrading-opencode-instruct && \
 wget -O /tmp/vt-mymain.tar.gz "https://<your-oss-bucket>.<your-oss-endpoint>/build/vt-mymain.tar.gz" && \
 mkdir -p vendor/Vibe-Trading && \
 tar -xzf /tmp/vt-mymain.tar.gz -C vendor/Vibe-Trading/ && \
-VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v2.1.0-mymain
+VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
 ```
 
 ### 11.4 ECS 踩坑要点
@@ -617,7 +633,7 @@ VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v2.1.0-mymain
 | 镜像 | 地址 |
 |------|------|
 | 基础镜像 | `registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve-base:latest` |
-| App 镜像 | `registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v2.1.0-mymain` |
+| App 镜像 | `registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain` |
 
 ### 12.2 推送镜像
 
@@ -626,14 +642,14 @@ VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v2.1.0-mymain
 docker login --username=<阿里云账号> registry.cn-hangzhou.aliyuncs.com
 
 # 推送
-docker tag opencode-serve:v2.1.0-mymain registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v2.1.0-mymain
-docker push registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v2.1.0-mymain
+docker tag opencode-serve:v3.2.0-mymain registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
+docker push registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
 ```
 
 ### 12.3 拉取镜像
 
 ```bash
-docker pull registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v2.1.0-mymain
+docker pull registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
 ```
 
 ---
@@ -792,16 +808,17 @@ docker builder prune
    ├── Ubuntu 22.04
    ├── Python 3.12 (deadsnakes)
    ├── Node.js 20
-   ├── OpenCode CLI
+   ├── OpenCode CLI (pin opencode-ai@1.18.18)
    ├── pip 预装包
    ├── playwright + chromium
    └── opencode 用户
 
 2. Dockerfile (每次部署)
    ├── FROM opencode-serve-base:latest
-   ├── opencode-ai@latest
-   ├── OMO plugin
    ├── Vibe-Trading mymain (editable install)
+   ├── VT MCP import 构建期门禁
+   ├── OMO plugin 预烘焙 (npm install → ~/.cache/opencode/packages/oh-my-openagent@${OMO_VERSION})
+   ├── models.json 预烘焙 (curl models.opencode.ai/api.json)
    ├── 项目文件 (configs, skills, scripts)
    └── entrypoint.sh
 
@@ -811,14 +828,15 @@ docker builder prune
    ├── 修复 venv symlinks
    ├── 渲染 opencode.json (Jinja2)
    ├── 探测 ClickHouse 连通性
-   ├── 建立 plugin 缓存 symlink
-   ├── 验证 VT MCP Server 可导入
-   └── 启动 opencode serve
+   ├── 校验 OMO 插件预烘焙缓存存在
+   ├── 验证 VT MCP Server 可导入 (SKIP_VT_VERIFY=1 可跳过)
+   ├── 启动 opencode serve
+   └── 后台预热请求 (首次 bootstrap 移出用户路径)
 ```
 
 ---
 
-> **文档版本**: 1.1  
-> **适用镜像**: opencode-serve:v2.1.0-mymain  
+> **文档版本**: 1.2  
+> **适用镜像**: opencode-serve:v3.2.0-mymain  
 > **维护者**: Sisyphus via OpenCode  
-> **最后更新**: 2026-08-17
+> **最后更新**: 2026-09-29
