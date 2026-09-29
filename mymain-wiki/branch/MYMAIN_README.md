@@ -77,7 +77,7 @@ MCP **OFF=78 / ON=83**（上游基数 74 实测不变 + 3 ch_* + 1 scheduled_res
 #### 遗留（用户门控）
 
 - ~~**镜像打包 + registry push**~~ **已完成（2026-09-27）**：`opencode-serve:v3.1.0-mymain`（linux/amd64，4.43GB，28 层，digest `sha256:216d0cb0…`）已推送 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode`（凭据在 `OpencodeAgent/.env`，IP 白名单内构建机直推成功）。冒烟（amd64 容器内真 entrypoint）：render OK、**VT MCP 83 tools**、deny 三组（trading_*/qveris_*/iwencai_search）、模型 qwen3.8-max + flash 轻量档（explore/quick/unspecified-low）、serve 监听 :4096。镜像血统：v2.x=子代理时代 → v3.0.0-tenant=引擎桥线 → **v3.1.0-mymain=纯 opencode 路线首个镜像**（vendor 自 mymain `92889e48`）。
-- **v3.2.0-mymain 零下载启动版已本地构建 + 离线 E2E 验证（2026-09-29）**：插件/models 目录构建期预烘焙 + 全链 pin（OMO 5.1.0 / opencode-ai 1.18.18）+ 遥测与目录刷新关闭 + entrypoint 后台预热 + app 层重复 opencode 安装去除。离线冷启动首次请求 **577ms**（v3.1.0 有网 3m48s / 离线挂死），镜像 **4.04GB**（-390MB）。细节与升级 SOP 见 DIVERGENCE §5 2026-09-29 条。**registry push 待执行（用户门控，IP 白名单）**。
+- **v3.2.0-mymain 零下载启动版已交付（2026-09-29）**：插件/models 目录构建期预烘焙 + 全链 pin（OMO 5.1.0 / opencode-ai 1.18.18）+ 遥测与目录刷新关闭 + entrypoint 后台预热 + app 层重复 opencode 安装去除。离线冷启动首次请求 **577ms**（v3.1.0 有网 3m48s / 离线挂死），镜像 **4.04GB**（-390MB）。已推送 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode`（30 层，digest `sha256:d34019a5…`）。细节与升级 SOP 见 DIVERGENCE §5 2026-09-29 条。
 
 ---
 
