@@ -21,6 +21,7 @@ from src.trading.connectors.alpaca import sdk as al
 from src.trading.connectors.alpaca.classification import ALPACA_TOOL_CLASS
 from src.trading.connectors.binance import sdk as bn
 from src.trading.connectors.binance.classification import BINANCE_TOOL_CLASS
+from src.trading.connectors.mt5 import sdk as mt5
 from src.trading.connectors.dhan import sdk as dh
 from src.trading.connectors.dhan.classification import DHAN_TOOL_CLASS
 from src.trading.connectors.futu import sdk as ft
@@ -32,7 +33,6 @@ from src.trading.connectors.okx.classification import OKX_TOOL_CLASS
 from src.trading.connectors.shoonya import sdk as sh
 from src.trading.connectors.shoonya.classification import SHOONYA_TOOL_CLASS
 from src.trading.connectors.etoro import client as etoro_client
-from src.trading.connectors.etoro.classification import ETORO_TOOL_CLASS
 from src.trading.connectors.tiger import sdk as tg
 from src.trading.connectors.tiger.classification import TIGER_TOOL_CLASS
 
@@ -606,6 +606,26 @@ def test_service_routes_instrument_search_to_selected_binance_profile(monkeypatc
     assert result["connector"] == "binance"
 
 
+def test_service_routes_instrument_search_to_selected_mt5_profile(monkeypatch) -> None:
+    captured = {}
+
+    def _build_config(profile_config, overrides):
+        return SimpleNamespace(profile=profile_config["profile"])
+
+    def _search(query, *, config, limit):
+        captured.update(query=query, profile=config.profile, limit=limit)
+        return {"status": "ok", "instruments": [{"symbol": "XAUUSDm"}]}
+
+    monkeypatch.setattr(mt5, "build_config", _build_config)
+    monkeypatch.setattr(mt5, "search_instruments", _search)
+
+    result = service.search_instruments("XAUUSD", "mt5-paper-sdk", limit=3)
+
+    assert captured == {"query": "XAUUSD", "profile": "paper", "limit": 3}
+    assert result["profile_id"] == "mt5-paper-sdk"
+    assert result["connector"] == "mt5"
+
+
 def test_binance_service_unconfigured(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(bn, "get_runtime_root", lambda: tmp_path)
     result = service.check_connection("binance-paper-sdk")
@@ -875,6 +895,43 @@ def test_in_broker_paper_place_order_simulated_locally(mod, Config) -> None:
     assert result["paper_guard"] == "simulated_locally"
 
 
+@pytest.mark.parametrize("quantity", [0.5, 1.5, "1.5", "1.00000000000000001"])
+def test_dhan_place_order_rejects_fractional_quantity(quantity) -> None:
+    """A fractional quantity must not silently truncate to a zero-share fill.
+
+    Before the fix, ``int(0.5)`` truncated to 0 after the ``> 0`` check had
+    already passed, so a fractional order came back ``status: ok`` with
+    ``quantity: 0`` — a fabricated successful fill for zero shares.
+    """
+    result = dh.place_order(
+        dh.DhanConfig(profile="paper"), symbol="RELIANCE", side="buy", quantity=quantity
+    )
+    assert result["status"] == "error"
+    assert "whole number" in result["error"]
+
+
+@pytest.mark.parametrize("quantity", [None, 0, -1, "invalid", "", True, [], float("nan"), float("inf"), "-Infinity"])
+def test_dhan_invalid_quantity_returns_an_error(quantity) -> None:
+    result = dh.place_order(
+        dh.DhanConfig(profile="paper"), symbol="RELIANCE", side="buy", quantity=quantity,
+    )
+
+    assert result["status"] == "error"
+    assert "quantity" in result["error"]
+    assert "order_id" not in result
+
+
+@pytest.mark.parametrize("quantity,expected", [(1, 1), (2.0, 2), ("3.0", 3), ("9007199254740993", 9007199254740993)])
+def test_dhan_whole_quantity_is_preserved_in_the_paper_fill(quantity, expected) -> None:
+    result = dh.place_order(
+        dh.DhanConfig(profile="paper"), symbol="RELIANCE", side="buy", quantity=quantity,
+    )
+
+    assert result["status"] == "ok"
+    assert result["quantity"] == expected
+    assert result["paper_guard"] == "simulated_locally"
+
+
 @pytest.mark.parametrize("mod, Config", [(dh, dh.DhanConfig), (sh, sh.ShoonyaConfig)])
 def test_in_broker_paper_cancel_order_simulated(mod, Config) -> None:
     placed = mod.place_order(Config(profile="paper"), symbol="RELIANCE", side="buy", quantity=10)
@@ -946,3 +1003,12 @@ def test_shoonya_service_unconfigured(monkeypatch, tmp_path) -> None:
     assert result["status"] == "error"
     assert result["connector"] == "shoonya"
     assert result["transport"] == "broker_sdk"
+
+
+def test_mt5_instrument_search_refuses_executable_override(monkeypatch):
+    def forbidden(*args, **kwargs):
+        raise AssertionError("must not attach to an overridden executable")
+    monkeypatch.setattr(mt5, "search_instruments", forbidden)
+    result = service.search_instruments("XAUUSD", "mt5-paper-sdk", terminal_path="C:/arbitrary.exe")
+    assert result["status"] == "error"
+    assert result["instruments"] == []
