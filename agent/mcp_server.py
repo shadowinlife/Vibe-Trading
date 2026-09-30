@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 78 tools (83 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
+Surfaces 79 tools (84 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
 backtest/factor/options/pattern
 analysis, market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_margin_trading /
@@ -988,9 +988,59 @@ _register_memory_guard()
 # Backtest tool
 # ---------------------------------------------------------------------------
 
+# Production backtests take minutes, while MCP clients bound a single
+# tools/call by a request timeout (the TypeScript SDK default is 60s). Clients
+# that opt into progress notifications — opencode registers an empty
+# ``onprogress`` handler with ``resetTimeoutOnProgress: true`` — reset that
+# timeout on every notification, so a heartbeat every 20s keeps a long run
+# alive with a 3x margin. The notification content is discarded by such
+# clients; only its arrival matters.
+_BACKTEST_HEARTBEAT_SECONDS = 20
+
+
+async def _backtest_impl(run_dir: str, ctx: Context | None = None) -> str:
+    """Run the blocking backtest in a worker thread with progress heartbeats.
+
+    Kept as a module-level coroutine so the heartbeat loop is testable
+    independently of the FastMCP registration layer.
+
+    Args:
+        run_dir: Path to the run directory containing config.json and code/.
+        ctx: FastMCP request context. When present, a progress notification
+            carrying the elapsed seconds is sent every
+            ``_BACKTEST_HEARTBEAT_SECONDS`` until the run finishes;
+            ``Context.report_progress`` is a verified no-op when the client
+            sent no progress token. When ``None``, the run is simply awaited.
+
+    Returns:
+        The JSON envelope produced by ``run_backtest``.
+    """
+    import asyncio
+    import time
+
+    from src.tools.backtest_tool import run_backtest
+
+    # Successful runs auto-reflect inside run_backtest (see
+    # src.memory.reflections), covering both this MCP entry path and the
+    # in-process BacktestTool path without double-appending lessons.
+    if ctx is None:
+        return await asyncio.to_thread(run_backtest, run_dir)
+
+    task = asyncio.create_task(asyncio.to_thread(run_backtest, run_dir))
+    started = time.monotonic()
+    while True:
+        done, _pending = await asyncio.wait({task}, timeout=_BACKTEST_HEARTBEAT_SECONDS)
+        if done:
+            break
+        elapsed = time.monotonic() - started
+        await ctx.report_progress(
+            elapsed, None, message=f"backtest running ({elapsed:.0f}s elapsed)"
+        )
+    return task.result()
+
 
 @mcp.tool
-def backtest(run_dir: str) -> str:
+async def backtest(run_dir: str, ctx: Context | None = None) -> str:
     """Run a vectorized backtest using config.json and code/signal_engine.py.
 
     The run_dir must contain:
@@ -1010,12 +1060,7 @@ def backtest(run_dir: str) -> str:
     Args:
         run_dir: Path to the run directory containing config.json and code/.
     """
-    from src.tools.backtest_tool import run_backtest
-
-    # Successful runs auto-reflect inside run_backtest (see
-    # src.memory.reflections), covering both this MCP entry path and the
-    # in-process BacktestTool path without double-appending lessons.
-    return run_backtest(run_dir)
+    return await _backtest_impl(run_dir, ctx)
 
 
 # ---------------------------------------------------------------------------
@@ -1391,6 +1436,59 @@ def read_file(path: str) -> str:
     """
     registry = _get_registry()
     return registry.execute("read_file", {"path": path})
+
+
+@mcp.tool
+def read_run_artifact(
+    run_dir: str,
+    artifact: str,
+    format: str = "rows",
+    offset: int = 0,
+    max_rows: int = 1000,
+    columns: _lenient_str_list_opt = None,
+) -> str:
+    """Read a backtest run artifact as structured JSON instead of raw CSV text.
+
+    Artifacts: ``equity``, ``trades``, ``metrics``, ``positions``,
+    ``target_positions`` (CSVs under ``<run_dir>/artifacts/``), ``ohlcv:<CODE>``
+    (e.g. ``ohlcv:600519.SH``), ``run_card`` and ``progress`` (JSON sidecars).
+
+    Formats:
+
+    - ``rows``: offset paging over whole records; follow ``next_offset`` until
+      ``truncated`` is false to walk a file losslessly.
+    - ``downsample``: equal-stride sample of at most ``max_rows`` points with
+      the first and last row always pinned — one call feeds a chart.
+    - ``meta``: columns / total_rows / size_bytes only.
+
+    Cells arrive typed (int / float / null / string). Every envelope is
+    serialized within a bounded byte budget (~120K characters): an oversized
+    page shrinks to whole records with honest ``truncated`` / ``next_offset``
+    metadata rather than cutting mid-JSON. Errors return
+    ``{"ok": false, "error", "hint"}``.
+
+    Args:
+        run_dir: Run directory a backtest/tool call returned.
+        artifact: Whitelisted artifact name (see above); anything else —
+            including path traversal — is refused.
+        format: "rows" (default), "downsample" or "meta".
+        offset: First row index for "rows" mode (default 0).
+        max_rows: Page/sample size, clamped to [1, 5000] (default 1000).
+        columns: Optional column projection; unknown names are refused with
+            the valid list.
+    """
+    registry = _get_registry()
+    return registry.execute(
+        "read_run_artifact",
+        {
+            "run_dir": run_dir,
+            "artifact": artifact,
+            "format": format,
+            "offset": offset,
+            "max_rows": max_rows,
+            "columns": columns,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

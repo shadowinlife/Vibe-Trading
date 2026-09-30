@@ -133,7 +133,7 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (78)
+## Available MCP Tools (79)
 
 | Tool | Description | API Key |
 |------|-------------|---------|
@@ -178,6 +178,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `read_document` | Extract text from PDF/DOCX/XLSX/PPTX/images | None |
 | `write_file` | Write files (config, strategy code) | None |
 | `read_file` | Read file contents | None |
+| `read_run_artifact` | Read backtest run artifacts as paged/downsampled structured JSON | None |
 | `list_strategies` | Browse discoverable strategies (Alpha Zoo + SDM store) | None |
 | `query_strategies` | Evidence-gated query: regime / Sharpe / quality / cost filters | None |
 | `get_strategy_evidence` | Per-regime evidence rows for one strategy | None |
