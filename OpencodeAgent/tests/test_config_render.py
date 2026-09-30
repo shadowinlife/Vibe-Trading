@@ -85,6 +85,21 @@ class TestTemplateRender:
         assert "{{" not in raw
         assert "}}" not in raw
 
+    def test_long_running_tool_support(self):
+        """Minute-long backtests must survive opencode's MCP call timeout, and
+        structured artifact pages must not be truncated mid-JSON.
+
+        ``timeout`` is the per-server MCP request timeout in ms — opencode's
+        SDK default is 60s, which kills any longer backtest; the backtest
+        tool's progress heartbeats reset it, and 600s bounds a silent stall.
+        ``tool_output`` raises opencode's 50KB/2000-line tool-result
+        truncation (which spills the tail to a file and hands the model
+        broken JSON) above read_run_artifact's 120K-char page budget.
+        """
+        config = _rendered()
+        assert config["mcp"]["vibe-trading"]["timeout"] == 600000
+        assert config["tool_output"] == {"max_bytes": 262144, "max_lines": 8000}
+
 
 class TestToolGovernanceManifest:
     def test_manifest_schema(self):

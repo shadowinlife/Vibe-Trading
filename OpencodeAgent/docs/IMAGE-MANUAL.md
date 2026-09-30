@@ -171,7 +171,7 @@ curl http://localhost:4096/health
 | `--base` | 构建基础镜像（极少使用） |
 | `--app` | 构建 app 镜像（默认） |
 | `--tag TAG` | 镜像标签，默认 `latest` |
-| `--push` | 构建后推送到 registry |
+| `--push` | 构建后推送。目标 = `$IMAGE_REGISTRY`（完整仓库路径；解析顺序：环境变量 → `OpencodeAgent/.env` 定向提取），base 镜像默认 `${IMAGE_REGISTRY}-base`（`BASE_IMAGE_REGISTRY` 可覆盖）。**无 hardcode 兜底 registry**：目标未解析时 fail-fast 退出，杜绝静默误推到废弃仓库 |
 | `--dry-run` | 仅打印命令，不执行 |
 
 ### 5.2 构建基础镜像
@@ -249,19 +249,19 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 
 > **启动时序（v3.2.0+）**：entrypoint 渲染配置 → 校验插件缓存存在 → （可选）VT verify → 启动 `opencode serve` → **后台预热请求**触发首次 bootstrap（纯本地初始化，无任何下载）。注意：opencode 在 bootstrap 完成前会挂起入站 HTTP 请求（固有行为），生产侧应以 healthcheck 状态为准再接流量；预热完成后首次业务请求实测 <1s。
 
-### 6.3 VT MCP 工具特性（v0.1.13 基线）
+### 6.3 VT MCP 工具特性（v0.1.16 基线 + FE-1 增强）
 
-本镜像的 Vibe-Trading 基线为 **mymain @ v0.1.13**，MCP Server 默认暴露 **73 个工具**；`VT_MEMORY_MCP_TOOLS=1`（本镜像默认开启）时额外注册 5 个 `memory_*` 工具，共 **78 个**。配套资产：**90 个内置 skills**、**30 个 swarm 多智能体预设**。
+本镜像的 Vibe-Trading 基线为 **mymain @ 上游 v0.1.16 对齐 + FE-1 后端增强**，MCP Server 默认暴露 **79 个工具**；`VT_MEMORY_MCP_TOOLS=1`（本镜像默认开启）时额外注册 5 个 `memory_*` 工具，共 **84 个**。配套资产：**91 个内置 skills**、**30 个 swarm 多智能体预设**。
 
-相对上一版基线，新增以下能力：
+相对 v3.2.0-mymain（v0.1.13 基线），新增以下能力：
 
 | 能力 | 说明 |
 |------|------|
-| ClickHouse 语义层 | `ch_list_tables` / `ch_describe_table` / `ch_query` 三个工具，对 `ashare` 库（56 张表）做受约束的只读 SELECT |
-| 估值工具 | `get_valuation` — DCF / 相对估值 / 综合估值引擎 |
-| 外汇/贵金属数据源 | `get_market_data` 的 tickerall 数据源支持 `mt5`（本地 MetaTrader 5 终端，如 `EUR/USD`、`XAUUSD.FX`）；**仅显式指定 `source="mt5"` 时启用**，`auto` 路由永远不会选中它 |
-| 数据溯源增强 | `get_market_data` 返回的 `_provenance` 中新增 `volume_unit` 字段（`lots` / `shares`），修复 A 股手数与股量纲混淆（上游 #1062） |
-| 前端面板 | VT Web 前端新增 Options Lab（期权实验室）、回测 tearsheet、因子研究（Factor Research）面板 |
+| backtest 结构化 summary（FE-1 R1/R4） | `backtest` 成功信封新增 `summary` 字段：run_id / title / codes / 日期区间 / interval / initial_cash / **完整 metrics 对象**（非 stdout 字符串）/ ≤50 点等步长 `equity_preview`（首末点必含）/ `artifact_paths`（含按标的的 ohlcv 路径）/ warnings；顶层 `artifacts` 同步新增 `ohlcv` 键。旧字段逐字节不变，前端无需再二次解析 stdout，且不受 stdout 2000 字符截断影响 |
+| `read_run_artifact` 工具（FE-1 R2） | 大 CSV 产物的分块结构化读取：`rows`（offset 分页，跟随 `next_offset` 无损遍历）/ `downsample`（等步长降采样、首末 pin，一次调用喂图）/ `meta`（形状探测）；白名单枚举（equity/trades/metrics/positions/target_positions/ohlcv:&lt;CODE&gt;/run_card/progress）+ 防路径穿越 + ~120K 字符字节预算（整记录收缩，绝不产出破碎 JSON） |
+| 回测进度信号（FE-1 R5'） | 引擎子进程按阶段写 `<run_dir>/progress.json`（validate→signal→data_load→simulate→matching→metrics→artifacts→done/failed；原子写、best-effort、绝不改变回测行为），经 `read_run_artifact(artifact="progress")` 轮询。MCP 层 backtest 每 20s 发 progress 心跳——opencode 丢弃其内容但据此重置调用超时（见 6.5） |
+| `get_market_data` 契约自描述（FE-1 R3） | 成功信封顶层新增 `schema_version: "1.0"`；`_provenance` 每 symbol 新增 `date_field`（该标的 bar 实际使用的日期键名，如 `trade_date`）。加法-only，不改任何既有键名；错误信封逐字节透传 |
+| 上游 v0.1.16 对齐（88 commits） | run_card schema **1.0**（hash-only tool traces + verified evidence）、回测超时保留日志（超时信封含 stdout/stderr）、`read_file` 报告可读范围与目录列举、免费行情源失败处理加固（全 symbol 未解析 → `status:error` 信封）、`.US` 后缀仅问美股、grounding 修正批次、loader health canary |
 
 #### `ch_*` 语义层安全模型
 
@@ -283,6 +283,25 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 恢复方式：从 `disabled` 移除对应条目后重启容器。
 
 > 历史说明：历史版本曾列出 `trading_place_order` / `trading_cancel_order` / `trading_modify_order` / `trading_place_bracket` 四个禁用项——但 mymain 的 MCP 面**从未暴露**任何下单/撤单工具（它们仅存在于 agent + CLI 侧），这些条目属于对不存在工具的无效禁用，已在 v2.1.0-mymain 移除。另：v2.1.0 期间清单曾被 COPY 进镜像但无消费者（opencode 不读该文件名），2026-08-21 起经 `render_config.py` 真正生效。
+
+### 6.5 工具载荷与超时上限（FE-1 R7 契约文档）
+
+前端 / Agent 消费 VT MCP 工具结果时存在三层独立的载荷上限（opencode 版本对应：本镜像 pin `opencode-ai@1.18.18`，行为经该版本源码核实）：
+
+| 层 | 上限 | 超限行为 | 配置位置 |
+|---|---|---|---|
+| ① VT `read_file` 工具 | **50,000 字符** | 前缀截断，尾部追加 `... (truncated)` 标记（不报错、不写盘） | 代码常量 `agent/src/tools/read_file_tool.py` `_OUTPUT_LIMIT` |
+| ② opencode Truncate（**所有** MCP 工具结果统一过此层） | opencode 默认 2,000 行 / 50KB；**本镜像提升为 8,000 行 / 256KB** | 全文写盘到 opencode truncation 目录，模型与前端 SSE 只收到前缀预览 + `metadata.truncated/outputPath`——**JSON 会被拦腰截断**，因此 VT 侧大载荷工具自带更低的③层预算 | `opencode.json` 顶层 `tool_output.{max_lines,max_bytes}`（本镜像 tmpl 已配置并有单测 pin） |
+| ③ VT `read_run_artifact` 工具 | **~120,000 字符/页**（`_BYTE_BUDGET`） | 整记录收缩：`rows` 模式缩小 `returned_rows` 并给出诚实的 `truncated`/`next_offset`；`downsample` 模式减少采样点并重算 `stride`——**永不产出破碎 JSON**，尾部永不静默丢失 | 代码常量 `agent/src/tools/run_artifact_tool.py` |
+
+MCP 调用超时（与载荷正交，同样经 1.18.18 源码核实）：
+
+| 项 | 值 | 说明 |
+|---|---|---|
+| opencode MCP callTool 默认超时 | **60s**（TS SDK `DEFAULT_REQUEST_TIMEOUT_MSEC=60_000`） | 未配置时分钟级回测必然超时——这是 v3.2.0 及以前镜像的潜在缺陷 |
+| **本镜像 per-server 配置** | `timeout: 600000`（10 分钟） | `opencode.json` → `mcp.vibe-trading.timeout`（连接超时同用此值；有单测 pin） |
+| 心跳重置 | backtest 工具每 **20s** 发一条 MCP progress notification | opencode `resetTimeoutOnProgress: true`——每条通知重置超时窗口（双保险）。⚠️ 通知**内容**被 opencode 空回调丢弃，不会到达前端 SSE；前端进度请经 `read_run_artifact(artifact="progress")` 轮询 `progress.json` |
+| VT 引擎内部超时 | 默认 **300s**（`Runner` timeout，环境变量可配） | 内部超时先于 MCP 超时到达：工具返回含 stdout/stderr 的超时错误信封（上游 18988fbe），而非 MCP 层断连 |
 
 ---
 
@@ -630,26 +649,32 @@ VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
 
 ### 12.1 阿里云容器镜像服务
 
+推送目标由 `IMAGE_REGISTRY`（完整仓库路径）定义，**无 hardcode 兜底 registry**（v3.3.0 起 build.sh fail-fast，见 5.1）；地址与凭据存 `OpencodeAgent/.env`（gitignored，chmod 600，绝不入 tracked 树）。
+
 | 镜像 | 地址 |
 |------|------|
-| 基础镜像 | `registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve-base:latest` |
-| App 镜像 | `registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain` |
+| 基础镜像 | `${IMAGE_REGISTRY}-base:latest`（`BASE_IMAGE_REGISTRY` 可覆盖） |
+| App 镜像 | `${IMAGE_REGISTRY}:v3.3.0-mymain` |
 
 ### 12.2 推送镜像
 
 ```bash
-# 登录
-docker login --username=<阿里云账号> registry.cn-hangzhou.aliyuncs.com
+# 一次性登录目标 registry（凭据在 OpencodeAgent/.env；仓库受 IP 白名单保护，
+# 推送 denied/timeout 时不重试轰炸，转人工处理）
+docker login <registry-host>
 
-# 推送
-docker tag opencode-serve:v3.2.0-mymain registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
-docker push registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
+# 推荐：构建并推送（IMAGE_REGISTRY 解析顺序：环境变量 → OpencodeAgent/.env）
+./build.sh --app --tag v3.3.0-mymain --push
+
+# 手动推送（等效）
+docker tag opencode-serve:v3.3.0-mymain "${IMAGE_REGISTRY}:v3.3.0-mymain"
+docker push "${IMAGE_REGISTRY}:v3.3.0-mymain"
 ```
 
 ### 12.3 拉取镜像
 
 ```bash
-docker pull registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
+docker pull "${IMAGE_REGISTRY}:v3.3.0-mymain"
 ```
 
 ---

@@ -1,6 +1,10 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "alibaba-cn/qwen3.8-max",
+  "tool_output": {
+    "max_bytes": 262144,
+    "max_lines": 8000
+  },
   "mcp": {
     "vibe-trading": {
       "type": "local",
@@ -8,6 +12,7 @@
         "/opt/venv/bin/python",
         "/opt/vibe-trading/agent/mcp_server.py"
       ],
+      "timeout": 600000,
       "env": {
         "CLICKHOUSE_HOST": "{{ CLICKHOUSE_HOST }}",
         "CLICKHOUSE_PORT": "{{ CLICKHOUSE_PORT }}",
