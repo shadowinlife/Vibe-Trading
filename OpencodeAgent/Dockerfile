@@ -10,7 +10,7 @@ FROM opencode-serve-base:latest
 USER root
 
 RUN mkdir -p /root/.config/pip && \
-    printf '[global]\nindex-url=https://mirrors.aliyun.com/pypi/simple/\n\n[install]\ntrusted-host=mirrors.aliyun.com\n' \
+    printf '[global]\nindex-url=https://mirrors.aliyun.com/pypi/simple/\ntimeout=60\nretries=5\n\n[install]\ntrusted-host=mirrors.aliyun.com\n' \
     > /root/.config/pip/pip.conf
 
 # opencode-ai comes from the base image (pinned in Dockerfile.base). The
