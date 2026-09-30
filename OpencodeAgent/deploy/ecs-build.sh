@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REGISTRY="registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2"
+# Push targets come from the environment: build.sh refuses hardcoded
+# registries, and a fresh clone carries no gitignored OpencodeAgent/.env.
+if [ -z "${IMAGE_REGISTRY:-}" ]; then
+    echo "ERROR: export IMAGE_REGISTRY=<full image repository> before running,"
+    echo "       e.g. spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode"
+    exit 1
+fi
+
 VERSION="${1:-v2.1.0-mymain}"
 VT_BRANCH="mymain"
 
@@ -22,4 +29,4 @@ cd OpencodeAgent
 echo "=== Step 2: Build app image ==="
 ./build.sh --app --tag "$VERSION" --push
 
-echo "=== Done: ${REGISTRY}/opencode-serve:${VERSION} ==="
+echo "=== Done: ${IMAGE_REGISTRY}:${VERSION} (base: ${IMAGE_REGISTRY}-base:latest) ==="

@@ -4,11 +4,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IMAGE_NAME="opencode-serve"
 IMAGE_TAG="latest"
-REGISTRY="registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2"
-# IMAGE_REGISTRY (e.g. from OpencodeAgent/.env) overrides the push target as a
-# FULL image repository (only ":${IMAGE_TAG}" is appended); the legacy
-# REGISTRY/IMAGE_NAME composition stays as the fallback.
+# Push targets are FULL image repositories (only ":${IMAGE_TAG}" is appended).
+# Resolution order: environment, then OpencodeAgent/.env (gitignored operator
+# file). There is deliberately NO hardcoded fallback registry: a --push that
+# cannot resolve a target fails fast instead of silently shipping the image to
+# a stale registry. BASE_IMAGE_REGISTRY defaults to "${IMAGE_REGISTRY}-base".
 IMAGE_REGISTRY="${IMAGE_REGISTRY:-}"
+BASE_IMAGE_REGISTRY="${BASE_IMAGE_REGISTRY:-}"
 PLATFORM="${DOCKER_PLATFORM:-}"
 PUSH=false
 DRY_RUN=false
@@ -31,7 +33,10 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --tag TAG     Image tag (default: latest)"
-      echo "  --push        Push to $REGISTRY after build"
+      echo "  --push        Push after build. Target: \$IMAGE_REGISTRY (full image"
+      echo "                repository, from env or OpencodeAgent/.env); base image:"
+      echo "                \$BASE_IMAGE_REGISTRY (default \${IMAGE_REGISTRY}-base)."
+      echo "                Fails fast when unresolved - no default registry."
       echo "  --dry-run     Show commands without executing"
       exit 0
       ;;
@@ -53,6 +58,21 @@ run() {
 PLATFORM_ARG=()
 [ -n "$PLATFORM" ] && PLATFORM_ARG=(--platform "$PLATFORM")
 
+# Pick up push targets from the operator's .env when not already set in the
+# environment. Targeted extraction only: the file also holds runtime secrets
+# the build shell has no business inheriting.
+if [ -f "$SCRIPT_DIR/.env" ]; then
+  if [ -z "$IMAGE_REGISTRY" ]; then
+    IMAGE_REGISTRY="$(sed -n 's/^IMAGE_REGISTRY=//p' "$SCRIPT_DIR/.env" | tail -n1 | tr -d '\r')"
+  fi
+  if [ -z "$BASE_IMAGE_REGISTRY" ]; then
+    BASE_IMAGE_REGISTRY="$(sed -n 's/^BASE_IMAGE_REGISTRY=//p' "$SCRIPT_DIR/.env" | tail -n1 | tr -d '\r')"
+  fi
+fi
+if [ -z "$BASE_IMAGE_REGISTRY" ] && [ -n "$IMAGE_REGISTRY" ]; then
+  BASE_IMAGE_REGISTRY="${IMAGE_REGISTRY}-base"
+fi
+
 # ---------------------------------------------------------------------------
 # Base image build
 # ---------------------------------------------------------------------------
@@ -66,7 +86,12 @@ if [ "$MODE" = "base" ]; then
     "$SCRIPT_DIR"
 
   if $PUSH; then
-    FULL_IMAGE="${REGISTRY}/opencode-serve-base:${BASE_TAG}"
+    if [ -z "$BASE_IMAGE_REGISTRY" ]; then
+      echo "ERROR: --base --push needs BASE_IMAGE_REGISTRY (or IMAGE_REGISTRY to derive <repo>-base)."
+      echo "       Set it in the environment or in OpencodeAgent/.env; there is no default registry."
+      exit 1
+    fi
+    FULL_IMAGE="${BASE_IMAGE_REGISTRY}:${BASE_TAG}"
     run docker tag "opencode-serve-base:${BASE_TAG}" "$FULL_IMAGE"
     run docker push "$FULL_IMAGE"
     echo "=== Base push complete: $FULL_IMAGE ==="
@@ -116,11 +141,13 @@ run docker build \
   "$SCRIPT_DIR"
 
 if $PUSH; then
-  if [ -n "$IMAGE_REGISTRY" ]; then
-    FULL_IMAGE="${IMAGE_REGISTRY}:${IMAGE_TAG}"
-  else
-    FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+  if [ -z "$IMAGE_REGISTRY" ]; then
+    echo "ERROR: --push needs IMAGE_REGISTRY (a FULL image repository path,"
+    echo "       e.g. spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode)."
+    echo "       Set it in the environment or in OpencodeAgent/.env; there is no default registry."
+    exit 1
   fi
+  FULL_IMAGE="${IMAGE_REGISTRY}:${IMAGE_TAG}"
   run docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "$FULL_IMAGE"
   run docker push "$FULL_IMAGE"
   echo "=== Push complete: $FULL_IMAGE ==="
