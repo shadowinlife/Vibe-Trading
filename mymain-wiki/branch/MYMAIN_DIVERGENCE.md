@@ -74,7 +74,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 ### 3.1 测试套件与静态门禁（conda env `legonanobot`，macOS arm64 / Python 3.12）
 
 ```bash
-# memory 套件（含上游孤儿恢复/GC/pin 测试与上游新增 FTS5 衰减/tokenizer/hierarchy 修复测试）——基线 316 passed / 3 skipped（其中 test_env_schema 97）
+# memory 套件（含上游孤儿恢复/GC/pin 测试与上游新增 FTS5 衰减/tokenizer/hierarchy 修复测试）——基线 333 passed / 3 skipped（2026-09-30 对齐轮，+17 为上游新增）
 python -m pytest agent/tests/memory/ agent/tests/test_persistent_memory.py \
   agent/tests/test_memory_orphan_recovery.py agent/tests/test_memory_gc.py \
   agent/tests/test_env_schema.py -q
@@ -92,7 +92,7 @@ python -m pytest tools/test_ci_clickhouse_comments_gate.py \
   tools/test_clickhouse_apply_comments.py tools/test_clickhouse_export_ddl.py -q
 python tools/ci_clickhouse_comments_gate.py
 
-# README/SKILL.md 计数门禁——基线 115 passed（七份 README（上游新增 README_id.md）+ manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
+# README/SKILL.md 计数门禁——基线 122 passed（2026-09-30 对齐轮，+7 为上游新增 pin；七份 README + manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
 python -m pytest agent/tests/test_readme_counts.py agent/tests/test_distribution_skill_manifest.py -q
 
 # env-var AST 门禁——基线 exit 0（3 条 WARN 来自上游 llm.py，与本分支无关）
@@ -408,3 +408,13 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - **opencode 固有行为（诊断中确认，非本次引入）**：bootstrap 进行期间入站 HTTP 请求被挂起直至实例初始化完成（无超时）——生产侧以 healthcheck 状态为准再接流量（compose start_period=60s 不变）；预热子进程退出后遗留一个无害 zombie（opencode 作为 PID 1 不 reap，介意可 compose 加 `init: true`）。既有 pip 冲突警告（base 的 alpaca-trade-api vs VT 的 urllib3/websockets 2.x）不变，该包本部署未用且 `trading_*` 已 deny。
 - **升级 SOP**：OMO = 改 Dockerfile `ARG OMO_VERSION` + tmpl/tui.json spec（三处逐字一致）后重建 app；opencode = 改 Dockerfile.base pin 后重建 base+app；models 目录冻结于构建期，重建即刷新（在线环境可运行时覆盖 `OPENCODE_DISABLE_MODELS_FETCH=` 恢复后台刷新）。
 - **registry 交付（同日完成）**：`opencode-serve:v3.2.0-mymain` 已推送 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode`（30 层：26 新推 + 4 复用，digest `sha256:d34019a5…`，远端 manifest inspect 验证通过；本机在 IP 白名单内直推成功）。**遗留注意**：生产首启后建议复核 flash 轻量档解析（2026-09-27 条遗留注意项仍有效）。
+
+### 2026-09-30 直接 merge 对齐（基线 `9a27a6e7`，v0.1.16）——FE-1 后端需求前置
+
+- **动机**：FE-1 前端需求文档（aliyun-acs-agent-service `docs/iterations/fe-1-vt-backend-requirements.md`）的"已验证契约"实测自上游 main@18988fbe 检出，而现网镜像 v3.2.0-mymain vendor 自本分支（run_card schema 0.1 vs 前端校验的 1.0、超时信封缺 stdout/stderr）——**血统错位会让 FE E2E 现场降级**。按 root AGENTS.md §8.1 周期对齐义务，先对齐再实现 R1/R2/R4。
+- **上游增量（88 commit，5e9ffd1a → 9a27a6e7）**：v0.1.16 发布、run_card schema **1.0**（`d25d9f93` hash-only traces + `0244ecea` verified evidence）、backtest 超时保留日志（`18988fbe`：超时信封补 stdout/stderr + `_persist_timeout_output`）、read_file 报告可读范围与目录列举（`c8c2dc38`）、免费行情源失败处理加固（`a71d5312`：全 symbol 未解析时 `status:error` 信封）、`.US` 后缀仅问美股（`711f26c8`）、grounding 修正批次、loader health canary（`54f222b7`）、broker capability matrix。
+- **冲突面（仅 2 处真冲突，历轮最小）**：① `agent/SKILL.md` frontmatter——解决为上游 version 0.1.16 + 本地增量（91 skills = 上游 90 + memory-lifecycle；29 sources = 上游 28 + clickhouse，clickhouse 列首）；② `agent/src/market_data.py` `fetch_market_data_json`——采上游 a71d5312 错误信封加固（本地 clickhouse provenance/路由改动在别处自动合并）。README×7、env_schema、backtest_tool.py、test.yml、pyproject 全部自动合并成功。
+- **吸收核查**：`gh pr list --author shadowinlife` 确认本窗口内无本地 PR 被上游吸收（最近合入 #1544 于 09-24，早于上轮对齐点）；3 个 open PR（#1572/#1486/#1484）不受影响。F1-F5/F7 逐项核对未被上游取代（上游零触碰 memory/clickhouse/OpencodeAgent 面）。
+- **计数**：MCP **OFF=78 / ON=83 不变**（上游本窗口 mcp_server.py 零改动）；skills 91、sources 29、engines 10 维持。
+- **验证基线（全绿）**：memory **333/3**（+17 上游新增）、README+manifest pin **122**（+7 上游新增 pin）、ClickHouse **137/11**、CH schema 门禁 **53/1 + exit 0**、env gate **exit 0**、market_data/registry/source_order/settings **150**、backtest/run_card/scheduled_research 聚焦 **165**、agent loop/swarm **75**、MCP 套件 **219**（85+134）。
+- **附带实证（opencode 源码级，供 FE-1 设计引用）**：① opencode MCP callTool 默认超时 **60s**（TS SDK `DEFAULT_REQUEST_TIMEOUT_MSEC=60_000`，tmpl 未配 `timeout` → 现网 >60s 回测必超时，FE 需求 R5 前提被推翻）；② opencode 对 MCP tool result 统一过 Truncate（默认 **2000 行/50KB**，超限写盘+破碎 JSON 进 SSE）；③ opencode `onprogress: () => {}` 空回调——MCP progress notification **到不了前端 SSE**，仅用于超时重置（`resetTimeoutOnProgress:true`）；④ structuredContent 在 content 非空时被丢弃（PR #34505 故意行为）——契约必须锚定 TextContent。
