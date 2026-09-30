@@ -36,9 +36,65 @@ related: [MYMAIN_DIVERGENCE.md]
 
 ---
 
-### release/mymain · 2026-09-27 — 基线：上游 `5e9ffd1a`
+### release/mymain · 2026-09-30 — 基线：上游 `9a27a6e7`（v0.1.16）
 
 - **发布 commit**：`release/mymain` tag 所指 commit（即本条发布记录 commit）
+- **上游基线**：`9a27a6e7`（v0.1.16；本轮对齐覆盖 `5e9ffd1a` 之后全部 88 个上游 commit，直接 merge，仅 2 处真冲突，见 DIVERGENCE §5 2026-09-30 对齐条）
+- **差异总量**：599 个文件、+113,971/−175 行（复核命令 `git diff origin/main release/mymain --shortstat`）
+- **对齐方式**：**直接 merge**（增量轮次，沿 2026-08-21 先例；回退点 `backup/mymain-20260930`）
+- **发布主题**：**FE-1 后端交付**（aliyun-acs-agent-service 前端需求 R1-R7 全量落地）+ 上游 v0.1.16 对齐（修正 FE 实测契约与镜像的血统错位 N4）
+
+#### 核心变更（FE-1 R1-R7 + 镜像侧加固）
+
+1. **R1/R4 — backtest 结构化 summary**：成功信封新增 `summary`（run_id/title/codes/日期区间/interval/initial_cash/**完整 metrics 对象**/≤50 点等步长 `equity_preview` 首末 pin/`artifact_paths` 含 ohlcv/warnings）；旧字段**逐字节不变**（golden 测试 pin）；`artifacts` 新增 `ohlcv` 键。新模块 `src/tools/backtest_summary.py`（best-effort，绝不为 summary 失败拖垮 run）。
+2. **R2 — `read_run_artifact` 工具（第 79 个 MCP 工具）**：`rows`（offset 分页 + `next_offset` 无损遍历）/`downsample`（等步长、首末 pin、一次喂图）/`meta` 三模式；白名单枚举 + safe_run_dir + resolve 后 containment 复查 + ohlcv CODE 校验**四层路径穿越防御**（含 symlink 逃逸测试）；~120K 字符字节预算**整记录收缩**（沿 `fit_records` 模式），永不产出破碎 JSON；错误信封 `{ok:false,error,hint}`。
+3. **R5' — 进度信号重定义三件套**：tmpl `timeout:600000`（拆 N1 60s 炸弹）+ backtest MCP **异步心跳 wrapper**（每 20s `ctx.report_progress`，opencode `resetTimeoutOnProgress` 保活；签名经安装包实证、无 token 安全 no-op）+ 引擎阶段 **`progress.json`**（原子写、best-effort、validate→signal→data_load→simulate→matching→metrics→artifacts→done/failed）。
+4. **R3 — 加法-only**：`get_market_data` 成功信封顶层 `schema_version:"1.0"` + `_provenance.<sym>.date_field`；**不改键名**（破坏性重命名方案经讨论环节否决：loader 输出层归上游所有、FE 四键兼容已实现、行业无统一标准）；错误信封逐字节透传。
+5. **R6 裁决 A**（不新增 publish_run，summary 为唯一回测卡片入口）+ **R7 文档化**（三层载荷上限 + 超时链写入 IMAGE-MANUAL §6.5，含 opencode-ai@1.18.18 版本对应）。
+6. **镜像侧加固**：tmpl `tool_output{max_bytes:262144,max_lines:8000}`（两键经 1.18.18 schema 源码实证 + render pin 测试）；`build.sh`/`ecs-build.sh` **移除 hardcode legacy registry 静默回退**（fail-fast + `.env` 定向提取 + base 派生 `${IMAGE_REGISTRY}-base`，dry-run 矩阵 5 测）；Dockerfile pip 配置 `timeout=60/retries=5`（首次构建 QEMU 下镜像源读超时失败后加固）。
+
+#### opencode 源码级新发现（pin 1.18.18；证据详见 DIVERGENCE §5 2026-09-30 对齐条附带实证）
+
+**N1** MCP callTool 默认 60s 超时（现网炸弹，本发布拆除）· **N2** progress notification 内容被 opencode 空回调丢弃（到不了前端 SSE，仅保活有用）· **N3** Truncate 对所有 MCP tool result 默认 2000 行/50KB 拦腰截断（本发布提升至 256KB/8000 行）· **N4** structuredContent 在 content 非空时被丢弃（VT 工具全部返回 JSON 字符串 = TextContent，天然免疫）。
+
+#### 计数基线
+
+MCP **OFF=79 / ON=84**（上游基数 74 + 3 ch_* + 1 scheduled_research + 5 memory_* + **1 read_run_artifact**）、skills **91**、数据源 **29**、引擎 **10**、agent tools **112**（+1 = RunArtifactTool 自动发现）、README **七份同步**（pin 122）。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| FE-1 新增单测（5 文件） | 81 passed |
+| 邻近回归（backtest/run_card/market_data/MCP/runner） | 222 passed |
+| 聚焦扫描（新测试+回归+MCP 面） | 389 passed |
+| agent loop/swarm/MCP 套件 | 223 passed |
+| memory 套件 | 333 passed / 3 skipped |
+| ClickHouse 套件 | 137 passed / 11 skipped |
+| schema 门禁 + comments gate | 53 passed / 1 skipped + exit 0 |
+| README/manifest 计数门禁 | 122 passed |
+| env-var AST 门禁 | exit 0 |
+| MCP 运行时计数 | OFF=79 / ON=84 |
+| OpencodeAgent config render | 26 passed（含新 timeout/tool_output pin） |
+| ruff（全部改动文件） | clean |
+| code-review skill 复核 | APPROVE（零阻塞） |
+| 提交规范 | 单一作者 + 8×DCO + 零 AI trailer |
+
+#### 镜像交付（同日完成）
+
+`opencode-serve:v3.3.0-mymain`（linux/amd64，4.04GB，31 层，digest `sha256:e780e299…`）已推送 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode`，远端 manifest inspect 验证通过。冒烟两段全 PASS（脚本入库 `OpencodeAgent/tests/smoke-v330.sh`）：**Stage1** = render OK / TIMEOUT(600000) / TOOLOUTPUT(256KB・8000行) / DENY 三组 / **COUNT 84 + read_run_artifact 在场** / AGENTS 79・84 / **FUNC 新工具合成 run 实测**（downsample 首末 pin + meta + 穿越拒绝 + summary 契约，amd64 运行时证明）；**Stage2** = 真 entrypoint 启动 **HEALTH_OK ~10s**（1.18.18 接受新配置键实证）。首次构建 pip 层失败（aliyun 镜像 QEMU 下读超时 @1085s）→ pip 配置加固后二次成功。
+
+#### FE 移交与遗留
+
+- FE 交付通报：aliyun-acs-agent-service `docs/iterations/fe-1-vt-backend-delivery.md`（N1-N4 事实、R5 验收口径修订、契约速查、前端行动项；该仓有用户 WIP，文件待用户提交）。
+- **E2E 必须以 v3.3.0 执行**：v3.2.0 上 >60s 回测必超时（N1），且 run_card 0.1 会触发前端 parseRunCard 降级（N4）。
+- 遗留：① flash 轻量档解析复核（v3.1/v3.2 遗留注意项仍有效）② R3 键名统一如 FE 强诉求可提上游 RFC ③ progress.json 带外消费通道（RM 直读推前端 SSE）归 FE-2 ④ R1/R2 为通用增量，列上游贡献候选（§2.3 队列待用户裁决）。
+
+---
+
+### release/mymain · 2026-09-27 — 基线：上游 `5e9ffd1a`
+
+- **发布 commit**：`8e93ea21`（2026-09-30 移动 tag 前 `release/mymain` 所指）
 - **上游基线**：`5e9ffd1a`（v0.1.15 后；本轮对齐覆盖 `f84b2977` 之后全部 371 个上游 commit。2026-09-13 restructure 与 engine-bridge 并回未曾发布，本条为覆盖它们的首次发布）
 - **差异总量**：588 个文件、+111,290/−168 行（复核命令 `git diff origin/main release/mymain --shortstat`；较上轮减少系 F8 引擎桥与多租户基础设施移出本分支）
 - **对齐方式**：**merge + carve**（临时分支一次性解 10 文件冲突 + 回退树手术后，从 `origin/main` 切出 8 个单一功能 commit：F1→F4 memory、F5 ClickHouse+语义层、scheduled_research wrapper、F7 OpencodeAgent、wiki docs；carve 树与手术树逐字节一致；回退点 `backup/mymain-pre-rebase-20260926`，仅本地，含旧明文 token，永不推送）
