@@ -211,7 +211,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 |------|------|--------|------|
 | `DASHSCOPE_API_KEY` | ✅（仅直连模式） | — | DashScope API Key。代理模式下不需要（真实 key 不进沙箱，由 RM 上游注入；生产池自 2026-10-09 起已移除该变量） |
 | `LLM_BASE_URL` | ❌ | 空 | v3.4.0-mymain 起（Phase 9a）：RM 内嵌 LLM 代理地址。非空时 `render_config.py` 渲染 `provider.alibaba-cn.options.{baseURL,apiKey,headers.x-sandbox-id=HOSTNAME}` 指向代理；空 = 直连模式（字节等价 v3.3.0） |
-| `LLM_API_KEY` | ❌ | 空 | 沙箱→RM 代理的调用凭证（配合 `LLM_BASE_URL` 使用；仅在两者同时设置时生效） |
+| `LLM_API_KEY` | ❌ | 空 | 沙箱→RM 代理的调用凭证（渲染 gate 仅看 `LLM_BASE_URL` 非空；生产恒两者同设——缺本键时 apiKey 渲染为空串，请求将被代理 401 拒绝） |
 | `OPENCODE_SERVER_PASSWORD` | ✅ | — | Web Server 密码 |
 | `CLICKHOUSE_HOST` | ✅ | — | ClickHouse 地址 |
 | `CLICKHOUSE_PORT` | ❌ | `8123` | ClickHouse HTTP 端口 |
