@@ -94,6 +94,15 @@ def build_context() -> dict:
         "CLICKHOUSE_DATABASE": os.environ.get("CLICKHOUSE_DATABASE", "ashare"),
         "CLICKHOUSE_LLM_USER": os.environ.get("CLICKHOUSE_LLM_USER", ""),
         "CLICKHOUSE_LLM_PASSWORD": os.environ.get("CLICKHOUSE_LLM_PASSWORD", ""),
+        # LLM egress proxy (contract A.7): non-empty LLM_BASE_URL routes the
+        # built-in alibaba-cn provider through the RM proxy (ID must stay
+        # ``alibaba-cn`` or enable_thinking breaks); empty → block omitted,
+        # output byte-identical to v3.3.0 (direct DashScope).
+        "LLM_BASE_URL": os.environ.get("LLM_BASE_URL", ""),
+        "LLM_API_KEY": os.environ.get("LLM_API_KEY", ""),
+        # HOSTNAME = K8s pod name, PID1-visible and per-pod unique at
+        # warm-pool boot (before claim), so x-sandbox-id attribution works.
+        "SANDBOX_ID": os.environ.get("HOSTNAME") or os.uname().nodename,
     }
 
 

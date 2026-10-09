@@ -1,6 +1,19 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "alibaba-cn/qwen3.8-max",
+{%- if LLM_BASE_URL %}
+  "provider": {
+    "alibaba-cn": {
+      "options": {
+        "baseURL": "{{ LLM_BASE_URL }}",
+        "apiKey": "{{ LLM_API_KEY }}",
+        "headers": {
+          "x-sandbox-id": "{{ SANDBOX_ID }}"
+        }
+      }
+    }
+  },
+{%- endif %}
   "tool_output": {
     "max_bytes": 262144,
     "max_lines": 8000

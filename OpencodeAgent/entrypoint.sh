@@ -34,6 +34,11 @@ CLICKHOUSE_DATABASE="${CLICKHOUSE_DATABASE:-ashare}"
 CLICKHOUSE_USER="${CLICKHOUSE_USER:-default}"
 CLICKHOUSE_PASSWORD="${CLICKHOUSE_PASSWORD:-}"
 
+# ── LLM egress proxy env (contract A.7; empty LLM_BASE_URL = direct mode) ────
+LLM_BASE_URL="${LLM_BASE_URL:-}"
+LLM_API_KEY="${LLM_API_KEY:-}"
+SANDBOX_ID="${HOSTNAME:-$(uname -n)}"
+
 # ── Ensure target directory exists ────────────────────────────────────────────
 mkdir -p /home/opencode/.opencode
 
@@ -53,6 +58,30 @@ render_config() {
         --target "$TARGET"
 }
 
+# Fallback-only counterpart of the template's conditional provider block:
+# render_config.py covers the happy path, this covers the two fallbacks below.
+# No-op when LLM_BASE_URL is empty → direct-mode fallbacks stay byte-identical.
+inject_llm_proxy() {
+    [ -n "$LLM_BASE_URL" ] || return 0
+    LLM_BASE_URL="$LLM_BASE_URL" LLM_API_KEY="$LLM_API_KEY" SANDBOX_ID="$SANDBOX_ID" \
+    /opt/venv/bin/python3 - "$TARGET" << 'EOFPY'
+import json, os, sys
+path = sys.argv[1]
+with open(path, encoding="utf-8") as f:
+    config = json.load(f)
+config["provider"] = {"alibaba-cn": {"options": {
+    "baseURL": os.environ["LLM_BASE_URL"],
+    "apiKey": os.environ.get("LLM_API_KEY", ""),
+    "headers": {"x-sandbox-id": os.environ.get("SANDBOX_ID", "")},
+}}}
+tmp = path + ".tmp"
+with open(tmp, "w", encoding="utf-8") as f:
+    json.dump(config, f, ensure_ascii=False, indent=2)
+    f.write("\n")
+os.replace(tmp, path)
+EOFPY
+}
+
 if render_config 2>/tmp/entrypoint_render_err; then
     echo "[entrypoint] opencode.json rendered from template → $TARGET"
     rm -f /tmp/entrypoint_render_err
@@ -70,6 +99,13 @@ else
   "plugin": ["oh-my-openagent@${OMO_VERSION:-5.1.0}"]
 }
 EOFMIN
+    fi
+    if [ -n "$LLM_BASE_URL" ]; then
+        if inject_llm_proxy; then
+            echo "[entrypoint] LLM proxy provider block injected into fallback config"
+        else
+            echo "[entrypoint] WARNING: LLM proxy injection failed — fallback stays direct-mode"
+        fi
     fi
 fi
 

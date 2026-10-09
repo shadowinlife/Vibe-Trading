@@ -76,6 +76,7 @@ npm install -g opencode-ai@latest     # 当前部署版本 1.18.23
 - OMO 以 opencode 插件形式装载：opencode.json 中 `"plugin": ["oh-my-openagent@<pinned>"]`。opencode ≥1.18 首次加载时经 npm 安装到 `~/.cache/opencode/packages/<spec>/`（spec 逐字为目录名；`node_modules/<name>` 存在即零网络短路加载）。裸机部署建议 pin 版本并预装该缓存目录；docker 镜像（v3.2.0+）已在构建期预烘焙，启动零下载。
 - `.opencode/oh-my-openagent.json` 两级模型（与本机 OMO roster 一致）：**主力档** `alibaba-cn/qwen3.8-max` + `reasoningEffort: max`（build / hephaestus / oracle / librarian / multimodal-looker / prometheus / metis / momus / atlas / sisyphus-junior 及 visual-engineering / ultrabrain / deep / artistry / unspecified-high / writing 类别）；**轻量档** `alibaba-cn/qwen3.8-flash` + `reasoningEffort: medium`（explore agent 与 quick / unspecified-low 类别——高频、低复杂度、延迟敏感）。multimodal-looker 保持主力档：qwen3.8-max 多模态已验证，flash 未验证。
 - 模型供应商 `alibaba-cn` 的认证来自环境变量 `DASHSCOPE_API_KEY`（systemd EnvironmentFile 注入，不入任何配置文件）。
+  - **v3.4.0-mymain 起新增代理模式（Phase 9a，对应 RM 仓 ADR-019）**：池环境设置 `LLM_BASE_URL` / `LLM_API_KEY` 时，`render_config.py` 渲染 `provider.alibaba-cn.options.{baseURL,apiKey,headers.x-sandbox-id=HOSTNAME}` 指向 RM 内嵌 LLM 代理——真实 DashScope key 不进入沙箱，由 RM 在上游注入；`x-sandbox-id` 取 Pod 名（HOSTNAME）供代理侧归属。直连模式（不设 `LLM_*`）行为不变，渲染输出与 v3.3.0 字节等价（golden 测试锚定）。
 
 ## 5. 配置目录（项目级 `.opencode/`，非默认全局目录）
 

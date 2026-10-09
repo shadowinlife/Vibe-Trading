@@ -36,6 +36,62 @@ SCENARIOS_SKILL_PATH = OPENCODE_AGENT_DIR / "skills" / "research-scenarios" / "S
 # research-scenarios skill instead.
 AGENTS_MD_MAX_LINES = 450
 
+# Captured verbatim from the v3.3.0 template (pre-proxy) rendered with the
+# fixture env below — contract A.7 requires direct mode to stay byte-identical
+# so the image can ship before the RM proxy exists.
+DIRECT_MODE_GOLDEN_V330 = """\
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "alibaba-cn/qwen3.8-max",
+  "tool_output": {
+    "max_bytes": 262144,
+    "max_lines": 8000
+  },
+  "mcp": {
+    "vibe-trading": {
+      "type": "local",
+      "command": [
+        "/opt/venv/bin/python",
+        "/opt/vibe-trading/agent/mcp_server.py"
+      ],
+      "timeout": 600000,
+      "env": {
+        "CLICKHOUSE_HOST": "ch.test",
+        "CLICKHOUSE_PORT": "8123",
+        "CLICKHOUSE_USER": "default",
+        "CLICKHOUSE_PASSWORD": "secret",
+        "CLICKHOUSE_DATABASE": "ashare",
+        "CLICKHOUSE_LLM_USER": "llm_role",
+        "CLICKHOUSE_LLM_PASSWORD": "llm_secret",
+        "VT_MEMORY": "full",
+        "VT_MEMORY_MCP_TOOLS": "1",
+        "VT_MEMORY_BASE_DIR": "/workspace/.vt-memory"
+      }
+    }
+  },
+  "agent": {
+    "explore": {
+      "permission": {
+        "vibe-trading_*": "deny"
+      }
+    },
+    "multimodal-looker": {
+      "permission": {
+        "vibe-trading_*": "deny"
+      }
+    }
+  },
+  "plugin": [
+    "oh-my-openagent@5.1.0"
+  ],
+  "permission": {
+    "vibe-trading_trading_*": "deny",
+    "vibe-trading_qveris_*": "deny",
+    "vibe-trading_iwencai_search": "deny"
+  }
+}
+"""
+
 
 def _load_render_config():
     spec = importlib.util.spec_from_file_location(
@@ -54,6 +110,8 @@ def _clickhouse_env(monkeypatch):
     for key in list(os.environ):
         if key.startswith("CLICKHOUSE_"):
             monkeypatch.delenv(key, raising=False)
+    for key in ("LLM_BASE_URL", "LLM_API_KEY", "HOSTNAME"):
+        monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("CLICKHOUSE_HOST", "ch.test")
     monkeypatch.setenv("CLICKHOUSE_PORT", "8123")
     monkeypatch.setenv("CLICKHOUSE_USER", "default")
@@ -99,6 +157,42 @@ class TestTemplateRender:
         config = _rendered()
         assert config["mcp"]["vibe-trading"]["timeout"] == 600000
         assert config["tool_output"] == {"max_bytes": 262144, "max_lines": 8000}
+
+
+class TestLlmProxyRender:
+    """Contract A.7 (Phase 9a): the provider block renders ONLY when
+    LLM_BASE_URL is set; direct mode stays byte-identical to v3.3.0 so the
+    image can ship before the RM proxy. Provider ID must stay ``alibaba-cn``
+    (opencode hardcodes enable_thinking injection against that ID)."""
+
+    LLM_BASE_URL = "http://resource-manager.default.svc.cluster.local:8900/llm/v1"
+    LLM_API_KEY = "pool-fake-token"
+
+    def test_direct_mode_matches_v330_golden_byte_for_byte(self):
+        raw = render_config.render(TEMPLATE_PATH, MANIFEST_PATH)
+        json.loads(raw)
+        assert raw == DIRECT_MODE_GOLDEN_V330
+
+    def test_proxy_mode_renders_provider_block(self, monkeypatch):
+        monkeypatch.setenv("LLM_BASE_URL", self.LLM_BASE_URL)
+        monkeypatch.setenv("LLM_API_KEY", self.LLM_API_KEY)
+        monkeypatch.setenv("HOSTNAME", "opencode-poc-smoke1")
+        raw = render_config.render(TEMPLATE_PATH, MANIFEST_PATH)
+        config = json.loads(raw)
+        options = config["provider"]["alibaba-cn"]["options"]
+        assert options["baseURL"] == self.LLM_BASE_URL
+        assert options["apiKey"] == self.LLM_API_KEY
+        assert options["headers"] == {"x-sandbox-id": "opencode-poc-smoke1"}
+        assert config["model"] == "alibaba-cn/qwen3.8-max"
+        assert "{{" not in raw
+        assert "}}" not in raw
+
+    def test_sandbox_id_prefers_hostname_env(self, monkeypatch):
+        monkeypatch.setenv("HOSTNAME", "pod-name-123")
+        assert render_config.build_context()["SANDBOX_ID"] == "pod-name-123"
+
+    def test_sandbox_id_defaults_to_nodename_when_hostname_unset(self):
+        assert render_config.build_context()["SANDBOX_ID"] == os.uname().nodename
 
 
 class TestToolGovernanceManifest:
