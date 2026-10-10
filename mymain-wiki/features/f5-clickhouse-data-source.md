@@ -4,7 +4,7 @@ description: mymain 的 A 股数据底座：ClickHouse 首选数据源 + 语义�
 type: delta
 status: active
 created: 2026-07-28
-updated: 2026-08-30
+updated: 2026-10-10
 tags: [clickhouse, data-source, semantic-layer, a-share]
 related: [../branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -15,7 +15,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 
 ## 能力
 
-- CH HTTP connector + OHLCV loader（实现 DataLoaderProtocol）；A 股检测与回退链以 clickhouse 为链首，断 CH 静默回退 tencent/mootdx 网络链
+- CH HTTP connector + OHLCV loader（实现 DataLoaderProtocol）；A 股检测与回退链以 clickhouse 为链首，断 CH 静默回退 tencent/eastmoney 网络链（mootdx 已随上游 #1729 于 2026-10 退出默认链，八源排列）
 - 基本面 Provider（回退 Tushare）+ 资金流/龙虎榜/融资融券/北向四只 flow 工具 CH 优先回退
 - 语义层 Phase 0：`schema/clickhouse/` 56 表 DDL 快照 + 9 表 444 列 COMMENT + CI 门禁（生产库 COMMENT 444/444 已应用）
 - 语义层 Phase 1：显式 199 列消除 `SELECT *`、`_provenance` 单位元数据、`get_valuation` 工具、`clickhouse_units.py` 单位 registry（移除 ×10⁴ 与北向 ×100 硬编码）
@@ -39,11 +39,12 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 - 2026-08-17 merge 对齐：fork 语义层回合唯一真冲突在 `market_data.py` provenance 块，与上游 #1065 的 `volume_unit` 合并保留。
 - 2026-08-21 对齐后修正 `test_detect_source` / `test_chains_ordered_by_ip_ban_risk` 两处 pin 为本地 clickhouse-first 口径，加 divergence 注释防 rebase 误回退。
 - 2026-08-28 rebase：上游 `MARKET_DATA_ORDER_*` 覆盖机制与 F5 互补（override 校验基于本地默认链快照，A 股 clickhouse-first 自动成为被重排基准）。
+- 2026-10-10 merge+carve 对齐（基线 `b1f6ce71`）：**北向单位契约修正**——本地 P1.4「万元」判定被上游 #1484 推翻（HKEX 官方统计逐位交叉验证 tushare 原生单位=百万元；P1.4 把 2024-08-19 换手时代值 375048.34 误读为净额数量级 37.5 亿，实为 3750 亿成交额）。修正面：`clickhouse_units.py`（`NORTHBOUND_RAW_MILLION`=10⁶ 断言 + `northbound_raw_to_million_factor()`）、`clickhouse_fallbacks.py`（`fetch_northbound_flow_ch` 输出对齐上游信封：unit=CNY million + note + 2024-08-19 边界 turnover_* 字段，boundary/note 自 tushare_fallbacks 导入防漂移）、comments.yaml `stk_moneyflow_hsgt` 六列标注、三个测试文件（含双时代覆盖）。同轮：A 股链随上游 mootdx 退役收敛为八源排列（三处测试 fixture 同步），northbound_tool 上游 dead-feed 短路（#1481）与本地 CH-first 块共存。
 
 ## 验证
 
 - CH 套件（F5 + 语义层 10 文件）**137 passed / 11 skipped**（skip = 需真实 CH 连接；DIVERGENCE §3.1）
-- schema 门禁 **53 passed / 1 skipped** + comments gate exit 0；loader 链首 pin **8 passed**
+- schema 门禁 **54 passed** + comments gate exit 0（2026-10-10 基线）；loader 链首 pin **8 passed**
 - Phase 2 实测：65 guard 测试 + 17 攻击向量全拒；golden set 经 llm_role 实测 **16/16（100%）**（§5 2026-08-12 条）
 - 冒烟：CH 可达时 `get_market_data` 拉 000001.SZ 命中 clickhouse；断 CH 静默回退网络链（§3.2）
 

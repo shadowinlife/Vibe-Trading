@@ -4,7 +4,7 @@ description: mymain 分支每次对齐/发布的 changelog——上游基线、�
 type: reference
 status: active
 created: 2026-08-11
-updated: 2026-08-30
+updated: 2026-10-10
 tags: [branch, release, changelog]
 related: [MYMAIN_DIVERGENCE.md]
 ---
@@ -36,9 +36,53 @@ related: [MYMAIN_DIVERGENCE.md]
 
 ---
 
-### release/mymain · 2026-09-30 — 基线：上游 `9a27a6e7`（v0.1.16）
+### release/mymain · 2026-10-10 — 基线：上游 `b1f6ce71`（v0.1.16 后开发段）
 
 - **发布 commit**：`release/mymain` tag 所指 commit（即本条发布记录 commit）
+- **上游基线**：`b1f6ce71`（本轮对齐覆盖 `9a27a6e7` 之后全部 **253** 个上游 commit：十三 PR 正确性批次、causal option pricing / channel refresh / market routing 修复、mootdx 退役 #1730、channel 热更新 #1737/#1738、KIS SOR / grounding / PDF 加密等）
+- **差异总量**：599 个文件、+112,924/−179 行（代码面；复核命令 `git diff origin/main release/mymain --shortstat`，含 wiki 文档）
+- **对齐方式**：**merge + carve**（上轮同款：temp 分支一次解 20 文件冲突得目标树 → 从 origin/main 逐 feature 切 **9 个干净 commit**（F1/F2/F3/F4/F5/scheduled_research/FE-1 delta/F7/wiki）→ 与目标树**逐字节一致**校验通过；回退点 `backup/mymain-pre-rebase-20261010`）
+- **发布主题**：**FE-1 R1/R2 上游合入销账调和**（#1646/#1647，2026-10-04 merged）+ **CH 北向单位契约修正**（#1484 百万 CNY）+ 上游 253 commit 全量对齐
+
+#### 核心变更
+
+1. **FE-1 上游机制优先调和（队列⑧销账）**：`backtest_summary.py` / `run_artifact_tool.py` / `backtest_tool.py` 切换上游 manifest 驱动版（含 `_contained` 路径收容、structured_metrics/validation 字段、`_serialize_result` 预算收缩）；本地仅存 R5' 增量——progress.json sidecar（writer + runner 集成）+ MCP backtest 心跳 wrapper + `progress` 别名超集（sidecar 运行中可变，与 run_card 同类走别名层而非 sha-pinned manifest）。上游 pin `"progress" not in description` 本地翻转为 `in`（带分歧标记注释）。
+2. **CH 北向单位修正（数据正确性）**：P1.4「万元」契约被上游 #1484 推翻（HKEX 官方统计**逐位**交叉验证 tushare 原生=百万元；P1.4 把换手时代值 375048.34 误读为净额 37.5 亿，实为 3750 亿成交额）。修正 `clickhouse_units` / `clickhouse_fallbacks`（输出对齐上游信封：CNY million + note + 2024-08-19 边界 turnover_* 字段）/ comments.yaml 六列 / 三个测试文件（双时代覆盖）。
+3. **mootdx 退役随上游（#1729/#1730）**：A 股链收敛为八源排列（clickhouse 领先），三处测试 fixture 同步；northbound_tool 上游 dead-feed 短路（#1481）与本地 CH-first 块共存。
+4. **继承上游**：南向工具 `get_southbound_flow`（本地分支 PR #1486 合入上游后回继承）、channel 热更新/健康面（#1737/#1738）、read_run_artifact manifest 机制、options/validation/cache 等十三 PR 正确性批次。
+
+#### 计数基线
+
+MCP **OFF=80 / ON=85**（上游基数 76 = 74 + read_run_artifact + 本窗口上游新增；+ 3 ch_* + 1 scheduled_research + 5 memory_*）、skills **91**、数据源 **29**、引擎 **10**、agent tools **113**（上游 109 + 3 ch_* + 1 get_valuation）、README **七份同步**（pin 122）。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件 | 367 passed / 2 skipped（+34 上游新增） |
+| ClickHouse 套件 | 137 passed / 11 skipped（含 #1484 新契约测试） |
+| schema 门禁 + comments gate | 54 passed + exit 0 |
+| README/manifest 计数门禁 | 122 passed |
+| env-var AST 门禁 | exit 0（4 WARN 均上游 llm.py） |
+| FE-1 + 合并面聚焦（10 文件） | 263 passed |
+| MCP 运行时计数 | OFF=80 / ON=85 |
+| 提交规范 | 单一作者 + 9/9 DCO + 零 AI trailer |
+| carve 树校验 | `git diff temp mymain-aligned` = 0 行（逐字节一致） |
+
+#### 镜像交付（v3.5.0-mymain）
+
+（构建与推送完成后回填：digest / 大小 / smoke gate 结果）
+
+#### 遗留
+
+- 过程事故两条已记录 DIVERGENCE §5 2026-10-10 条（carve 脚本静默失败模式 + README 计数以门禁实测为准）。
+- CH 语义层南向列（ggt_ss/ggt_sz/south_money）已随同表修正为百万元标注，但暂无 CH 南向消费工具（上游 get_southbound_flow 走 Eastmoney）；如未来接 CH 南向，直接复用该契约。
+
+---
+
+### release/mymain · 2026-09-30 — 基线：上游 `9a27a6e7`（v0.1.16）
+
+- **发布 commit**：`8dd5aa97`（2026-10-10 移动 tag 前 `release/mymain` 所指。注：其间 v3.4.0-mymain 镜像交付（`afd1defb`，LLM 出口代理渲染支持 / Phase 9a / RM 仓 ADR-019）未移动 tag、未单列条目，交付细节见 OpencodeAgent 文档）
 - **上游基线**：`9a27a6e7`（v0.1.16；本轮对齐覆盖 `5e9ffd1a` 之后全部 88 个上游 commit，直接 merge，仅 2 处真冲突，见 DIVERGENCE §5 2026-09-30 对齐条）
 - **差异总量**：599 个文件、+113,971/−175 行（复核命令 `git diff origin/main release/mymain --shortstat`）
 - **对齐方式**：**直接 merge**（增量轮次，沿 2026-08-21 先例；回退点 `backup/mymain-20260930`）
