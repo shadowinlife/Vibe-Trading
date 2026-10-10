@@ -12,7 +12,7 @@
 
 # 8. mymain 分支特有约定
 
-> **当前分支定位**: `mymain` 是开源社区 [HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) `main` 分支的一个**独立部署分支**，路线为**纯粹的 opencode + omo + VT MCP 集成**（2026-09-27 起）：opencode 作为 harness 直接消费本仓库 MCP 全工具面。前端兼容路线（F8 引擎桥/多租户）**不在本分支**，独立演进于 `mymain-engine-bridge` 分支，两线零兼容/零相互索引。
+> **当前分支定位**: `mymain` 是开源社区 [HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) `main` 分支的一个**独立部署分支**，路线为**纯粹的 opencode + omo + VT MCP 集成**（2026-09-27 起）：opencode 作为 harness 直接消费本仓库 MCP 全工具面。前端兼容路线（F8 引擎桥/多租户）**不在本分支**，原独立演进于 `mymain-engine-bridge` 分支，**2026-10-10 已废弃封存**（opencode 作为桥接 agents 的方式被证明不可行；分支保留为只读档案，不再演进）。
 >
 > **分支知识库**: `mymain-wiki/AGENTS.md` 是本分支持久记忆的路由入口（功能差异、开发历史、验证证据、研究裁决、未落地资产）。在此分支上工作前先读它，按需深入。
 
