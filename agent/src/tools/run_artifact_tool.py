@@ -14,7 +14,8 @@ This tool scans artifacts without retaining the full table and serves structured
   and ``manifest_size_bytes`` for a manifest-listed artifact.
 
 Resolution is manifest-driven: friendly aliases (``equity``, ``ohlcv:<CODE>``,
-``run_card``) resolve by a fixed mapping, and any other value is treated as a
+``run_card``, ``progress``) resolve by a fixed mapping, and any other value is
+treated as a
 run_dir-relative path accepted ONLY when the run_card manifest lists it — a
 new artifact kind becomes readable with zero code change, while a tampered
 card can never point the reader outside the run directory (every entry is
@@ -49,6 +50,8 @@ _CSV_ARTIFACTS: dict[str, str] = {
 }
 _RUN_CARD_ALIAS = "run_card"
 _RUN_CARD_PATH = "run_card.json"
+_PROGRESS_ALIAS = "progress"
+_PROGRESS_PATH = "progress.json"
 _OHLCV_PREFIX = "ohlcv:"
 
 _VALID_FORMATS = ("rows", "downsample", "meta")
@@ -59,7 +62,9 @@ _WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:")
 
 _ALIAS_HINT = (
     "artifact must be one of: "
-    + ", ".join([*_CSV_ARTIFACTS, f"{_OHLCV_PREFIX}<CODE>", _RUN_CARD_ALIAS])
+    + ", ".join(
+        [*_CSV_ARTIFACTS, f"{_OHLCV_PREFIX}<CODE>", _RUN_CARD_ALIAS, _PROGRESS_ALIAS]
+    )
     + ", or a run_dir-relative .csv/.json path listed in the run_card.json "
     "artifacts manifest (e.g. artifacts/validation.json)."
 )
@@ -177,6 +182,8 @@ def _resolve_artifact(
         relative = _CSV_ARTIFACTS[artifact]
     elif artifact == _RUN_CARD_ALIAS:
         relative = _RUN_CARD_PATH
+    elif artifact == _PROGRESS_ALIAS:
+        relative = _PROGRESS_PATH
     elif artifact.startswith(_OHLCV_PREFIX):
         code = artifact[len(_OHLCV_PREFIX) :]
         try:
@@ -461,9 +468,10 @@ def read_run_artifact(
         run_dir: Run directory; must sit inside an allowed run root.
         artifact: Friendly alias — ``equity``/``trades``/``metrics``/
             ``positions``/``target_positions`` (CSVs under ``artifacts/``),
-            ``ohlcv:<CODE>``, ``run_card`` — or any run_dir-relative
-            ``.csv``/``.json`` path listed in the run's ``run_card.json``
-            artifacts manifest (e.g. ``artifacts/validation.json``).
+            ``ohlcv:<CODE>``, ``run_card``, ``progress`` — or any
+            run_dir-relative ``.csv``/``.json`` path listed in the run's
+            ``run_card.json`` artifacts manifest (e.g.
+            ``artifacts/validation.json``).
         format: ``rows`` (offset paging), ``downsample`` (equal-stride sample,
             first+last pinned; ``offset`` ignored) or ``meta`` (shape only).
             JSON artifacts return their parsed object when it fits; oversized
@@ -490,7 +498,13 @@ def read_run_artifact(
     except ValueError as exc:
         return _error(str(exc), "Pass the run_dir a backtest/tool call returned.")
 
-    manifest = {} if artifact == _RUN_CARD_ALIAS else _load_artifact_manifest(run_root)
+    # run_card and progress are live sidecars served without a manifest —
+    # progress.json exists mid-run, before any card is written.
+    manifest = (
+        {}
+        if artifact in (_RUN_CARD_ALIAS, _PROGRESS_ALIAS)
+        else _load_artifact_manifest(run_root)
+    )
     try:
         path, entry = _resolve_artifact(run_root, artifact, manifest)
     except _ArtifactError as exc:
@@ -575,8 +589,8 @@ class RunArtifactTool(BaseTool):
         "with first+last pinned (format='downsample', offset ignored), or "
         "shape only (format='meta', plus the manifest sha256 when listed). "
         "Artifacts: equity, trades, metrics, positions, target_positions, "
-        "ohlcv:<CODE>, run_card, or any run_dir-relative .csv/.json path "
-        "listed in the run_card.json artifacts manifest. Values arrive typed "
+        "ohlcv:<CODE>, run_card, progress, or any run_dir-relative .csv/.json "
+        "path listed in the run_card.json artifacts manifest. Values arrive typed "
         "(int/float/null/string), never as raw CSV text, and every page stays "
         "within a bounded byte budget."
     )
@@ -589,8 +603,8 @@ class RunArtifactTool(BaseTool):
                 "description": (
                     "Artifact alias: equity | trades | metrics | positions | "
                     "target_positions | ohlcv:<CODE> (e.g. ohlcv:600519.SH) | "
-                    "run_card — or a run_dir-relative path listed in the "
-                    "run_card.json artifacts manifest (e.g. "
+                    "run_card | progress — or a run_dir-relative path listed "
+                    "in the run_card.json artifacts manifest (e.g. "
                     "artifacts/validation.json)"
                 ),
             },
