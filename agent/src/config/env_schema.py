@@ -602,6 +602,8 @@ _PRESET_FLAGS: dict[str, dict[str, bool]] = {
         "links_enabled": False,
         "compression_enabled": False,
         "fts_index_enabled": False,
+        "reflections_enabled": False,
+        "mcp_tools_enabled": False,
     },
     "on": {
         "quality_enabled": True,
@@ -611,6 +613,8 @@ _PRESET_FLAGS: dict[str, dict[str, bool]] = {
         "links_enabled": False,
         "compression_enabled": False,
         "fts_index_enabled": False,
+        "reflections_enabled": False,
+        "mcp_tools_enabled": False,
     },
     "full": {
         "quality_enabled": True,
@@ -620,6 +624,10 @@ _PRESET_FLAGS: dict[str, dict[str, bool]] = {
         "links_enabled": True,
         "compression_enabled": True,
         "fts_index_enabled": True,
+        "reflections_enabled": True,
+        # MCP tool exposure is never implied by a preset; it must be
+        # switched on explicitly via VT_MEMORY_MCP_TOOLS.
+        "mcp_tools_enabled": False,
     },
 }
 
@@ -632,6 +640,8 @@ _MEMORY_FLAG_ALIASES: dict[str, str] = {
     "links_enabled": "VT_MEMORY_LINKS",
     "compression_enabled": "VT_MEMORY_COMPRESSION",
     "fts_index_enabled": "VT_MEMORY_FTS_INDEX",
+    "reflections_enabled": "VT_MEMORY_REFLECTIONS",
+    "mcp_tools_enabled": "VT_MEMORY_MCP_TOOLS",
 }
 
 
@@ -680,7 +690,7 @@ class MemoryConfig(_EnvBase):
         description="Enable SQLite FTS5 search index",
     )
 
-    # Scheduled consolidation system job (scheduler unification).
+# Scheduled consolidation system job (scheduler unification).
     # Deliberately NOT listed in the preset flag map or the memory flag alias
     # map above: the preset machinery only touches fields in the alias map, so
     # VT_MEMORY=on/full can never silently enable a background timer. This
@@ -689,6 +699,13 @@ class MemoryConfig(_EnvBase):
     consolidation_enabled: EnvBool = Field(
         default=False, alias="VT_MEMORY_CONSOLIDATION",
         description="Enable the daily memory-consolidation system job",
+    )
+
+    # T1b flags
+    reflections_enabled: EnvBool = Field(
+        default=False,
+        alias="VT_MEMORY_REFLECTIONS",
+        description="Enable reflection lessons storage and retrieval",
     )
 
     @model_validator(mode="before")
