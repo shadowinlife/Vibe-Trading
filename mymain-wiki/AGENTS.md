@@ -21,7 +21,7 @@ mymain = **纯粹的 opencode + omo + VT MCP 路线**：opencode 作为 harness 
 
 1. **12 领域子代理层**——验证不够有效，主循环直接集成 VT MCP；
 2. **nano-search-mcp**——验证不够有效，通用检索由 VT `web_search` 承接，A 股结构化检索为已知缺口待未来引擎；
-3. **F8 引擎桥 + 多租户基础设施**——前端兼容路线整体移出本分支，独立演进于 `mymain-engine-bridge` 分支（两线零兼容/零相互索引；本 wiki 中 f8 卡与 multitenant 台账为冻结墓碑）。
+3. **F8 引擎桥 + 多租户基础设施**——前端兼容路线整体移出本分支，原独立演进于 `mymain-engine-bridge` 分支，**2026-10-10 该线废弃封存**（opencode 桥接方式验证不可行；本 wiki 中 f8 卡与 multitenant 台账为冻结墓碑）。
 
 ## 路由表（知识域）
 
@@ -43,7 +43,7 @@ mymain = **纯粹的 opencode + omo + VT MCP 路线**：opencode 作为 harness 
 | 部署 / 生产配置（纯 opencode 路线） | `OpencodeAgent/docs/DEPLOY-GUIDE.md`（host-direct）+ `IMAGE-MANUAL.md`；接入方式背景 DIVERGENCE §3.3 |
 | ClickHouse 取数与语义层（F5） | [features/f5-clickhouse-data-source.md](features/f5-clickhouse-data-source.md) → [clickhouse/README.md](clickhouse/README.md) 及其研究文档；同步管道事故 [clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md](clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md) |
 | 记忆系统（F1-F4） | 对应功能卡 → DIVERGENCE §2.3 队列 ①-⑤ 前置 + §4.5 债务 D1-D4 |
-| 引擎桥 / 多租户（**已移出本分支**） | 墓碑：[features/f8-engine-bridge.md](features/f8-engine-bridge.md)、[multitenant/MULTI_TENANT_GAP_ANALYSIS.md](multitenant/MULTI_TENANT_GAP_ANALYSIS.md)；活文档在 `mymain-engine-bridge` 分支，本分支不索引其细节 |
+| 引擎桥 / 多租户（**已移出本分支，2026-10-10 线废弃封存**） | 墓碑：[features/f8-engine-bridge.md](features/f8-engine-bridge.md)、[multitenant/MULTI_TENANT_GAP_ANALYSIS.md](multitenant/MULTI_TENANT_GAP_ANALYSIS.md)；`mymain-engine-bridge` 分支为只读封存档案（无活文档），本分支不索引其细节 |
 
 常见速查（答案所在，不在此复制）：
 
