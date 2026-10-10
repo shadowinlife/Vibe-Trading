@@ -2,14 +2,16 @@
 title: F8 opencode 引擎桥（Engine Bridge）
 description: VIBE_TRADING_ENGINE=opencode 时的 SessionService 置换层——vt 网关把 opencode 当外置 agent 引擎（driver/translator/service/recovery 四层），含双存储所有权规则（D3）、启动存活对账三分支恢复与级联生命周期、14 项降级清单（opencode 引擎不复制的原生便利）、多租户认证配方（计划 D9 行 / Phase-0 调查「F6」）、T15 Settings 面裁决（sse_timeout 取值 / data-sources B5）与 ENGINE=native 回滚程序。改 agent/src/opencode_bridge/、接 T7 工厂开关、排查会话恢复/重挂/补写、部署多租户认证、评估 opencode 引擎功能缺口时必读。触发词：engine-bridge、opencode_bridge、RecoverableOpencodeSessionService、reconcile、VIBE_TRADING_ENGINE、re-attach、backfill、interrupted、级联删除、降级清单、认证配方、API_ALLOWED_HOSTS、API_AUTH_KEY、sse_timeout、data-sources 热更新、B5、回滚、ENGINE=native。
 type: delta
-status: archived-moved
+status: archived-discarded
 created: 2026-09-13
-updated: 2026-09-27
+updated: 2026-10-10
 tags: [engine-bridge, opencode, recovery, session-service, degradation, auth, settings]
 related: [../branch/MYMAIN_DIVERGENCE.md, f7-opencode-agent.md, f2-mcp-memory-tools.md, f5-clickhouse-data-source.md]
 ---
 
 # F8 opencode 引擎桥（已移出 mymain — 冻结墓碑）
+
+> **🗑️ 废弃注记（2026-10-10）**：**2026-10-10 废弃裁决**：使用 opencode 作为桥接 agents 的方式被证明不可行，engine-bridge 线整体**废弃封存**——开发 worktree 已移除；`mymain-engine-bridge`、`backup/engine-bridge-pre-rebase-20260918`、`wip/opencode-llm-proxy-20261010`（含 2026-10-10 k8s secret 换行渲染事故的 LLM 代理渲染加固 WIP，封存提交 `1b9a1140`）保留为只读封存档案（本地与 fork 均可达），不再演进。v3.4.0 引入的 LLM 出口代理渲染（Phase 9a / RM 仓 ADR-019）保留在镜像内（`LLM_BASE_URL` 门控，直连部署零影响），但其消费场景（RM/k8s 桥接部署）随本线废弃；代理渲染对 secret 尾随换行符敏感的已知限制**不再修复**（修复 WIP 已随线封存，见 `wip/opencode-llm-proxy-20261010`）。
 
 > **⚰️ 移出注记（2026-09-27）**：mymain 路线裁决为**纯粹的 opencode + omo + VT MCP 集成**，不需要 vibe-trading 前端兼容性。F8 引擎桥与多租户基础设施已整体移出本分支，独立演进于 `mymain-engine-bridge` 分支（两线零兼容/零相互索引）；mymain 树内不再含 `agent/src/opencode_bridge/`、tenant 容器栈与 `VIBE_TRADING_ENGINE` 等 env。本卡以下正文为**冻结历史档案**（记录移出前的能力形态与运维配方，供引擎桥线考古），不再随任何分支演进更新。移出裁决与验证见 [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-09-27 条；移出前完整代码见 `backup/mymain-pre-rebase-20260926`。唯一随 mymain 保留的原 F8 附带产出：`scheduled_research` MCP wrapper（纯 MCP 面增量，贡献队列 ⑦②）。
 
