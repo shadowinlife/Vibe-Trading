@@ -63,18 +63,17 @@ def _reflections_enabled() -> bool:
 
 
 def default_reflections_dir() -> Path:
-    """Resolve the reflections directory under the runtime memory base.
+    """Resolve the reflections directory under the configured memory base.
 
     Computed at call time (not import time) so tests can redirect it by
-    monkeypatching ``Path.home`` / ``HOME``: the ``VIBE_TRADING_HOME``-aware
-    runtime root's ``memory`` directory, else ``~/.vibe-trading/memory``.
+    monkeypatching ``Path.home`` / ``HOME``. Resolution order mirrors
+    ``src.memory.persistent._default_memory_base``: ``VT_MEMORY_BASE_DIR``
+    override, else the ``VIBE_TRADING_HOME``-aware runtime root, else
+    ``~/.vibe-trading/memory``.
     """
-    try:
-        from src.config.paths import get_runtime_root
+    from src.memory.persistent import _default_memory_base
 
-        return get_runtime_root() / "memory" / REFLECTIONS_DIRNAME
-    except Exception:  # noqa: BLE001 - resolution must stay resilient to bad env
-        return Path.home() / ".vibe-trading" / "memory" / REFLECTIONS_DIRNAME
+    return _default_memory_base() / REFLECTIONS_DIRNAME
 
 
 @dataclass
