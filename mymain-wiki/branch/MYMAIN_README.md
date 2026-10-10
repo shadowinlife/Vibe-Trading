@@ -69,9 +69,9 @@ MCP **OFF=80 / ON=85**（上游基数 76 = 74 + read_run_artifact + 本窗口上
 | 提交规范 | 单一作者 + 9/9 DCO + 零 AI trailer |
 | carve 树校验 | `git diff temp mymain-aligned` = 0 行（逐字节一致） |
 
-#### 镜像交付（v3.5.0-mymain）
+#### 镜像交付（v3.5.0-mymain，同日完成）
 
-（构建与推送完成后回填：digest / 大小 / smoke gate 结果）
+`opencode-serve:v3.5.0-mymain`（linux/amd64，**4.06GB**，digest `sha256:4c801b85df3c4b1c553bc05ccb3eedf0a95c041fb8085207cd286fb893c5ea01`）已推送 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode`，远端 manifest inspect 验证通过。**构建事故一例**：首次构建 pip 层失败——aliyun 镜像对 pyjwt 2.15.1 处于部分同步状态（simple 索引带 sha256 声明 PEP 658 `.metadata` 但文件 404，pip 视为致命）→ Dockerfile 增加 tuna 回退（`49ed3b74`，ed0160dd 慢镜像加固的同类延伸）后二次构建成功（回退路径实际生效，全程 tuna 下载）。冒烟三段全 PASS（脚本入库 `OpencodeAgent/tests/smoke-v350.sh`，`c7f11ce5`）：**Stage1** = render / TIMEOUT(600000) / TOOLOUTPUT(256KB·8000行) / DENY 三组 / **COUNT 85** / AGENTS 80·85 / **FUNC 合成 run 实测**（上游 manifest 版 read_run_artifact：downsample 首末 pin + meta + 穿越拒绝 + summary 契约，amd64 运行时证明）；**Stage1b** = LLM 代理渲染双模式（DIRECT_OK + PROXY_OK，v3.4.0 契约 A.7 保持）；**Stage2** = 真 entrypoint **HEALTH_OK ~10s**（1.18.18 启动实证）。
 
 #### 遗留
 
