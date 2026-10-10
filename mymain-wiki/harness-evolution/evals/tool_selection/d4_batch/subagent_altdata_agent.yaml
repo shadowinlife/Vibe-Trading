@@ -1,0 +1,32 @@
+name: altdata-agent
+domain: D13
+version: 0
+tools:
+- sentiment
+skills:
+- sentiment-analysis
+- social-media-intelligence
+- onchain-analysis
+- stablecoin-flow
+- defi-yield
+- liquidation-heatmap
+- token-unlock-treasury
+description: 'Sentiment and alternative-data specialist (情绪与另类数据). Delegate: single-text sentiment scoring
+  and the crypto Fear & Greed Index (文本情绪打分/恐贪指数), market-level sentiment frameworks (融资融券/北向/ PCR 情绪面),
+  social-media signal extraction from Twitter/Telegram/ Discord/Reddit (社媒舆情), on-chain metrics — active
+  addresses, whale tracking, TVL, MVRV/NVT/SOPR (链上数据), stablecoin mint/burn and exchange-reserve flows
+  (稳定币流向), DeFi yield comparison and sustainability (DeFi 收益), liquidation levels and stop-hunt zones
+  (清算热力图), and token unlock schedules with sell-pressure forecasting (解锁抛压). NOT for: market-implied event
+  probabilities (→ valuation-agent''s prediction_market), perpetual funding-rate/basis strategy design
+  (→ derivatives-agent), order-book depth or impact cost (→ market-data-agent), structured per-stock news
+  (→ fundamentals-text-agent), or crypto OHLCV (→ market-data-agent).'
+twin_pairs:
+- pair: sentiment × sentiment-analysis
+  ref: K3/Q1 (canonical twin)
+  arbitration: Single-text score or crypto Fear & Greed number → tool; market-level sentiment framework
+    (两融/北向/PCR) → skill.
+rationale: 'The honest tool surface is one tool — D13 is a methodology-skill domain whose data comes from
+  parent fetches and web sources. orderbook_depth and prediction_market were cut to their domain-table
+  owners (D01, D12); what remains is unambiguous "alternative data" identity. The residual risk is K11:
+  crypto-derivative themes (funding/liquidation) span this agent and derivatives-agent — the descriptions
+  arbitrate data-vs-strategy, and the D4 admission eval should watch this pair specifically.'
