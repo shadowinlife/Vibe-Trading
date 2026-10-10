@@ -60,6 +60,54 @@ def _error(message: str) -> str:
     return json.dumps({"ok": False, "error": message}, ensure_ascii=False)
 
 
+# FE-1 R3: self-describing envelope contract (additive-only). The loader
+# layer upstream owns the per-source bar-date spelling and the loaders spell
+# that key four ways, so nothing is renamed here. Instead the tool declares
+# the envelope schema (``schema_version``, CloudEvents-style) and, per
+# symbol, which date key its bars actually use (``_provenance.date_field``).
+# Both surfaces — the MCP wrapper and the internal agent loop — reach the
+# envelope through this layer, so the contract holds for every
+# registry.execute("get_market_data", ...) call.
+SCHEMA_VERSION = "1.0"
+
+# Bar-date keys the loader layer emits, in the precedence order the frontend
+# already applies when parsing bars compatibly.
+_BAR_DATE_KEYS = ("trade_date", "date", "timestamp", "time")
+
+
+def _first_bar_date_key(bars: Any) -> str | None:
+    """The date key a symbol's bars use, read from its first bar.
+
+    Returns ``None`` for an empty panel or a first bar that is not a dict
+    (or names no known date key), so a caller can distinguish "undeclared"
+    from a concrete spelling without re-inspecting the rows.
+    """
+    if not isinstance(bars, list) or not bars or not isinstance(bars[0], dict):
+        return None
+    return next((key for key in _BAR_DATE_KEYS if key in bars[0]), None)
+
+
+def _is_error_envelope(payload: dict[str, Any]) -> bool:
+    """True for the escalation shapes that must pass through byte-for-byte."""
+    return payload.get("status") == "error" or payload.get("ok") is False
+
+
+def _augment_schema_fields(payload: dict[str, Any]) -> None:
+    """Attach ``schema_version`` + per-symbol ``date_field`` in place.
+
+    Additive only: no existing key is renamed or removed, bar rows are
+    untouched, and underscore-prefixed meta entries (``_provenance``,
+    ``_unresolved``) never gain a ``date_field``.
+    """
+    provenance = payload.get("_provenance")
+    if isinstance(provenance, dict):
+        for symbol, entry in provenance.items():
+            if not isinstance(entry, dict) or str(symbol).startswith("_"):
+                continue
+            entry["date_field"] = _first_bar_date_key(payload.get(symbol))
+    payload["schema_version"] = SCHEMA_VERSION
+
+
 def _valid_iso_date(value: str) -> bool:
     """True only for strict ``YYYY-MM-DD`` calendar dates.
 
@@ -165,7 +213,10 @@ class MarketDataTool(BaseTool):
 
         Returns:
             Strict JSON envelope with per-symbol OHLCV panels plus
-            ``_provenance``, or an error envelope on invalid inputs.
+            ``_provenance`` (each symbol entry carries ``date_field``, the
+            bar-date key its rows actually use) and a top-level
+            ``schema_version``, or an unchanged error envelope on invalid
+            or no-data calls.
         """
         codes = kwargs.get("codes")
         if not isinstance(codes, list) or not codes:
@@ -242,4 +293,19 @@ class MarketDataTool(BaseTool):
         loader_resolver = kwargs.get("loader_resolver")
         if loader_resolver is not None:
             fetch_kwargs["loader_resolver"] = loader_resolver
-        return fetch_market_data_json(**fetch_kwargs)
+        envelope = fetch_market_data_json(**fetch_kwargs)
+        try:
+            payload = json.loads(envelope)
+        except ValueError:
+            return envelope
+        if (
+            isinstance(payload, dict)
+            and not _is_error_envelope(payload)
+            # A fetch with no served symbol is never a success envelope —
+            # the JSON layer escalates it to status:error above — so only a
+            # payload carrying real panel data gets annotated.
+            and any(not str(key).startswith("_") for key in payload)
+        ):
+            _augment_schema_fields(payload)
+            return json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False)
+        return envelope
