@@ -18,7 +18,12 @@ RUN mkdir -p /root/.config/pip && \
 # a ~594MB layer on top of the base install — removed (P2#7).
 
 COPY vendor/Vibe-Trading/ /opt/vibe-trading/
-RUN pip install --no-cache-dir -e /opt/vibe-trading/
+# Primary aliyun index with a tuna fallback: aliyun periodically serves a
+# partially-synced release whose advertised PEP 658 .metadata 404s, which pip
+# treats as fatal (incident: pyjwt 2.15.1, v3.5.0 build).
+RUN pip install --no-cache-dir -e /opt/vibe-trading/ || \
+    pip install --no-cache-dir -e /opt/vibe-trading/ \
+      --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 # Build-time gate for the VT MCP server: fail the build when the module
 # cannot even be imported. The entrypoint keeps a runtime check for log
