@@ -69,10 +69,13 @@ import json, os, sys
 path = sys.argv[1]
 with open(path, encoding="utf-8") as f:
     config = json.load(f)
+# Values travel via env and are serialized by json.dump (proper escaping);
+# strip() keeps trailing newlines/control chars (incident 2026-10-10: k8s
+# secret fed LLM_API_KEY with '\n') out of the injected credentials.
 config["provider"] = {"alibaba-cn": {"options": {
-    "baseURL": os.environ["LLM_BASE_URL"],
-    "apiKey": os.environ.get("LLM_API_KEY", ""),
-    "headers": {"x-sandbox-id": os.environ.get("SANDBOX_ID", "")},
+    "baseURL": os.environ["LLM_BASE_URL"].strip(),
+    "apiKey": os.environ.get("LLM_API_KEY", "").strip(),
+    "headers": {"x-sandbox-id": os.environ.get("SANDBOX_ID", "").strip()},
 }}}
 tmp = path + ".tmp"
 with open(tmp, "w", encoding="utf-8") as f:

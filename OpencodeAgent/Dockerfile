@@ -60,6 +60,10 @@ COPY config/tui.json /workspace/.opencode/tui.json
 COPY config/package.json /workspace/.opencode/package.json
 COPY config/vibe-trading-tools.json /workspace/.opencode/vibe-trading-tools.json
 COPY config/render_config.py /workspace/.opencode/render_config.py
+# Static fallback copied by entrypoint.sh when the Jinja2 render fails — it
+# keeps the vibe-trading MCP block alive (incident 2026-10-10: the file was
+# missing from the image, so the minimal-config path dropped MCP entirely).
+COPY config/opencode.json.fallback /workspace/.opencode/opencode.json.fallback
 
 COPY AGENTS.md /workspace/AGENTS.md
 

@@ -80,29 +80,65 @@ def build_permission_denies(manifest: dict) -> dict:
     return {f"{VT_SERVER}_{entry}": "deny" for entry in manifest.get("disabled", [])}
 
 
+def _json_safe(value: str) -> str:
+    """Sanitize an env value for substitution into a JSON string literal.
+
+    The template interpolates values raw inside ``"..."`` literals, so a
+    trailing newline (incident 2026-10-10: k8s secret fed ``LLM_API_KEY``
+    with ``\\n`` → "Invalid control character" → render failed → container
+    booted without the VT MCP block) or an embedded quote/control character
+    corrupts the rendered document. ``strip()`` drops surrounding whitespace
+    (secrets must never carry it); the ``json.dumps`` round-trip escapes
+    whatever remains, keeping the output valid JSON for ANY env value.
+
+    Args:
+        value: Raw environment value.
+
+    Returns:
+        Stripped value, safe to interpolate into a JSON string literal.
+    """
+    return json.dumps(value.strip())[1:-1]
+
+
+def _env(name: str, default: str = "") -> str:
+    """Read an environment variable and sanitize it via ``_json_safe``.
+
+    Args:
+        name: Environment variable name.
+        default: Value when the variable is unset.
+
+    Returns:
+        Sanitized value for the Jinja2 template context.
+    """
+    return _json_safe(os.environ.get(name, default))
+
+
 def build_context() -> dict:
     """Collect template variables from the environment with defaults.
+
+    All values pass through ``_json_safe`` (strip + JSON escape) so no env
+    value can break the rendered JSON.
 
     Returns:
         Context dict for the Jinja2 template.
     """
     return {
-        "CLICKHOUSE_HOST": os.environ.get("CLICKHOUSE_HOST", ""),
-        "CLICKHOUSE_PORT": os.environ.get("CLICKHOUSE_PORT", "8123"),
-        "CLICKHOUSE_USER": os.environ.get("CLICKHOUSE_USER", "default"),
-        "CLICKHOUSE_PASSWORD": os.environ.get("CLICKHOUSE_PASSWORD", ""),
-        "CLICKHOUSE_DATABASE": os.environ.get("CLICKHOUSE_DATABASE", "ashare"),
-        "CLICKHOUSE_LLM_USER": os.environ.get("CLICKHOUSE_LLM_USER", ""),
-        "CLICKHOUSE_LLM_PASSWORD": os.environ.get("CLICKHOUSE_LLM_PASSWORD", ""),
+        "CLICKHOUSE_HOST": _env("CLICKHOUSE_HOST"),
+        "CLICKHOUSE_PORT": _env("CLICKHOUSE_PORT", "8123"),
+        "CLICKHOUSE_USER": _env("CLICKHOUSE_USER", "default"),
+        "CLICKHOUSE_PASSWORD": _env("CLICKHOUSE_PASSWORD"),
+        "CLICKHOUSE_DATABASE": _env("CLICKHOUSE_DATABASE", "ashare"),
+        "CLICKHOUSE_LLM_USER": _env("CLICKHOUSE_LLM_USER"),
+        "CLICKHOUSE_LLM_PASSWORD": _env("CLICKHOUSE_LLM_PASSWORD"),
         # LLM egress proxy (contract A.7): non-empty LLM_BASE_URL routes the
         # built-in alibaba-cn provider through the RM proxy (ID must stay
         # ``alibaba-cn`` or enable_thinking breaks); empty → block omitted,
         # output byte-identical to v3.3.0 (direct DashScope).
-        "LLM_BASE_URL": os.environ.get("LLM_BASE_URL", ""),
-        "LLM_API_KEY": os.environ.get("LLM_API_KEY", ""),
+        "LLM_BASE_URL": _env("LLM_BASE_URL"),
+        "LLM_API_KEY": _env("LLM_API_KEY"),
         # HOSTNAME = K8s pod name, PID1-visible and per-pod unique at
         # warm-pool boot (before claim), so x-sandbox-id attribution works.
-        "SANDBOX_ID": os.environ.get("HOSTNAME") or os.uname().nodename,
+        "SANDBOX_ID": _json_safe(os.environ.get("HOSTNAME") or os.uname().nodename),
     }
 
 

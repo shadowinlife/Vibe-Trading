@@ -13,6 +13,10 @@ inlined in ``entrypoint.sh``:
   cheap, deep agents stay on the max model).
 - ``AGENTS.md`` stays within the always-loaded context budget.
 - The ``research-scenarios`` skill keeps its frontmatter + playbook body.
+- Env-value hardening (incident 2026-10-10): poisoned env values (trailing
+  newline / quote / tab / unicode / backslash) never break the JSON render,
+  and the static fallback config keeps the VT MCP registration alive when
+  rendering fails anyway.
 """
 
 from __future__ import annotations
@@ -20,6 +24,9 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -28,6 +35,8 @@ OPENCODE_AGENT_DIR = Path(__file__).resolve().parents[1]
 CONFIG_DIR = OPENCODE_AGENT_DIR / "config"
 TEMPLATE_PATH = CONFIG_DIR / "opencode.json.tmpl"
 MANIFEST_PATH = CONFIG_DIR / "vibe-trading-tools.json"
+FALLBACK_PATH = CONFIG_DIR / "opencode.json.fallback"
+ENTRYPOINT_PATH = OPENCODE_AGENT_DIR / "entrypoint.sh"
 AGENTS_MD_PATH = OPENCODE_AGENT_DIR / "AGENTS.md"
 SCENARIOS_SKILL_PATH = OPENCODE_AGENT_DIR / "skills" / "research-scenarios" / "SKILL.md"
 
@@ -324,3 +333,169 @@ class TestResearchScenariosSkill:
     def test_playbook_sections_present(self, marker):
         body = SCENARIOS_SKILL_PATH.read_text(encoding="utf-8")
         assert marker in body, marker
+
+
+class TestEnvValueHardening:
+    """Incident 2026-10-10: a k8s secret fed ``LLM_API_KEY`` with a trailing
+    ``\\n``; the raw control character landed inside a JSON string literal of
+    the template render (``Invalid control character at line 8 column 84``),
+    the render failed, and the entrypoint fell back to a minimal config
+    WITHOUT the vibe-trading MCP block. Env values must be stripped and
+    JSON-escaped in ``build_context`` so no env value can ever break the
+    render again."""
+
+    LLM_BASE_URL = "http://rm:8900/llm/v1"
+
+    def _render_proxy(self, monkeypatch, api_key: str) -> dict:
+        monkeypatch.setenv("LLM_BASE_URL", self.LLM_BASE_URL)
+        monkeypatch.setenv("LLM_API_KEY", api_key)
+        monkeypatch.setenv("HOSTNAME", "opencode-poc-test")
+        # json.loads is strict by default: raw control characters inside
+        # string literals raise, so a successful parse IS the assertion.
+        return json.loads(render_config.render(TEMPLATE_PATH, MANIFEST_PATH))
+
+    def test_trailing_newline_in_api_key_renders_valid_json(self, monkeypatch):
+        config = self._render_proxy(monkeypatch, "deadbeef\n")
+        assert "vibe-trading" in config["mcp"]
+        assert config["provider"]["alibaba-cn"]["options"]["apiKey"] == "deadbeef"
+
+    def test_quote_and_tab_in_api_key_renders_valid_json(self, monkeypatch):
+        config = self._render_proxy(monkeypatch, 'to"ken\tkey')
+        assert config["provider"]["alibaba-cn"]["options"]["apiKey"] == 'to"ken\tkey'
+
+    def test_unicode_in_api_key_round_trips(self, monkeypatch):
+        config = self._render_proxy(monkeypatch, "key-密钥\n")
+        assert config["provider"]["alibaba-cn"]["options"]["apiKey"] == "key-密钥"
+
+    def test_backslash_in_api_key_round_trips(self, monkeypatch):
+        config = self._render_proxy(monkeypatch, "C:\\path\\key\n")
+        assert config["provider"]["alibaba-cn"]["options"]["apiKey"] == "C:\\path\\key"
+
+    def test_newline_in_clickhouse_password_never_reaches_mcp_env(self, monkeypatch):
+        monkeypatch.setenv("CLICKHOUSE_PASSWORD", "secret\n")
+        vt_env = _rendered()["mcp"]["vibe-trading"]["env"]
+        assert vt_env["CLICKHOUSE_PASSWORD"] == "secret"
+
+    def test_newline_in_hostname_stripped_from_sandbox_id(self, monkeypatch):
+        monkeypatch.setenv("HOSTNAME", "pod-name-123\n")
+        assert render_config.build_context()["SANDBOX_ID"] == "pod-name-123"
+
+
+class TestFallbackConfig:
+    """``entrypoint.sh`` copies ``config/opencode.json.fallback`` when the
+    template render fails. Incident 2026-10-10: the fallback did not exist in
+    the image, so the container booted with a minimal config that had NO mcp
+    block while the MCP server itself was perfectly importable. The static
+    fallback must keep the VT MCP registration alive on any render failure."""
+
+    def _fallback(self) -> dict:
+        return json.loads(FALLBACK_PATH.read_text(encoding="utf-8"))
+
+    def test_fallback_exists_and_parses_as_strict_json(self):
+        assert FALLBACK_PATH.is_file(), f"missing fallback: {FALLBACK_PATH}"
+        assert isinstance(self._fallback(), dict)
+
+    def test_fallback_contains_full_vt_mcp_block(self):
+        vt = self._fallback()["mcp"]["vibe-trading"]
+        assert vt["type"] == "local"
+        assert vt["command"] == [
+            "/opt/venv/bin/python",
+            "/opt/vibe-trading/agent/mcp_server.py",
+        ]
+        assert vt["timeout"] == 600000
+        env = vt["env"]
+        for key in (
+            "CLICKHOUSE_HOST",
+            "CLICKHOUSE_PORT",
+            "CLICKHOUSE_USER",
+            "CLICKHOUSE_PASSWORD",
+            "CLICKHOUSE_DATABASE",
+            "CLICKHOUSE_LLM_USER",
+            "CLICKHOUSE_LLM_PASSWORD",
+        ):
+            assert env[key] == "", key
+        assert env["VT_MEMORY"] == "full"
+        assert env["VT_MEMORY_MCP_TOOLS"] == "1"
+        assert env["VT_MEMORY_BASE_DIR"] == "/workspace/.vt-memory"
+
+    def test_fallback_has_no_provider_block(self):
+        # inject_llm_proxy() adds the provider block AFTER the copy — the
+        # static file must never hardcode a proxy URL or credentials.
+        assert "provider" not in self._fallback()
+
+    def test_fallback_keeps_schema_model_tool_output_agents_plugin(self):
+        config = self._fallback()
+        assert config["$schema"] == "https://opencode.ai/config.json"
+        assert config["model"] == "alibaba-cn/qwen3.8-max"
+        assert config["tool_output"] == {"max_bytes": 262144, "max_lines": 8000}
+        assert config["plugin"] == ["oh-my-openagent@5.1.0"]
+        for agent_name in ("explore", "multimodal-looker"):
+            assert config["agent"][agent_name]["permission"]["vibe-trading_*"] == "deny"
+
+    def test_fallback_permission_denies_match_governance_manifest(self):
+        # Drift guard: the fallback carries the SAME governance as the
+        # rendered config, so a render failure never weakens the manifest.
+        denies = render_config.build_permission_denies(
+            render_config.load_manifest(MANIFEST_PATH)
+        )
+        assert self._fallback()["permission"] == denies
+
+
+class TestInjectLlmProxy:
+    """``inject_llm_proxy()`` is the fallback-only counterpart of the
+    template's conditional provider block (shell function + heredoc python
+    in ``entrypoint.sh``). Extract the function verbatim into a temp script
+    and drive it through bash so the real production code path is tested."""
+
+    @pytest.fixture()
+    def injector(self, tmp_path):
+        text = ENTRYPOINT_PATH.read_text(encoding="utf-8")
+        start = text.index("inject_llm_proxy() {")
+        end = text.index("\n}\n", start) + len("\n}\n")
+        script = tmp_path / "inject_llm_proxy.sh"
+        script.write_text(
+            text[start:end].replace("/opt/venv/bin/python3", f"'{sys.executable}'"),
+            encoding="utf-8",
+        )
+        target = tmp_path / "opencode.json"
+        shutil.copyfile(FALLBACK_PATH, target)
+        return script, target
+
+    def _run(self, script: Path, target: Path, env_extra: dict) -> None:
+        env = {"PATH": os.environ["PATH"], "TARGET": str(target), **env_extra}
+        result = subprocess.run(
+            ["bash", "-c", f"source '{script}' && inject_llm_proxy"],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert result.returncode == 0, result.stderr
+
+    def test_noop_when_llm_base_url_empty(self, injector):
+        script, target = injector
+        before = target.read_bytes()
+        self._run(
+            script,
+            target,
+            {"LLM_BASE_URL": "", "LLM_API_KEY": "ignored", "SANDBOX_ID": "x"},
+        )
+        assert target.read_bytes() == before
+
+    def test_poisoned_api_key_injected_stripped_and_mcp_survives(self, injector):
+        script, target = injector
+        self._run(
+            script,
+            target,
+            {
+                "LLM_BASE_URL": "http://rm:8900/llm/v1",
+                "LLM_API_KEY": "deadbeef\n",
+                "SANDBOX_ID": "opencode-poc-test\n",
+            },
+        )
+        config = json.loads(target.read_text(encoding="utf-8"))
+        options = config["provider"]["alibaba-cn"]["options"]
+        assert options["baseURL"] == "http://rm:8900/llm/v1"
+        assert options["apiKey"] == "deadbeef"
+        assert options["headers"]["x-sandbox-id"] == "opencode-poc-test"
+        assert "vibe-trading" in config["mcp"]
