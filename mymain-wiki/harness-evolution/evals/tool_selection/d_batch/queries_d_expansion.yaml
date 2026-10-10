@@ -1,0 +1,210 @@
+# D-batch expansion corpus — power fix for the pilot domains (方法论缺口①).
+#
+# Schema matches queries.yaml, plus two routing-level extensions:
+#   expected: {kind: route, name: direct|quant-agent|web-docs-agent}
+#     for BND-* boundary entries (routing eval only; they carry no
+#     within-agent expected tool and are excluded from Level-W merges).
+#
+# Authoring rules (self-imposed, reviewed against AUDIT §7.2 trigger columns):
+# - natural user phrasing, mixed zh/en like the base corpus;
+# - every D06/D07/D19 entry's expected hit MUST be inside the frozen v1
+#   whitelists (build_d_corpora.py asserts this at build time);
+# - expansion targets the whitelist capabilities the base corpus did NOT
+#   cover (pattern_recognition, quantlib_call, factor-research,
+#   strategy-discovery) plus paraphrase diversity for covered ones;
+# - BND-* labels derive from AUDIT §8.2 input-1 arbitration rules:
+#   host read/edit/grep for local source & coding; host fetcher is the
+#   primary standalone-URL fetcher; VT read_document owns scanned/
+#   multi-format documents; search-trail URL reading goes to read_url.
+
+version: 1
+entries:
+  # ── D06 量化研究扩展（10）────────────────────────────────────────
+  - id: D06-101
+    query: 看看 alpha101 里面有哪些反转类的因子
+    expected: {kind: tool, name: alpha_zoo}
+    domain: D06
+  - id: D06-102
+    query: 我根据一篇研报复现了一个因子，帮我注册起来并持续监控它的IC衰减
+    expected: {kind: skill, name: strategy-dev-manager}
+    domain: D06
+  - id: D06-103
+    query: Bench gtja191 and qlib158 on CSI300 side by side and compare IC means
+    expected: {kind: tool, name: alpha_bench}
+    domain: D06
+    negatives: [alpha_zoo]
+  - id: D06-104
+    query: 我算好的因子值存成了CSV，帮我算IC均值和IR
+    expected: {kind: tool, name: factor_analysis}
+    domain: D06
+  - id: D06-105
+    query: 筛出证据充分、交易成本能覆盖的策略给我
+    expected: {kind: tool, name: query_strategies}
+    domain: D06
+    negatives: [list_strategies]
+  - id: D06-106
+    query: 这个因子按五分位分组的多空价差帮我算出来
+    expected: {kind: tool, name: factor_analysis}
+    domain: D06
+  - id: D06-107
+    query: 策略发现的完整流程怎么走，从浏览目录到看证据
+    expected: {kind: skill, name: strategy-discovery}
+    domain: D06
+    negatives: [list_strategies]
+  - id: D06-108
+    query: 回测刚跑完，帮我把策略的收益率序列算一下 Sortino 比率和年化波动
+    expected: {kind: tool, name: quantlib_call}
+    domain: D06
+    note: v2 修订（一致性修复并披露）——v1 为"算一下这个收益率序列的95%
+      VaR和CVaR"，与基础语料 D09-001/D09-002（组合 VaR/deflated Sharpe →
+      direct）语义相同但标签相反，两名判官一致判 direct 暴露了该标注矛盾。
+      修订为"回测后分析"语境，与 D09 的"存量组合风险"语境区分开。
+  - id: D06-109
+    query: Bench the academic zoo on SP500 over 2018-2025, top 10
+    expected: {kind: tool, name: alpha_bench}
+    domain: D06
+  - id: D06-110
+    query: 帮我研究一个基于换手率异常的新因子
+    expected: {kind: skill, name: factor-research}
+    domain: D06
+
+  # ── D07 回测工程扩展（10）────────────────────────────────────────
+  - id: D07-101
+    query: 识别一下贵州茅台最近日线的K线形态，有没有头肩顶
+    expected: {kind: tool, name: pattern_recognition}
+    domain: D07
+  - id: D07-102
+    query: 帮我在回测目录下新建一个配置，标的BTC-USDT，区间去年全年
+    expected: {kind: tool, name: write_file}
+    domain: D07
+  - id: D07-103
+    query: 用1小时线回测这个突破策略，初始资金10万USDT
+    expected: {kind: tool, name: backtest}
+    domain: D07
+  - id: D07-104
+    query: 把回测目录里 metrics 那个结果文件的内容给我看看
+    expected: {kind: tool, name: read_file}
+    domain: D07
+  - id: D07-105
+    query: 帮我写一个布林带均值回复策略并跑一遍回测评估
+    expected: {kind: skill, name: strategy-generate}
+    domain: D07
+  - id: D07-106
+    query: 回测结果和基准差太多了，帮我定位一下哪里不对
+    expected: {kind: skill, name: backtest-diagnose}
+    domain: D07
+  - id: D07-107
+    query: 回测的时候把VWAP执行和冲击成本建摸进去
+    expected: {kind: skill, name: execution-model}
+    domain: D07
+  - id: D07-108
+    query: 把这个策略导出成同花顺能用的指标公式
+    expected: {kind: skill, name: pine-script}
+    domain: D07
+    negatives: [vnpy-export]
+  - id: D07-109
+    query: 把我回测过的策略转成vnpy的CtaTemplate类
+    expected: {kind: skill, name: vnpy-export}
+    domain: D07
+    negatives: [pine-script]
+  - id: D07-110
+    query: 怎么写一个同时做A股和美股的跨市场signal_engine
+    expected: {kind: skill, name: cross-market-strategy}
+    domain: D07
+
+  # ── D19 网页/文档扩展（10）───────────────────────────────────────
+  - id: D19-101
+    query: 这份扫描版PDF帮我提取里面的文字
+    expected: {kind: tool, name: read_document}
+    domain: D19
+  - id: D19-102
+    query: 把这个网页抓下来整理成Markdown给我
+    expected: {kind: tool, name: read_url}
+    domain: D19
+  - id: D19-103
+    query: 搜一下最近央行降准的相关新闻
+    expected: {kind: tool, name: web_search}
+    domain: D19
+    negatives: [get_stock_news]
+  - id: D19-104
+    query: 读一下这个Excel文件里的内容
+    expected: {kind: tool, name: read_document}
+    domain: D19
+  - id: D19-105
+    query: Read this DOCX proposal and extract the key terms
+    expected: {kind: tool, name: read_document}
+    domain: D19
+  - id: D19-106
+    query: 网页抓取老是失败，有没有能把网页转成Markdown的阅读器
+    expected: {kind: skill, name: web-reader}
+    domain: D19
+    negatives: [read_url]
+  - id: D19-107
+    query: 帮我找一下央行最新货币政策执行报告的原文
+    expected: {kind: tool, name: web_search}
+    domain: D19
+  - id: D19-108
+    query: 这份PPT里的图表说明文字提取出来
+    expected: {kind: tool, name: read_document}
+    domain: D19
+  - id: D19-109
+    query: 怎么用工具读一份带扫描页的PDF年报
+    expected: {kind: skill, name: doc-reader}
+    domain: D19
+    negatives: [read_document]
+  - id: D19-110
+    query: 把这篇财经专栏文章的网页整理成干净的文本
+    expected: {kind: tool, name: read_url}
+    domain: D19
+
+  # ── BND 边界集（10，仅路由级；仲裁依据 AUDIT §8.2 输入 1）─────────
+  - id: BND-001
+    query: 看一下 src/tools/ 里 sentiment.py 的实现
+    expected: {kind: route, name: direct}
+    domain: BND
+    note: 本地源码文件 → 宿主 read，不委派
+  - id: BND-002
+    query: 帮我把这个函数里的拼写错误改掉
+    expected: {kind: route, name: direct}
+    domain: BND
+    note: 编码任务 → 宿主编辑工具
+  - id: BND-003
+    query: 这个GitHub仓库的README讲了什么
+    expected: {kind: route, name: direct}
+    domain: BND
+    note: 独立 URL 抓取 → 宿主主抓取器（§8.2：保留1个主抓取器）
+  - id: BND-004
+    query: 在项目里搜一下哪些文件调用了quantlib_call
+    expected: {kind: route, name: direct}
+    domain: BND
+    note: 代码搜索 → 宿主 grep
+  - id: BND-005
+    query: 分析一下我上传的交割单CSV
+    expected: {kind: route, name: direct}
+    domain: BND
+    note: 用户交易分析属 D15，试点无此子代理 → 主循环 analyze_trade_journal
+  - id: BND-006
+    query: 看一下我本地配置文件里的设置
+    expected: {kind: route, name: direct}
+    domain: BND
+    note: 本地配置文件 → 宿主 read（非文档解析）
+  - id: BND-007
+    query: 把这份扫描版研报PDF里的数据提取出来做个表
+    expected: {kind: route, name: web-docs-agent}
+    domain: BND
+    note: 扫描件/多格式文档 → read_document（web-docs 正例）
+  - id: BND-008
+    query: 帮我写个脚本批量重命名这些文件
+    expected: {kind: route, name: direct}
+    domain: BND
+    note: 通用编码 → 宿主
+  - id: BND-009
+    query: 刚搜到的这篇研报链接，抓下来读一下里面写了什么
+    expected: {kind: route, name: web-docs-agent}
+    domain: BND
+    note: 搜索衔接的 URL 阅读 → read_url（web-docs 正例）
+  - id: BND-010
+    query: 拉一下今天A股涨幅榜前20
+    expected: {kind: route, name: direct}
+    domain: BND
+    note: 金融数据但非文档域 → 主循环 screen_market；测 web-docs 误越界

@@ -1,0 +1,85 @@
+{
+  "benchmark": "backtestbench",
+  "description": "BacktestBench (KDD 2026): ~18k QA pairs over A-share daily bars 2020-2025 enforcing no-lookahead / T-1 signal discipline. QA record fields: uuid, strategy, strategy_type (metrics_calculation / ticker_selection / parameter_confirmation / strategy_selection), SQL_statement, KPI, code (reference solution), answer, factors. Record counts verified locally: test=3836, train=10215, validation=4195, total=18246.",
+  "source": {
+    "repository": "https://github.com/jensenw1/BacktestBench",
+    "paper": "BacktestBench: Benchmarking Large Language Models for Automated Quantitative Strategy Backtesting, KDD 2026, arXiv:2605.17937, doi:10.1145/3770855.3817460",
+    "pinned_commit": "4bacdfbe83b39616ebcecbbd0027b01a146a2f22",
+    "pinned_commit_committed_at": "2026-05-26T06:34:24Z",
+    "media_url_template": "https://media.githubusercontent.com/media/jensenw1/BacktestBench/4bacdfbe83b39616ebcecbbd0027b01a146a2f22/{path}",
+    "storage_note": "dataset files are Git-LFS objects served from media.githubusercontent.com; sizes verified against the GitHub contents API at pin time",
+    "retrieved_at": "2026-08-23T15:56:00+08:00",
+    "license_note": "upstream research artifact; cached ONLY under gitignored .venv-eval/data/backtestbench/, dataset bytes are never committed"
+  },
+  "subset_rule": {
+    "policy": "Full 18k QA pairs are cost-prohibitive under the parity cost cap (300 USD/run); runs use a seeded subset of the test split (the benchmark evaluation split). The subset is drawn once per run and is identical for both harnesses and across all parity seeds for a given sampling seed; the run seed varies harness behavior, not task selection. The rule text is mirrored into every run report via the total_cost note.",
+    "sampling_seed": 20260823,
+    "sampler": "sample_subset(uuids, n, seed) in adapters/backtestbench_tasks.py: pool = sorted(set(uuids)); random.Random(f'backtestbench-v1:{seed}').sample(pool, min(n, len(pool))). String-seeded random.Random is stable across processes (independent of PYTHONHASHSEED); lexicographic pre-sort makes the rule independent of file order.",
+    "split": "datasets/test.json (3836 QA records)"
+  },
+  "fetch_policy": {
+    "connect_timeout_s": 30,
+    "per_file_timeout_s": 1800,
+    "retries": 3,
+    "retry_backoff_s": [5, 15, 45],
+    "resume": "partial downloads kept as <dest>.part and resumed via HTTP Range; a server ignoring Range restarts the file",
+    "verification": "exact size_bytes then sha256 BEFORE rename into place; any mismatch refuses the file with a structured error naming the reason and deletes the offending bytes; cached files are re-verified on every run (idempotent)",
+    "observed_throughput_note": "media.githubusercontent.com served ~20-80 KB/s from this host on 2026-08-23; the 5 QA files (~77 MB) completed in ~24 min; the 250 MB stock_tables.zip exceeds the bounded download budget and stays sha256=null until a Stage-2 fetch"
+  },
+  "files": [
+    {
+      "path": "datasets/test.json",
+      "cache_path": "raw/test.json",
+      "url": "https://media.githubusercontent.com/media/jensenw1/BacktestBench/4bacdfbe83b39616ebcecbbd0027b01a146a2f22/datasets/test.json",
+      "size_bytes": 55098184,
+      "sha256": "ad07b097b3258180acb3387dde0b99e08f9d9637331ae5a16f91f15218882f84",
+      "group": "qa",
+      "records": 3836
+    },
+    {
+      "path": "datasets/train.json",
+      "cache_path": "raw/train.json",
+      "url": "https://media.githubusercontent.com/media/jensenw1/BacktestBench/4bacdfbe83b39616ebcecbbd0027b01a146a2f22/datasets/train.json",
+      "size_bytes": 15246843,
+      "sha256": "1e522ef246f201a83430481fbcb4f0f17b87407d76b091b7c73f80ffd35f9584",
+      "group": "qa",
+      "records": 10215
+    },
+    {
+      "path": "datasets/validation.json",
+      "cache_path": "raw/validation.json",
+      "url": "https://media.githubusercontent.com/media/jensenw1/BacktestBench/4bacdfbe83b39616ebcecbbd0027b01a146a2f22/datasets/validation.json",
+      "size_bytes": 6283360,
+      "sha256": "2e1d75cc034f56e47f6c812827bfd767e3ea35ae855161928e1dbaf55bd458e9",
+      "group": "qa",
+      "records": 4195
+    },
+    {
+      "path": "datasets/factors.json",
+      "cache_path": "raw/factors.json",
+      "url": "https://media.githubusercontent.com/media/jensenw1/BacktestBench/4bacdfbe83b39616ebcecbbd0027b01a146a2f22/datasets/factors.json",
+      "size_bytes": 7016,
+      "sha256": "d0605b0dfe9436f853ff02adc328cd27c9e84b08e733fdb687b759e52f808534",
+      "group": "qa",
+      "records": 43
+    },
+    {
+      "path": "datasets/indexs.json",
+      "cache_path": "raw/indexs.json",
+      "url": "https://media.githubusercontent.com/media/jensenw1/BacktestBench/4bacdfbe83b39616ebcecbbd0027b01a146a2f22/datasets/indexs.json",
+      "size_bytes": 1227,
+      "sha256": "1f96eaa6a9614190a80122e31448f777d2611cde35aa7ec50509a522144621ae",
+      "group": "qa",
+      "records": 7
+    },
+    {
+      "path": "tables/stock_tables.zip",
+      "cache_path": "raw/stock_tables.zip",
+      "url": "https://media.githubusercontent.com/media/jensenw1/BacktestBench/4bacdfbe83b39616ebcecbbd0027b01a146a2f22/tables/stock_tables.zip",
+      "size_bytes": 249664433,
+      "sha256": null,
+      "group": "tables",
+      "oversized_note": "250 MB market-data dump (PostgreSQL ingestion for the benchmark's own SQL pipeline) exceeds the bounded-download budget at observed throughput; sha256 intentionally null so fetch_backtestbench.py refuses it with reason=sha256_unknown rather than installing unverified bytes. Stage 2: fetch out-of-band or with a larger budget, record its sha256 here, then ingest per tables/import_tables.ipynb. The todo-6 adapter maps QA pairs onto this repo's own loaders/backtest toolchain, so the zip is NOT required for the mock or Stage-1 opencode path."
+    }
+  ]
+}
