@@ -1,0 +1,40 @@
+# D2 pilot — web-docs-agent subagent definition (whitelist layer).
+#
+# Source: HARNESS_EVOLUTION_CAPABILITY_AUDIT.md §8.1 (D19 domain).
+# Coverage audit 2026-08-28: D19 6/6 expected hits in whitelist (v0 = v1,
+# no revision needed).
+#
+# Boundary arbitration (AUDIT §8.2 input 1) is the point of this pilot:
+# - host-native file read / search / fetch stay with the host;
+# - VT web_search is the no-key web-search fallback;
+# - VT read_url pairs with web_search output;
+# - VT read_document owns scanned/multi-format documents (OCR + 40 formats).
+
+name: web-docs-agent
+domain: D19
+version: 1
+
+tools:
+  - web_search
+  - read_url
+  - read_document
+
+skills:
+  - web-reader
+  - doc-reader
+
+# Revision log (routing layer; same pre-registered round as quant-agent):
+# - v1 (2026-08-28): under-delegation on tool-usage-guidance phrasings
+#   ("Which tool reads documents and how do I use it?" D19-006/D19-109 went
+#   direct) — description advertised tasks but not usage guidance.
+# - v2 (below): add the guidance trigger explicitly.
+description: >-
+  Web and document reading specialist. Delegate: web searches needing a
+  no-key fallback engine (中文财经检索兜底), turning web pages/articles into
+  clean Markdown, extracting text from documents — especially scanned PDFs
+  or multi-format files (PDF/DOCX/XLSX/PPTX/images with OCR) — and questions
+  about HOW to read documents or use the web-reading tools (文档怎么读、
+  工具怎么用). NOT for: reading local source code or workspace files (host
+  read tool), fetching market data, or any finance-domain analysis.
+
+prompt_file: prompts/web_docs_agent.md

@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "spec_id": "harness-evolution-parity-v1",
+  "created": "2026-08-23",
+  "model": {
+    "harness_model_id": "alibaba-cn/qwen3.8-max",
+    "endpoint": {
+      "provider": "dashscope",
+      "mode": "openai-compatible",
+      "base_url_env": "DASHSCOPE_BASE_URL",
+      "base_url_default": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "api_key_env": "DASHSCOPE_API_KEY",
+      "model_name": "qwen3.8-max"
+    },
+    "verified_against": "OpencodeAgent/config/oh-my-openagent.json (uniform alibaba-cn/qwen3.8-max across all agents/categories, thinking.type=enabled, reasoningEffort=max) and OpencodeAgent/.env.example (LANGCHAIN_MODEL_NAME=qwen3.8-max against DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1). Harness-side id 'alibaba-cn/qwen3.8-max' is the opencode provider-qualified id; the exact model string sent to the DashScope OpenAI-compatible endpoint is 'qwen3.8-max'. API keys are referenced by env-var name only and never stored in this file."
+  },
+  "generation": {
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "max_output_tokens": 32768,
+    "max_output_tokens_field": "max_tokens",
+    "thinking": {
+      "enable_field": "enable_thinking",
+      "enable_value": true,
+      "budget_field": "thinking_budget",
+      "budget_value": 16384,
+      "transport": "extra_body",
+      "rationale": "DashScope OpenAI-compatible mode enables Qwen-family hybrid thinking via the boolean body field 'enable_thinking' and caps reasoning tokens with the integer field 'thinking_budget'; both travel as extra body parameters alongside the OpenAI-standard fields. Thinking is ON to match the baseline harness contract (OpencodeAgent/config/oh-my-openagent.json sets thinking.type=enabled and reasoningEffort=max for every agent). Live acceptance of these exact fields by qwen3.8-max is re-verified by the todo-10 capability spike; if the endpoint rejects a field, this spec is re-issued with disclosure before any benchmark run."
+    },
+    "seed_policy": "Identical wire-level generation parameters for BOTH harnesses on every benchmark call. Neither harness may apply provider-side defaults, presets, or per-task overrides to these fields; any benchmark needing different sampling requires a spec revision, not a local override."
+  },
+  "benchmarks": {
+    "tau2": {
+      "seeds": 5,
+      "high_variance": true,
+      "rationale": "tau2's headline metric is pass^k, a reliability measure across repeated runs: the LLM-driven user simulator and tool-mediated multi-turn dialogs make per-run variance the signal, not noise. 5 seeds (above the >=3 floor, satisfying the >=5 high-variance rule) give the paired bootstrap a usable CI for the decision gate's -2pp non-inferiority band. Cost basis: HARNESS_EVOLUTION_BENCHMARKS.md section C quotes one round at roughly $5-30.",
+      "cost_cap_usd_per_run": 200.0,
+      "metric": "pass^k",
+      "domains": ["retail", "airline"]
+    },
+    "financebench_fineval": {
+      "seeds": 3,
+      "high_variance": false,
+      "rationale": "Closed-form MCQ (FinEval subset) plus open-book QA with deterministic grading (FinanceBench-150): variance comes only from model sampling, and 650 graded items per seed already tighten the CI. 3 seeds meet the floor and are sufficient for the paired bootstrap at the gate's band. Cost basis: section C quotes FinanceBench-150 under $30 and FinEval as tens of dollars.",
+      "cost_cap_usd_per_run": 120.0,
+      "metric": "accuracy"
+    },
+    "backtestbench": {
+      "seeds": 5,
+      "high_variance": true,
+      "rationale": "LLM-generated strategy code plus a data-driven backtest pipeline: code-generation variance dominates and subset sampling (the full 18k QA pairs are cost-prohibitive) adds a second variance layer. 5 seeds satisfy the high-variance >=5 rule so the gate CI is not dominated by a single lucky codegen seed.",
+      "cost_cap_usd_per_run": 300.0,
+      "metric": "task_success_rate",
+      "notes": "Runs on a seeded QA-pair subset; sampling rule is recorded in each run report (todo 6 owns the sampler)."
+    },
+    "swebench_verified": {
+      "seeds": 3,
+      "high_variance": false,
+      "rationale": "Moderate variance, cost-dominated: each task is a full agent session, and 3 seeds x 100 tasks already reaches the cost cap. The official verifier is deterministic, so cross-seed variance comes only from agent trajectories; 3 seeds meet the floor and keep the paired bootstrap feasible within budget.",
+      "cost_cap_usd_per_run": 450.0,
+      "metric": "resolve_rate",
+      "notes": "Subset capped at 200 by policy; fixed at n=100 below (subset list is todo 7's deliverable)."
+    },
+    "terminal_bench_2": {
+      "seeds": 3,
+      "high_variance": false,
+      "rationale": "89 double-validated Docker tasks with deterministic verifiers: variance is moderate and the cost is dominated by containerized agent sessions. 3 seeds meet the floor; raising seeds would exceed the cost cap before tightening the gate CI meaningfully.",
+      "cost_cap_usd_per_run": 300.0,
+      "metric": "task_success_rate"
+    }
+  },
+  "budgets": {
+    "suite_cost_cap_usd_per_harness": 1400.0,
+    "suite_token_budget_per_harness": 800000000,
+    "over_budget_action": "degrade-and-disclose",
+    "notes": "Suite cost cap = sum of per-benchmark caps (1370) rounded up. Token budget estimate is dominated by swebench_verified (~1.5M tokens per task x 100 tasks x 3 seeds) plus terminal_bench_2 (~200k per task x 89 x 3); remaining benchmarks contribute <100M combined. Exceeding either cap degrades the affected benchmark with report-level disclosure per the plan's degradation mode, never a silent continuation."
+  },
+  "subsets": {
+    "swebench_verified": {
+      "n": 100,
+      "sampling_seed": 20260823,
+      "cap": 200,
+      "list_artifact": "swebench_subset.json",
+      "owner_todo": 7,
+      "notes": "Policy cap is 200 tasks; n=100 is fixed here together with the sampling seed so both harnesses draw the identical subset. The concrete task-id list is produced by todo 7 and committed as the named artifact."
+    },
+    "fineval": {
+      "n": 500,
+      "sampling_seed": 20260823,
+      "list_artifact": "fineval_subset.json",
+      "owner_todo": 5,
+      "notes": "Identical subset policy to swebench_verified: fixed n + fixed seed here, concrete question-id list produced by todo 5. n=500 keeps the per-seed accuracy CI near +/-4.4pp at 95% while staying inside the cost cap for MCQ grading."
+    }
+  }
+}

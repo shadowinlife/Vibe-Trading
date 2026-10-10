@@ -1,0 +1,52 @@
+name: valuation-agent
+domain: D10+D12
+version: 0
+tools:
+- quantlib_call
+- prediction_market
+skills:
+- valuation-model
+- investor-lenses
+- management-deep-dive
+- private-company-research
+- deep-company-series
+- thesis-tracker
+- bottleneck-hunter
+- research-discipline
+- behavioral-finance
+- report-generate
+- corporate-events
+- ashare-pre-st-filter
+- adr-hshare
+- earnings-forecast
+- earnings-revision
+- event-driven
+description: 'Valuation and company deep-research specialist (估值与公司深研). Delegate: DCF/DDM/SOTP and relative
+  valuation (PE-Band/PB-ROE/EV-EBITDA) with sensitivity grids, computed via quantlib_call''s valuation
+  module — including linked three-statement projections (三表联动预测建模), WACC×growth sensitivity grids (估值建模);
+  investor-lens overlays, management integrity/ability assessment (管理层评估), pre-IPO private-company fair-value
+  ranges, and publication-grade company deep-dive series; investment-thesis writing with red lines and
+  quarterly re-checks (投资论点跟踪); BUILDING event-driven strategies around earnings/news catalysts and special-situation
+  work (事件驱动策略构建) — — M&A arbitrage spreads, shareholder increase/ decrease signals (增减持), A-share pre-ST
+  risk prediction (ST预警), ADR/H-share premium tracking (跨上市溢价), earnings forecasts and estimate revisions
+  (SUE/PEAD/业绩超预期), and market-implied event probabilities from prediction markets (事件合约隐含概率); supply-chain
+  bottleneck and hidden-beneficiary discovery (产业链瓶颈/隐性受益者挖掘); and professional research-report authoring
+  (研究报告撰写). This agent INTERPRETS; it does not fetch primary data. NOT for: fetching statements, filings,
+  news, consensus or 13F data (→ fundamentals-text-agent), macro cycle positioning or geopolitical crisis
+  frameworks (→ macro-sector-agent), OHLCV (→ market-data-agent), risk metrics on the resulting position
+  (→ risk-portfolio-agent), or backtests (→ quant-agent).'
+twin_pairs:
+- pair: quantlib_call × valuation-model
+  ref: K16
+  arbitration: DCF/comps/three-statement computation → quantlib_call (valuation.* modules); valuation
+    methodology, PE-Band/PB-ROE framing and valuation-trap detection → skill.
+- pair: prediction_market × event-driven
+  ref: K20
+  arbitration: Market-implied event probabilities (Polymarket contracts) → tool; event-driven strategy
+    construction around them → skill.
+rationale: 'D10 has zero tools of its own in the audit; the honest tool surface is exactly two — quantlib_call
+  for the valuation engine and prediction_market as the D12 event-data inlet (kept here rather than altdata-agent
+  because the domain table assigns it to D12 and it feeds the event-driven skill). The 16-skill breadth
+  is the residual risk: skills are lazy one-line directory entries so the routing cost is low, but if
+  the D4 admission eval shows over-delegation (R2 > 5%), the pre-registered split is D10 company-research
+  vs D12 special-situations into two candidates.'
