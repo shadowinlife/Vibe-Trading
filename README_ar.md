@@ -483,10 +483,11 @@ vibe-trading connector install /tmp/my-broker
 
 ## 📡 مصادر البيانات والتراجع الذكي
 
-استدعاء واحد لـ `get_market_data`، **29 مصدر بيانات سوقية**، أحدها سوق **QVeris** المدفوع الاختياري (إضافة إلى سوق مدفوع اختياري **QVeris**). اضبط `source: "auto"` — يختار المُحمّل حسب الرمز، ثم يسير عبر سلسلة لكل سوق مرتبة بحسب **خطر حظر عنوان IP**: المصادر العامة التي لا تُحظر أبداً أولاً، والمصادر المُقيّدة أو المحمية بمفتاح أخيراً. بلا أي إعداد، ولا نقطة فشل واحدة.
+استدعاء واحد لـ `get_market_data`، **30 مصدر بيانات سوقية**، أحدها سوق **QVeris** المدفوع الاختياري (إضافة إلى سوق مدفوع اختياري **QVeris**). اضبط `source: "auto"` — يختار المُحمّل حسب الرمز، ثم يسير عبر سلسلة لكل سوق مرتبة بحسب **خطر حظر عنوان IP**: المصادر العامة التي لا تُحظر أبداً أولاً، والمصادر المُقيّدة أو المحمية بمفتاح أخيراً. بلا أي إعداد، ولا نقطة فشل واحدة.
 
 | Source | Markets | Auth | Role |
 |--------|---------|------|------|
+| `clickhouse` | A-share | none (self-hosted) | local ClickHouse warehouse — leads the A-share chain (T-1 full history, zero IP exposure); falls through to the network chain when unreachable |
 | `tencent` | A-share + HK | none | never IP-banned |
 | `mootdx` | أسهم A (اختيار صريح فقط) | none | أُزيل من السلسلة الافتراضية في أكتوبر 2026 بعد توقف خوادم TDX عن الاستجابة لبروتوكول العميل (#1729) |
 | `eastmoney` | A / US / HK | none | OHLCV + deep fundamentals & flow tools (throttled) |
@@ -511,7 +512,7 @@ vibe-trading connector install /tmp/my-broker
 
 **سلاسل التراجع (بحسب خطر حظر عنوان IP):**
 
-- **أسهم A** → `tencent` · `eastmoney` · `baostock` · `akshare` · `tushare` · `gildata` · `local`
+- **أسهم A** → `clickhouse` · `tencent` · `eastmoney` · `baostock` · `akshare` · `tushare` · `gildata` · `local`
 - **أسهم US** → `yahoo` · `stooq` · `sina` · `eastmoney` · `yfinance` · `tiingo` · `fmp` · `finnhub` · `alphavantage` · `longbridge` · `akshare` · `local`
 - **أسهم HK** → `tencent` · `eastmoney` · `yahoo` · `futu` · `akshare` · `yfinance` · `tushare` · `longbridge` · `gildata` · `local`
 - **أسهم الهند (NSE/BSE)** → `yahoo` · `yfinance` · `india_broker` · `local`
@@ -1769,7 +1770,7 @@ Vibe-Trading/
 │   │
 │   └── backtest/                   # Backtest engines
 │       ├── engines/                #   10 engines + composite cross-market engine + options_portfolio
-│       ├── loaders/                #   29 sources: tushare, okx, nobitex, wallex, binance, yfinance, akshare, baostock, tencent, mootdx, ccxt, futu, pykrx, local, eastmoney, sina, stooq, yahoo, finnhub, alphavantage, tiingo, fmp, longbridge, mt5, qveris, india_broker, tickerall, gildata, b3_cotahist
+│       ├── loaders/                #   30 sources: clickhouse, tushare, okx, nobitex, wallex, binance, yfinance, akshare, baostock, tencent, mootdx, ccxt, futu, pykrx, local, eastmoney, sina, stooq, yahoo, finnhub, alphavantage, tiingo, fmp, longbridge, mt5, qveris, india_broker, tickerall, gildata, b3_cotahist
 │       │   ├── base.py             #   DataLoader Protocol
 │       │   └── registry.py         #   Registry + auto-fallback chains
 │       └── optimizers/             #   MVO, equal vol, max div, risk parity

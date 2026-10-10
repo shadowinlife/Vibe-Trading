@@ -151,7 +151,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `analyze_options` | Black-Scholes price + Greeks | None |
 | `analyze_options_payoff` | Multi-leg expiry payoff + spot/IV scenarios | None |
 | `pattern_recognition` | Detect chart patterns (H&S, double top, etc.) | None |
-| `get_market_data` | Fetch OHLCV data (auto-detect + ordered fallback across 29 sources) | None* |
+| `get_market_data` | Fetch OHLCV data (auto-detect + ordered fallback across 30 sources) | None* |
 | `get_fund_flow` | Capital fund-flow (main/retail net inflow) | None* |
 | `get_dragon_tiger` | Dragon-tiger list (龙虎榜) top buyer/seller seats | None* |
 | `get_northbound_flow` | Northbound (Stock Connect) net flow | None* |
@@ -219,6 +219,9 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `sentiment` | Local lexicon text scoring + crypto Fear & Greed Index | None |
 | `technical_indicators` | RSI / MACD / Bollinger / SMA / EMA through the existing loaders | None* |
 | `get_fundamentals` | PIT-safe SEC fundamentals panels (filed-date anchored) | None |
+| `ch_list_tables` | ClickHouse ashare catalog — 56 tables with COMMENTs | None (ClickHouse warehouse) |
+| `ch_describe_table` | ClickHouse table columns/types/keys + sample rows | None (ClickHouse warehouse) |
+| `ch_query` | Guarded read-only SELECT over ashare (sqlglot AST guard, LIMIT 500, ~50KB cap, audit log) | CLICKHOUSE_LLM_USER + CLICKHOUSE_LLM_PASSWORD |
 
 <sub>*A-share symbols require `TUSHARE_TOKEN`. HK/US/Canada/crypto are free. Trading connector rows use the selected connector profile, e.g. IBKR local TWS/Gateway or Robinhood MCP OAuth.</sub>
 

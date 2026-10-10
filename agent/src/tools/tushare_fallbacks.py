@@ -47,7 +47,9 @@ def _records(frame: Any) -> list[dict[str, Any]]:
 def _compact_date(value: str) -> str:
     digits = str(value).strip().replace("-", "")
     if len(digits) != 8 or not digits.isdigit():
-        raise TushareFallbackUnavailable(f"invalid date for tushare fallback: {value!r}")
+        raise TushareFallbackUnavailable(
+            f"invalid date for tushare fallback: {value!r}"
+        )
     return digits
 
 
@@ -300,7 +302,9 @@ def fetch_margin_trading(code: str, *, days: int) -> dict[str, Any]:
     ts_code = _ts_code(code)
     start_date, end_date = _date_window(days)
     rows = _records(
-        _pro_api().margin_detail(ts_code=ts_code, start_date=start_date, end_date=end_date)
+        _pro_api().margin_detail(
+            ts_code=ts_code, start_date=start_date, end_date=end_date
+        )
     )
     normalized = [
         {
@@ -315,4 +319,8 @@ def fetch_margin_trading(code: str, *, days: int) -> dict[str, Any]:
         for row in rows
     ]
     normalized.sort(key=lambda item: item.get("trade_date") or "", reverse=True)
-    return {"code": ts_code.split(".", 1)[0], "ts_code": ts_code, "rows": normalized[:days]}
+    return {
+        "code": ts_code.split(".", 1)[0],
+        "ts_code": ts_code,
+        "rows": normalized[:days],
+    }

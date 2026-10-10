@@ -498,10 +498,11 @@ vibe-trading connector install /tmp/my-broker
 
 ## 📡 数据源与智能 Fallback
 
-一次 `get_market_data` 调用，**29 个行情数据源**（其中 **QVeris** 是可选的付费市场）。设 `source: "auto"`——loader 按符号自动选源，再沿按 **被封 IP 风险** 排序的同市场链向下走（永不封的公开源在前，限速 / 需 key 的在后）。零配置，无单点故障。
+一次 `get_market_data` 调用，**30 个行情数据源**（其中 **QVeris** 是可选的付费市场）。设 `source: "auto"`——loader 按符号自动选源，再沿按 **被封 IP 风险** 排序的同市场链向下走（永不封的公开源在前，限速 / 需 key 的在后）。零配置，无单点故障。
 
 | Source | Markets | Auth | Role |
 |--------|---------|------|------|
+| `clickhouse` | A-share | none (self-hosted) | local ClickHouse warehouse — leads the A-share chain (T-1 full history, zero IP exposure); falls through to the network chain when unreachable |
 | `tencent` | A-share + HK | none | never IP-banned |
 | `mootdx` | A 股（仅显式指定） | none | 2026-10 移出默认链：TDX 服务器不再响应其客户端协议（#1729） |
 | `eastmoney` | A / US / HK | none | OHLCV + deep fundamentals & flow tools (throttled) |
@@ -526,7 +527,7 @@ vibe-trading connector install /tmp/my-broker
 
 **Fallback 链（按被封 IP 风险排序）：**
 
-- **A股** → `tencent` · `eastmoney` · `baostock` · `akshare` · `tushare` · `gildata` · `local`
+- **A股** → `clickhouse` · `tencent` · `eastmoney` · `baostock` · `akshare` · `tushare` · `gildata` · `local`
 - **美股** → `yahoo` · `stooq` · `sina` · `eastmoney` · `yfinance` · `tiingo` · `fmp` · `finnhub` · `alphavantage` · `longbridge` · `akshare` · `local`
 - **港股** → `tencent` · `eastmoney` · `yahoo` · `futu` · `akshare` · `yfinance` · `tushare` · `longbridge` · `gildata` · `local`
 - **印度（NSE/BSE）** → `yahoo` · `yfinance` · `india_broker` · `local`
@@ -1772,7 +1773,7 @@ Vibe-Trading/
 │   │
 │   └── backtest/                   # 回测引擎
 │       ├── engines/                #   10 个引擎 + 跨市场 composite 引擎 + options_portfolio
-│       ├── loaders/                #   29 个数据源：tushare、okx、nobitex、wallex、binance、yfinance、akshare、baostock、tencent、mootdx、ccxt、futu、pykrx、local、eastmoney、sina、stooq、yahoo、finnhub、alphavantage、tiingo、fmp、longbridge、mt5、qveris、india_broker、tickerall、gildata, b3_cotahist
+│       ├── loaders/                #   30 个数据源：clickhouse、tushare、okx、nobitex、wallex、binance、yfinance、akshare、baostock、tencent、mootdx、ccxt、futu、pykrx、local、eastmoney、sina、stooq、yahoo、finnhub、alphavantage、tiingo、fmp、longbridge、mt5、qveris、india_broker、tickerall、gildata, b3_cotahist
 │       │   ├── base.py             #   DataLoader Protocol
 │       │   └── registry.py         #   Registry + 自动 fallback 链路
 │       └── optimizers/             #   MVO、equal vol、max div、risk parity

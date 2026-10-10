@@ -19,7 +19,9 @@ qveris_search / qveris_inspect / qveris_execute),
 institutional-research and alternative data (get_institutional_holdings /
 etf_holdings / prediction_market / research_papers), read-only finance math and
 market analytics (quantlib_call / cashflow_performance / orderbook_depth /
-sentiment / technical_indicators / get_fundamentals), read-only
+sentiment / technical_indicators / get_fundamentals), the constrained
+ClickHouse flexibility channel (ch_list_tables / ch_describe_table / ch_query,
+guarded read-only SELECTs over the dedicated llm_role credentials), read-only
 trading-connector reads, swarm orchestration, trade-journal and shadow-account
 analysis. Every exposed tool is read-only or research-only except
 refresh_strategy_evidence, which writes ONLY the disposable facade-owned
@@ -2888,6 +2890,11 @@ _MIRRORED_TOOL_SOURCES = (
     ("src.tools.sentiment_tool", "SentimentTool"),
     ("src.tools.technical_indicator_tool", "TechnicalIndicatorTool"),
     ("src.tools.get_fundamentals_tool", "GetFundamentalsTool"),
+    # ClickHouse semantic-layer flexibility channel (Phase 2): Catalog →
+    # Inspect → constrained Execute over the read-only llm_role credentials.
+    ("src.tools.clickhouse_explore_tools", "ChListTablesTool"),
+    ("src.tools.clickhouse_explore_tools", "ChDescribeTableTool"),
+    ("src.tools.clickhouse_query_tool", "ChQueryTool"),
 )
 
 
