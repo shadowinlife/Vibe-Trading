@@ -4,7 +4,7 @@ description: mymain 分支持久知识库的人类入口；agent 请走 AGENTS.m
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-09-27
+updated: 2026-10-10
 tags: [index]
 ---
 
