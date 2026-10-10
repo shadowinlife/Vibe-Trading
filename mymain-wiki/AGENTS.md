@@ -4,7 +4,7 @@ description: mymain 分支持久知识库的路由层与使用协议：任务/�
 type: index
 status: active
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-10-10
 tags: [index, routing, mymain]
 related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 ---

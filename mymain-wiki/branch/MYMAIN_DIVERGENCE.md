@@ -4,7 +4,7 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F8
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-09-27
+updated: 2026-10-10
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -43,10 +43,16 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | 本地"读时容忍"无后缀条目（`_is_category_entry`） | 被上游 `recover_extensionless_entries()` 孤儿恢复取代，对齐时主动移除 |
 | 本地 routed 命名 `<category>/{type}_{slug}.md` | 采纳上游 `<category>/<slug>.md`（上游 pin 测试明确排除本地方案） |
 | A 股 volume 单位不一致（#1062）Phase 1/2 修复 | shadowinlife PR #1065（loader 按 market 声明 `volume_units` + `_provenance.volume_unit`）与 PR #1067（baostock 股→手归一化 + 跨源一致性测试 + 缓存 v3→v4）于 2026-08-11 合入上游；mymain 经 2026-08-17 对齐继承 |
+| FE-1 R1 backtest 结构化 summary + R2 `read_run_artifact` | shadowinlife PR [#1646](https://github.com/HKUDS/Vibe-Trading/pull/1646)/[#1647](https://github.com/HKUDS/Vibe-Trading/pull/1647) 于 **2026-10-04 合入上游**（R2 为 manifest 驱动版）；mymain 经 2026-10-10 对齐按「上游机制优先」切换：`backtest_summary.py`/`run_artifact_tool.py`/`backtest_tool.py` 采上游版，本地仅存 R5' 增量（progress.json sidecar + 心跳 wrapper + `progress` 别名超集），见 §2.3 ⑧ 销账记录 |
+| 北向 tushare fallback 单位与语义（#1481/#1484） | shadowinlife PR [#1484](https://github.com/HKUDS/Vibe-Trading/pull/1484) 合入上游：tushare `moneyflow_hsgt` 原生单位=**百万元**（经 HKEX 官方 Stock Connect 统计逐位交叉验证），2024-08-19 披露改革后为**成交额语义**（turnover_* 字段、净额字段置 null）。本地 P1.4「万元」判定系误读换手时代值，2026-10-10 对齐轮修正 CH 语义层（comments.yaml/clickhouse_units/clickhouse_fallbacks 全套切换百万口径 + 边界逻辑，与上游 tushare 路径同契约） |
+| 南向资金工具 | 本地 feat/southbound-flow-tool 分支经 PR [#1486](https://github.com/HKUDS/Vibe-Trading/pull/1486) 合入上游（`get_southbound_flow`，Eastmoney 百万 HKD 缩放修复）；mymain 经本轮对齐继承，无需本地实现 |
+| mootdx 退出默认 A 股链（#1729/#1730） | 上游裁决：TDX 服务器不再响应 mootdx/tdxpy 客户端协议，loader 保留注册仅供显式 `source="mootdx"`；本地 clickhouse-led 链随上游收敛为**八源排列**（clickhouse · tencent · eastmoney · baostock · akshare · tushare · gildata · local） |
 
 **2026-08-11 核查结论**：上游自 `6c44732` 前进 120 commit（v0.1.13 发布），逐项核对 F1–F5 均**未被上游取代**——上游本轮新增能力（quantlib_call / alpha zoo MCP 工具 / 机构持仓 / ETF 穿透 / 预测市场 / 论文检索 / 加拿大市场 / eToro / 桌面端等）与本地五项能力无重叠；本地 F4 的 `_default_memory_base()` 继续复用上游共享基础设施 `get_runtime_root()`，F5 沿用上游 loader 注册模式（`VALID_SOURCES` + `_loader_modules` + `FALLBACK_CHAINS`），无重复实现需要移除。
 
 **2026-08-17 核查结论**：上游自 `1bf1d8b4` 前进 144 commit（tickerall 数据源、Options Lab / tearsheet / factor research panel、Copilot SDK / Novita provider、桌面端加固、reasoning effort 全 provider 贯通、grounding recovery 等），逐项核对 F1–F5 与语义层均**未被上游取代**——上游对 reflections / mcp_adapter / memory_guard / memory-lifecycle / backtest_tool 零触碰，MCP 面零新增工具注册，与 ClickHouse 无重叠；上游唯一 memory 提交 `fdb4cdd9`（FTS5 tokenizer 下限对齐）与 F4 不同关注面，自动合并共存。本轮合入上游的 shadowinlife PR（#1065 / #1067 volume 修复、#1091 tearsheet、#1096 Options Lab、#1099 factor research panel）均来自独立 feature 分支，与 mymain 本地 commit 无交集。计数随本轮对齐更新：数据源 25→26（上游 tickerall + 本地 clickhouse）、skills 维持 90、MCP 维持上游基数 70（本分支含 3 个 ch_* 语义层工具为 73/78）。
+
+**2026-10-10 核查结论**：上游自 `9a27a6e7` 前进 **253 commit**（v0.1.16 后开发段至 `b1f6ce71`：十三 PR 正确性批次、options/causal 定价修复、channel 热更新与 URL userinfo 系列、mootdx 退役、KIS/grounding/PDF 加密等），逐项核对 F1–F5/F7 均**未被上游取代**——上游对 reflections/mcp_adapter/memory_guard/memory-lifecycle/clickhouse 面零触碰；FE-1 R1/R2 被上游吸收（#1646/#1647，见上表）并按「上游机制优先」完成本地调和；本地北向 CH 路径切换上游 #1484 百万 CNY 契约。计数随本轮对齐更新：MCP 上游基数 **76**（本分支 OFF=**80** / ON=**85**）、agent tools 上游 **109**（本分支 **113** = +3 ch_* +1 get_valuation）、skills 91（上游 90 + memory-lifecycle）、数据源 29（上游 28 + clickhouse）。
 
 ### 2.3 上游贡献队列（含代码点，按依赖序逐步推入以缩小分歧）
 
@@ -59,7 +65,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **⑤ F4 中间件部分** | MemoryGuard | `memory_guard.py` 整文件新增；`mcp_server.py` 注册段 | **必须先解决 D1（加 env 门控开关）与 D2（dedup/增长）**，否则过不了社区评审 |
 | **⑥ 领域子代理层**（issue #1267 piece 2+3） | load_skill 技能白名单修复 + 内置 agent 子代理委派层 | **已提交 PR [#1286](https://github.com/HKUDS/Vibe-Trading/pull/1286)（Draft，2026-08-31）**：`feat/domain-subagents` 分支基于上游 899d3c75；commit 1 = load_skill allowlist（可独立 cherry-pick），commit 2 = `src/specialists/` 包（12 准入定义）+ `delegate_to_specialist` + `VIBE_TRADING_SPECIALISTS_ENABLED` 门控（默认关）；全量套件 11694 通过；2026-08-31 评审发现 B1-B5 并已修复推送（commit 范围 38e04d88..5a26eacc）；PR 维持 Draft 待 #1267 方向确认；**2026-09-04 specialist-arch-iter2 完成本地 E2E 量化验证**：pr1286-fix 三个修复 commit（quantlib_call 留主面 + 直算例外 + 反拼凑、无主工具划归批 A/B，本地未推送）+ 全量重跑，冻结门槛 G1-G6 = 4 PASS / 1 FAIL（G4 唯一违规 = valuation-zh-1「取数前置计算」盲区），超时对 45→19，详见 §5 2026-09-04 迭代笔记 | **已终结（2026-09-06 iter3 终局：built-in loop 移植放弃，PR #1286 已关闭，见 §5）**；2026-09-27 本分支 OpencodeAgent 的 12 领域子代理层亦经验证裁决回退（opencode 子代理与 built-in loop 移植是两套机制，前者曾于 D 批生产落地，本轮一并回退，见 §5 2026-09-27 条） |
 | **⑦ F8 上游候选（随引擎桥线移出）** | 引擎桥外围三件（桥本体不回流——上游无 opencode 引擎形态）；2026-09-27 起 ①③ 归 `mymain-engine-bridge` 线所有，② wrapper 已留存本分支可独立提 PR | ① SessionService Protocol 抽取（D6 契约面，落 `src/session/` 保护区）；② `scheduled_research` MCP wrapper——**已落地本分支**（T13，现功能 commit `feat(tools): scheduled_research reaches the MCP surface`：78/83、eval 地板逐位持平、confirm 流复活），上游提交=独立 PR 候选；③ ChannelRuntime `_streamed` 原生修复（T9 FINDINGS #3：runtime 终态消息缺 `_streamed`/`origin_message_id`，流式开启时编辑型适配器双重回答——桥侧已用一次性 tagger 缓解，原生修复落 `channels/` 冻结面） | 三件彼此独立可分离提交；① 需保护区事先讨论（上游 PR 模板约束）；③ 需 channels/ 冻结解除；② 冻结预检已裁决 LAPSED（T13 FREEZE_CHECK 8 引用），随时可提 |
-| **⑧ FE-1 R1/R2（已提交上游，2026-10-01）** | backtest 结构化 summary（R1/R4）+ `read_run_artifact` manifest 驱动产物读取器（R2） | R1：`backtest_summary.py` 整文件 + `backtest_tool.py` 信封加法段 + mcp_server backtest 描述段（carve 时剔除本地 auto-reflect 钩子与 FE-1 内部引用）；R2：`run_artifact_tool.py` 整文件**升级为 manifest 驱动**（信任锚 = run_card artifacts 清单 path+sha256+size_bytes；别名层保留；非别名路径仅 manifest 列出才放行；manifest 条目自身防篡改验证；`progress` 条目剔除——本地 R5' 特有）+ mcp_server wrapper + 上游七份 README/SKILL 计数（MCP 74→75、agent tools 107→108） | Issue [#1644](https://github.com/HKUDS/Vibe-Trading/issues/1644)/[#1645](https://github.com/HKUDS/Vibe-Trading/issues/1645) + **Draft PR [#1646](https://github.com/HKUDS/Vibe-Trading/pull/1646)/[#1647](https://github.com/HKUDS/Vibe-Trading/pull/1647)**（基于 origin/main `18027a0c`；DCO 单 commit、零 AI trailer；R1 25+132 测试绿、R2 44+176 测试绿 + 计数冒烟 75）。**合入后销账并调和本地**：本地 R2 为枚举白名单版（含 progress），上游为 manifest 版——对齐轮按「上游机制优先」切换本地到 manifest 版并补 progress 进 manifest 或保留本地别名超集 |
+| **⑧ FE-1 R1/R2（已提交上游，2026-10-01）** | backtest 结构化 summary（R1/R4）+ `read_run_artifact` manifest 驱动产物读取器（R2） | R1：`backtest_summary.py` 整文件 + `backtest_tool.py` 信封加法段 + mcp_server backtest 描述段（carve 时剔除本地 auto-reflect 钩子与 FE-1 内部引用）；R2：`run_artifact_tool.py` 整文件**升级为 manifest 驱动**（信任锚 = run_card artifacts 清单 path+sha256+size_bytes；别名层保留；非别名路径仅 manifest 列出才放行；manifest 条目自身防篡改验证；`progress` 条目剔除——本地 R5' 特有）+ mcp_server wrapper + 上游七份 README/SKILL 计数（MCP 74→75、agent tools 107→108） | Issue [#1644](https://github.com/HKUDS/Vibe-Trading/issues/1644)/[#1645](https://github.com/HKUDS/Vibe-Trading/issues/1645) + **Draft PR [#1646](https://github.com/HKUDS/Vibe-Trading/pull/1646)/[#1647](https://github.com/HKUDS/Vibe-Trading/pull/1647)**（基于 origin/main `18027a0c`；DCO 单 commit、零 AI trailer；R1 25+132 测试绿、R2 44+176 测试绿 + 计数冒烟 75）。**已合入销账（2026-10-04 双 PR merged；2026-10-10 对齐轮完成本地调和）**：按「上游机制优先」切换本地到上游 manifest 版（backtest_summary/run_artifact_tool/backtest_tool 三文件采上游版，含路径收容检查、structured_metrics/validation 字段、_serialize_result 预算收缩），本地仅存 R5' 增量：progress.json sidecar（writer+runner 集成）+ MCP backtest 心跳 wrapper + `progress` 别名超集（裁决=保留别名层而非进 manifest——sidecar 运行中可变、与 run_card 同类走别名；上游 pin `progress not in description` 在本地翻转为 `in`，带分歧标记注释）。现存本地 commit：`feat(tools): FE-1 local deltas — progress sidecar, heartbeat, artifact alias` |
 | ✗ F5 | ClickHouse | — | 暂不回流（个人部署独有） |
 
 ### 2.4 已知上游缺陷（mymain 跟踪）
@@ -75,12 +81,12 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 ### 3.1 测试套件与静态门禁（conda env `legonanobot`，macOS arm64 / Python 3.12）
 
 ```bash
-# memory 套件（含上游孤儿恢复/GC/pin 测试与上游新增 FTS5 衰减/tokenizer/hierarchy 修复测试）——基线 333 passed / 3 skipped（2026-09-30 对齐轮，+17 为上游新增）
+# memory 套件（含上游孤儿恢复/GC/pin 测试与上游新增 FTS5 衰减/tokenizer/hierarchy 修复测试）——基线 367 passed / 2 skipped（2026-10-10 对齐轮，+34 为上游新增）
 python -m pytest agent/tests/memory/ agent/tests/test_persistent_memory.py \
   agent/tests/test_memory_orphan_recovery.py agent/tests/test_memory_gc.py \
   agent/tests/test_env_schema.py -q
 
-# ClickHouse 套件（F5 原始 3 文件 + 语义层 Phase 0–2 测试）——基线 137 passed / 11 skipped（skip = 需真实 CH 连接）
+# ClickHouse 套件（F5 原始 3 文件 + 语义层 Phase 0–2 测试）——基线 137 passed / 11 skipped（skip = 需真实 CH 连接；2026-10-10 对齐轮持平，含 #1484 百万 CNY 契约新测试）
 python -m pytest agent/tests/test_clickhouse_loader.py \
   agent/tests/test_clickhouse_fundamentals.py agent/tests/test_clickhouse_flow.py \
   agent/tests/test_clickhouse_anchor.py agent/tests/test_clickhouse_query_guard.py \
@@ -88,15 +94,15 @@ python -m pytest agent/tests/test_clickhouse_loader.py \
   agent/tests/test_clickhouse_units.py agent/tests/test_tushare_fallbacks.py \
   agent/tests/test_valuation_tool.py -q
 
-# ClickHouse schema 门禁（DDL 导出/注释门禁单测 + comments.yaml 覆盖门禁）——基线 53 passed / 1 skipped / exit 0
+# ClickHouse schema 门禁（DDL 导出/注释门禁单测 + comments.yaml 覆盖门禁）——基线 54 passed / exit 0（2026-10-10 对齐轮）
 python -m pytest tools/test_ci_clickhouse_comments_gate.py \
   tools/test_clickhouse_apply_comments.py tools/test_clickhouse_export_ddl.py -q
 python tools/ci_clickhouse_comments_gate.py
 
-# README/SKILL.md 计数门禁——基线 122 passed（2026-09-30 对齐轮，+7 为上游新增 pin；七份 README + manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
+# README/SKILL.md 计数门禁——基线 122 passed（2026-10-10 对齐轮复验持平；七份 README + manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
 python -m pytest agent/tests/test_readme_counts.py agent/tests/test_distribution_skill_manifest.py -q
 
-# env-var AST 门禁——基线 exit 0（3 条 WARN 来自上游 llm.py，与本分支无关）
+# env-var AST 门禁——基线 exit 0（4 条 WARN 来自上游 llm.py，与本分支无关）
 python tools/ci_env_var_gate.py
 
 # 延迟基准（默认跳过，显式运行）
@@ -106,7 +112,7 @@ python -m pytest agent/tests/memory/test_latency_bench.py -m bench
 ### 3.2 端到端冒烟（本地）
 
 ```bash
-# MCP 工具计数门控：OFF=78 / ON=83（上游基数 74 + 本分支 3 个 ch_* 语义层工具 + 1 个 scheduled_research wrapper + 5 个 memory_* 工具；上游基数于 5e9ffd1a 实测仍为 74）
+# MCP 工具计数门控：OFF=80 / ON=85（上游基数 76（含已吸收的 read_run_artifact）+ 本分支 3 个 ch_* 语义层工具 + 1 个 scheduled_research wrapper + 5 个 memory_* 工具；上游基数于 b1f6ce71 实测为 76）
 cd agent
 python -c "import asyncio, mcp_server; print(len(asyncio.run(mcp_server.mcp.list_tools())))"
 VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.run(mcp_server.mcp.list_tools())))"
@@ -119,7 +125,7 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 #   成功后数秒内 <runtime_root>/memory/reflections/<策略类型>.jsonl 应新增一条课程
 
 # ClickHouse 联邦取数（CH 可达时）：get_market_data 拉取 000001.SZ，
-#   日志应显示 clickhouse 命中；断开 CH 后应静默回退 tencent/mootdx 网络链
+#   日志应显示 clickhouse 命中；断开 CH 后应静默回退 tencent/eastmoney 网络链（mootdx 已随上游 #1729 退出默认链）
 ```
 
 ### 3.3 远端登录与接入方式
@@ -152,7 +158,7 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 
 ### 4.3 上游 pin 测试带来的持续义务
 
-- **README/SKILL.md 计数**（`test_readme_counts.py`、`test_distribution_skill_manifest.py`）：每增删一个 skill / loader / MCP 顶层工具，必须同步**七份** README（上游 2026-09 新增 README_id.md 印尼语版）+ `agent/SKILL.md` 计数（当前：skills=91、Tool 类=11、sources=29（上游 28 + clickhouse）、本分支 MCP 头注释 78/83、SKILL.md `Available MCP Tools (78)` 与 `Finance Skills (91)` 小节标题）。注：上游 `test_readme_counts.py` 的 READMES 元组现已锚定**全部七份**（en/zh/ja/ko/ar/es/id），翻译滞后不再被容忍——本地增量（clickhouse 行、ch_*/scheduled_research 工具清单、计数）必须同步进每一份。
+- **README/SKILL.md 计数**（`test_readme_counts.py`、`test_distribution_skill_manifest.py`）：每增删一个 skill / loader / MCP 顶层工具，必须同步**七份** README（上游 2026-09 新增 README_id.md 印尼语版）+ `agent/SKILL.md` 计数（当前：skills=91、Tool 类=11、sources=29（上游 28 + clickhouse）、本分支 MCP 头注释 80/85、SKILL.md `Available MCP Tools (80)` 与 `Finance Skills (91)` 小节标题、README 树行 agent tools=113（上游 109 + 3 ch_* + 1 get_valuation）与 mcp_server.py 树行=80）。注：上游 `test_readme_counts.py` 的 READMES 元组现已锚定**全部七份**（en/zh/ja/ko/ar/es/id），翻译滞后不再被容忍——本地增量（clickhouse 行、ch_*/scheduled_research 工具清单、计数）必须同步进每一份。
 - **命名一致性**（`test_recovered_orphan_and_new_write_agree_on_the_same_path`）：routed 条目命名保持 `<category>/<slug>.md`，不得改回带类型前缀方案。
 - **env-var AST 门禁**（`tools/ci_env_var_gate.py`）：新增环境变量必须声明进 `env_schema.py` 并经 config accessor 读取，禁止裸 `os.getenv` / `os.environ`。
 
@@ -429,3 +435,16 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - **镜像交付**：`opencode-serve:v3.3.0-mymain`（linux/amd64，4.04GB，31 层，digest `sha256:e780e299…`）推送 spark 交付仓库，远端 manifest inspect 通过。冒烟两段全 PASS，脚本**入库** `OpencodeAgent/tests/smoke-v330.sh`（补 v3.2.0 "E2E 脚本仅在 /tmp" 遗留）：Stage1 = render/TIMEOUT/TOOLOUTPUT/DENY 三组/COUNT 84+新工具在场/AGENTS 79・84/FUNC 合成 run 实测新工具（amd64 运行时证明）；Stage2 = 真 entrypoint **HEALTH_OK ~10s**（1.18.18 接受新配置键实证）。**首次构建 pip 层失败**（aliyun 镜像 QEMU 下读超时 @1085s，`--no-cache-dir` 无残留）→ `ed0160dd` pip 配置加固后二次成功。
 - **FE 移交**：交付通报落 aliyun-acs-agent-service `docs/iterations/fe-1-vt-backend-delivery.md`（N1-N4 事实 + R5 验收修订 + 契约速查 + 行动项；该仓有用户 WIP，文件未提交由用户处置）。**E2E 必须以 v3.3.0 执行**（v3.2.0：>60s 回测必超时 N1 + run_card 0.1 触发 parseRunCard 降级 N4）。
 - **遗留**：① flash 轻量档解析复核（v3.1/v3.2 遗留仍有效）② R3 键名统一如 FE 强诉求走上游 RFC ③ progress.json 带外消费（RM 直读推前端）归 FE-2 ④ **R1/R2 为通用增量、上游贡献候选**（§2.3 队列待用户裁决；提交前需过 root AGENTS.md §6 约束文件全清单）。
+
+### 2026-10-10 merge + carve 对齐（基线 `b1f6ce71`，253 commit）——FE-1 销账 + CH 北向单位修正
+
+- **动机**：root AGENTS.md §8.1 周期对齐义务；上游自 `9a27a6e7` 前进 253 commit（v0.1.16 后开发段：十三 PR 正确性批次、causal option pricing/channel refresh/market routing 修复、mootdx 退役 #1730、channel 热更新 #1737/#1738、KIS SOR/grounding/PDF 加密等），且本地 FE-1 R1/R2 已合入上游（#1646/#1647，2026-10-04）需按队列⑧条款销账调和。
+- **做法**：merge + carve（上轮同款，适合上游推进大/共享文件多的轮次）。temp 分支 `git merge mymain` 一次解 20 文件冲突得目标树 → 从 origin/main 逐 feature 切 9 个干净 commit（F1/F2/F3/F4/F5/scheduled_research/FE-1 delta/F7/wiki）→ `git diff temp mymain-aligned` = **0 行（逐字节一致）**。单一作者、9/9 DCO、零 AI trailer。
+- **关键裁决**：
+  1. **FE-1 上游机制优先**：backtest_summary/run_artifact_tool/backtest_tool 采上游 manifest 驱动版（含 `_contained` 路径收容、structured_metrics/validation、`_serialize_result` 预算收缩）；本地仅存 R5' 增量（progress sidecar + 心跳 wrapper + `progress` 别名超集）。上游 pin `"progress" not in description` 本地翻转为 `in`（带分歧标记注释，防未来对齐轮误改回）。
+  2. **CH 北向单位修正（数据正确性）**：本地 P1.4「万元」契约被上游 #1484 推翻——#1484 经 HKEX 官方统计**逐位**交叉验证 tushare 原生单位=百万元，且 2024-08-19 后为成交额语义；P1.4 的 2026-08-12「实测」把换手时代值 375048.34 误读为净额数量级（375048.34 百万 = 3750 亿 ≈ 换手日量级 ✓）。修正面：clickhouse_units（NORTHBOUND_RAW_MILLION=10⁶ 断言 + `northbound_raw_to_million_factor()`）、clickhouse_fallbacks（输出对齐上游信封：unit=CNY million + note + turnover_* 边界字段，boundary/note 从 tushare_fallbacks 导入防漂移）、comments.yaml 六列标注、三个测试文件（含双时代覆盖）。
+  3. **mootdx 退役随上游**：A 股链收敛为八源排列（clickhouse 领先），三处测试 fixture 同步（test_market_data/test_source_order_overrides/test_settings_api）。
+  4. **northbound_tool 合并**：上游 dead-feed 短路（#1481）+ 本地 CH-first 块共存（自动合并成功，语义正交）。
+- **计数**：MCP OFF **78→80** / ON **83→85**（上游基数 74→76：read_run_artifact +1、上游本窗口新增 +1）；agent tools 树行 **112→113**（上游 109 + ch_* 3 + get_valuation 1）；skills 91 / sources 29 / engines 10 维持。
+- **验证基线（全绿，legonanobot）**：memory **367/2**（+34 上游新增）、ClickHouse **137/11**（持平，含 #1484 新契约测试）、CH schema 门禁 **54 + exit 0**、README/manifest pin **122**、env gate **exit 0**（4 WARN 均上游 llm.py）、FE-1+合并面聚焦 **263**、MCP 计数冒烟 **80/85**。
+- **过程事故记录（供下轮借鉴）**：① 首轮 carve 脚本 `git checkout -B` 被未暂存改动（pin 翻转编辑未提交）阻挡且 `| tail -1` 吞掉报错，`&& echo` 结构使 set -e 失效，8 个 commit 落错分支——`reset --hard` 时又冲掉了该未提交编辑，靠门禁复跑抓回；教训：carve 前必须 `git status` 清零 + 脚本禁用 `cmd && echo` 模式 + 校验分支实际存在。② README 树行计数首估 112 漏了 get_valuation，被 pin 门禁当场纠正为 113——计数一律以门禁实测为准，不手算。
