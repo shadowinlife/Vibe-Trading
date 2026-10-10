@@ -51,6 +51,7 @@ from backtest.engines._market_hooks import (  # noqa: F401  (re-exported)
     hk_counter_currency,
     strip_local_prefix,
 )
+from backtest.progress import write_progress
 from backtest.rebalance_mask import RebalanceMask, validate_rebalance_mask
 
 logger = logging.getLogger(__name__)
@@ -1188,10 +1189,48 @@ def _maybe_inject_fundamentals_for_factor_panel(
 
 # --- Main entry ---
 
+class _StageProgress:
+    """Stage tracker writing best-effort ``progress.json`` snapshots.
+
+    Remembers the last reported percentage so a failure path can mark the run
+    ``failed`` while keeping the pct of the stage it died in — a reader then
+    sees how far the run got, not just that it stopped. Every write goes
+    through :func:`backtest.progress.write_progress`, which never raises, so
+    progress reporting cannot change runner behavior.
+
+    Args:
+        run_dir: Validated run directory receiving ``progress.json``.
+    """
+
+    def __init__(self, run_dir: Path) -> None:
+        self._run_dir = run_dir
+        self._pct = 0.0
+
+    def mark(self, stage: str, pct: float) -> None:
+        """Record a stage boundary and publish the snapshot.
+
+        Args:
+            stage: Stage label, e.g. ``"data_load"``.
+            pct: Completion percentage at this boundary.
+        """
+        self._pct = pct
+        write_progress(self._run_dir, stage, pct)
+
+    def fail(self) -> None:
+        """Mark the run ``failed``, keeping the last reported percentage."""
+        write_progress(self._run_dir, "failed", self._pct)
+
+
 def main(run_dir: Path) -> None:
     """Load config, fetch data, run the selected backtest engine.
 
     With ``source="auto"``, routes each code through the appropriate loader.
+
+    Stage boundaries are published to ``<run_dir>/progress.json`` (see
+    :mod:`backtest.progress`): ``validate``(5), ``signal``(15),
+    ``data_load``(30), ``simulate``(50), then the engine's own
+    ``matching``/``metrics``/``artifacts`` stages, ``done``(100) on success or
+    ``failed`` (last pct kept) on any error path.
 
     Args:
         run_dir: Run directory containing ``config.json`` and ``code/signal_engine.py``.
@@ -1223,9 +1262,36 @@ def main(run_dir: Path) -> None:
     try:
         run_dir = safe_run_dir(str(run_dir))
     except ValueError as exc:
+        # No progress is written for a rejected run_dir: the path never
+        # passed the whitelist, so nothing may be written to it.
         print(json.dumps({"error": str(exc)}))
         sys.exit(1)
 
+    progress = _StageProgress(run_dir)
+    try:
+        _execute_stages(run_dir, progress)
+    except BaseException:
+        # Every error path — a raised exception, or an error envelope followed
+        # by sys.exit(1) (SystemExit) — marks the run failed with the last
+        # stage pct kept, then propagates unchanged so the subprocess exit
+        # code and stdout envelope are exactly what they were before.
+        progress.fail()
+        raise
+    progress.mark("done", 100.0)
+
+
+def _execute_stages(run_dir: Path, progress: _StageProgress) -> None:
+    """Run the config → signal → data → engine pipeline with stage marks.
+
+    Extracted from :func:`main` so its failure wrapper covers every error
+    path with one ``failed`` mark. Behavior is identical to the previous
+    inline body: the same envelopes are printed and the same ``sys.exit(1)``
+    calls are made.
+
+    Args:
+        run_dir: Validated run directory.
+        progress: Stage tracker publishing ``progress.json`` snapshots.
+    """
     config_path = run_dir / "config.json"
     if not config_path.exists():
         print(json.dumps({"error": "config.json not found"}))
@@ -1240,6 +1306,7 @@ def main(run_dir: Path) -> None:
         errors = str(exc)
         print(json.dumps({"error": f"Invalid config: {errors}"}))
         sys.exit(1)
+    progress.mark("validate", 5.0)
 
     config = raw_config
     source = config.get("source", "tushare")
@@ -1270,6 +1337,7 @@ def main(run_dir: Path) -> None:
     except ValueError as exc:
         print(json.dumps({"error": f"SignalEngine interface error: {exc}"}))
         sys.exit(1)
+    progress.mark("signal", 15.0)
 
     fetch_result = fetch_data_map(config)
     data_map = fetch_result.data_map
@@ -1285,6 +1353,7 @@ def main(run_dir: Path) -> None:
         print(json.dumps({"error": "No data fetched"}))
         sys.exit(1)
     data_map = _maybe_inject_fundamentals_for_factor_panel(data_map, config)
+    progress.mark("data_load", 30.0)
 
     # Engine
     engine_type = config.get("engine", "daily")
@@ -1309,6 +1378,7 @@ def main(run_dir: Path) -> None:
     # aligned with the data consumed by the engine.
     loader = _AutoLoader(data_map)
 
+    progress.mark("simulate", 50.0)
     if engine_type == "options":
         from backtest.engines.options_portfolio import run_options_backtest
         run_options_backtest(config, loader, signal_engine, run_dir, bars_per_year=bars_per_year)

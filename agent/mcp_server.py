@@ -989,9 +989,59 @@ _register_memory_guard()
 # Backtest tool
 # ---------------------------------------------------------------------------
 
+# Production backtests take minutes, while MCP clients bound a single
+# tools/call by a request timeout (the TypeScript SDK default is 60s). Clients
+# that opt into progress notifications — opencode registers an empty
+# ``onprogress`` handler with ``resetTimeoutOnProgress: true`` — reset that
+# timeout on every notification, so a heartbeat every 20s keeps a long run
+# alive with a 3x margin. The notification content is discarded by such
+# clients; only its arrival matters.
+_BACKTEST_HEARTBEAT_SECONDS = 20
+
+
+async def _backtest_impl(run_dir: str, ctx: Context | None = None) -> str:
+    """Run the blocking backtest in a worker thread with progress heartbeats.
+
+    Kept as a module-level coroutine so the heartbeat loop is testable
+    independently of the FastMCP registration layer.
+
+    Args:
+        run_dir: Path to the run directory containing config.json and code/.
+        ctx: FastMCP request context. When present, a progress notification
+            carrying the elapsed seconds is sent every
+            ``_BACKTEST_HEARTBEAT_SECONDS`` until the run finishes;
+            ``Context.report_progress`` is a verified no-op when the client
+            sent no progress token. When ``None``, the run is simply awaited.
+
+    Returns:
+        The JSON envelope produced by ``run_backtest``.
+    """
+    import asyncio
+    import time
+
+    from src.tools.backtest_tool import run_backtest
+
+    # Successful runs auto-reflect inside run_backtest (see
+    # src.memory.reflections), covering both this MCP entry path and the
+    # in-process BacktestTool path without double-appending lessons.
+    if ctx is None:
+        return await asyncio.to_thread(run_backtest, run_dir)
+
+    task = asyncio.create_task(asyncio.to_thread(run_backtest, run_dir))
+    started = time.monotonic()
+    while True:
+        done, _pending = await asyncio.wait({task}, timeout=_BACKTEST_HEARTBEAT_SECONDS)
+        if done:
+            break
+        elapsed = time.monotonic() - started
+        await ctx.report_progress(
+            elapsed, None, message=f"backtest running ({elapsed:.0f}s elapsed)"
+        )
+    return task.result()
+
 
 @mcp.tool
-def backtest(run_dir: str) -> str:
+async def backtest(run_dir: str, ctx: Context | None = None) -> str:
     """Run a vectorized backtest using config.json and code/signal_engine.py.
 
     The run_dir must contain:
@@ -1017,12 +1067,7 @@ def backtest(run_dir: str) -> str:
     Args:
         run_dir: Path to the run directory containing config.json and code/.
     """
-    from src.tools.backtest_tool import run_backtest
-
-    # Successful runs auto-reflect inside run_backtest (see
-    # src.memory.reflections), covering both this MCP entry path and the
-    # in-process BacktestTool path without double-appending lessons.
-    return run_backtest(run_dir)
+    return await _backtest_impl(run_dir, ctx)
 
 
 # ---------------------------------------------------------------------------
@@ -1413,12 +1458,12 @@ def read_run_artifact(
 
     Artifacts: friendly aliases ``equity``, ``trades``, ``metrics``,
     ``positions``, ``target_positions`` (CSVs under ``<run_dir>/artifacts/``),
-    ``ohlcv:<CODE>`` (e.g. ``ohlcv:600519.SH``) and ``run_card`` — plus any
-    run_dir-relative ``.csv``/``.json`` path listed in the run's
-    ``run_card.json`` artifacts manifest (e.g. ``artifacts/validation.json``).
-    The manifest is the trust anchor: a relative path it does not list is
-    refused, and a manifest entry pointing outside the run directory is never
-    followed.
+    ``ohlcv:<CODE>`` (e.g. ``ohlcv:600519.SH``), ``run_card`` and
+    ``progress`` (JSON sidecars) — plus any run_dir-relative ``.csv``/``.json``
+    path listed in the run's ``run_card.json`` artifacts manifest (e.g.
+    ``artifacts/validation.json``). The manifest is the trust anchor: a
+    relative path it does not list is refused, and a manifest entry pointing
+    outside the run directory is never followed.
 
     Formats:
 
