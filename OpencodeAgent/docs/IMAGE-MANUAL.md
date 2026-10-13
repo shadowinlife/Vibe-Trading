@@ -85,18 +85,18 @@
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│ opencode-serve:v3.2.0-mymain  (4.04GB)               │
+│ opencode-serve:v3.6.0-mymain  (3.99GB)               │
 │ ├── OMO plugin 预烘焙缓存 (~/.cache/opencode/packages,│
-│ │   oh-my-openagent@5.1.0, ~241MB) + models.json     │
+│ │   oh-my-openagent@5.1.30, ~241MB) + models.json    │
 │ ├── Vibe-Trading mymain (editable install)           │
 │ ├── 项目文件 (configs, skills, scripts)               │
 │ └── entrypoint.sh (渲染配置 + 后台预热)               │
 ├──────────────────────────────────────────────────────┤
-│ opencode-serve-base:latest  (3GB)                    │
+│ opencode-serve-base:latest  (2.98GB)                 │
 │ ├── Ubuntu 22.04                                     │
 │ ├── Python 3.12 (deadsnakes PPA)                     │
 │ ├── Node.js 20                                       │
-│ ├── OpenCode CLI (pin 1.18.18)                       │
+│ ├── OpenCode CLI (pin 1.19.0)                        │
 │ ├── playwright + chromium                            │
 │ └── pip 预装包 (plotly, ta, loguru, etc.)            │
 └──────────────────────────────────────────────────────┘
@@ -242,7 +242,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 
 | 变量 | 镜像默认 | 说明 |
 |------|--------|------|
-| `OMO_VERSION` | `5.1.0` | 预烘焙插件版本（构建 ARG 提升为 ENV）；升级需同步改 Dockerfile ARG 与 opencode.json.tmpl 后重建 |
+| `OMO_VERSION` | `5.1.30` | 预烘焙插件版本（构建 ARG 提升为 ENV）；升级需 Dockerfile ARG / opencode.json.tmpl / tui.json / entrypoint fallback **四处逐字一致**后重建 |
 | `OMO_DISABLE_POSTHOG` | `1` | 禁用 OMO PostHog 遥测（含每日 daily-active 打点） |
 | `OMO_SEND_ANONYMOUS_TELEMETRY` | `0` | 禁用 OMO 匿名遥测 |
 | `OPENCODE_DISABLE_MODELS_FETCH` | `1` | 禁用 models 目录后台刷新（目录已构建期固化于 `~/.cache/opencode/models.json`）；在线环境想恢复刷新，运行时覆盖为空值即可 |
@@ -288,7 +288,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 
 ### 6.5 工具载荷与超时上限（FE-1 R7 契约文档）
 
-前端 / Agent 消费 VT MCP 工具结果时存在三层独立的载荷上限（opencode 版本对应：本镜像 pin `opencode-ai@1.18.18`，行为经该版本源码核实）：
+前端 / Agent 消费 VT MCP 工具结果时存在三层独立的载荷上限（opencode 版本对应：本镜像 pin `opencode-ai@1.19.0`；下表 Truncate/超时行为经 1.18.18 源码核实，1.19.0 经 v3.6.0 冒烟 Stage2 实证启动接受同一配置键，跨版本语义未逐行复核）：
 
 | 层 | 上限 | 超限行为 | 配置位置 |
 |---|---|---|---|
@@ -296,7 +296,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 | ② opencode Truncate（**所有** MCP 工具结果统一过此层） | opencode 默认 2,000 行 / 50KB；**本镜像提升为 8,000 行 / 256KB** | 全文写盘到 opencode truncation 目录，模型与前端 SSE 只收到前缀预览 + `metadata.truncated/outputPath`——**JSON 会被拦腰截断**，因此 VT 侧大载荷工具自带更低的③层预算 | `opencode.json` 顶层 `tool_output.{max_lines,max_bytes}`（本镜像 tmpl 已配置并有单测 pin） |
 | ③ VT `read_run_artifact` 工具 | **~120,000 字符/页**（`_BYTE_BUDGET`） | 整记录收缩：`rows` 模式缩小 `returned_rows` 并给出诚实的 `truncated`/`next_offset`；`downsample` 模式减少采样点并重算 `stride`——**永不产出破碎 JSON**，尾部永不静默丢失 | 代码常量 `agent/src/tools/run_artifact_tool.py` |
 
-MCP 调用超时（与载荷正交，同样经 1.18.18 源码核实）：
+MCP 调用超时（与载荷正交，经 1.18.18 源码核实；1.19.0 启动接受性经冒烟实证）：
 
 | 项 | 值 | 说明 |
 |---|---|---|
@@ -835,7 +835,7 @@ docker builder prune
    ├── Ubuntu 22.04
    ├── Python 3.12 (deadsnakes)
    ├── Node.js 20
-   ├── OpenCode CLI (pin opencode-ai@1.18.18)
+   ├── OpenCode CLI (pin opencode-ai@1.19.0)
    ├── pip 预装包
    ├── playwright + chromium
    └── opencode 用户
