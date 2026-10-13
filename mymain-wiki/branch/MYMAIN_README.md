@@ -4,7 +4,7 @@ description: mymain 分支每次对齐/发布的 changelog——上游基线、�
 type: reference
 status: active
 created: 2026-08-11
-updated: 2026-10-10
+updated: 2026-10-13
 tags: [branch, release, changelog]
 related: [MYMAIN_DIVERGENCE.md]
 ---
@@ -33,6 +33,17 @@ related: [MYMAIN_DIVERGENCE.md]
   「发布 commit」字段，即可随时 `git diff <sha>` 追溯任意历史版本。
 
 ## 发布记录（新 → 旧）
+
+---
+
+### 镜像交付：v3.6.0-mymain · 2026-10-13 — 版本升级交付（无上游对齐，release tag 不移动）
+
+- **交付 commit**：`8b0674a4`（opencode-ai **1.18.18→1.19.0**、oh-my-openagent **5.1.0→5.1.30**；VT 基线不变，仍为 2026-10-10 对齐面 `b1f6ce71`）
+- **镜像**：`opencode-serve:v3.6.0-mymain`（linux/amd64，**3.99GB**，31 层，image ID `sha256:6dcdfc76…`）；base 重建 = `opencode-serve-base:latest`（`sha256:5bcedfea…`，2.98GB；旧 base 本地备份 tag `pre-1.19.0-backup`）
+- **升级 SOP 执行**：opencode pin = 改 Dockerfile.base 重建 base+app（base pip 层 3293s、app VT pip 层 1914s；pyjwt 2.15.1 本轮 aliyun 直装成功，v3.5.0 的部分同步事故未复现）；OMO pin = Dockerfile ARG + tmpl + tui.json + entrypoint fallback **四处逐字一致** + test_config_render pin（**30 passed**）
+- **冒烟三段全 PASS**（脚本入库 `OpencodeAgent/tests/smoke-v360.sh`，新增三项版本实证检查）：**Stage1** = render / TIMEOUT(600000) / TOOLOUTPUT(256KB·8000行) / DENY 三组 / **PLUGIN_PIN_OK(5.1.30)** / **OPENCODE_VERSION_OK(1.19.0)** / **OMO_CACHE_OK** / COUNT 85 / AGENTS 80·85 / FUNC 合成 run 实测（FE-1 契约保持）；**Stage1b** = LLM 代理渲染双模式（DIRECT_OK + PROXY_OK，契约 A.7 保持）；**Stage2** = 真 entrypoint **HEALTH_OK ~10s**（**1.19.0 启动实证接受 timeout/tool_output 配置键**，OMO 5.1.30 预烘焙缓存在位）
+- **registry 推送受阻（转人工，按 DIVERGENCE §3.3 纪律零重试）**：`spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com` 在内网 DNS（29.29.29.29）与公网 DNS（223.5.5.5 / 8.8.8.8）均 **NXDOMAIN**——对照域 `registry.cn-hangzhou.aliyuncs.com` 解析正常，非 IP 白名单拒绝，疑似实例公网端点关闭或实例变更。本地 tag 已就绪（`${IMAGE_REGISTRY}:v3.6.0-mymain` + `${IMAGE_REGISTRY}-base:latest`），域名恢复后直接复推并回填远端 digest
+- **遗留**：① registry 复推 + digest 回填；② OMO 预烘焙期 EBADENGINE 警告（Node 20 base vs 部分传递依赖期望 Node≥22）——仅 npm 警告、OMO 本体无 engines 约束、Stage2 启动实证通过，生产首启留意插件行为；③ IMAGE-MANUAL §6.5 的 Truncate/超时语义按 1.18.18 源码核实，1.19.0 未逐行复核（启动接受性已实证）
 
 ---
 
