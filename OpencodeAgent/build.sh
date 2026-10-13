@@ -143,7 +143,7 @@ run docker build \
 if $PUSH; then
   if [ -z "$IMAGE_REGISTRY" ]; then
     echo "ERROR: --push needs IMAGE_REGISTRY (a FULL image repository path,"
-    echo "       e.g. spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode)."
+    echo "       e.g. registry.cn-huhehaote.aliyuncs.com/gm_1/opencode)."
     echo "       Set it in the environment or in OpencodeAgent/.env; there is no default registry."
     exit 1
   fi

@@ -5,7 +5,7 @@ set -euo pipefail
 # registries, and a fresh clone carries no gitignored OpencodeAgent/.env.
 if [ -z "${IMAGE_REGISTRY:-}" ]; then
     echo "ERROR: export IMAGE_REGISTRY=<full image repository> before running,"
-    echo "       e.g. spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode"
+    echo "       e.g. registry.cn-huhehaote.aliyuncs.com/gm_1/opencode"
     exit 1
 fi
 
