@@ -82,7 +82,7 @@ DIRECT_MODE_GOLDEN_V330 = """\
     }
   },
   "plugin": [
-    "oh-my-openagent@5.1.0"
+    "oh-my-openagent@5.1.30"
   ],
   "permission": {
     "vibe-trading_trading_*": "deny",

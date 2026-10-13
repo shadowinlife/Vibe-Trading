@@ -96,7 +96,7 @@ else
         cat > "$TARGET" << EOFMIN
 {
   "model": "alibaba-cn/qwen3.8-max",
-  "plugin": ["oh-my-openagent@${OMO_VERSION:-5.1.0}"]
+  "plugin": ["oh-my-openagent@${OMO_VERSION:-5.1.30}"]
 }
 EOFMIN
     fi

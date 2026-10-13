@@ -42,7 +42,7 @@ RUN /opt/venv/bin/python3 -c "import sys; sys.path.insert(0, '/opt/vibe-trading/
 # produces an identical cache layout. <spec> MUST match the plugin entry
 # rendered from config/opencode.json.tmpl VERBATIM (directory name = spec).
 # Upgrade SOP: bump OMO_VERSION here AND in opencode.json.tmpl, then rebuild.
-ARG OMO_VERSION=5.1.0
+ARG OMO_VERSION=5.1.30
 RUN mkdir -p "/home/opencode/.cache/opencode/packages/oh-my-openagent@${OMO_VERSION}" && \
     cd "/home/opencode/.cache/opencode/packages/oh-my-openagent@${OMO_VERSION}" && \
     printf '{\n  "dependencies": {\n    "oh-my-openagent": "%s"\n  }\n}\n' "${OMO_VERSION}" > package.json && \
