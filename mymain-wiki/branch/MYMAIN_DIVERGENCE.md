@@ -4,7 +4,7 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F8
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-10-10
+updated: 2026-10-13
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -136,7 +136,7 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 | **远端 MCP 服务**（F2 工具暴露） | 服务端 `python mcp_server.py --transport http --host 0.0.0.0 --port 8900`，并设 `VIBE_TRADING_MCP_ALLOWED_HOSTS=<客户端可见的主机名/IP>`（缺省仅放行 loopback，DNS-rebinding 防护 GHSA-p3c9）；客户端指向 `http://<host>:8900/mcp`（Streamable HTTP，单端点；旧客户端可用 `--transport sse`） |
 | **远端 Web UI / API** | `vibe-trading serve` + `agent/.env` 设 `API_AUTH_KEY`；远端浏览器首次进入 Settings 输入一次 key，API 请求携带 `Authorization: Bearer <key>`；未带 key 的非 loopback 客户端敏感端点一律 403 |
 | **GitHub fork 推送** | SSH 认证（`git@github.com:shadowinlife/Vibe-Trading.git`，本机 SSH key）；API 操作走 `gh` CLI（已登录 token）；注意 mymain 分支保护，见 §4.2 |
-| **镜像仓库（OpencodeAgent 交付）** | 地址与凭据存 `OpencodeAgent/.env` 的 `IMAGE_REGISTRY` / `IMAGE_REGISTRY_USER` / `IMAGE_REGISTRY_PASSWORD`（gitignored，chmod 600，**绝不入 tracked 树**）；`build.sh --push` 经 `IMAGE_REGISTRY`（完整仓库路径，仅追加 `:tag`）覆盖 legacy 默认。⚠️ 该仓库受 **IP 白名单**保护：推送 denied/timeout 时不重试轰炸，转人工处理（加白出口 IP 或代推） |
+| **镜像仓库（OpencodeAgent 交付）** | 地址与凭据存 `OpencodeAgent/.env` 的 `IMAGE_REGISTRY` / `IMAGE_REGISTRY_USER` / `IMAGE_REGISTRY_PASSWORD`（gitignored，chmod 600，**绝不入 tracked 树**）；`build.sh --push` 经 `IMAGE_REGISTRY`（完整仓库路径，仅追加 `:tag`），无硬编码回退。**2026-10-13 切换**：主交付仓库 = `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode`（base 派生 `…/gm_1/opencode-base`），app 镜像另推副本到 `registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode`；旧 spark-daily-it 仓库域名已 **NXDOMAIN**（内网+公网 DNS 均无法解析，疑似实例公网端点关闭；历史交付 v3.1.0–v3.5.0 记录保留于 MYMAIN_README，不回改）。推送失败纪律不变：denied/timeout **不重试轰炸**，转人工处理 |
 
 ## 4. 维护约定
 
