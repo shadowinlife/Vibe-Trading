@@ -11,7 +11,7 @@ Docker build project for `opencode-serve` — OpenCode Web Server with Vibe-Trad
 
 This project packages the OpenCode Web Server research environment into a reproducible Docker image. It extends the base `opencode-serve` image with:
 
-- **OpenCode CLI 1.18.5** + OMO (oh-my-openagent) plugin
+- **OpenCode CLI** (pinned in `Dockerfile.base`, currently 1.19.0) + **OMO (oh-my-openagent) plugin** (pinned via `OMO_VERSION`, currently 5.1.30, pre-baked into the plugin cache)
 - **5 OpenCode skills**: data-warehouse (ClickHouse heavy queries), html-report (ECharts), periodic-execution (cron), escape-top-microstructure (top-detection signals), research-scenarios (scenario playbooks A–F, loaded on demand)
 - **Full AGENTS.md** with behavior instructions for 6 scenarios (A through F), a 4-class question-handling protocol and anti-hallucination discipline
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
@@ -188,7 +188,7 @@ docker run -d --name opencode-web -p 4096:4096 \
 
 ## Build
 
-Single `Dockerfile` (based on `opencode-serve:latest`, upgrades to OpenCode 1.18.5). Cross-architecture builds go through the standard `--platform` flag (`docker build --platform linux/amd64 ...`, or `DOCKER_PLATFORM=linux/amd64 ./build.sh`); the legacy `Dockerfile.amd64` (PyPI-based, pre-vendor) was removed as dead, stale configuration.
+Two-image build: `Dockerfile.base` (Ubuntu 22.04 + Python 3.12 + Node 20 + the pinned OpenCode CLI; rebuild rarely) and `Dockerfile` (`FROM opencode-serve-base:latest`; vendors the committed mymain tree via `git archive` and pre-bakes the OMO plugin cache). Upgrade SOP: bumping the OpenCode pin rebuilds base+app; bumping `OMO_VERSION` must stay verbatim-identical in `Dockerfile`, `config/opencode.json.tmpl`, `config/tui.json` and the `entrypoint.sh` fallback. Cross-architecture builds go through the standard `--platform` flag (`docker build --platform linux/amd64 ...`, or `DOCKER_PLATFORM=linux/amd64 ./build.sh`); the legacy `Dockerfile.amd64` (PyPI-based, pre-vendor) was removed as dead, stale configuration.
 
 ## License
 
