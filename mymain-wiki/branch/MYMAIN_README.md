@@ -4,7 +4,7 @@ description: mymain 分支每次对齐/发布的 changelog——上游基线、�
 type: reference
 status: active
 created: 2026-08-11
-updated: 2026-10-13
+updated: 2026-10-17
 tags: [branch, release, changelog]
 related: [MYMAIN_DIVERGENCE.md]
 ---
@@ -33,6 +33,25 @@ related: [MYMAIN_DIVERGENCE.md]
   「发布 commit」字段，即可随时 `git diff <sha>` 追溯任意历史版本。
 
 ## 发布记录（新 → 旧）
+
+---
+
+### release/mymain · 2026-10-17 — 基线：上游 `596fcf3d`（上游历史重写后 296 commit）+ 镜像 v3.7.0-mymain
+
+- **发布 commit**：`release/mymain` tag 所指 commit（即本条发布记录 commit）
+- **上游基线**：`596fcf3d`（**上游 main 遭 force-push 历史重写**：旧基线 `b1f6ce71` 及其下 ~35 个旧上游 commit 不再可达，同批 PR 以不同 SHA 重制；本轮覆盖重写等价点后 **296** 个上游 commit：BrazilEquity 第 11 引擎 + b3_cotahist 源、get_fund_nav、Gildata 研究三件套、adapt_strategy、claude-cli provider、波斯语 locale、十月正确性批次 #1779-#1891 等）
+- **差异总量**：602 个文件、+113,484/−171 行（复核命令 `git diff origin/main release/mymain --shortstat`）
+- **对齐方式**：**双轨（merge 目标树 + rebase --onto 重放）**——tmp 分支 merge 一次解 28 文件冲突得目标树；`git rebase --onto origin/main b1f6ce71` 重放 18 个本地 commit；最终树与目标树逐字节一致（唯一例外：上游重写时删除的 `docs/sessions/2026-10-08_analysis_reliability.md` 随上游丢弃）；「上游 main 为祖先」不变量修复；回退点 `backup/mymain-pre-align-20261017`。过程事故一例（冲突标记混入 F5 commit → abort 重做 + 逐步强制校验），详见 DIVERGENCE §5 2026-10-17 条
+- **发布主题**：上游历史重写后的完整对齐 + 计数面刷新（MCP **85/90**、agent tools **116**、sources **30**、engines 11（SKILL 口径）、alphas 478）+ 全量套件零回归确认 + 上游 mootdx 测试隔离缺陷登记（DIVERGENCE §2.4）+ 本地既有分歧 13 项登记为债务 D5
+
+#### 验证基线（legonanobot / macOS arm64 / Python 3.12）
+
+- 聚焦套件全绿：memory **375/2**、ClickHouse **137/11**、CH schema 门禁 **54 + exit 0**、README/manifest pin **122**、env gate **exit 0**、routing 组合 **184**、FE-1+wrapper **98**、backtest/run_card **66/5**、OpencodeAgent render **30**、MCP 计数冒烟 **85/90**
+- **全量套件**：18865 passed / 30 failed / 166 skipped（28m38s）——30 失败 = 17 上游/环境既有（origin/main 纯净树复现）+ 13 本地既有分歧（backup 分支复现，债务 D5）；**本轮零回归**
+
+#### 镜像交付（v3.7.0-mymain，本地构建；推送待用户指令）
+
+`opencode-serve:v3.7.0-mymain`（linux/amd64 跨架构构建，**3.99GB**，31 层，image ID `sha256:a4daaf0f262c…`；base 沿用 `opencode-serve-base:latest` = 1.19.0 pin，未重建；VT vendor 自本轮对齐树 `git archive`）。**冒烟三段全 PASS**（脚本入库 `OpencodeAgent/tests/smoke-v370.sh`）：Stage1 = render / TIMEOUT(600000) / TOOLOUTPUT(256KB·8000行) / DENY 三组 / PLUGIN_PIN_OK(5.1.30) / OPENCODE_VERSION_OK(1.19.0) / OMO_CACHE_OK / **COUNT 90**（新上游工具 get_fund_nav・adapt_strategy 与本地 ch_query・scheduled_research 在场断言）/ AGENTS 85·90 / FUNC 合成 run 实测（FE-1 契约保持）；Stage1b = LLM 代理渲染双模式（DIRECT_OK + PROXY_OK，契约 A.7 保持）；Stage2 = 真 entrypoint **HEALTH_OK ~10s**。配套文档同步：AGENTS.md / IMAGE-MANUAL / DEPLOY-GUIDE 计数 80/85→85/90、基线 b1f6ce71→596fcf3d。**未推送 registry**（本轮任务仅构建；推送走 §3.3 纪律与 `build.sh --push`，待用户指令）。
 
 ---
 

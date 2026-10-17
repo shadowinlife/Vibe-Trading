@@ -4,20 +4,20 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F8
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-10-13
+updated: 2026-10-17
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
 
 # mymain 分支差异说明
 
-> 维护者：shadowinlife ｜ 基线：HKUDS/Vibe-Trading `main` @ `5e9ffd1a`（v0.1.15 后，2026-09-27 对齐，上游自 `f84b2977` 前进 371 commit；本轮同时完成三项能力回退，见 §5 2026-09-27 条）
+> 维护者：shadowinlife ｜ 基线：HKUDS/Vibe-Trading `main` @ `596fcf3d`（v0.1.16 后开发段，2026-10-17 对齐；**上游 main 已被 force-push 重写历史**，旧基线 `b1f6ce71` 不再是 origin/main 祖先，本轮上游自重写等价点前进 296 commit，见 §5 2026-10-17 条）
 
 ## 1. 分支定位
 
 `mymain` 是 shadowinlife 个人维护的**锁定演进分支**，承载记忆系统 T4 迭代、本地 ClickHouse A 股数据源与纯 opencode+omo+VT MCP harness（F7），功能上领先于社区 `main`。**2026-09-27 路线裁决**：本分支定位为纯粹的 opencode + omo + VT MCP 集成路线——12 领域子代理层与 nano-search-mcp 经验证不够有效已回退，F8 引擎桥与多租户基础设施（前端兼容路线）整体移出至 `mymain-engine-bridge` 分支独立演进，两线零兼容/零相互索引；**2026-10-10 该线废弃封存**（opencode 作为桥接 agents 的方式被证明不可行，见 §5）。本分支作为个人生产/验证环境的稳定基线，所有改动最终以社区 PR 形式回流上游；PR 合入后相应条目从本文档移除，全部合入后本分支回归纯跟踪分支。
 
-相对 `origin/main` 的差异总量：**589 个文件、+111382/−168 行**（含 `mymain-wiki/` 知识库及其 harness-evolution 归档、分支级 AGENTS.md 扩展、ClickHouse 语义层 Phase 0–2 与 `OpencodeAgent/` harness 层；2026-09-27 回退后不再含 F8 引擎桥与多租户基础设施）。功能历史组织为 **8 个单一功能 commit**（F1→F4 memory、F5 ClickHouse+语义层、scheduled_research wrapper、F7 OpencodeAgent、wiki docs——F1-F4 与 wrapper 可独立作为社区 PR 候选，F5/F7/wiki 个人部署独有）。
+相对 `origin/main` 的差异总量：**602 个文件、+113484/−171 行**（含 `mymain-wiki/` 知识库及其 harness-evolution 归档、分支级 AGENTS.md 扩展、ClickHouse 语义层 Phase 0–2 与 `OpencodeAgent/` harness 层；2026-09-27 回退后不再含 F8 引擎桥与多租户基础设施）。功能历史组织为 **9 个单一功能 commit + 后续增量 commit**（F1→F4 memory、F5 ClickHouse+语义层、scheduled_research wrapper、FE-1 本地增量、F7 OpencodeAgent、wiki docs、OpencodeAgent 版本/交付跟进——F1-F4 与 wrapper 可独立作为社区 PR 候选，F5/F7/wiki 个人部署独有）。
 
 ## 2. 核心功能差异
 
@@ -26,7 +26,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | # | Feature | 能力 | 核心文件 | 开关 | 上游关系 |
 |---|---|---|---|---|---|
 | **F1** | 反思课程存储 | 按策略类型 append-only JSONL 课程库；标签/子串检索；置信度更新；`auto_reflect_from_run_dir` | `agent/src/memory/reflections.py`（新增）+ 测试 | `VT_MEMORY_REFLECTIONS`（被 `VT_MEMORY=full` 预设隐含） | 上游无对应（remember_tool / memory CLI 是不同暴露面） |
-| **F2** | MCP 记忆工具 | 五个 MCP 工具 memory_save / recall / reinforce / reflect / status；never-raise dict 包络适配层；memory-lifecycle SKILL 工作流 | `agent/src/memory/mcp_adapter.py`（新增）、`agent/mcp_server.py`（注册段）、`agent/src/skills/memory-lifecycle/SKILL.md` | `VT_MEMORY_MCP_TOOLS`（默认 OFF；当前分支 OFF=78 / ON=83，其中 3 个为语义层 ch_* 工具、1 个为 scheduled_research wrapper） | 上游无 MCP 面记忆工具（上游 MCP 面 62→70 后本轮零新增） |
+| **F2** | MCP 记忆工具 | 五个 MCP 工具 memory_save / recall / reinforce / reflect / status；never-raise dict 包络适配层；memory-lifecycle SKILL 工作流 | `agent/src/memory/mcp_adapter.py`（新增）、`agent/mcp_server.py`（注册段）、`agent/src/skills/memory-lifecycle/SKILL.md` | `VT_MEMORY_MCP_TOOLS`（默认 OFF；当前分支 OFF=85 / ON=90，其中 3 个为语义层 ch_* 工具、1 个为 scheduled_research wrapper） | 上游无 MCP 面记忆工具（上游 MCP 面现为 81） |
 | **F3** | 回测反思钩子 | `run_backtest` 成功后 fire-and-forget 提取 run_card 课程（MCP 与 in-process 入口均覆盖，非致命）；附延迟基准（bench marker，p50<200ms / p95<500ms）与 5 会话并发测试 | `agent/src/tools/backtest_tool.py`（钩子段）、`agent/tests/memory/test_latency_bench.py`、`test_concurrent_mcp.py`、`conftest.py`、`pyproject.toml` | 随 F1 联动 | 上游 post-backtest attribution 是 prompt 驱动，机制不同 |
 | **F4** | MemoryGuard + 项目目录存储 | FastMCP middleware：工具调用后自动 memory_save + memory_reflect（零 LLM）；`VT_MEMORY_BASE_DIR` 支持记忆存项目目录；默认路径跟随 `get_runtime_root()`（`VIBE_TRADING_HOME` 感知） | `agent/src/memory/memory_guard.py`（新增）、`agent/src/memory/persistent.py`（`_default_memory_base`）、`agent/src/config/env_schema.py`（`MemoryConfig.base_dir`） | middleware **无条件注册**（债务 D1） | 上游 memory 仍锚定 `~/.vibe-trading`（上游对 persistent.py 的改动——FTS5 排序衰减、FTS5 tokenizer 下限——均不同关注面，两者并存） |
 | **F5** | ClickHouse A 股数据源 + 语义层 | CH HTTP connector + OHLCV loader（DataLoaderProtocol）+ 基本面 Provider（回退 Tushare）+ 四只资金流工具 CH 优先回退；A 股 chain 与路由以 clickhouse 为首选。**语义层 Phase 0–2**（2026-08-12）：56 表 DDL 快照 + 9 表 444 列 COMMENT + 单位 registry（`clickhouse_units.py`）+ 显式 199 列（`clickhouse_columns.py`）+ `get_valuation` + llm_role 受约束灵活性通道（`ch_list_tables` / `ch_describe_table` / `ch_query`，sqlglot AST 守卫） | `agent/src/clickhouse_connector.py`、`agent/backtest/loaders/clickhouse.py`、`agent/src/tools/clickhouse_fallbacks.py`、`schema/clickhouse/`、`agent/src/tools/clickhouse_query_tool.py`、`agent/src/tools/clickhouse_explore_tools.py`、`agent/src/tools/valuation_tool.py` 等 97 文件 | `CLICKHOUSE_*`（DataConfig）；灵活性通道 `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | 个人部署独有，不回流 |
@@ -72,7 +72,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 
 | 缺陷 | 上游 Issue | mymain 状态 |
 |---|---|---|
-| （当前无未决项） | — | — |
+| `test_registry.py::test_mootdx_retired_from_chain_but_still_registered` 测试隔离缺陷：断言前未调用 `_ensure_registered()`，单独/小组合运行 `test_registry.py` 时 `LOADER_REGISTRY` 为空或不全而失败；上游 CI 全量套件按字母序先跑 `test_mootdx_loader.py` 等 loader 测试污染全局 registry 才通过（2026-10-17 在 origin/main `596fcf3d` 纯净树复现确认，非本分支回归）。修复=断言前补一行 `_ensure_registered()`，可作微 PR 回流 | 待提 | 跟踪中；本分支验证以「先跑 loader 测试再跑 registry」组合口径（184 passed） |
 
 **#1062 闭环记录（2026-08-17）**：A 股回退链 volume 单位不一致（tencent/mootdx/eastmoney/tushare=手 vs baostock=股，相差 100x）经 shadowinlife 两阶段 PR 修复并已上游合入——Phase 1 [PR #1065](https://github.com/HKUDS/Vibe-Trading/pull/1065)（loader 按 market 声明 `volume_units`，`_provenance` 输出 `volume_unit`，tencent/eastmoney 市场依赖：A 股=手、HK=股）与 Phase 2 [PR #1067](https://github.com/HKUDS/Vibe-Trading/pull/1067)（baostock 股→手归一化 + 跨源一致性测试 + 缓存版本隔离 v3→v4），均于 2026-08-11 合入，规范单位定为「手」；mymain 经 2026-08-17 对齐继承全部修复（含 `get_market_data` 工具描述与 `mcp_server.py` docstring 的单位说明）。mymain 的 CH `stk_factor_pro.vol` 为 tushare 口径（手），与归一化方向一致，无需改动。原始实证（2026-08-11）：`600519.SH` 2026-07-31 tencent=55,128 手 vs baostock=5,512,752 股，比值恰 100.0x，经成交额交叉验证确认同一物理量。
 
@@ -81,12 +81,12 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 ### 3.1 测试套件与静态门禁（conda env `legonanobot`，macOS arm64 / Python 3.12）
 
 ```bash
-# memory 套件（含上游孤儿恢复/GC/pin 测试与上游新增 FTS5 衰减/tokenizer/hierarchy 修复测试）——基线 367 passed / 2 skipped（2026-10-10 对齐轮，+34 为上游新增）
+# memory 套件（含上游孤儿恢复/GC/pin 测试与上游新增 FTS5 衰减/tokenizer/hierarchy 修复测试）——基线 375 passed / 2 skipped（2026-10-17 对齐轮，+8 为上游新增）
 python -m pytest agent/tests/memory/ agent/tests/test_persistent_memory.py \
   agent/tests/test_memory_orphan_recovery.py agent/tests/test_memory_gc.py \
   agent/tests/test_env_schema.py -q
 
-# ClickHouse 套件（F5 原始 3 文件 + 语义层 Phase 0–2 测试）——基线 137 passed / 11 skipped（skip = 需真实 CH 连接；2026-10-10 对齐轮持平，含 #1484 百万 CNY 契约新测试）
+# ClickHouse 套件（F5 原始 3 文件 + 语义层 Phase 0–2 测试）——基线 137 passed / 11 skipped（skip = 需真实 CH 连接；2026-10-17 对齐轮持平）
 python -m pytest agent/tests/test_clickhouse_loader.py \
   agent/tests/test_clickhouse_fundamentals.py agent/tests/test_clickhouse_flow.py \
   agent/tests/test_clickhouse_anchor.py agent/tests/test_clickhouse_query_guard.py \
@@ -94,12 +94,12 @@ python -m pytest agent/tests/test_clickhouse_loader.py \
   agent/tests/test_clickhouse_units.py agent/tests/test_tushare_fallbacks.py \
   agent/tests/test_valuation_tool.py -q
 
-# ClickHouse schema 门禁（DDL 导出/注释门禁单测 + comments.yaml 覆盖门禁）——基线 54 passed / exit 0（2026-10-10 对齐轮）
+# ClickHouse schema 门禁（DDL 导出/注释门禁单测 + comments.yaml 覆盖门禁）——基线 54 passed / exit 0（2026-10-17 对齐轮）
 python -m pytest tools/test_ci_clickhouse_comments_gate.py \
   tools/test_clickhouse_apply_comments.py tools/test_clickhouse_export_ddl.py -q
 python tools/ci_clickhouse_comments_gate.py
 
-# README/SKILL.md 计数门禁——基线 122 passed（2026-10-10 对齐轮复验持平；七份 README + manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
+# README/SKILL.md 计数门禁——基线 122 passed（2026-10-17 对齐轮复验持平；七份 README + manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
 python -m pytest agent/tests/test_readme_counts.py agent/tests/test_distribution_skill_manifest.py -q
 
 # env-var AST 门禁——基线 exit 0（4 条 WARN 来自上游 llm.py，与本分支无关）
@@ -112,7 +112,7 @@ python -m pytest agent/tests/memory/test_latency_bench.py -m bench
 ### 3.2 端到端冒烟（本地）
 
 ```bash
-# MCP 工具计数门控：OFF=80 / ON=85（上游基数 76（含已吸收的 read_run_artifact）+ 本分支 3 个 ch_* 语义层工具 + 1 个 scheduled_research wrapper + 5 个 memory_* 工具；上游基数于 b1f6ce71 实测为 76）
+# MCP 工具计数门控：OFF=85 / ON=90（上游基数 81（本轮新增 get_fund_nav / Gildata 研究三件套 get_cn_macro_series・get_cn_announcements・search_broker_reports / adapt_strategy 等）+ 本分支 3 个 ch_* 语义层工具 + 1 个 scheduled_research wrapper + 5 个 memory_* 工具；上游基数于 596fcf3d 实测为 81）
 cd agent
 python -c "import asyncio, mcp_server; print(len(asyncio.run(mcp_server.mcp.list_tools())))"
 VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.run(mcp_server.mcp.list_tools())))"
@@ -158,7 +158,7 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 
 ### 4.3 上游 pin 测试带来的持续义务
 
-- **README/SKILL.md 计数**（`test_readme_counts.py`、`test_distribution_skill_manifest.py`）：每增删一个 skill / loader / MCP 顶层工具，必须同步**七份** README（上游 2026-09 新增 README_id.md 印尼语版）+ `agent/SKILL.md` 计数（当前：skills=91、Tool 类=11、sources=29（上游 28 + clickhouse）、本分支 MCP 头注释 80/85、SKILL.md `Available MCP Tools (80)` 与 `Finance Skills (91)` 小节标题、README 树行 agent tools=113（上游 109 + 3 ch_* + 1 get_valuation）与 mcp_server.py 树行=80）。注：上游 `test_readme_counts.py` 的 READMES 元组现已锚定**全部七份**（en/zh/ja/ko/ar/es/id），翻译滞后不再被容忍——本地增量（clickhouse 行、ch_*/scheduled_research 工具清单、计数）必须同步进每一份。
+- **README/SKILL.md 计数**（`test_readme_counts.py`、`test_distribution_skill_manifest.py`）：每增删一个 skill / loader / MCP 顶层工具，必须同步**七份** README（上游 2026-09 新增 README_id.md 印尼语版）+ `agent/SKILL.md` 计数（当前：skills=91、Tool 类=11、sources=30（上游 29 + clickhouse）、本分支 MCP 头注释 85/90、SKILL.md `Available MCP Tools (85)` 与 `Finance Skills (91)` 小节标题、README 树行 agent tools=116（上游 112 + 3 ch_* + 1 get_valuation）与 mcp_server.py 树行=85）。注：上游 `test_readme_counts.py` 的 READMES 元组现已锚定**全部七份**（en/zh/ja/ko/ar/es/id），翻译滞后不再被容忍——本地增量（clickhouse 行、ch_*/scheduled_research 工具清单、计数）必须同步进每一份。
 - **命名一致性**（`test_recovered_orphan_and_new_write_agree_on_the_same_path`）：routed 条目命名保持 `<category>/<slug>.md`，不得改回带类型前缀方案。
 - **env-var AST 门禁**（`tools/ci_env_var_gate.py`）：新增环境变量必须声明进 `env_schema.py` 并经 config accessor 读取，禁止裸 `os.getenv` / `os.environ`。
 
@@ -176,6 +176,7 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 | D2 | guard 存储按日命名 + 时间戳内容，dedup 失效、GC 默认关闭下无限增长 | 本地磁盘缓慢膨胀 | 贡献队列 ⑤ 前置 |
 | D3 | `VIBE_TRADING_HOME` 迁移缺口：上游 #925 迁移不覆盖 memory，旧路径历史记忆不自动迁移 | 设了 `VIBE_TRADING_HOME` 的环境丢历史记忆可见性 | 贡献队列 ① 内容 |
 | D4 | `MEMORY_BASE` import 期求值，env 变更需重启进程 | monkeypatch 测试不便 | 贡献队列 ① 顺手改调用期求值 |
+| D5 | **CH-first 链的上游工具测试未本地适配（13 个既有失败）**：flow 工具 tushare-fallback 测试 ×8（northbound×3 / dragon_tiger×3 / fund_flow×1 / margin×1，断言 `source == "tushare"` 但本地 CH-first 返回 `clickhouse`，eastmoney rejection×1 同族）+ loader 契约/健康 ×3（`CONTRACT_SUITES` 缺 clickhouse 条目、loader-health catalog 未覆盖 clickhouse、mootdx 退役 catalog 断言）+ metrics bars_per_year ×1（历史已知）。2026-10-17 全量套件实测确认全部为**既有分歧**（backup/mymain-pre-align-20261017 同样失败），非本轮回归 | 全量套件红 13 个（聚焦套件不受影响）；上游工具测试与本地设计意图不一致，掩盖真回归的信号噪声 | 按 test_market_data/test_registry 先例逐个本地 pin（加分歧标记注释）或为 clickhouse 补 CONTRACT_SUITES 条目；下次对齐轮前处理 |
 
 ### 4.6 待办研究任务
 
@@ -455,3 +456,14 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - **触发背景**：同日 k8s/RM 部署发生渲染事故（secret 注入的 `LLM_API_KEY` 带尾随 `\n` → render 失败 → 容器无 VT MCP 块启动）；修复 WIP（`_json_safe` env 消毒 + 静态 fallback 配置 + 175 行测试）完成但未激活，随线封存于 `wip/opencode-llm-proxy-20261010`（`1b9a1140`，已推 fork）。
 - **对 mymain 活跃面的影响**：零——F7 镜像的 LLM 代理渲染（v3.4.0）保留且 `LLM_BASE_URL` 门控（直连部署不经过该路径），代理渲染换行符敏感限制随消费场景废弃而不再修复；队列 ⑦①③（SessionService Protocol 抽取 / ChannelRuntime `_streamed` 原生修复）随线废弃销账，⑦ 仅剩 ② scheduled_research wrapper（已留存本分支，独立 PR 候选）。
 - **资产处置**：worktree `~/LegoNanoBot/vibe-trading-engine-bridge` 已 `git worktree remove --force`；三分支（mymain-engine-bridge / backup/engine-bridge-pre-rebase-20260918 / wip/opencode-llm-proxy-20261010）本地与 fork 双份只读封存，不删除。
+
+### 2026-10-17 rebase 对齐（基线 `596fcf3d`，上游历史重写 + 296 commit）
+
+- **上游历史被重写（本轮最重要事实）**：origin/main 遭 force-push——旧基线 `b1f6ce71` 及其下 ~35 个旧上游 commit 不再是新 origin/main 祖先；同批 PR 内容以不同 SHA 重制（本地 `c0a3ad2c` ≡ 上游 `ba232723`（#1737）、本地 `b1f6ce71` ≡ 上游 `2a3b1bf5`（#1740 follow-up）），merge-base 多达 7 个。「上游 main 为祖先」不变量被上游重写打破，本轮对齐同时修复该不变量。上游增量：v0.1.16 后开发段 296 commit（BrazilEquity 第 11 引擎 + b3_cotahist 源、get_fund_nav、Gildata 研究三件套、adapt_strategy、claude-cli provider、波斯语 locale、session iteration cap env 化、十月正确性批次 #1779-#1891 等）。
+- **做法（双轨）**：① `tmp/align-20261017` 上 `merge --no-commit` 一次性得目标树——28 冲突文件中 14 个经「本地未触碰」判定直接 take-theirs（CHANGELOG、correlation、loaders/base、bench_runner、alpha_bench_tool、2 测试、9 前端 locale），真冲突仅七 README + SKILL.md + mcp_server.py 计数面与 market_data.py（A 股检测保 clickhouse、crypto 归一化采上游 lookahead 修复）、backtest_tool.py（上游 `_record_bench_if_declared` 与本地反思钩子**双保留**）；② `git rebase --onto origin/main b1f6ce71` 重放 18 个本地 commit（F1→F4、F5、sched wrapper、FE-1 delta、F7、wiki、9 个后续增量），逐 commit 按「新基线事实 + 本 commit 语义增量」解计数冲突（F2 阶段 81/86、F5 阶段 84/89 + sources 30、sched 阶段 85/90）。最终树与 merge 目标树**逐字节一致**，唯一例外 `docs/sessions/2026-10-08_analysis_reliability.md`：旧上游 commit `2620a396` 的会话文档，上游重写后的等价 commit `5d3c3986` 将其删除——按「上游机制优先」随上游丢弃。
+- **过程事故（教训重申）**：首轮 rebase 的 F5 步，解决脚本在 README_ar 阿拉伯语词序断言处提前退出，SKILL.md/mcp_server.py **未去冲突标记即被 git add**，标记混入 F5 commit（与 2026-08-28 轮 `git add -A` 事故同类）。发现后 `rebase --abort` 整体重做，此后每一步强制「解析后文件级断言无 `<<<<<<<`/`>>>>>>>`/行级 `=======` 才允许 add」。教训入册：**冲突解决脚本必须先列全部冲突文件、后统一校验，任何单文件失败不得跳过其余文件的校验与 add**。
+- **计数变更**：MCP OFF 80→**85** / ON 85→**90**（上游基数 76→81）；agent tools 树行 113→**116**（上游 109→112）；sources 29→**30**（上游 29 含 b3_cotahist + clickhouse）；engines SKILL.md 口径 10→**11**（BrazilEquity；README 树行沿上游 10 口径不动）；alphas 本地 SKILL.md 旧值 462 刷新为上游 **478**；skills 维持 **91**（上游 90 + memory-lifecycle）。
+- **吸收/取代核查**：`gh pr list --author shadowinlife` 无本地 hunk 被新吸收（#1802 CN value alphas 来自独立 feature 分支，与 mymain 树零交集；#1777/#1764 同理）；F1-F5/F7 逐项未被取代——上游 memory 两修复（`14f218d2` FTS 结果保留、`ace50728` 语义链短标识符）与 F1-F4 不同关注面自动共存；上游对 clickhouse 全家、OpencodeAgent 零触碰。
+- **上游新缺陷登记**：`test_registry.py::test_mootdx_retired_from_chain_but_still_registered` 测试隔离缺陷（origin/main 纯净树复现，详见 §2.4）。
+- **验证基线（全绿，legonanobot / macOS arm64 / Python 3.12）**：memory **375/2**（+8 上游新增）、ClickHouse **137/11** 持平、CH schema 门禁 **54 + exit 0**、README/manifest pin **122** 持平、env gate **exit 0**（4 WARN 均上游 llm.py）、routing 组合（mootdx-loader 前置 + market_data/registry/source_order/settings）**184**、FE-1+wrapper **98**、backtest/run_card 聚焦 **66/5**、OpencodeAgent render **30**、MCP 计数冒烟 **85/90**。**全量套件**（agent/tests，除 e2e）：**18865 passed / 30 failed / 166 skipped**（28m38s）——30 失败全数归因：**17 个上游/环境既有**（origin/main 纯净树同样失败：anthropic 适配器×4、阿语 PDF 字体×8、OU 相邻对×3、provider-header×1、custom-provider typer×1）+ **13 个本地既有分歧**（backup/mymain-pre-align-20261017 同样失败，登记为债务 D5）；**本轮对齐零回归**。
+- **镜像交付**：OpencodeAgent 文档计数同步（AGENTS.md / IMAGE-MANUAL / DEPLOY-GUIDE：80/85→85/90、基线 b1f6ce71→596fcf3d）+ 新增 `tests/smoke-v370.sh`（COUNT 90 + 新工具在场断言）；`opencode-serve:v3.7.0-mymain`（linux/amd64，vendor 自本轮对齐树）。
