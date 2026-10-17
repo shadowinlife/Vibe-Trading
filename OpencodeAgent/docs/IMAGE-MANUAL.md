@@ -253,7 +253,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 
 ### 6.3 VT MCP 工具特性（v0.1.16 基线 + FE-1 增强）
 
-本镜像的 Vibe-Trading 基线为 **mymain @ 上游 `b1f6ce71` 对齐（2026-10-10，v0.1.16 后 253 commit；FE-1 R1/R2 已合入上游 #1646/#1647，本地保留 R5' progress/心跳增量）**，MCP Server 默认暴露 **80 个工具**；`VT_MEMORY_MCP_TOOLS=1`（本镜像默认开启）时额外注册 5 个 `memory_*` 工具，共 **85 个**。配套资产：**91 个内置 skills**、**30 个 swarm 多智能体预设**。
+本镜像的 Vibe-Trading 基线为 **mymain @ 上游 `596fcf3d` 对齐（2026-10-17，上游历史重写后自 b1f6ce71 等价点前进 296 commit，v0.1.16 后开发段；新增 get_fund_nav / Gildata 研究三件套 / adapt_strategy 等上游工具）**，MCP Server 默认暴露 **85 个工具**；`VT_MEMORY_MCP_TOOLS=1`（本镜像默认开启）时额外注册 5 个 `memory_*` 工具，共 **90 个**。配套资产：**91 个内置 skills**、**30 个 swarm 多智能体预设**。
 
 相对 v3.2.0-mymain（v0.1.13 基线），新增以下能力：
 
