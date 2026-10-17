@@ -115,7 +115,7 @@ set -a && source /opt/my-vibe-trading/.env && set +a
 | `CLICKHOUSE_USER` / `CLICKHOUSE_PASSWORD` | ✅ | 读写账户（default），供 loader/脚本。`<见服务器 .env>` |
 | `CLICKHOUSE_DATABASE` | ✅ | `ashare` |
 | `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | ✅ | `llm_role` 只读账户，专供 `ch_*` 语义层工具；缺失时 ch_* 报错且**绝不回退** default。`<见服务器 .env>` |
-| `VT_MEMORY` / `VT_MEMORY_MCP_TOOLS` / `VT_MEMORY_BASE_DIR` | ✅ | `full` / `1` / `/opt/my-vibe-trading/.vt-memory` —— 记忆体系全开（MCP 工具 80→85） |
+| `VT_MEMORY` / `VT_MEMORY_MCP_TOOLS` / `VT_MEMORY_BASE_DIR` | ✅ | `full` / `1` / `/opt/my-vibe-trading/.vt-memory` —— 记忆体系全开（MCP 工具 85→90） |
 | `LANGCHAIN_PROVIDER` / `LANGCHAIN_MODEL_NAME` | ✅ | `dashscope` / `qwen3.8-max` |
 | `DASHSCOPE_BASE_URL` | ✅ | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
 | `TZ` | 可选 | `Asia/Shanghai` |
