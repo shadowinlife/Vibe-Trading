@@ -2,16 +2,19 @@
 
 Declares the in-param, out-param and error-envelope shapes frozen by
 ``PAPER_TRADING_ENGINE_AMENDMENT_PT_V1.1.md`` §2 (the FROZEN summary), plus
-the AM-14 closed vocabularies.  The AMENDMENT is DRAFT — every
-contract-sensitive value here carries a ``TODO-G1`` marker and is NOT
-hard-frozen until RM issues written approval of pt-v1.1.
+the AM-14 closed vocabularies.  pt-v1.1 is APPROVED — G1 opened by the RM
+written approval of 2026-10-19 (``PAPER_TRADING_ENGINE_APPROVAL_GRANTED_PT_V1.1.md``).
+Every contract-sensitive value here is FROZEN per the approval §5
+declaration: vocabulary or field-set changes are a major schema bump with
+RM written confirmation; additive fields are a minor bump (REQUIREMENTS §9).
 
 Companion artifacts:
 
-* ``schema/tool_contracts/paper_trade_step-v1.1.json`` — out-param +
-  error-envelope jsonschema skeleton (VD-13), loaded by
-  :func:`load_contract_schema`.
+* ``schema/tool_contracts/paper_trade_step-v1.1.json`` — finalized out-param
+  + error-envelope jsonschema (VD-13), loaded by :func:`load_contract_schema`.
 * ``state_hash.py`` — ``received_state_hash`` / ``effective_fee_model``.
+* ``wire.py`` — success/error payload builders + deterministic JSON
+  serialization (Step 5 split: this module stays shapes + boundary parsing).
 
 ``jsonschema`` is deliberately NOT imported: it is not a declared runtime
 dependency (zero-new-dependency red line, REQUIREMENTS §9), so
@@ -28,6 +31,7 @@ downstream code receives typed values).
 from __future__ import annotations
 
 import json
+import math
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -53,23 +57,23 @@ __all__ = [
     "RejectedOrder",
     "SkippedDay",
     "load_contract_schema",
+    "parse_account_state",
     "parse_request",
     "validate_payload",
 ]
 
-#: Wire contract version (convention: backtest_summary.py:31,
-#: market_data_tool.py:71 — module-level string constant).
-# TODO-G1: pending RM written approval of pt-v1.1 — "pt-v1.1" becomes the
-# first frozen implementation version only on approval (AMENDMENT header).
+#: Wire contract version — FROZEN: pt-v1.1 is the first frozen implementation
+#: version (G1 approved 2026-10-19; AMENDMENT header version-semantics ruling).
+#: Constant convention: backtest_summary.py:31, market_data_tool.py:71.
 SCHEMA_VERSION = "pt-v1.1"
 
 #: Bare MCP tool name (RM observer whitelists bare + ``vibe-trading_`` prefix).
 TOOL_NAME = "paper_trade_step"
 
-# TODO-G1: pending RM written approval of pt-v1.1 — the three vocabularies
-# below are the AM-14 frozen tables (11 reason_code + 2 skipped reason +
-# 2 error code).  Any add/remove/change after approval = major schema bump
-# with RM written confirmation (REQUIREMENTS §9).
+# FROZEN (G1 approved 2026-10-19): the three vocabularies below are the AM-14
+# closed tables (11 reason_code + 2 skipped reason + 2 error code).  Any
+# add/remove/change = major schema bump with RM written confirmation
+# (REQUIREMENTS §9 / APPROVAL §5 frozen-surface declaration).
 #: ``rejected_orders[].reason_code`` — closed vocabulary, 11 values (AM-14).
 REASON_CODES: tuple[str, ...] = (
     "insufficient_cash",
@@ -98,8 +102,8 @@ ERROR_CODES: tuple[str, ...] = (
     "INVALID_REQUEST",  # non-retryable — input contract violation
 )
 
-# TODO-G1: pending RM written approval of pt-v1.1 — market/side enums per
-# REQUIREMENTS §2.1 (pt-v1.0 dispatched values, carried into pt-v1.1).
+# FROZEN (G1 approved 2026-10-19): market/side enums per REQUIREMENTS §2.1
+# (pt-v1.0 dispatched values, carried into pt-v1.1 unchanged).
 MARKETS: tuple[str, ...] = ("cn_a", "hk", "us")
 SIDES: tuple[str, ...] = ("buy", "sell")
 
@@ -168,16 +172,25 @@ class PaperTradeStepRequest:
     to_date: str
     orders: tuple[Order, ...] | None = None
     strategy_path: str | None = None
-    # TODO-G1: pending RM written approval of pt-v1.1 — fee_model becomes
-    # required-at-dispatch (AM-4-3: RM always injects explicitly) while
-    # staying schema-optional for backward compatibility (AMENDMENT §2.3).
+    # FROZEN (AM-4-3, G1 approved): RM dispatch always injects fee_model
+    # explicitly (required-at-dispatch) while the field stays schema-optional
+    # for backward compatibility (AMENDMENT §2.3).
     fee_model: dict[str, float] = field(default_factory=dict)
 
 
 def _require_number(value: Any, path: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise PaperTradeSchemaError(f"{path} must be a JSON number, got {type(value).__name__}")
-    return float(value)
+    try:
+        numeric = float(value)
+    except OverflowError:
+        # An integer literal beyond the double range is not a finite JSON
+        # number for wire purposes (JCS interpretation stays within ±2^53
+        # across implementations, state_hash.py module docstring).
+        numeric = math.inf if value > 0 else -math.inf
+    if not math.isfinite(numeric):
+        raise PaperTradeSchemaError(f"{path} must be a finite JSON number, got {value!r}")
+    return numeric
 
 
 def _require_str(value: Any, path: str) -> str:
@@ -203,7 +216,9 @@ def _parse_position(raw: Any, path: str) -> Position:
     )
 
 
-def _parse_account_state(raw: Any, path: str) -> AccountState:
+def parse_account_state(raw: Any, path: str = "account_state") -> AccountState:
+    """Parse ``account_state`` alone (public: the AM-4-4 error-path hash in
+    ``wire.py`` gates on state parseability without a full request parse)."""
     if not isinstance(raw, dict):
         raise PaperTradeSchemaError(f"{path} must be an object, got {type(raw).__name__}")
     positions_raw = raw.get("positions", [])
@@ -257,9 +272,16 @@ def parse_request(payload: dict[str, Any]) -> PaperTradeStepRequest:
     if strategy_path is not None:
         strategy_path = _require_str(strategy_path, "strategy_path")
 
-    fee_model_raw = payload.get("fee_model") or {}
+    # Only a missing or explicit null fee_model defaults to {} (AM-4-3 keeps
+    # the field schema-optional); a PRESENT falsy non-dict ([] / "" / false /
+    # 0) is a contract violation, not an absence — `or {}` would launder it.
+    fee_model_raw = payload.get("fee_model")
+    if fee_model_raw is None:
+        fee_model_raw = {}
     if not isinstance(fee_model_raw, dict):
-        raise PaperTradeSchemaError("fee_model must be an object")
+        raise PaperTradeSchemaError(
+            f"fee_model must be an object, got {type(fee_model_raw).__name__}"
+        )
     fee_model = {
         _require_str(key, "fee_model key"): _require_number(value, f"fee_model.{key}")
         for key, value in fee_model_raw.items()
@@ -268,7 +290,7 @@ def parse_request(payload: dict[str, Any]) -> PaperTradeStepRequest:
     return PaperTradeStepRequest(
         account_id=_require_str(payload.get("account_id"), "account_id"),
         market=market,
-        account_state=_parse_account_state(payload.get("account_state"), "account_state"),
+        account_state=parse_account_state(payload.get("account_state"), "account_state"),
         from_date=_parse_date(payload.get("from_date"), "from_date"),
         to_date=_parse_date(payload.get("to_date"), "to_date"),
         orders=orders,
@@ -290,7 +312,9 @@ class DateRange:
 
 @dataclass(frozen=True, slots=True)
 class Fill:
-    """One executed fill.  ``reason`` semantics per VD-15 (orders mode: "")."""
+    """One executed fill.  ``reason`` dual-mode semantics FROZEN (VD-15/B2):
+    orders mode = ``""``; strategy_path mode = strategy reason truncated to
+    <=200 characters, UTF-8 safe (``wire.strategy_fill_reason``)."""
 
     trade_date: str
     symbol: str
@@ -333,13 +357,17 @@ class SkippedDay:
 
 @dataclass(frozen=True, slots=True)
 class DataProvenance:
-    """``data_provenance`` — AM-9 merged-frame shape (cn_a) + AM-2 events."""
+    """``data_provenance`` — extension set FINALIZED at G1: AM-9 merged-frame
+    fields (cn_a), AM-2 ``corporate_actions`` events, VD-11 cn_a limit/ST/
+    suspension path tokens (``limit_provenance``, ``<symbol>@<date>:<token>``).
+    Further additions = minor schema bump (APPROVAL §5)."""
 
     source: str
     bars_as_of: str | None = None
     ch_as_of: str | None = None
     network_as_of: str | None = None
     corporate_actions: tuple[dict[str, Any], ...] = ()
+    limit_provenance: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -366,9 +394,10 @@ class PaperTradeStepResult:
 
 @dataclass(frozen=True, slots=True)
 class ErrorEnvelope:
-    """In-band error envelope (AM-5) — same ``result.content[0].text`` channel
-    as the success document; ``received_state_hash`` present when the state
-    was parseable (AM-4-4)."""
+    """In-band error envelope (AM-5, FROZEN field set) — same
+    ``result.content[0].text`` channel as the success document, never a
+    transport error; ``received_state_hash`` present only when the state was
+    parseable (AM-4-4).  Serialized by ``wire.build_error_payload``."""
 
     code: str
     account_id: str
@@ -386,7 +415,8 @@ def load_contract_schema(name: str = "result") -> dict[str, Any]:
     """Load one named jsonschema from the VD-13 contract file.
 
     ``name`` is ``"result"`` (success out-param) or ``"error_envelope"``.
-    Read-only; the file is a DRAFT skeleton until G1 approval.
+    Read-only; the file is the finalized pt-v1.1 contract (G1 approved
+    2026-10-19).
     """
     document = json.loads(_CONTRACT_SCHEMA_PATH.read_text(encoding="utf-8"))
     schemas = document.get("schemas", {})

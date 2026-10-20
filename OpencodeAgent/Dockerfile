@@ -96,6 +96,15 @@ ENV LANGCHAIN_PROVIDER=dashscope \
     VT_MEMORY_MCP_TOOLS=1 \
     VT_MEMORY_BASE_DIR=/workspace/.vt-memory
 
+# R5 (paper-trading requirement): the default us_equity fallback chain leads
+# with yahoo/stooq, which are unreachable from mainland-China IPs (yahoo
+# 403/429, stooq JS anti-bot). Bake the sina/eastmoney-first permutation as
+# the image default. The loader registry guard requires the value to stay a
+# permutation of the default chain (reorder only — never add or drop a
+# source); an invalid value is ignored with a warning. Override at runtime
+# with -e MARKET_DATA_ORDER_US_EQUITY=... (empty value restores the default).
+ENV MARKET_DATA_ORDER_US_EQUITY=sina,eastmoney,yahoo,stooq,yfinance,tiingo,fmp,finnhub,alphavantage,longbridge,akshare,local
+
 # Zero-download startup: suppress OMO telemetry (posthog + daily-active
 # claim), the models-catalog background refresh, and opencode auto-update
 # checks. To re-enable live catalog refresh, override the flag to empty:

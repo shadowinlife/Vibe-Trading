@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 
 import pytest
 from unittest.mock import patch
@@ -221,3 +222,52 @@ def test_ensure_registered_rechecks_env(
     )
     registry._ensure_registered()
     assert registry.FALLBACK_CHAINS["kr_equity"][0] == "yahoo"
+
+
+# ---------------------------------------------------------------------------
+# R5 / T10 gate: the paper-trading us_equity reorder shipped in .env.example
+# ---------------------------------------------------------------------------
+
+#: R5 suggested value (REQUIREMENTS R5): sina/eastmoney lead, yahoo/stooq sink.
+_R5_US_EQUITY_ORDER = (
+    "sina,eastmoney,yahoo,stooq,yfinance,tiingo,fmp,finnhub,"
+    "alphavantage,longbridge,akshare,local"
+)
+
+
+def test_us_equity_r5_reorder_is_a_valid_permutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T10 gate: setting MARKET_DATA_ORDER_US_EQUITY reorders the chain.
+
+    The env key suffix is ``us_equity`` (not ``us``, E4), and the knob only
+    accepts a permutation of the default chain.
+    """
+    order = parse_source_order(_R5_US_EQUITY_ORDER)
+    assert registry.is_valid_source_order("us_equity", order)
+
+    monkeypatch.setenv("MARKET_DATA_ORDER_US_EQUITY", _R5_US_EQUITY_ORDER)
+    refresh_source_order_overrides()
+    assert registry.FALLBACK_CHAINS["us_equity"] == order
+    assert registry.FALLBACK_CHAINS["us_equity"][:2] == ["sina", "eastmoney"]
+    assert registry.get_source_order_override("us_equity") == order
+
+
+def test_env_example_us_equity_line_stays_a_permutation_of_the_default() -> None:
+    """Drift guard: the shipped .env.example value must stay a permutation.
+
+    Pins the documented R5 line against the LIVE registry default chain, so
+    a future chain edit that drops/renames a source turns this test red
+    instead of silently shipping an invalid override (invalid values warn and
+    keep the default — the paper path would then lead with yahoo/stooq).
+    """
+    env_path = Path(__file__).resolve().parents[1] / ".env.example"
+    marker = "MARKET_DATA_ORDER_US_EQUITY="
+    lines = [
+        line for line in env_path.read_text(encoding="utf-8").splitlines() if marker in line
+    ]
+    assert lines, "agent/.env.example lost the R5 MARKET_DATA_ORDER_US_EQUITY line"
+    value = lines[0].split(marker, 1)[1].strip()
+    order = parse_source_order(value)
+    assert registry.is_valid_source_order("us_equity", order)
+    assert order[:2] == ["sina", "eastmoney"]

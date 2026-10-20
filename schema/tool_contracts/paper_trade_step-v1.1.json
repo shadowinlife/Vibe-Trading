@@ -1,13 +1,13 @@
 {
-  "$comment": "DRAFT SKELETON — TODO-G1: pending RM written approval of pt-v1.1 (PAPER_TRADING_ENGINE_AMENDMENT_PT_V1.1.md). First tool-contract schema in this repo (VD-13 landing spot; the root schema/ tree otherwise holds ClickHouse DDL only). Field set per AMENDMENT §2.2/§2.3 and AM-14 vocabularies; nothing here is hard-frozen before G1. Two named schemas live under 'schemas': 'result' (success out-param document) and 'error_envelope' (in-band error, AM-5). Both stay within the keyword subset the dependency-free validator in agent/src/tools/paper_trade/schema.py implements (type/const/enum/required/properties/items/additionalProperties), so the file is a standard draft-2020-12 document that the real jsonschema library can also consume.",
+  "$comment": "FINALIZED pt-v1.1 — G1 opened by the RM written approval of 2026-10-19 (PAPER_TRADING_ENGINE_APPROVAL_GRANTED_PT_V1.1.md). First tool-contract schema in this repo (VD-13 landing spot; the root schema/ tree otherwise holds ClickHouse DDL only). Field set per AMENDMENT §2.2/§2.3 and AM-14 vocabularies; frozen per the approval §5 declaration: vocabulary or field-set changes = major schema bump with RM written confirmation, additive fields = minor (REQUIREMENTS §9). Two named schemas live under 'schemas': 'result' (success out-param document) and 'error_envelope' (in-band error, AM-5). Both stay within the keyword subset the dependency-free validator in agent/src/tools/paper_trade/schema.py implements (type/const/enum/required/properties/items/additionalProperties), so the file is a standard draft-2020-12 document that the real jsonschema library can also consume.",
   "contract": "paper_trade_step",
   "version": "pt-v1.1",
-  "status": "draft-pending-g1",
+  "status": "final",
   "schemas": {
     "result": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://vibe-trading.local/schemas/tool_contracts/paper_trade_step-v1.1/result.json",
-      "title": "paper_trade_step success result (pt-v1.1 DRAFT)",
+      "title": "paper_trade_step success result (pt-v1.1)",
       "type": "object",
       "required": [
         "schema_version",
@@ -30,7 +30,7 @@
         "schema_version": {
           "type": "string",
           "const": "pt-v1.1",
-          "$comment": "TODO-G1: const value frozen only on RM approval of pt-v1.1"
+          "$comment": "FROZEN const — pt-v1.1 is the first frozen implementation version (G1 approved 2026-10-19; AMENDMENT header version-semantics ruling); any change = major schema bump"
         },
         "tool": { "type": "string", "const": "paper_trade_step" },
         "account_id": {
@@ -54,7 +54,7 @@
         },
         "effective_fee_model": {
           "type": "object",
-          "$comment": "TODO-G1: per-market fee key names — cn_a keys follow AMENDMENT §2.2 example; hk/us key names are draft (state_hash.py _DEFAULT_FEE_MODELS)"
+          "$comment": "Full echo of the fee parameters in effect (R7-3). Default key names FROZEN per APPROVAL note 5 / REQUIREMENTS §4 (state_hash.py _DEFAULT_FEE_MODELS, delivery note #7): cn_a = commission_rate 0.00025, commission_min 5.0, stamp_tax_sell 0.0005, transfer_fee 0.00001; hk = commission_rate 0.0003, commission_min 3.0, stamp_tax_rate 0.001, regulatory_levy_rate 0.00003; us = commission_per_share 0.0049, commission_min 0.99, sec_fee_rate 0.0. Per-key merge: RM always injects fee_model explicitly (AM-4-3) and injected keys pass through, so the object stays open by design."
         },
         "fills": {
           "type": "array",
@@ -167,6 +167,7 @@
         "data_provenance": {
           "type": "object",
           "required": ["source"],
+          "additionalProperties": false,
           "properties": {
             "source": {
               "type": "string",
@@ -179,24 +180,36 @@
               "type": "array",
               "items": {
                 "type": "object",
-                "required": ["symbol", "date", "ratio"],
+                "required": ["symbol", "date", "ratio", "detected"],
+                "additionalProperties": false,
                 "properties": {
                   "symbol": { "type": "string" },
                   "date": { "type": "string" },
-                  "ratio": { "type": "string" },
-                  "detected": { "type": "string" }
+                  "ratio": {
+                    "type": "string",
+                    "$comment": "clean hit = ratio label (e.g. '4:1'); unresolved = the observed close-to-close ratio as a decimal string (fail-closed fact, never a guess)"
+                  },
+                  "detected": {
+                    "type": "boolean",
+                    "$comment": "true = clean split applied; false = unresolved fail-closed rejection (corporate_action_unresolved). Typed to match the T4 emitter (corporate_actions.py); reconciled from the draft's string typing at G1 finalization as its module docstring assigned to T5"
+                  }
                 }
               }
+            },
+            "limit_provenance": {
+              "type": "array",
+              "items": { "type": "string" },
+              "$comment": "VD-11 cn_a limit/ST/suspension path tokens, '<symbol>@<date>:<token>' — token set frozen (limits_cn_a.py): limits:stk_limit / limits:heuristic / limits:unavailable / st:stk_st_daily / st:stk_st_daily-no-row / suspend:stk_suspend / suspend:stk_suspend-no-row / limit_list:stk_limit_list_d. Present only for cn_a runs that consulted the band seam"
             }
           },
-          "$comment": "TODO-G1: additionalProperties intentionally open — VD-11 limit/ST/suspension path provenance (table vs heuristic) and AM-9 merge-state fields extend this object; the extension set is frozen at G1"
+          "$comment": "Extension set FINALIZED at G1 (was draft-open): AM-9 merge-state fields (ch_as_of/network_as_of/bars_as_of), T4 corporate_actions, VD-11 limit_provenance. Optional fields are omitted when unset, never null. Further additions = minor schema bump (APPROVAL §5)"
         }
       }
     },
     "error_envelope": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://vibe-trading.local/schemas/tool_contracts/paper_trade_step-v1.1/error_envelope.json",
-      "title": "paper_trade_step in-band error envelope (pt-v1.1 DRAFT, AM-5)",
+      "title": "paper_trade_step in-band error envelope (pt-v1.1, AM-5)",
       "type": "object",
       "required": ["status", "code", "account_id", "market", "range", "message"],
       "additionalProperties": false,
@@ -223,9 +236,12 @@
         },
         "received_state_hash": {
           "type": "string",
-          "$comment": "present when the received account_state was parseable (AM-4-4)"
+          "$comment": "present only when the received account_state was parseable (AM-4-4); omitted otherwise, never null — RM reads the absence as 'state unparseable' and must not burn its retry chain"
         },
-        "message": { "type": "string" }
+        "message": {
+          "type": "string",
+          "$comment": "deterministic English, no timestamps (VD-7). Frozen formats include strategy_execution_timeout:{YYYY-MM-DD} and strategy_execution_error:{YYYY-MM-DD}:{exception class} (VD-8/B1, Step 7)"
+        }
       }
     }
   }

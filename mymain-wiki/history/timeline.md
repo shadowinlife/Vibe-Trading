@@ -4,7 +4,7 @@ description: mymain 分支从 2026-07 记忆工作起步到当前的完整时间
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-10-17
+updated: 2026-10-20
 tags: [history, timeline, changelog, mymain]
 related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 ---
@@ -16,6 +16,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 
 | 日期 | 事件 | 证据 |
 |---|---|---|
+| 2026-10-20 | **模拟盘撮合引擎 pt-v1.1 交付（F9）**：T2 至 T9b 全部完成，按「每个 feature 一个独立 commit」约定以单个 DCO commit tag `f9-pt-v1.1` 交付（开发期 22 个细粒度提交已压缩，压缩前后代码树零差异）；宿主与容器均 **409 passed**，镜像 `opencode-serve:v3.8.0-mymain`（`.Id sha256:1fa24461da83...`，amd64/linux，已 push 至 `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode@sha256:d442a38f3ebc57bfeef6493ca86794280d38119432217ca09bbfacdc14a66fd5`）；容器内 hk tencent 与 us sina 活体各 1 fill，cn_a 合并帧 `clickhouse+tencent(merged)` 数据层实证（`ch_as_of=2026-10-16`、`network_as_of=2026-10-19`）。**已知阻断**：cn_a fill 级被既有 `agent/src/clickhouse_connector.py:501 get_trade_calendar` 日期拼写缺陷（`YYYY-MM-DD` 参数查 `cal_date String(YYYYMMDD)`）判 `non_trading_day`，RM E2E 前必须修复；另 CH `stk_factor_pro` 周一 2026-10-19 数据截至 10-20 10:27 CST 未入库。交付状态 = 已交付待 RM E2E | [PAPER_TRADING_ENGINE_DELIVERY.md](../../PAPER_TRADING_ENGINE_DELIVERY.md)；DIVERGENCE §2.3 ⑨；`.omo/evidence/paper-trading-mymain/STEP10-DELIVERY-RECEIPT.md` |
 | 2026-10-17 | **rebase 对齐上游 `596fcf3d`（上游历史重写 + 296 commit）**：origin/main 遭 force-push，旧基线 `b1f6ce71` 不再可达，同批 PR 以不同 SHA 重制；双轨对齐（tmp merge 目标树 + `rebase --onto` 重放 18 个本地 commit），最终树与 merge 树逐字节一致（唯一例外：上游重写时删除的 `docs/sessions/2026-10-08_analysis_reliability.md` 随上游丢弃）；「上游 main 为祖先」不变量修复。计数：MCP **85/90**、agent tools **116**、sources **30**、engines 11（SKILL 口径）、skills 91。首轮 rebase 曾发生冲突标记混入 F5 commit 事故，abort 重做并加逐步强制校验。验证全绿：memory 375/2、CH 137/11、pin 122、render 30、FE-1+wrapper 98；新登记上游 mootdx 测试隔离缺陷（DIVERGENCE §2.4）。镜像 `opencode-serve:v3.7.0-mymain` + smoke-v370.sh | [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-10-17 条 |
 | 2026-09-27 | **merge+carve 对齐上游 `5e9ffd1a`（+371 commit，v0.1.15 后）+ 路线裁决与三项能力回退**：mymain 定位改为纯粹 opencode + omo + VT MCP 集成——① 12 领域子代理层回退（主循环直连 VT MCP 全工具面，13 个领域工具回归主面）；② nano-search-mcp 回退（VT `web_search` 承接通用检索，A 股结构化检索缺口立项 R2）；③ F8 引擎桥 + 多租户基础设施移出至 `mymain-engine-bridge` 独立线（scheduled_research MCP wrapper 保留）。冲突面仅 10 文件（七 README 计数 pin + a_share 九源排列）；发现并消毒根 AGENTS.md 的 tushare token 明文泄漏（2026-08-11 起，需轮换）；补建被 gitignore 吞掉的 mymain-wiki/AGENTS.md。验证：MCP 78/83、README pin 115、memory 316/3、CH 137/11、聚焦回归 436、config render 24、env gate 0 | [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-09-27 条 |
 | 2026-09-13 | engine-bridge Phase 3-4 里程碑并回（原 --no-ff merge `4e0e7662`，5 任务级 commit；2026-09-13 restructure+rebase 后线性化为四个功能 commit——租户容器/wrapper/router/隔离矩阵——卡片收口并入引擎桥功能 commit，原 SHA 见 `backup/mymain-pre-restructure-20260913`）：**opencode-engine-bridge-v2 计划收口 15/15**——T10 租户容器（钉版 1.18.30/4.19.4、supervisord、B5/B6 实证、前端 dist、Rosetta E2E 含崩溃自愈）、T13 wrapper（MCP 78/83、eval 地板逐位持平、confirm 流复活）、T11 router（双租户 59/59）、T12 隔离矩阵（**93/93 零跨租户可达，Phase 3 门 PASS**；idle RSS ~1.04GB、唤醒 ~18.6s、IM 首响 2.1-6.1s）；余项全为用户门控（部署/凭据/迁移/上游时机） | [../features/f8-engine-bridge.md](../features/f8-engine-bridge.md)；`OpencodeAgent/docs/tenancy_report.md`；DIVERGENCE §5 2026-09-13 Phase 3-4 条 |

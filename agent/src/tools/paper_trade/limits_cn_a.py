@@ -19,8 +19,8 @@ Table-first, heuristic-fallback, provenance-recorded:
   fails closed (Step 3 decision).
 
 Money discipline (VD-9): heuristic bands quantize to 0.01 with Decimal
-ROUND_HALF_UP — the builtin ``round()`` is banned (banker's rounding:
-``round(2.675, 2) == 2.67``).
+ROUND_HALF_UP — Python's builtin rounding function is banned on money paths
+(banker's rounding: 2.675 to 2dp yields 2.67, not 2.68).
 
 Determinism: table rows are part of the input snapshot; no clock, no
 environment, no network in this module.  Clients are injectable — tests
@@ -47,9 +47,11 @@ __all__ = [
     "heuristic_limit_prices",
 ]
 
-# TODO-G1: pending RM written approval of pt-v1.1 — provenance tokens flow
-# into the wire ``data_provenance`` object (AM-9/VD-11 extension surface);
-# the token set is frozen at G1 with the rest of the provenance shape.
+# FROZEN provenance tokens (G1: RM written approval 2026-10-19, pt-v1.1) —
+# they flow into the wire ``data_provenance`` object (AM-9/VD-11 extension
+# surface, FINALIZED at G1 per the contract JSON ``limit_provenance``
+# $comment).  Any token change = major schema bump with RM written
+# confirmation (REQUIREMENTS §9).
 PROV_LIMITS_TABLE = "limits:stk_limit"
 PROV_LIMITS_HEURISTIC = "limits:heuristic"
 PROV_LIMITS_UNAVAILABLE = "limits:unavailable"

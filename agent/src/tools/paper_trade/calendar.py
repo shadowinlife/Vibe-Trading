@@ -8,21 +8,28 @@ Market strategy matrix (AM-6):
   network, and is offline-testable with a fake client.
   ``ClickHouseConnector.get_trade_calendar`` (agent/src/clickhouse_connector.py:501)
   satisfies :class:`TradeCalendarClient` structurally — no wrapper needed.
-* **hk / us** — TODO-G1: pending RM written approval of pt-v1.1.  AM-6
-  gives hk/us a ZERO-CALENDAR fail-closed strategy: the non-trading-day
-  verdict is inferred from bar availability in the data layer (Step 2+) —
-  target-day all-market zero bar → ``PAPER_DATA_NOT_READY``; mid-range
-  all-market zero bar → skipped reason ``market_closed_inferred`` +
-  warning.  The seams below raise ``NotImplementedError`` until G1 fixes
-  the strategy; if AM-6 is rejected, pt-v1.0 R3 would demand real holiday
-  detection that this repo cannot serve dependency-free (plan R-V1).
+* **hk / us** — APPROVED AM-6 zero-calendar fail-closed strategy (G1 open,
+  2026-10-19): the engine holds NO exchange calendar for these markets and
+  introduces no new dependency (``exchange_calendars``-class packages stay an
+  RM-side escalation path).  Day verdicts are inferred from bar availability
+  via :func:`classify_zero_calendar_day` — the three-state matrix:
+  target-day all-market zero bar → ``PAPER_DATA_NOT_READY`` (retryable
+  envelope); mid-range all-market zero bar → skipped reason
+  ``market_closed_inferred`` + mandatory warning (never silently a
+  ``non_trading_day``); single-symbol zero bar → ``suspended`` rejections +
+  carry-forward valuation.  The calendar-lookup functions below stay cn_a-only
+  and raise ``NotImplementedError`` for hk/us by design.  Day enumeration for
+  hk/us is :func:`hk_us_candidate_days` (weekdays; weekends are non-trading by
+  Gregorian fact, holidays surface as zero-bar weekdays).
 
 Determinism: no clock, no environment, no network reads here; the same
-client rows always produce the same verdicts.
+client rows and bar-availability facts always produce the same verdicts.
 """
 
 from __future__ import annotations
 
+import datetime as dt
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
@@ -32,7 +39,13 @@ __all__ = [
     "CN_A_MARKET",
     "HK_MARKET",
     "US_MARKET",
+    "VERDICT_MARKET_CLOSED_INFERRED",
+    "VERDICT_NOT_READY",
+    "VERDICT_TRADING_DAY",
     "TradeCalendarClient",
+    "ZeroCalendarDayVerdict",
+    "classify_zero_calendar_day",
+    "hk_us_candidate_days",
     "is_trading_day",
     "trading_days_in_range",
 ]
@@ -43,19 +56,50 @@ US_MARKET = "us"
 
 _CALENDAR_MARKETS = (CN_A_MARKET, HK_MARKET, US_MARKET)
 
-# TODO-G1: pending RM written approval of pt-v1.1 — the hk/us zero-calendar
-# fail-closed strategy (AM-6) is a DRAFT amendment; until approval these
-# markets raise instead of guessing.  If AM-6 is rejected the fallback is
-# an escalation under REQUIREMENTS §9 (no dependency-free hk/us calendar
-# exists in-repo — plan E8/R-V1).
+# AM-6 (APPROVED, G1 open 2026-10-19): hk/us are ZERO-CALENDAR markets —
+# fail-closed day classification from bar availability
+# (:func:`classify_zero_calendar_day`).  No exchange-calendar dependency is
+# ever introduced here (REQUIREMENTS §9 red line); the escalation path
+# (exchange_calendars-class) is registered RM-side.
 _ZERO_CALENDAR_MARKETS = (HK_MARKET, US_MARKET)
 
 _HK_US_NOT_IMPLEMENTED = (
     "paper_trade calendar: market {market!r} has no in-engine calendar by design "
-    "(AM-6 zero-calendar fail-closed: non-trading days are inferred from bar "
-    "availability in the data layer — target-day zero bar => PAPER_DATA_NOT_READY, "
-    "mid-range zero bar => market_closed_inferred)"
+    "(AM-6 zero-calendar fail-closed, approved): day verdicts come from bar "
+    "availability via classify_zero_calendar_day — target-day all-market zero bar "
+    "=> PAPER_DATA_NOT_READY, mid-range all-market zero bar => "
+    "market_closed_inferred + warning, single-symbol zero bar => suspended"
 )
+
+#: AM-6 verdict kinds (frozen three-state matrix).  ``market_closed_inferred``
+#: is a member of the closed ``schema.SKIPPED_DAY_REASONS`` vocabulary (pinned
+#: by test); ``not_ready`` maps to the frozen ``PAPER_DATA_NOT_READY`` envelope
+#: code at the tool layer (AM-5).
+VERDICT_TRADING_DAY = "trading_day"
+VERDICT_NOT_READY = "not_ready"
+VERDICT_MARKET_CLOSED_INFERRED = "market_closed_inferred"
+
+_MARKET_CLOSED_WARNING = (
+    "no bars for any symbol on {date}: hk/us have no in-engine calendar "
+    "(AM-6 zero-calendar fail-closed), so the day is inferred closed from bar "
+    "availability and must be cross-checked against the RM static holiday file"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ZeroCalendarDayVerdict:
+    """One AM-6 matrix verdict for a hk/us candidate day.
+
+    ``suspended_symbols`` is only populated on ``trading_day`` verdicts:
+    symbols with zero bar that day (the engine rejects their orders with
+    reason_code ``suspended`` and values their positions carry-forward).
+    ``warning`` is mandatory on ``market_closed_inferred`` (never silent).
+    """
+
+    date: str
+    kind: str
+    suspended_symbols: tuple[str, ...] = ()
+    warning: str | None = None
 
 
 class TradeCalendarClient(Protocol):
@@ -106,7 +150,7 @@ def _cn_a_open_map(client: TradeCalendarClient, start_date: str, end_date: str) 
     return open_map
 
 
-def _reject_market(market: str) -> None:
+def _ensure_calendar_market(market: str) -> None:
     if market not in _CALENDAR_MARKETS:
         raise ValueError(f"unknown market for calendar lookup: {market!r}")
     if market in _ZERO_CALENDAR_MARKETS:
@@ -117,9 +161,10 @@ def is_trading_day(client: TradeCalendarClient, market: str, date: str) -> bool:
     """Whether ``date`` (YYYY-MM-DD) is a trading day of ``market``.
 
     cn_a: CH ``trade_calendar`` truth.  hk/us: raises NotImplementedError
-    (AM-6 zero-calendar — see module docstring).  Unknown market: ValueError.
+    (AM-6 zero-calendar — use :func:`classify_zero_calendar_day`).  Unknown
+    market: ValueError.
     """
-    _reject_market(market)
+    _ensure_calendar_market(market)
     day = _normalize_date(date)
     return _cn_a_open_map(client, day, day).get(day, False)
 
@@ -132,7 +177,7 @@ def trading_days_in_range(
     The engine's day loop (Step 3) consumes this to emit ``skipped_days``
     rows with reason ``non_trading_day`` for the closed dates in between.
     """
-    _reject_market(market)
+    _ensure_calendar_market(market)
     start = _normalize_date(from_date)
     end = _normalize_date(to_date)
     open_map = _cn_a_open_map(client, start, end)
@@ -140,3 +185,65 @@ def trading_days_in_range(
     # the contract this function guarantees is "open days within [start, end]"
     # regardless of what the client hands back.
     return tuple(sorted(date for date, is_open in open_map.items() if is_open and start <= date <= end))
+
+
+def hk_us_candidate_days(from_date: str, to_date: str) -> tuple[str, ...]:
+    """Weekdays (Mon-Fri) within the inclusive range, ascending.
+
+    Zero-calendar day enumeration for hk/us: weekends are non-trading by
+    Gregorian fact (no exchange-calendar dependency); holiday closures surface
+    as zero-bar weekdays and are classified by
+    :func:`classify_zero_calendar_day`.  Pure date arithmetic on injected
+    strings — deterministic, no clock.
+    """
+    start = dt.date.fromisoformat(_normalize_date(from_date))
+    end = dt.date.fromisoformat(_normalize_date(to_date))
+    if start > end:
+        raise ValueError(f"from_date ({start}) > to_date ({end})")
+    days: list[str] = []
+    day = start
+    while day <= end:
+        if day.weekday() < 5:
+            days.append(day.isoformat())
+        day += dt.timedelta(days=1)
+    return tuple(days)
+
+
+def classify_zero_calendar_day(
+    market: str,
+    date: str,
+    *,
+    is_target_day: bool,
+    symbols: "object",
+    symbols_with_bars: "object",
+) -> ZeroCalendarDayVerdict:
+    """AM-6 fail-closed three-state matrix for one hk/us candidate day.
+
+    ① target day, all-market zero bar → ``VERDICT_NOT_READY`` (the tool layer
+    emits the retryable ``PAPER_DATA_NOT_READY`` envelope; data delays are
+    absorbed by the RM retry chain).  ② mid-range day, all-market zero bar →
+    ``VERDICT_MARKET_CLOSED_INFERRED`` + mandatory warning — never silently a
+    ``non_trading_day`` (that reason is cn_a-only, CH calendar truth).  ③ any
+    symbol has a bar → ``VERDICT_TRADING_DAY``; zero-bar symbols come back as
+    ``suspended_symbols`` (engine rejects their orders ``suspended`` and
+    values their positions carry-forward).
+
+    ``symbols`` is the account universe (positions ∪ orders);
+    ``symbols_with_bars`` comes from :func:`data.day_bar_availability`.
+    cn_a is refused (ValueError) — ``market_closed_inferred`` is hk/us-only
+    vocabulary.  An empty universe classifies as all-market zero bar (the
+    matrix is literal; degenerate calls are the tool layer's concern).
+    """
+    if market not in _ZERO_CALENDAR_MARKETS:
+        raise ValueError(f"zero-calendar classification is hk/us only, got market {market!r}")
+    day = _normalize_date(date)
+    universe = tuple(sorted({str(symbol) for symbol in symbols}))
+    with_bars = frozenset(universe) & {str(symbol) for symbol in symbols_with_bars}
+    if not with_bars:
+        if is_target_day:
+            return ZeroCalendarDayVerdict(day, VERDICT_NOT_READY)
+        return ZeroCalendarDayVerdict(
+            day, VERDICT_MARKET_CLOSED_INFERRED, warning=_MARKET_CLOSED_WARNING.format(date=day)
+        )
+    suspended = tuple(symbol for symbol in universe if symbol not in with_bars)
+    return ZeroCalendarDayVerdict(day, VERDICT_TRADING_DAY, suspended_symbols=suspended)

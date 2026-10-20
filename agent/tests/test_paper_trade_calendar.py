@@ -2,8 +2,10 @@
 
 cn_a: ClickHouse trade_calendar lookup through an INJECTABLE fake client —
 recorded rows only, never the network (ClickHouse is unreachable anyway;
-the plan raised HIL for live probes).  hk/us: the zero-calendar fail-closed
-seam must raise NotImplementedError until G1.
+the plan raised HIL for live probes).  hk/us: the approved AM-6
+zero-calendar design (G1 2026-10-19) — calendar lookups stay closed
+(NotImplementedError); day verdicts flow through bar availability in
+calendar.classify_zero_calendar_day instead.
 """
 
 from __future__ import annotations
@@ -111,9 +113,15 @@ def test_unrecognized_date_format_fails_closed(cn_a_client: FakeCalendarClient) 
 
 
 @pytest.mark.parametrize("market", ["hk", "us"])
-def test_hk_and_us_raise_not_implemented_pending_g1(cn_a_client: FakeCalendarClient, market: str) -> None:
-    # TODO-G1: AM-6 zero-calendar fail-closed — hk/us verdicts come from bar
-    # availability in the data layer (Step 2+), not from a calendar.
+def test_hk_and_us_calendar_lookups_stay_closed_by_am6_design(
+    cn_a_client: FakeCalendarClient, market: str
+) -> None:
+    # AM-6 zero-calendar design, APPROVED at G1 (2026-10-19): hk/us day
+    # verdicts come from bar availability (calendar.classify_zero_calendar_day
+    # over the data layer's facts), never from a calendar lookup — the repo
+    # carries no hk/us calendar and the zero-new-dependency red line forbids
+    # one.  These lookups staying NotImplementedError IS the approved
+    # fail-closed behavior (tested via the T2/T3 matrix seams), not a gap.
     with pytest.raises(NotImplementedError, match="zero-calendar"):
         is_trading_day(cn_a_client, market, "2026-10-20")
     with pytest.raises(NotImplementedError, match="zero-calendar"):

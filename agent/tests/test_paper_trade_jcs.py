@@ -6,8 +6,9 @@ implementation against the same vectors.  Per the VD-14 re-baseline protocol
 the vectors are immutable once RM adopts them — regeneration requires human
 sign-off named in the commit message.
 
-Also smoke-tests the pt-v1.1 contract-schema skeleton (VD-13 file +
-dependency-free subset validator); the full T6 gate lands in Step 5.
+Also smoke-tests the finalized pt-v1.1 contract schema (VD-13 file +
+dependency-free subset validator); the full T6 gate lives in
+test_paper_trade_schema.py (Step 5).
 
 Offline: no network, no clock, no writes.
 """
@@ -196,14 +197,38 @@ def test_received_state_hash_covers_the_frozen_am4_object() -> None:
 
 
 def test_effective_fee_model_echoes_cn_a_defaults() -> None:
-    # TODO-G1: values are the pt-v1.1 DRAFT defaults (REQUIREMENTS §4 matrix,
-    # cn_a key names per AMENDMENT §2.2).  This test pins the draft; it is
-    # re-baselined only through G1.
+    # FROZEN terminal values (G1 approved 2026-10-19): REQUIREMENTS §4 matrix,
+    # cn_a key names verbatim per AMENDMENT §2.2 / APPROVAL note 5.  Any
+    # change = major schema bump with RM written confirmation.
     assert effective_fee_model("cn_a") == {
         "commission_rate": 0.00025,
         "commission_min": 5.0,
         "stamp_tax_sell": 0.0005,
         "transfer_fee": 0.00001,
+    }
+
+
+def test_effective_fee_model_echoes_hk_defaults() -> None:
+    # FROZEN terminal values (APPROVAL note 5): hk key names mapped
+    # item-by-item to the §4 matrix — commission 0.03% min HK$3, stamp duty
+    # 0.1% per side (whole HKD ROUND_HALF_UP, VD-9 registered), regulatory
+    # levy ≈0.003% combined.
+    assert effective_fee_model("hk") == {
+        "commission_rate": 0.0003,
+        "commission_min": 3.0,
+        "stamp_tax_rate": 0.001,
+        "regulatory_levy_rate": 0.00003,
+    }
+
+
+def test_effective_fee_model_echoes_us_defaults() -> None:
+    # FROZEN terminal values (APPROVAL note 5): us key names mapped to the
+    # §4 matrix — $0.0049/share min $0.99, SEC fee simplified to 0 (VD-9
+    # registered).
+    assert effective_fee_model("us") == {
+        "commission_per_share": 0.0049,
+        "commission_min": 0.99,
+        "sec_fee_rate": 0.0,
     }
 
 

@@ -295,6 +295,7 @@ markers = [
     "unit: Unit tests (fast, no network)",
     "integration: Integration tests (may need network)",
     "bench: Latency benchmarks (skipped by default; run with -m bench)",
+    "slow: Performance-budget gates (paper-trade T8): run at the delivery gate, re-run quarterly",
 ]
 
 [tool.ruff]

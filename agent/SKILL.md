@@ -133,7 +133,7 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (85)
+## Available MCP Tools (86)
 
 | Tool | Description | API Key |
 |------|-------------|---------|
@@ -145,6 +145,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `update_research_goal_status` | Update goal lifecycle status | None |
 | `scheduled_research` | Inspect scheduled research; prepare create/cancel proposals (human confirms on the surface) | None |
 | `backtest` | Run vectorized backtest engine | None* |
+| `paper_trade_step` | Deterministic paper-trading matching engine; never places real orders | None* |
 | `factor_analysis` | IC/IR analysis + layered backtest | None* |
 | `alpha_zoo` | Browse bundled alpha metadata and registry health | None |
 | `alpha_bench` | Benchmark one alpha or a complete zoo | None* |

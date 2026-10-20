@@ -45,11 +45,15 @@ __all__ = [
     "state_hash",
 ]
 
-# TODO-G1: pending RM written approval of pt-v1.1 — default fee models below
-# echo the REQUIREMENTS §4 matrix (RM-adjudicated semantics; VT may micro-adjust
-# numeric defaults but must register final values in the delivery note, VD-9).
-# Key names for cn_a follow the AMENDMENT §2.2 example verbatim; hk/us key
-# names have no frozen example yet and are draft-only.
+# FROZEN terminal defaults (G1: RM written approval 2026-10-19; APPROVAL note 5
+# + REQUIREMENTS §4 fee matrix).  Key names are the pt-v1.1 final set — cn_a
+# verbatim from the AMENDMENT §2.2 out-param example, hk/us mapped item-by-item
+# to the §4 matrix; they are registered in the delivery note (#7) so the RM
+# dispatch injection (AM-4-3: fee_model is always injected explicitly) aligns.
+# Any key/value change = major schema bump with RM written confirmation
+# (REQUIREMENTS §9).  VD-9 numeric choices registered in the delivery note:
+# hk stamp duty quantizes to whole HKD ROUND_HALF_UP (HKEX itself ceils) and
+# the us SEC fee is simplified to 0.
 _DEFAULT_FEE_MODELS: dict[str, dict[str, float]] = {
     "cn_a": {
         "commission_rate": 0.00025,  # 万2.5 bilateral
@@ -57,20 +61,16 @@ _DEFAULT_FEE_MODELS: dict[str, dict[str, float]] = {
         "stamp_tax_sell": 0.0005,  # 万5 sell-side only
         "transfer_fee": 0.00001,  # 万0.1 bilateral
     },
-    # TODO-G1: pending RM written approval of pt-v1.1 — hk key names are draft;
-    # stamp-tax rounding (HALF_UP vs HKEX ceil) is a VD-9 delivery-note item.
     "hk": {
         "commission_rate": 0.0003,  # 0.03%
         "commission_min": 3.0,  # HK$3 minimum
-        "stamp_tax_rate": 0.001,  # 0.1% per side, rounded to whole HKD
+        "stamp_tax_rate": 0.001,  # 0.1% per side, whole HKD ROUND_HALF_UP (VD-9)
         "regulatory_levy_rate": 0.00003,  # ≈0.003% combined levies
     },
-    # TODO-G1: pending RM written approval of pt-v1.1 — us key names are draft;
-    # SEC fee simplified to 0 per REQUIREMENTS §4.
     "us": {
         "commission_per_share": 0.0049,  # $0.0049/share
         "commission_min": 0.99,  # $0.99 minimum
-        "sec_fee_rate": 0.0,  # simplified to zero (§4)
+        "sec_fee_rate": 0.0,  # simplified to zero (§4, VD-9 registered)
     },
 }
 
