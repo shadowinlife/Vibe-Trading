@@ -558,10 +558,30 @@ def run_strategy_path(
                        else f"strategy_execution_error:{failure.day}:{failure.class_name}")
             logger.warning("paper_trade strategy failed on %s (%s)", failure.day, message)
             return _strategy_error(request, market_data, message)
+    if request.interval == "5m":
+        # N1-B: the engine's 5m session-fact universe is the declared UNIVERSE,
+        # so an order on any other symbol has no session bar to match and would
+        # be reported as a FALSE `suspended` halt while the step still
+        # succeeded — a position the strategy can never exit.  An undeclared
+        # order is an authoring error, and the whole call fails in-band: no
+        # in-universe order is partially matched.
+        allowed = set(market_data.five_minute_symbols)
+        outside = sorted({
+            order.symbol
+            for day_orders in orders_by_day.values()
+            for order in day_orders
+        } - allowed)
+        if outside:
+            return _strategy_error(
+                request, market_data,
+                f"strategy orders on {', '.join(outside)} are outside the 5m UNIVERSE "
+                f"({', '.join(sorted(allowed)) or 'empty'}); declare them in UNIVERSE "
+                "or use interval=1d")
     return run_day_loop(
         market=request.market, account_state=request.account_state,
         from_date=request.from_date, to_date=request.to_date, market_data=market_data,
         orders_by_day=orders_by_day, fee_model=request.fee_model,
         calendar_client=calendar_client, limits_client=limits_client,
         corporate_action_unresolved_by_day=corporate_action_unresolved_by_day,
-        hk_lot_sizes=hk_lot_sizes)
+        hk_lot_sizes=hk_lot_sizes,
+        path_model=request.path_model, fill_model=request.fill_model)
