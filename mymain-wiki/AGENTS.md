@@ -49,8 +49,8 @@ mymain = **纯粹的 opencode + omo + VT MCP 路线**：opencode 作为 harness 
 
 | 问题 | 单一答案位置 |
 |---|---|
-| 全量测试基线现在是多少 | DIVERGENCE §3.1（2026-09-27 轮） |
-| MCP 工具计数被什么钉着 | DIVERGENCE §4.3 上游 pin 测试（本分支 OFF=78 / ON=83，**七份** README + SKILL.md 同步义务） |
+| 全量测试基线现在是多少 | DIVERGENCE §3.1 / §5 最新一轮（2026-10-22 对齐：routing 193、memory 375/2） |
+| MCP 工具计数被什么钉着 | DIVERGENCE §4.3 上游 pin 测试（本分支 OFF=86 / ON=91，**七份** README + SKILL.md 同步义务） |
 | 子代理/nano-search 为什么回退、证据在哪 | DIVERGENCE §5 2026-09-27 条 + 2026-09-06 specialist-arch iter3 终局条 |
 | A 股结构化检索缺口怎么补 | DIVERGENCE §4.6 待办研究（未来搜索替换引擎） |
 | 本分支跟踪的上游缺陷 | DIVERGENCE §2.4 |
