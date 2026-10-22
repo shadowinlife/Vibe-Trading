@@ -200,3 +200,18 @@ agent/tests/artifacts/
 
 # Local simulated account ledgers
 /paper-trading/
+
+# Local OMO artifacts (generated, not source)
+.omo/
+.env.md
+
+# Local agent/tool state (generated, not source)
+.opencode/
+.qoder/
+.sisyphus/
+.playwright-mcp/
+
+# Local scratch data and research outputs
+research/
+tmp/
+bench_report_tier2.json
