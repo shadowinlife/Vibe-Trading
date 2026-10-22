@@ -713,7 +713,7 @@ class MemoryConfig(_EnvBase):
         description="Enable SQLite FTS5 search index",
     )
 
-# Scheduled consolidation system job (scheduler unification).
+    # Scheduled consolidation system job (scheduler unification).
     # Deliberately NOT listed in the preset flag map or the memory flag alias
     # map above: the preset machinery only touches fields in the alias map, so
     # VT_MEMORY=on/full can never silently enable a background timer. This
@@ -724,11 +724,16 @@ class MemoryConfig(_EnvBase):
         description="Enable the daily memory-consolidation system job",
     )
 
-    # T1b flags
+    # T1b / T4 flags
     reflections_enabled: EnvBool = Field(
         default=False,
         alias="VT_MEMORY_REFLECTIONS",
         description="Enable reflection lessons storage and retrieval",
+    )
+    mcp_tools_enabled: EnvBool = Field(
+        default=False,
+        alias="VT_MEMORY_MCP_TOOLS",
+        description="Enable memory MCP tool registration for external callers",
     )
 
     @model_validator(mode="before")

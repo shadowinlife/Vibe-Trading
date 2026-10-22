@@ -19,6 +19,7 @@ from src.config.paths import get_runtime_root
 
 logger = logging.getLogger(__name__)
 
+
 def _default_memory_base() -> Path:
     """Resolve the default memory base directory.
 
