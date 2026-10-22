@@ -39,3 +39,8 @@
 3. **commit message 清洁**: 提交到社区的 commit 不得包含 `AI-Contributed`、`AI-Model`、`Co-Authored-By` 等 AI 归属行。使用 `git commit -s` 签名 DCO。
 4. **PR 描述模板**: 每个社区 PR 必须包含: Summary / Why / Changes / Test Plan / Checklist（参考 `.github/PULL_REQUEST_TEMPLATE.md`）。
 5. **差异文档同步**: 社区 PR 合入后，从 `mymain-wiki/branch/MYMAIN_DIVERGENCE.md` 移除对应条目。全部合入后本分支回归为纯跟踪分支。
+
+# 9. 环境约束（强制）
+
+1. **当前环境禁止 `scp` 命令**: 任何文件传输、部署、上传、同步任务一律不得使用 `scp`。需要跨主机复制时改用 `rsync`、`ssh <host> 'cat > <path>'`、`git push`/`git fetch`，或目标平台提供的 API/CLI；脚本、文档、示例与子代理提示词中也不得出现 `scp` 调用。
+2. **违规即阻断**: 若某个既有脚本或文档依赖 `scp`，必须先就地替换为上述替代方案再执行；不得以“历史遗留”为由放行。
