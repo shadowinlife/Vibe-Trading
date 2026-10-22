@@ -63,6 +63,9 @@ REQUIRED_TOOL_NAMES = {
     "alpha_zoo",
     "alpha_bench",
     "paper_trade_step",
+    "paper_trade_account_create",
+    "paper_trade_bar_step",
+    "paper_trade_account_status",
 }
 
 

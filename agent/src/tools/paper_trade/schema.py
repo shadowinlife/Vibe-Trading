@@ -1,4 +1,4 @@
-"""pt-v1.1 / pt-v1.2 wire contract for ``paper_trade_step`` (shapes + vocabularies).
+"""pt-v1.1 / pt-v1.2 / pt-v1.3 wire contract for ``paper_trade_step`` (shapes + vocabularies).
 
 Declares the in-param, out-param and error-envelope shapes frozen by
 ``PAPER_TRADING_ENGINE_AMENDMENT_PT_V1.1.md`` §2 (the FROZEN summary), plus
@@ -19,12 +19,27 @@ v1.2 call.  "v1.2 call" means at least one new request field is non-default
 ``SKIPPED_DAY_REASONS``, ``ERROR_CODES``) are NOT extended; the emergency
 cancel token lives only inside ``canceled_orders`` (D2).
 
+pt-v1.3 (P1 intraday plan, GAP-2/GAP-6) is the second additive bump: one
+clock-free per-5m-bar request/result pair with an explicit order lifecycle
+(``ORDER_STATUSES`` / ``TIFS`` / ``ORDER_ACTIONS``), an adverse
+``SlippageSpec`` (Decimal money) and the session phase.  It lives in
+:mod:`~.schema_v13` and is re-exported from here, so
+``from .schema import BarStepRequest`` keeps working.  The v1.3 surface is
+selected by the presence of a v1.3-only request field, exactly like D8;
+:func:`parse_request` REJECTS such a field instead of silently ignoring it,
+and :func:`~.schema_v13.parse_bar_step_request` is the only parser that turns
+it into a typed value.  Every v1.2 default and parser path is unchanged.
+
 Companion artifacts:
 
 * ``schema/tool_contracts/paper_trade_step-v1.1.json`` — frozen v1.1 out-param
   + error-envelope jsonschema (VD-13), loaded by :func:`load_contract_schema`.
 * ``schema/tool_contracts/paper_trade_step-v1.2.json`` — the additive v1.2
   copy (same loader, ``version="pt-v1.2"``).
+* ``schema/tool_contracts/paper_trade_step-v1.3.json`` — the additive v1.3
+  copy (same loader, ``version="pt-v1.3"``).
+* ``schema_v13.py`` — the pt-v1.3 shapes/vocabularies/parsers, re-exported
+  here.
 * ``state_hash.py`` — ``received_state_hash`` / ``effective_fee_model`` /
   ``engine_fingerprint``.
 * ``wire.py`` — success/error payload builders + deterministic JSON
@@ -49,7 +64,30 @@ import math
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:  # the static view of the PEP 562 re-export at the bottom
+    from .schema_v13 import (
+        DEFAULT_SLIPPAGE_BPS,
+        DEFAULT_SLIPPAGE_MODEL,
+        DEFAULT_TIF,
+        ORDER_ACTIONS,
+        ORDER_EVENT_TYPES,
+        ORDER_STATUSES,
+        SESSION_PHASES,
+        SLIPPAGE_MODELS,
+        TIFS,
+        BarStepRequest,
+        BarStepResult,
+        OrderAction,
+        OrderState,
+        SlippageSpec,
+        parse_bar_step_request,
+        parse_bar_time,
+        parse_order_action,
+        parse_order_state,
+        parse_slippage,
+    )
 
 __all__ = [
     "CANCELED_REASON_CODE",
@@ -57,26 +95,40 @@ __all__ = [
     "DEFAULT_INTERVAL",
     "DEFAULT_PATH_MODEL",
     "DEFAULT_SESSION",
+    "DEFAULT_SLIPPAGE_BPS",
+    "DEFAULT_SLIPPAGE_MODEL",
+    "DEFAULT_TIF",
     "ERROR_CODES",
     "FILL_MODELS",
     "INTERVALS",
     "MARKETS",
+    "ORDER_ACTIONS",
+    "ORDER_EVENT_TYPES",
+    "ORDER_STATUSES",
     "PATH_MODELS",
     "REASON_CODES",
     "SCHEMA_VERSIONS",
     "SCHEMA_VERSION",
     "SCHEMA_VERSION_V1_2",
+    "SCHEMA_VERSION_V1_3",
     "SESSION_EVENT_TYPES",
+    "SESSION_PHASES",
     "SESSIONS",
     "SIDES",
     "SKIPPED_DAY_REASONS",
+    "SLIPPAGE_MODELS",
+    "TIFS",
     "TOOL_NAME",
     "AccountState",
+    "BarStepRequest",
+    "BarStepResult",
     "CanceledOrder",
     "ErrorEnvelope",
     "Fill",
     "NavPoint",
     "Order",
+    "OrderAction",
+    "OrderState",
     "PaperTradeSchemaError",
     "PaperTradeStepRequest",
     "PaperTradeStepResult",
@@ -84,9 +136,15 @@ __all__ = [
     "RejectedOrder",
     "SessionEvent",
     "SkippedDay",
+    "SlippageSpec",
     "load_contract_schema",
     "parse_account_state",
+    "parse_bar_step_request",
+    "parse_bar_time",
+    "parse_order_action",
+    "parse_order_state",
     "parse_request",
+    "parse_slippage",
     "validate_payload",
 ]
 
@@ -101,8 +159,32 @@ SCHEMA_VERSION = "pt-v1.1"
 #: request field is non-default.
 SCHEMA_VERSION_V1_2 = "pt-v1.2"
 
+#: Additive bump version (P1 intraday plan): the per-5m-bar order-lifecycle
+#: surface.  Emitted only by a :class:`BarStepRequest`; the day-level
+#: ``paper_trade_step`` continues to emit pt-v1.1 or pt-v1.2 (D8).
+SCHEMA_VERSION_V1_3 = "pt-v1.3"
+
 #: Every version this loader can resolve, oldest first.
-SCHEMA_VERSIONS: tuple[str, ...] = (SCHEMA_VERSION, SCHEMA_VERSION_V1_2)
+SCHEMA_VERSIONS: tuple[str, ...] = (SCHEMA_VERSION, SCHEMA_VERSION_V1_2, SCHEMA_VERSION_V1_3)
+
+#: Request keys that belong ONLY to the pt-v1.3 bar-step contract.  Their
+#: presence selects the v1.3 surface; :func:`parse_request` rejects them
+#: rather than ignoring them, so an older call can never half-parse a v1.3
+#: field (a present ``bar_time`` on a v1.2 payload is an error, not a no-op).
+_V13_REQUEST_MARKERS: tuple[str, ...] = (
+    "bar_time",
+    "order_actions",
+    "cancel_order_ids",
+    "replace_orders",
+    "slippage",
+    "slippage_model",
+    "slippage_bps",
+    "slippage_amount",
+    "session_phase",
+    "open_orders",
+    "order_seq",
+    "prev_closes",
+)
 
 # ── pt-v1.2 additive request vocabularies (D1/D5/D8) ──
 #
@@ -187,6 +269,7 @@ _CONTRACT_SCHEMA_DIR = Path(__file__).resolve().parents[4] / "schema" / "tool_co
 _CONTRACT_SCHEMA_PATHS: dict[str, Path] = {
     SCHEMA_VERSION: _CONTRACT_SCHEMA_DIR / "paper_trade_step-v1.1.json",
     SCHEMA_VERSION_V1_2: _CONTRACT_SCHEMA_DIR / "paper_trade_step-v1.2.json",
+    SCHEMA_VERSION_V1_3: _CONTRACT_SCHEMA_DIR / "paper_trade_step-v1.3.json",
 }
 
 
@@ -360,15 +443,45 @@ def _parse_order(raw: Any, path: str) -> Order:
     )
 
 
+def _parse_fee_model(payload: dict[str, Any]) -> dict[str, float]:
+    """Parse the AM-4-3 ``fee_model`` object shared by the v1.2/v1.3 parsers.
+
+    Only a missing or explicit null fee_model defaults to {}; a PRESENT falsy
+    non-dict ([] / "" / false / 0) is a contract violation, not an absence —
+    ``or {}`` would launder it.
+    """
+    fee_model_raw = payload.get("fee_model")
+    if fee_model_raw is None:
+        fee_model_raw = {}
+    if not isinstance(fee_model_raw, dict):
+        raise PaperTradeSchemaError(
+            f"fee_model must be an object, got {type(fee_model_raw).__name__}"
+        )
+    return {
+        _require_str(key, "fee_model key"): _require_number(value, f"fee_model.{key}")
+        for key, value in fee_model_raw.items()
+    }
+
+
 def parse_request(payload: dict[str, Any]) -> PaperTradeStepRequest:
-    """Parse JSON-parsed tool input into the typed request contract.
+    """Parse JSON-parsed tool input into the typed v1.1/v1.2 request contract.
 
     Shape-level boundary parse only: types, enums, date format.  Raises
     :class:`PaperTradeSchemaError` with a deterministic message naming the
     offending path.
+
+    A pt-v1.3-only key (see :data:`_V13_REQUEST_MARKERS`) is refused instead
+    of ignored: the v1.3 contract has its own parser
+    (:func:`~.schema_v13.parse_bar_step_request`) and a field that reaches the
+    wrong one must never be half-parsed.
     """
     if not isinstance(payload, dict):
         raise PaperTradeSchemaError(f"request must be an object, got {type(payload).__name__}")
+    for marker in _V13_REQUEST_MARKERS:
+        if marker in payload:
+            raise PaperTradeSchemaError(
+                f"{marker} belongs to the pt-v1.3 bar-step contract; use parse_bar_step_request"
+            )
     market = _require_str(payload.get("market"), "market")
     if market not in MARKETS:
         raise PaperTradeSchemaError(f"market must be one of {MARKETS}, got {market!r}")
@@ -384,20 +497,7 @@ def parse_request(payload: dict[str, Any]) -> PaperTradeStepRequest:
     if strategy_path is not None:
         strategy_path = _require_str(strategy_path, "strategy_path")
 
-    # Only a missing or explicit null fee_model defaults to {} (AM-4-3 keeps
-    # the field schema-optional); a PRESENT falsy non-dict ([] / "" / false /
-    # 0) is a contract violation, not an absence — `or {}` would launder it.
-    fee_model_raw = payload.get("fee_model")
-    if fee_model_raw is None:
-        fee_model_raw = {}
-    if not isinstance(fee_model_raw, dict):
-        raise PaperTradeSchemaError(
-            f"fee_model must be an object, got {type(fee_model_raw).__name__}"
-        )
-    fee_model = {
-        _require_str(key, "fee_model key"): _require_number(value, f"fee_model.{key}")
-        for key, value in fee_model_raw.items()
-    }
+    fee_model = _parse_fee_model(payload)
 
     return PaperTradeStepRequest(
         account_id=_require_str(payload.get("account_id"), "account_id"),
@@ -575,8 +675,13 @@ def load_contract_schema(
     ``version`` is one of :data:`SCHEMA_VERSIONS` and defaults to the frozen
     pt-v1.1 file, so every existing caller keeps reading the same document.
     A v1.1 result validates ONLY against ``version="pt-v1.1"``; a v1.2 result
-    (``engine_fingerprint`` present) validates against ``version="pt-v1.2"``.
-    Read-only.
+    (``engine_fingerprint`` present) validates against ``version="pt-v1.2"``;
+    a v1.3 result validates against ``version="pt-v1.3"``.
+
+    A version whose contract file is not installed is reported as unknown:
+    the artifact is part of a version's availability, so a broken install fails
+    with one deterministic KeyError naming the missing file instead of a
+    FileNotFoundError traceback.  Read-only.
     """
     try:
         path = _CONTRACT_SCHEMA_PATHS[version]
@@ -584,7 +689,12 @@ def load_contract_schema(
         raise KeyError(
             f"unknown contract version {version!r}; available: {list(SCHEMA_VERSIONS)}"
         ) from None
-    document = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise KeyError(
+            f"unknown contract version {version!r}: {path.name} is not installed"
+        ) from None
     schemas = document.get("schemas", {})
     if name not in schemas:
         raise KeyError(f"unknown contract schema {name!r}; available: {sorted(schemas)}")
@@ -616,8 +726,9 @@ def _type_matches(instance: Any, json_type: str) -> bool:
 
 def _validate_node(instance: Any, schema: dict[str, Any], path: str, errors: list[str]) -> None:
     """Recursive subset validator: type/const/enum/required/properties/items/
-    additionalProperties(bool).  Unknown keywords are ignored — the skeleton
-    stays inside this subset so the hand-rolled pass is faithful."""
+    additionalProperties(bool)/dependentRequired.  Unknown keywords are
+    ignored — the skeleton stays inside this subset so the hand-rolled pass is
+    faithful."""
     if not isinstance(schema, dict):
         return
     json_type = schema.get("type")
@@ -632,6 +743,14 @@ def _validate_node(instance: Any, schema: dict[str, Any], path: str, errors: lis
         for key in schema.get("required", ()):
             if key not in instance:
                 errors.append(f"{path}: missing required property {key!r}")
+        for trigger, dependencies in schema.get("dependentRequired", {}).items():
+            if trigger not in instance:
+                continue
+            for dependency in dependencies:
+                if dependency not in instance:
+                    errors.append(
+                        f"{path}: property {dependency!r} is required when {trigger!r} is present"
+                    )
         properties = schema.get("properties", {})
         for key, sub_schema in properties.items():
             if key in instance:
@@ -656,3 +775,23 @@ def validate_payload(payload: Any, schema: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     _validate_node(payload, schema, "$", errors)
     return errors
+
+
+def __getattr__(name: str) -> Any:
+    """Re-export the additive pt-v1.3 symbols declared in :mod:`~.schema_v13`.
+
+    ``schema_v13`` builds on this module, so importing it eagerly would make
+    the pair order-dependent (a first import of ``schema_v13`` would read a
+    half-initialised ``schema``).  This PEP 562 hook defers the import until a
+    v1.3 name is actually requested and caches the result in this module's
+    globals, so both import orders work and every v1.3 name in ``__all__`` is
+    reachable through ``from .schema import ...``.
+    """
+    if name in __all__:
+        from . import schema_v13
+
+        value = getattr(schema_v13, name, None)
+        if value is not None:
+            globals()[name] = value
+            return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

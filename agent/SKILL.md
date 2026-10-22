@@ -97,6 +97,62 @@ Example workflow:
 3. Use `write_file()` to create `config.json` and `code/signal_engine.py`
 4. Use `backtest()` to run and get metrics (Sharpe, return, drawdown, etc.)
 
+### Paper trading (pt-v1.3)
+
+A deterministic, research-only paper account for China A-shares on 5-minute bars.
+Nothing on this path reaches a broker: there is no order-placing tool, and the
+engine only reads market data and the account it wrote itself.
+
+The daily loop, all caller-driven (the package never reads a clock):
+
+1. `paper_trade_account_create`: open an account. `today` and
+   `next_trading_day` are injected `YYYY-MM-DD` strings; a `start_date` before
+   `today` is refused (`start_date_in_past`) and an existing id is a conflict
+   (`account_already_exists`), never an overwrite.
+2. `paper_trade_bar_step`: apply exactly one bar, with optional
+   `order_actions` (`place` / `cancel` / `replace`), `cancel_order_ids` and
+   `replace_orders`. The bar's `bar_time` is an aware `+08:00` label, and
+   `from_date == to_date` names the session day.
+3. `paper_trade_account_status`: read cash, positions, open orders and the
+   applied-bar watermark.
+
+The bar grid is 48 labels per session, spelled by bar END: `09:35`..`11:30`
+(24 morning bars) and `13:05`..`15:00` (24 afternoon bars), Asia/Shanghai
+(UTC+08:00, no DST). `09:30` (opening-auction print) and `14:57`-`15:00`
+(closing auction) are not continuous bars. `session_phase` is one of
+`continuous` (the only phase that matches orders), `opening_auction_print`,
+`auction_window` or `outside`, and is derived from `bar_time` when omitted.
+
+Orders move `new` → `filled` | `canceled` | `rejected` | `expired`; `replace`
+keeps the same order id and leaves the order `new`. Fills are all-or-none.
+There are no partial fills, so `day` orders rest until the 15:00 session end and
+expire, `ioc` / `fok` terminate in the bar that received them, and nothing rests
+overnight.
+
+**pt-v1.3 is opt-in.** It is selected by the presence of a v1.3-only request
+field (`bar_time`, `order_actions`, `cancel_order_ids`, `replace_orders`,
+`slippage`, `session_phase`, `open_orders`, `order_seq`). A `paper_trade_step`
+call that omits them is byte-identical to pt-v1.1/pt-v1.2, and the daily
+`paper_trade_step` parser refuses a v1.3 field instead of ignoring it. The
+surface is cn_a 5m only: hk/us keep the daily path (`interval="1d"`).
+
+**Idempotency.** A bar is applied once. Re-sending an applied bar returns
+`bar_already_applied` and writes nothing; a crash between the step write and
+the account write is adopted from matching request/result hashes, so a retry
+never applies a fill twice.
+
+**Replay vs. forward.** `session_replay.replay_session` drives all 48 labels
+for one day from a per-bar request factory (and a verified zero-write
+`dry_run`). `scheduler.SessionScheduler.tick` is the forward-loop seam: the
+caller injects `as_of`, one tick applies at most one due bar, and a missed
+beat is reported as `nothing_due` rather than back-filled. Both delegate to
+`session_runner.bar_step`, the only writer of a bar.
+
+The reference session (600519.SH, 2026-10-20, 48 bars, fills and rejections) is
+committed at `agent/tests/fixtures/paper_trade/golden/p1_intraday_session-600519.SH-2026-10-20.json`;
+`agent/tests/test_paper_trade_p1_golden.py` documents its per-bar action script
+and rebuilds the fixture when run as a script.
+
 ### Multi-Agent Swarm Teams
 30 pre-built agent teams for complex research:
 - **Investment Committee**: bull/bear debate → risk review → PM decision
@@ -133,7 +189,7 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (86)
+## Available MCP Tools (89)
 
 | Tool | Description | API Key |
 |------|-------------|---------|
@@ -146,6 +202,9 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `scheduled_research` | Inspect scheduled research; prepare create/cancel proposals (human confirms on the surface) | None |
 | `backtest` | Run vectorized backtest engine | None* |
 | `paper_trade_step` | Deterministic paper-trading matching engine; never places real orders | None* |
+| `paper_trade_account_create` | Open a pt-v1.3 cn_a 5m paper account from caller-injected dates; never places real orders | None |
+| `paper_trade_bar_step` | Apply one 5-minute bar (place/cancel/replace) idempotently; never places real orders | None |
+| `paper_trade_account_status` | Read a paper account's cash, positions, open orders and applied-bar watermark | None |
 | `factor_analysis` | IC/IR analysis + layered backtest | None* |
 | `alpha_zoo` | Browse bundled alpha metadata and registry health | None |
 | `alpha_bench` | Benchmark one alpha or a complete zoo | None* |

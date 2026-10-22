@@ -28,6 +28,22 @@ Design rules:
 ``initial_cash`` / ``initial_positions`` are frozen at creation for audit; the
 mutable ledger is ``cash`` / ``positions``.  ``positions`` is an ordered tuple,
 never a set: the engine treats element order as semantic (AM-4-1).
+
+pt-v1.3 (P1 intraday) adds six optional fields to the same document —
+``open_orders`` / ``order_seq`` / ``watermark_bar`` / ``slippage_model`` /
+``session_phase`` / ``bought_today``.  They are emitted ONLY when at least one
+is non-default, or the caller explicitly opts in (the same D8 selection rule
+the wire contract uses), so a v1.2 account's ``account.json`` stays
+byte-identical and a v1.2 document without the keys loads with the empty
+defaults.  ``watermark_bar`` is the LAST APPLIED bar label of the current
+session (``HH:MM``, ``""`` when no bar has been applied) — it is never the
+trade date: ``watermark`` remains the last processed ``trade_date``.
+
+``bought_today`` is the cn_a T+1 counter — ``{symbol: whole shares bought on
+the session day}`` — the one piece of the per-bar engine's ledger that a
+``bar_step`` boundary would otherwise lose: it is NOT derivable from cash /
+positions, because a holding carries no acquisition date.  The 15:00 session
+settlement clears it, so the next session starts with an empty counter.
 """
 
 from __future__ import annotations
@@ -35,7 +51,8 @@ from __future__ import annotations
 import datetime as dt
 import math
 import re
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
+from types import MappingProxyType
 from typing import Any, Mapping
 
 from .schema import (
@@ -43,10 +60,14 @@ from .schema import (
     INTERVALS,
     MARKETS,
     PATH_MODELS,
+    SESSION_PHASES,
+    SLIPPAGE_MODELS,
     AccountState,
+    OrderState,
     PaperTradeSchemaError,
     Position,
     parse_account_state,
+    parse_order_state,
 )
 
 __all__ = [
@@ -56,6 +77,7 @@ __all__ = [
     "INVALID_INITIAL_POSITIONS",
     "START_DATE_IN_PAST",
     "START_DATE_NOT_ADMISSIBLE",
+    "V13_ACCOUNT_KEYS",
     "AccountError",
     "PaperTradeAccount",
     "account_state_payload",
@@ -78,6 +100,21 @@ INVALID_INITIAL_POSITIONS = "invalid_initial_positions"
 ACCOUNT_ID_MAX_LEN = 64
 _ACCOUNT_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_BAR_LABEL_RE = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$")
+
+#: The six pt-v1.3-only ``account.json`` keys, in document order.  A document
+#: that carries any of them is a v1.3 document; a v1.2 document carries none.
+#: ``bought_today`` is emitted only while the counter is non-empty (an absent
+#: key is the total default "no buys today"), so a fresh v1.3 account's key set
+#: is the five always-present keys below.
+V13_ACCOUNT_KEYS: tuple[str, ...] = (
+    "open_orders",
+    "order_seq",
+    "watermark_bar",
+    "slippage_model",
+    "session_phase",
+    "bought_today",
+)
 
 
 class AccountError(ValueError):
@@ -168,6 +205,130 @@ def _position_rows(positions: tuple[Position, ...]) -> list[dict[str, Any]]:
     ]
 
 
+def _bought_today_rows(counts: Mapping[str, int]) -> dict[str, int]:
+    """The T+1 counter as its JSON row: symbol-sorted, whole shares."""
+    return {symbol: int(qty) for symbol, qty in sorted(counts.items())}
+
+
+def _require_int(value: Any, path: str, *, minimum: int = 0) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise AccountError(
+            INVALID_ACCOUNT, f"{path} must be an integer, got {type(value).__name__}"
+        )
+    if value < minimum:
+        raise AccountError(INVALID_ACCOUNT, f"{path} must be >= {minimum}, got {value}")
+    return value
+
+
+def _choice_or_empty(value: Any, path: str, allowed: tuple[str, ...]) -> str:
+    """Accept an empty string ("not set") or one member of ``allowed``."""
+    if not isinstance(value, str):
+        raise AccountError(
+            INVALID_ACCOUNT, f"{path} must be a string, got {type(value).__name__}"
+        )
+    if value and value not in allowed:
+        raise AccountError(
+            INVALID_ACCOUNT, f"{path} must be one of {allowed} or empty, got {value!r}"
+        )
+    return value
+
+
+def _bar_label_or_empty(value: Any, path: str) -> str:
+    if not isinstance(value, str):
+        raise AccountError(
+            INVALID_ACCOUNT, f"{path} must be a string, got {type(value).__name__}"
+        )
+    if value and not _BAR_LABEL_RE.match(value):
+        raise AccountError(
+            INVALID_ACCOUNT, f"{path} must be HH:MM or empty, got {value!r}"
+        )
+    return value
+
+
+def _order_state_row(order: OrderState) -> dict[str, Any]:
+    """One ``OrderState`` as its JSON row (the full declaration order)."""
+    return {
+        "order_id": order.order_id,
+        "account_id": order.account_id,
+        "trade_date": order.trade_date,
+        "symbol": order.symbol,
+        "side": order.side,
+        "qty": order.qty,
+        "remaining_qty": order.remaining_qty,
+        "limit": order.limit,
+        "tif": order.tif,
+        "status": order.status,
+        "bar_label": order.bar_label,
+        "client_order_id": order.client_order_id,
+        "filled_qty": order.filled_qty,
+        "avg_fill_price": order.avg_fill_price,
+        "seq": order.seq,
+    }
+
+
+def _order_state_rows(orders: tuple[OrderState, ...]) -> list[dict[str, Any]]:
+    return [_order_state_row(order) for order in orders]
+
+
+def _open_orders(raw: Any, path: str, account_id: str) -> tuple[OrderState, ...]:
+    """Parse carried open-order rows and enforce the book-level invariants.
+
+    Every row is re-parsed through ``parse_order_state`` even when it is
+    already an ``OrderState`` instance, so a hand-built object cannot bypass
+    the quantity/status/bar-label checks.  ``trade_date`` is deliberately NOT
+    compared with ``watermark``: open orders accumulate during a session whose
+    day is only closed when the watermark advances.
+    """
+    if raw is None:
+        return ()
+    if not isinstance(raw, (list, tuple)):
+        raise AccountError(INVALID_ACCOUNT, f"{path} must be an array")
+    orders: list[OrderState] = []
+    for index, item in enumerate(raw):
+        row_path = f"{path}[{index}]"
+        candidate = _order_state_row(item) if isinstance(item, OrderState) else item
+        try:
+            row = parse_order_state(candidate, row_path)
+        except PaperTradeSchemaError as exc:
+            raise AccountError(INVALID_ACCOUNT, str(exc)) from exc
+        if row.account_id != account_id:
+            raise AccountError(
+                INVALID_ACCOUNT,
+                f"{row_path}.account_id must be {account_id!r}, got {row.account_id!r}",
+            )
+        orders.append(row)
+    order_ids = [row.order_id for row in orders]
+    if len(set(order_ids)) != len(order_ids):
+        raise AccountError(INVALID_ACCOUNT, f"{path} contains a duplicate order_id")
+    client_ids = [row.client_order_id for row in orders if row.client_order_id]
+    if len(set(client_ids)) != len(client_ids):
+        raise AccountError(INVALID_ACCOUNT, f"{path} contains a duplicate client_order_id")
+    return tuple(orders)
+
+
+def _bought_today(raw: Any, path: str) -> Mapping[str, int]:
+    """Parse the v1.3 T+1 counter: ``{symbol: whole shares bought today}``.
+
+    ``None`` (a v1.2 document) parses as the empty counter.  Only whole,
+    non-negative share counts are admitted: cn_a trades in board lots, so a
+    fractional counter means the writer and this reader disagree about what a
+    share is, and silently truncating it would make a holding unsellable for
+    the wrong reason.
+    """
+    if raw is None:
+        return MappingProxyType({})
+    if not isinstance(raw, Mapping):
+        raise AccountError(INVALID_ACCOUNT, f"{path} must be an object")
+    counts: dict[str, int] = {}
+    for symbol, qty in raw.items():
+        if not isinstance(symbol, str) or not symbol:
+            raise AccountError(
+                INVALID_ACCOUNT, f"{path} keys must be non-empty symbols, got {symbol!r}"
+            )
+        counts[symbol] = _require_int(qty, f"{path}[{symbol!r}]")
+    return MappingProxyType(dict(sorted(counts.items())))
+
+
 def account_state_payload(state: AccountState) -> dict[str, Any]:
     """Canonical JSON ``account_state`` payload (the adoption-key pre-image).
 
@@ -187,6 +348,15 @@ class PaperTradeAccount:
     processed (``None`` before the first advance).  ``non_trading_days`` records
     every closed day the watermark walked over, so "no step" is auditable
     without a step directory.
+
+    The pt-v1.3 fields carry the intraday session across bars:
+    ``open_orders``/``order_seq`` are the resting book and its next free
+    sequence, ``watermark_bar`` is the last applied ``HH:MM`` label of the
+    CURRENT session, ``bought_today`` is the cn_a T+1 counter
+    (``{symbol: shares bought on this session day}``), and
+    ``slippage_model``/``session_phase`` are the resolved execution model and
+    last classified phase (``""`` = not set/not classified).  All six default
+    to their v1.2-absent values.
     """
 
     account_id: str
@@ -204,6 +374,12 @@ class PaperTradeAccount:
     fill_model: str = "all_or_none"
     schema_version: str = ACCOUNT_SCHEMA_VERSION
     non_trading_days: tuple[str, ...] = ()
+    open_orders: tuple[OrderState, ...] = ()
+    order_seq: int = 0
+    watermark_bar: str = ""
+    slippage_model: str = ""
+    session_phase: str = ""
+    bought_today: Mapping[str, int] = field(default_factory=lambda: MappingProxyType({}))
 
     # ── ledger views ──
 
@@ -239,6 +415,42 @@ class PaperTradeAccount:
             fields["fill_model"] = self.fill_model
             fields["session"] = "cn_a"
         return fields
+
+    # ── pt-v1.3 session state ──
+
+    @property
+    def has_v13_state(self) -> bool:
+        """True when any v1.3-only field is non-default (D8 selection rule)."""
+        return bool(
+            self.open_orders
+            or self.order_seq
+            or self.watermark_bar
+            or self.slippage_model
+            or self.session_phase
+            or self.bought_today
+        )
+
+    def v13_state_payload(self) -> dict[str, Any]:
+        """The v1.3 keys as one block, every applicable key present.
+
+        A v1.3 document always carries the five structural keys — an omitted
+        ``open_orders`` would read as "no orders" instead of "unknown", which
+        is exactly the silent-drop failure the version selection exists to
+        prevent.  ``bought_today`` is the exception: its absent value is TOTAL
+        (``{}`` = nothing was bought today, never "unknown"), so it is written
+        only while the counter is non-empty and a default account's key set
+        does not grow for a field that carries no information.
+        """
+        payload: dict[str, Any] = {
+            "open_orders": _order_state_rows(self.open_orders),
+            "order_seq": self.order_seq,
+            "watermark_bar": self.watermark_bar,
+            "slippage_model": self.slippage_model,
+            "session_phase": self.session_phase,
+        }
+        if self.bought_today:
+            payload["bought_today"] = _bought_today_rows(self.bought_today)
+        return payload
 
     # ── monotone transitions ──
 
@@ -285,9 +497,17 @@ class PaperTradeAccount:
 
     # ── document shape ──
 
-    def to_dict(self) -> dict[str, Any]:
-        """The ``account.json`` document (deterministic key set)."""
-        return {
+    def to_dict(self, *, include_v13: bool = False) -> dict[str, Any]:
+        """The ``account.json`` document (deterministic key set).
+
+        The v1.3 keys are appended as one block when the account carries any
+        v1.3 state, or when ``include_v13=True`` asks for them explicitly.
+        A v1.2 account therefore serializes byte-identically to the document
+        written before pt-v1.3 existed.  There is no opt-OUT: a v1.3 account
+        can never write a v1.2-shaped document that silently drops its open
+        orders or its T+1 counter.
+        """
+        document: dict[str, Any] = {
             "schema_version": self.schema_version,
             "account_id": self.account_id,
             "market": self.market,
@@ -304,14 +524,20 @@ class PaperTradeAccount:
             "fill_model": self.fill_model,
             "non_trading_days": list(self.non_trading_days),
         }
+        if include_v13 or self.has_v13_state:
+            document.update(self.v13_state_payload())
+        return document
 
     @classmethod
     def from_dict(cls, document: Mapping[str, Any]) -> "PaperTradeAccount":
         """Parse an ``account.json`` document.
 
-        Unknown keys are ignored (a newer writer's additive field must not brick
-        an older reader); a different ``schema_version`` is refused, because the
-        fields this reader understands may no longer mean the same thing.
+        A v1.2 document (no v1.3 keys) loads with the empty defaults; every
+        malformed v1.3 field is refused with :class:`AccountError` rather than
+        coerced.  Unknown keys are ignored (a newer writer's additive field must
+        not brick an older reader); a different ``schema_version`` is refused,
+        because the fields this reader understands may no longer mean the same
+        thing.
         """
         if not isinstance(document, Mapping):
             raise AccountError(INVALID_ACCOUNT, "account document must be an object")
@@ -335,6 +561,16 @@ class PaperTradeAccount:
         days: list[str] = []
         for index, day in enumerate(non_trading_days):
             days.append(require_date(day, f"non_trading_days[{index}]"))
+        open_orders = _open_orders(document.get("open_orders"), "open_orders", account_id)
+        order_seq = _require_int(document.get("order_seq", 0), "order_seq")
+        if open_orders:
+            highest = max(order.seq for order in open_orders)
+            if order_seq <= highest:
+                raise AccountError(
+                    INVALID_ACCOUNT,
+                    f"order_seq must be greater than every open order seq ({highest}), "
+                    f"got {order_seq}",
+                )
         return cls(
             account_id=account_id,
             market=market,
@@ -351,6 +587,16 @@ class PaperTradeAccount:
             fill_model=str(document.get("fill_model") or "all_or_none"),
             schema_version=version,
             non_trading_days=tuple(days),
+            open_orders=open_orders,
+            order_seq=order_seq,
+            watermark_bar=_bar_label_or_empty(document.get("watermark_bar", ""), "watermark_bar"),
+            slippage_model=_choice_or_empty(
+                document.get("slippage_model", ""), "slippage_model", SLIPPAGE_MODELS
+            ),
+            session_phase=_choice_or_empty(
+                document.get("session_phase", ""), "session_phase", SESSION_PHASES
+            ),
+            bought_today=_bought_today(document.get("bought_today"), "bought_today"),
         )
 
 
@@ -368,12 +614,17 @@ def create_account(
     interval: str = "5m",
     path_model: str = "bar_median",
     fill_model: str = "all_or_none",
+    slippage_model: str = "",
 ) -> PaperTradeAccount:
     """Build a fresh account, enforcing the start-date rule (planbook §0.2).
 
     ``today`` and ``next_trading_day`` are BOTH injected — this function never
     reads a clock, so "today" is whatever the caller says it is and the same
     call is reproducible in tests and in production.
+
+    ``slippage_model`` is the pt-v1.3 execution model resolved at creation
+    (``""`` = not set); it is checked against the frozen vocabulary here, so a
+    typo can never survive until the first bar step.
 
     Raises :class:`AccountError` with ``code`` in
     ``{start_date_in_past, start_date_not_admissible, invalid_account,
@@ -440,6 +691,7 @@ def create_account(
         raise AccountError(
             INVALID_ACCOUNT, f"fill_model must be one of {FILL_MODELS}, got {fill_model!r}"
         )
+    slippage_model = _choice_or_empty(slippage_model, "slippage_model", SLIPPAGE_MODELS)
 
     return PaperTradeAccount(
         account_id=account_id,
@@ -456,4 +708,5 @@ def create_account(
         path_model=path_model,
         fill_model=fill_model,
         non_trading_days=(),
+        slippage_model=slippage_model,
     )

@@ -32,6 +32,17 @@ ABSENT (not empty), while a request with at least one non-default field emits
 and ``events``.  AM-4-4's error-path hash follows the same rule: the new
 fields join the coverage object only when non-default (D4).
 
+pt-v1.3 (P1 intraday) is additive in exactly the same way, selected by the
+caller passing the bar outcome explicitly (``build_success_payload(result,
+bar)``).  Only then are :data:`V13_KEYS` appended — after the pt-v1.2 keys and
+in that fixed order — and ``schema_version`` rewritten to ``pt-v1.3``.  A
+``bar=None`` call is byte-identical to the pt-v1.1/pt-v1.2 document, so the
+version can never be advertised without its five keys.  Money keeps the VD-9
+discipline on this path: ``open_orders[].limit``/``avg_fill_price`` and
+``order_events[].price`` are 2dp ROUND_HALF_UP JSON numbers quantized through
+:func:`~.rules.quantize_money`, while the ``slippage`` echo carries its Decimal
+knobs as canonical strings.
+
 Determinism (R1-1): no clock, no randomness, no I/O — every input injected.
 """
 
@@ -41,9 +52,11 @@ import json
 import math
 import re
 from dataclasses import replace
+from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any
 
 from . import state_hash
+from .rules import money, quantize_money
 from .schema import (
     CANCELED_REASON_CODE,
     DEFAULT_FILL_MODEL,
@@ -54,26 +67,34 @@ from .schema import (
     FILL_MODELS,
     INTERVALS,
     MARKETS,
+    ORDER_EVENT_TYPES,
+    ORDER_STATUSES,
     PATH_MODELS,
     SCHEMA_VERSIONS,
     SCHEMA_VERSION_V1_2,
+    SCHEMA_VERSION_V1_3,
     SESSION_EVENT_TYPES,
     SESSIONS,
+    SIDES,
+    SLIPPAGE_MODELS,
+    TIFS,
     DateRange,
     ErrorEnvelope,
     PaperTradeSchemaError,
     PaperTradeStepResult,
     parse_account_state,
+    parse_bar_time,
 )
 from .state_hash import compute_received_state_hash, effective_fee_model
 
 if TYPE_CHECKING:
     from .engine import MatchOutcome
-    from .schema import PaperTradeStepRequest
+    from .schema import BarStepResult, PaperTradeStepRequest
 
 __all__ = [
     "FILL_REASON_MAX_CHARS",
     "ORDERS_FILL_REASON",
+    "V13_KEYS",
     "assemble_result",
     "build_error_payload",
     "build_success_payload",
@@ -87,6 +108,31 @@ __all__ = [
 #: strategy_path mode truncates to 200 characters (code points).
 ORDERS_FILL_REASON = ""
 FILL_REASON_MAX_CHARS = 200
+
+#: The pt-v1.3 additive keys in their documented insertion order.  They are
+#: APPENDED to the pt-v1.2 document (never interleaved with the frozen keys),
+#: which is why a ``bar=None`` build keeps the v1.1/v1.2 byte stream intact.
+V13_KEYS: tuple[str, ...] = (
+    "bar_time",
+    "order_events",
+    "open_orders",
+    "order_seq",
+    "slippage",
+)
+
+#: ``order_events[]`` row fields, in order: the seven required keys first, then
+#: the three optional ones.  The event vocabulary is the order book's concern;
+#: the wire pins only this row shape and fails closed on anything else.
+_ORDER_EVENT_REQUIRED: tuple[str, ...] = (
+    "event_type",
+    "order_id",
+    "client_order_id",
+    "symbol",
+    "side",
+    "qty",
+    "bar_time",
+)
+_ORDER_EVENT_OPTIONAL: tuple[str, ...] = ("price", "reason_code", "detail")
 
 
 def strategy_fill_reason(reason: str | None) -> str:
@@ -330,7 +376,211 @@ def _events_payload(events: tuple[Any, ...]) -> list[dict[str, Any]]:
     return rows
 
 
-def build_success_payload(result: PaperTradeStepResult) -> dict[str, Any]:
+# ── pt-v1.3 additive rows ──
+#
+# Every helper below is a pure projection of one typed value onto its wire row:
+# same input -> same row, no clock, no float money artifacts.  A malformed row
+# (unknown vocabulary, missing required key, non-finite money) raises instead of
+# shipping an unverifiable document.
+
+
+def _wire_str(value: Any, path: str) -> str:
+    """A JSON string, empty allowed (``client_order_id`` may be absent)."""
+    if not isinstance(value, str):
+        raise ValueError(f"{path} must be a string, got {type(value).__name__}")
+    return value
+
+
+def _wire_text(value: Any, path: str) -> str:
+    """A non-empty JSON string (identity/text fields)."""
+    text = _wire_str(value, path)
+    if not text:
+        raise ValueError(f"{path} must be a non-empty string")
+    return text
+
+
+def _wire_quantity(value: Any, path: str) -> float:
+    """A share quantity as a finite JSON number — never rounded (not money)."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{path} must be a JSON number, got {type(value).__name__}")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{path} must be finite, got {value!r}")
+    return number
+
+
+def _wire_money(value: Any, path: str) -> float:
+    """Money as a 2dp ROUND_HALF_UP JSON number through the VD-9 helpers.
+
+    ``rules.money`` is the one money entry conversion (``Decimal(str(x))``) and
+    ``rules.quantize_money`` the one 2dp tick, so the float returned here always
+    has a shortest repr equal to the quantized value: ``10.01`` can never leak
+    as ``10.010000000000002``.
+    """
+    try:
+        amount = money(value)
+    except (InvalidOperation, ValueError) as exc:
+        raise ValueError(f"{path} must be a decimal money value, got {value!r}") from exc
+    if not amount.is_finite():
+        raise ValueError(f"{path} must be finite money, got {value!r}")
+    try:
+        return float(quantize_money(amount))
+    except InvalidOperation as exc:
+        raise ValueError(f"{path} is outside the 2dp money range, got {value!r}") from exc
+
+
+def _wire_seq(value: Any, path: str) -> int:
+    """A non-negative integer sequence number."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{path} must be an integer, got {type(value).__name__}")
+    if value < 0:
+        raise ValueError(f"{path} must be >= 0, got {value}")
+    return value
+
+
+def _slippage_payload(slippage: Any) -> dict[str, str]:
+    """The canonical ``{"model","bps","amount"}`` echo of a ``SlippageSpec``.
+
+    Accepts the spec (``as_wire()``) or its already-rendered echo, and requires
+    all three keys to be strings: a Decimal knob that reached the wire as a
+    float (``10.010000000000002``) is rejected rather than serialized.
+    """
+    if hasattr(slippage, "as_wire"):
+        slippage = slippage.as_wire()
+    if not isinstance(slippage, dict):
+        raise ValueError(f"slippage must be an object, got {type(slippage).__name__}")
+    if set(slippage) != {"model", "bps", "amount"}:
+        raise ValueError(
+            f"slippage keys must be ['amount', 'bps', 'model'], got {sorted(slippage)}"
+        )
+    echo: dict[str, str] = {}
+    for key in ("model", "bps", "amount"):
+        value = _wire_text(slippage[key], f"slippage.{key}")
+        if key == "model":
+            if value not in SLIPPAGE_MODELS:
+                raise ValueError(
+                    f"slippage.model {value!r} is outside the vocabulary {SLIPPAGE_MODELS}"
+                )
+        else:
+            try:
+                parsed = Decimal(value)
+            except InvalidOperation as exc:
+                raise ValueError(f"slippage.{key} must be a decimal string, got {value!r}") from exc
+            if not parsed.is_finite():
+                raise ValueError(f"slippage.{key} must be finite, got {value!r}")
+        echo[key] = value
+    return echo
+
+
+def _order_event_payload(event: Any) -> dict[str, Any]:
+    """Serialize one ordered lifecycle fact of the bar.
+
+    Row order: the seven required keys, then ``price``/``reason_code``/``detail``
+    only when non-empty (an absent optional is OMITTED, never null).  ``price``
+    is money (2dp); ``qty`` is a quantity and stays unrounded.
+    """
+    if not isinstance(event, dict):
+        raise ValueError(f"order_events rows must be objects, got {type(event).__name__}")
+    unknown = sorted(set(event) - set(_ORDER_EVENT_REQUIRED) - set(_ORDER_EVENT_OPTIONAL))
+    if unknown:
+        raise ValueError(
+            f"order_events row has unknown keys {unknown}; allowed: "
+            f"{list(_ORDER_EVENT_REQUIRED + _ORDER_EVENT_OPTIONAL)}"
+        )
+    missing = [key for key in _ORDER_EVENT_REQUIRED if key not in event]
+    if missing:
+        raise ValueError(f"order_events row is missing required keys {missing}")
+    event_type = _wire_text(event["event_type"], "order_events[].event_type")
+    if event_type not in ORDER_EVENT_TYPES:
+        raise ValueError(
+            f"order_events[].event_type {event_type!r} is outside the vocabulary "
+            f"{ORDER_EVENT_TYPES}"
+        )
+    side = _wire_text(event["side"], "order_events[].side")
+    if side not in SIDES:
+        raise ValueError(f"order_events[].side must be one of {SIDES}, got {side!r}")
+    row: dict[str, Any] = {
+        "event_type": event_type,
+        "order_id": _wire_text(event["order_id"], "order_events[].order_id"),
+        "client_order_id": _wire_str(event["client_order_id"], "order_events[].client_order_id"),
+        "symbol": _wire_text(event["symbol"], "order_events[].symbol"),
+        "side": side,
+        "qty": _wire_quantity(event["qty"], "order_events[].qty"),
+        "bar_time": parse_bar_time(event["bar_time"], "order_events[].bar_time"),
+    }
+    price = event.get("price")
+    if price is not None and price != "":
+        row["price"] = _wire_money(price, "order_events[].price")
+    reason_code = event.get("reason_code")
+    if reason_code is not None and reason_code != "":
+        row["reason_code"] = _wire_text(reason_code, "order_events[].reason_code")
+    detail = event.get("detail")
+    if detail is not None and detail != "":
+        row["detail"] = _wire_text(detail, "order_events[].detail")
+    return row
+
+
+def _order_state_payload(order: Any) -> dict[str, Any]:
+    """Serialize one ``OrderState`` row in its declaration order.
+
+    ``limit`` is genuinely nullable and stays ``null``; ``avg_fill_price`` and
+    ``limit`` are money (2dp JSON numbers), while ``qty``/``remaining_qty``/
+    ``filled_qty`` are quantities.
+    """
+    side = _wire_text(order.side, "open_orders[].side")
+    if side not in SIDES:
+        raise ValueError(f"open_orders[].side must be one of {SIDES}, got {side!r}")
+    tif = _wire_text(order.tif, "open_orders[].tif")
+    if tif not in TIFS:
+        raise ValueError(f"open_orders[].tif must be one of {TIFS}, got {tif!r}")
+    status = _wire_text(order.status, "open_orders[].status")
+    if status not in ORDER_STATUSES:
+        raise ValueError(f"open_orders[].status must be one of {ORDER_STATUSES}, got {status!r}")
+    limit = order.limit
+    return {
+        "order_id": _wire_text(order.order_id, "open_orders[].order_id"),
+        "account_id": _wire_text(order.account_id, "open_orders[].account_id"),
+        "trade_date": _wire_text(order.trade_date, "open_orders[].trade_date"),
+        "symbol": _wire_text(order.symbol, "open_orders[].symbol"),
+        "side": side,
+        "qty": _wire_quantity(order.qty, "open_orders[].qty"),
+        "remaining_qty": _wire_quantity(order.remaining_qty, "open_orders[].remaining_qty"),
+        "limit": None if limit is None else _wire_money(limit, "open_orders[].limit"),
+        "tif": tif,
+        "status": status,
+        "bar_label": _wire_text(order.bar_label, "open_orders[].bar_label"),
+        "client_order_id": _wire_str(order.client_order_id, "open_orders[].client_order_id"),
+        "filled_qty": _wire_quantity(order.filled_qty, "open_orders[].filled_qty"),
+        "avg_fill_price": _wire_money(order.avg_fill_price, "open_orders[].avg_fill_price"),
+        "seq": _wire_seq(order.seq, "open_orders[].seq"),
+    }
+
+
+def _bar_payload(bar: BarStepResult) -> dict[str, Any]:
+    """Serialize the five pt-v1.3 keys, in :data:`V13_KEYS` order.
+
+    A v1.3-tagged bar always yields all five keys: there is no default that
+    can silently drop one and leave a document claiming a version it does not
+    carry.
+    """
+    if bar.schema_version != SCHEMA_VERSION_V1_3:
+        raise ValueError(
+            f"a bar payload requires schema_version {SCHEMA_VERSION_V1_3!r}, "
+            f"got {bar.schema_version!r}"
+        )
+    values: dict[str, Any] = {
+        "bar_time": parse_bar_time(bar.bar_time, "bar_time"),
+        "order_events": [_order_event_payload(event) for event in bar.order_events],
+        "open_orders": [_order_state_payload(order) for order in bar.open_orders],
+        "order_seq": _wire_seq(bar.order_seq, "order_seq"),
+        "slippage": _slippage_payload(bar.slippage),
+    }
+    return {key: values[key] for key in V13_KEYS}
+
+
+def build_success_payload(
+    result: PaperTradeStepResult, bar: BarStepResult | None = None
+) -> dict[str, Any]:
     """Serialize the success document (AMENDMENT §2.2 wire shape).
 
     ``range.from_`` maps to the wire key ``"from"``; optional provenance
@@ -342,11 +592,31 @@ def build_success_payload(result: PaperTradeStepResult) -> dict[str, Any]:
     document without a 64-hex fingerprint, with a cancel token other than the
     frozen one, or with an unknown event type raises (engine bug / transport
     class), never shipping a document RM cannot verify.
+
+    ``bar`` selects the pt-v1.3 envelope: the pt-v1.2 document plus
+    :data:`V13_KEYS` appended in that exact order, with ``schema_version``
+    rewritten to ``pt-v1.3``.  ``bar=None`` is the v1.1/v1.2 call and returns
+    the same bytes it always did.  A ``pt-v1.3`` result without its bar, or a
+    bar whose base result is pt-v1.1, raises instead of shipping a document
+    that claims a version it cannot carry.
     """
     if result.schema_version not in SCHEMA_VERSIONS:
         raise ValueError(
             f"unknown schema_version {result.schema_version!r}; "
             f"expected one of {SCHEMA_VERSIONS}"
+        )
+    if bar is None and result.schema_version == SCHEMA_VERSION_V1_3:
+        raise ValueError(
+            "a pt-v1.3 result requires its bar (build_success_payload(result, bar)); "
+            f"the keys {list(V13_KEYS)} are never omitted from a pt-v1.3 document"
+        )
+    if bar is not None and result.schema_version not in (
+        SCHEMA_VERSION_V1_2,
+        SCHEMA_VERSION_V1_3,
+    ):
+        raise ValueError(
+            "a pt-v1.3 document composes the pt-v1.2 result, got "
+            f"schema_version {result.schema_version!r}"
         )
     payload: dict[str, Any] = {
         "schema_version": result.schema_version,
@@ -401,7 +671,7 @@ def build_success_payload(result: PaperTradeStepResult) -> dict[str, Any]:
         "warnings": list(result.warnings),
         "data_provenance": _provenance_payload(result),
     }
-    if result.schema_version == SCHEMA_VERSION_V1_2:
+    if result.schema_version == SCHEMA_VERSION_V1_2 or bar is not None:
         if not _FINGERPRINT_RE.match(result.engine_fingerprint):
             raise ValueError(
                 "a pt-v1.2 result requires a 64-character lowercase hex "
@@ -410,6 +680,9 @@ def build_success_payload(result: PaperTradeStepResult) -> dict[str, Any]:
         payload["engine_fingerprint"] = result.engine_fingerprint
         payload["canceled_orders"] = _canceled_payload(result.canceled_orders)
         payload["events"] = _events_payload(result.events)
+    if bar is not None:
+        payload.update(_bar_payload(bar))
+        payload["schema_version"] = SCHEMA_VERSION_V1_3
     return payload
 
 

@@ -455,8 +455,9 @@ def test_v11_contract_file_is_not_edited() -> None:
 
 def test_loader_defaults_to_v11_and_rejects_an_unknown_version() -> None:
     assert load_contract_schema("result")["properties"]["schema_version"]["const"] == "pt-v1.1"
+    # pt-v1.3 is a real additive version as of the P1 plan; pt-v9.9 stays unknown.
     with pytest.raises(KeyError, match="unknown contract version"):
-        load_contract_schema("result", version="pt-v1.3")
+        load_contract_schema("result", version="pt-v9.9")
 
 
 # ── Tool registration surface ──

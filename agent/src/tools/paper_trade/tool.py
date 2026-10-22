@@ -18,6 +18,18 @@ source of truth (VD-12, the backtest two-layer pattern): the auto-discovered
 :class:`PaperTradeStepTool` (agent registry) and the hand-written
 ``@mcp.tool paper_trade_step`` wrapper in ``agent/mcp_server.py``.
 
+pt-v1.3 (P1 intraday) adds a second in-band surface without touching the day
+step: any payload carrying a v1.3-only key is routed to
+:func:`~.tool_v13.run_paper_trade_bar_step` BEFORE ``parse_request``, which
+deliberately refuses those keys.  The three v1.3 entry points (account create
+/ bar step / account status) live in :mod:`~.tool_v13` and are re-exported
+here, so every registration surface keeps importing this module.  Account
+create commits through the account store; a bar step and a status read go
+through the runtime seam in ``tool_v13``, and while that seam is uninstalled a
+well-formed request is an in-band ``INVALID_REQUEST`` naming the fact — never
+a success-shaped document, never a traceback, never a clock read (``today`` /
+``next_trading_day`` are injected strings).
+
 Research-only red line (REQUIREMENTS R1): this tool NEVER places a real order
 and never touches a broker / trading connector — it reads market data and the
 injected ledger, matches on paper, and returns the result document.
@@ -39,16 +51,25 @@ from . import data, data_5m, engine, wire
 from .calendar import CN_A_MARKET
 from .data import ClickHouseBarsClient
 from .limits_cn_a import ClickHouseLimitsClient
-from .schema import (
-    DateRange,
-    ErrorEnvelope,
-    PaperTradeSchemaError,
-    parse_request,
+from .schema import DateRange, ErrorEnvelope, PaperTradeSchemaError, parse_request
+from .tool_v13 import (
+    _is_bar_step_payload,
+    _run_bar_step_payload,
+    run_paper_trade_account_create,
+    run_paper_trade_account_status,
+    run_paper_trade_bar_step,
 )
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["PaperTradeDocument", "PaperTradeStepTool", "run_paper_trade_step"]
+__all__ = [
+    "PaperTradeDocument",
+    "PaperTradeStepTool",
+    "run_paper_trade_account_create",
+    "run_paper_trade_account_status",
+    "run_paper_trade_bar_step",
+    "run_paper_trade_step",
+]
 
 
 class PaperTradeDocument(str):
@@ -92,7 +113,6 @@ _DESCRIPTION = (
     "(interval/session/path_model/fill_model) default to the pt-v1.1 daily "
     "behaviour; interval='5m' is cn_a-only. Research-only."
 )
-
 
 def _as_str(value: Any) -> str:
     """Echo a raw payload field as a string, or ``""`` when it is not one.
@@ -213,7 +233,14 @@ def run_paper_trade_step(
     The returned :class:`PaperTradeDocument` is the wire string plus the
     fetched :class:`data.MarketDataResult` (``None`` on every error envelope),
     so an in-process caller can record the day's bars without a second fetch.
+
+    A payload carrying any pt-v1.3-only key (``bar_time``, ``order_actions``,
+    …) is routed to :func:`_run_bar_step_payload` BEFORE ``parse_request``,
+    which deliberately refuses those keys: the two contracts never half-parse
+    each other.  v1.1/v1.2 payloads take the untouched day-step path.
     """
+    if _is_bar_step_payload(payload):
+        return PaperTradeDocument(_run_bar_step_payload(payload), None)
     document, market_data = _execute_step(
         payload,
         loader=loader,

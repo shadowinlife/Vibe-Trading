@@ -1,0 +1,556 @@
+{
+  "$comment": "FINALIZED pt-v1.3 — ADDITIVE bump of the frozen pt-v1.1 contract and the pt-v1.2 additive copy (schema/tool_contracts/paper_trade_step-v1.1.json and -v1.2.json, neither of which is edited). Scope: the clock-free per-5m-bar paper-trading step (P1 intraday plan, todo 2; closes GAP-2/GAP-6/GAP-7). Additions only (REQUIREMENTS §9: additive = minor bump): every request-side field below is OPTIONAL, so a pt-v1.2 request stays valid, and the five result-side keys (bar_time/order_events/open_orders/order_seq/slippage) are gated on schema_version == 'pt-v1.3' and are NEVER in the result's top-level required list. A pt-v1.1/pt-v1.2 document remains valid against its own file; this additive file also keeps such a document valid (their keys and conditionals are preserved verbatim). The dependency-free validator in agent/src/tools/paper_trade/schema.py implements a keyword subset (type/const/enum/required/properties/items/additionalProperties/dependentRequired) and deliberately ignores the version-gated allOf/if/then block; it DOES enforce dependentRequired, so bar_time must accompany order_events/open_orders/slippage. pattern/format/minLength/minimum/exclusiveMinimum/uniqueItems are documentation for the real jsonschema library, which can consume this standard draft-2020-12 document; the fail-closed gate for those is parse_bar_step_request in schema_v13.py.",
+  "contract": "paper_trade_step",
+  "version": "pt-v1.3",
+  "status": "final",
+  "schemas": {
+    "request": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://vibe-trading.local/schemas/tool_contracts/paper_trade_step-v1.3/request.json",
+      "title": "paper_trade_step pt-v1.3 bar-step request — additive overlay (P1 todo 2)",
+      "type": "object",
+      "required": [],
+      "additionalProperties": true,
+      "$comment": "ADDITIVE request overlay only: a pt-v1.3 bar step carries the pt-v1.2 identity/session fields (account_id/market/account_state/from_date/to_date/fee_model/interval/session/path_model/fill_model, documented on BarStepRequest) PLUS the optional fields below. Every field here is optional so a pt-v1.2 payload with none of them still validates — no request addition is ever required by this document. additionalProperties stays true because the overlay does not re-declare the base fields. bar_time is semantically mandatory for a bar step (parse_bar_step_request rejects a missing one) but is not marked required here: requiring it would break a pt-v1.2 request, and the parser is the fail-closed gate. The pt-v1.2 batch channels orders/strategy_path are rejected by the parser for a v1.3 bar step.",
+      "properties": {
+        "bar_time": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\+08:00$",
+          "$comment": "Aware Asia/Shanghai (+08:00) minute label with zero seconds. The caller supplies the clock — the package never reads a wall clock. Any other offset, a naive datetime, or non-zero seconds is rejected by parse_bar_time."
+        },
+        "order_actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["action"],
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": ["place", "cancel", "replace"],
+                "$comment": "One flat discriminated shape: parse_order_action enforces the action-specific invariants (place: symbol+side+qty and no caller order_id; cancel/replace: order_id or client_order_id and no qty/limit/side; replace: replace_qty and/or replace_limit)."
+              },
+              "symbol": { "type": "string" },
+              "side": { "type": "string", "enum": ["buy", "sell"] },
+              "qty": { "type": "number" },
+              "limit": { "type": ["number", "null"] },
+              "order_id": { "type": "string" },
+              "client_order_id": { "type": "string" },
+              "tif": { "type": "string", "enum": ["day", "ioc", "fok"] },
+              "replace_qty": { "type": ["number", "null"] },
+              "replace_limit": { "type": ["number", "null"] }
+            }
+          },
+          "$comment": "Per-bar order intents in application order; replaces the pt-v1.2 orders/strategy_path batch channel."
+        },
+        "cancel_order_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true,
+          "$comment": "Bulk cancel channel by order_id. Duplicates and empty strings are rejected by parse_bar_step_request; a target may appear only once across order_actions/cancel_order_ids/replace_orders."
+        },
+        "replace_orders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["action"],
+            "additionalProperties": false,
+            "properties": {
+              "action": { "type": "string", "const": "replace" },
+              "symbol": { "type": "string" },
+              "side": { "type": "string", "enum": ["buy", "sell"] },
+              "qty": { "type": "number" },
+              "limit": { "type": ["number", "null"] },
+              "order_id": { "type": "string" },
+              "client_order_id": { "type": "string" },
+              "tif": { "type": "string", "enum": ["day", "ioc", "fok"] },
+              "replace_qty": { "type": ["number", "null"] },
+              "replace_limit": { "type": ["number", "null"] }
+            }
+          },
+          "$comment": "Dedicated replace channel: every row MUST carry action='replace' (const). parse_order_action still enforces the target and replace_qty/replace_limit invariants."
+        },
+        "slippage": {
+          "type": "object",
+          "required": ["model"],
+          "additionalProperties": false,
+          "properties": {
+            "model": { "type": "string", "enum": ["none", "fixed_bps", "fixed_amount"] },
+            "bps": {
+              "type": ["number", "string"],
+              "$comment": "A JSON number or a plain decimal string (no exponent, NaN or Infinity); parsed into Decimal at the boundary."
+            },
+            "amount": {
+              "type": ["number", "string"],
+              "$comment": "A JSON number or a plain decimal string (no exponent, NaN or Infinity); parsed into Decimal at the boundary."
+            }
+          },
+          "$comment": "Explicit adverse execution-price model. Exactly one knob may be non-zero, matching the model: none => bps==amount==0; fixed_bps => amount==0 (bps defaults to 10); fixed_amount => bps==0. parse_slippage rejects unknown keys and a mismatched knob."
+        },
+        "slippage_model": {
+          "type": "string",
+          "enum": ["none", "fixed_bps", "fixed_amount"],
+          "$comment": "Shorthand form of slippage.model. Mutually exclusive with the slippage object."
+        },
+        "slippage_bps": {
+          "type": ["number", "string"],
+          "$comment": "Shorthand form of slippage.bps: a JSON number or a plain decimal string."
+        },
+        "slippage_amount": {
+          "type": ["number", "string"],
+          "$comment": "Shorthand form of slippage.amount: a JSON number or a plain decimal string."
+        },
+        "session_phase": {
+          "type": "string",
+          "enum": ["continuous", "opening_auction_print", "auction_window", "outside"],
+          "$comment": "Phase the clock classified for this bar. Only 'continuous' matches orders; '' (absent) means the caller did not classify and the clock layer derives it from bar_time — never silently treated as continuous."
+        },
+        "open_orders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["order_id", "account_id", "trade_date", "symbol", "side", "qty", "remaining_qty", "limit", "tif", "status", "bar_label"],
+            "additionalProperties": false,
+            "properties": {
+              "order_id": { "type": "string", "minLength": 1 },
+              "account_id": { "type": "string", "minLength": 1 },
+              "trade_date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+              "symbol": { "type": "string", "minLength": 1 },
+              "side": { "type": "string", "enum": ["buy", "sell"] },
+              "qty": { "type": "number", "exclusiveMinimum": 0 },
+              "remaining_qty": { "type": "number", "minimum": 0 },
+              "limit": {
+                "type": ["number", "null"],
+                "exclusiveMinimum": 0,
+                "$comment": "Required but nullable: a market order carries null, a limit order a positive price."
+              },
+              "tif": { "type": "string", "enum": ["day", "ioc", "fok"] },
+              "status": {
+                "type": "string",
+                "enum": ["new", "filled", "canceled", "rejected", "expired"],
+                "$comment": "'new' is the only non-terminal state; filled has remaining_qty == 0 and new implies remaining_qty > 0 (parse_order_state)."
+              },
+              "bar_label": { "type": "string", "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$" },
+              "client_order_id": { "type": "string" },
+              "filled_qty": { "type": "number", "minimum": 0 },
+              "avg_fill_price": { "type": "number", "minimum": 0 },
+              "seq": { "type": "integer", "minimum": 0 }
+            },
+            "$comment": "Order-book row (same shape as result.open_orders). filled_qty defaults to 0, avg_fill_price to 0, seq to 0 and client_order_id to '' — those four are the only optional members."
+          },
+          "$comment": "The carried order book before this bar (open and terminal rows). parse_order_state enforces quantity conservation, terminal/new status invariants and unique order_id/client_order_id; order_seq must exceed every carried seq."
+        },
+        "order_seq": {
+          "type": "integer",
+          "minimum": 0,
+          "$comment": "Next free deterministic per-account order sequence; the engine embeds it in order_id as '...:<seq:08d>'."
+        },
+        "prev_closes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "integer",
+              "number"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "$comment": "Optional previous-session daily close per symbol, the band input for the cn_a limit_up/limit_down slots. An integer is CENTS (100000 = 1000.00); a float/Decimal is yuan and is normalized onto the 0.01 tick. Absent means the band is UNKNOWN and the band slots are skipped (never fabricated)."
+        }
+      }
+    },
+    "result": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://vibe-trading.local/schemas/tool_contracts/paper_trade_step-v1.3/result.json",
+      "title": "paper_trade_step success result (pt-v1.3)",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "tool",
+        "account_id",
+        "market",
+        "range",
+        "received_state_hash",
+        "effective_fee_model",
+        "fills",
+        "rejected_orders",
+        "end_state",
+        "nav_series",
+        "skipped_days",
+        "warnings",
+        "data_provenance"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "enum": ["pt-v1.1", "pt-v1.2", "pt-v1.3"],
+          "$comment": "Which version a response emits (same D8 presence rule as pt-v1.2): 'pt-v1.1' when every new request field is at its default (byte-identical to the frozen v1.1 document, no v1.2/v1.3 keys at all); 'pt-v1.2' for a day-level v1.2 call; 'pt-v1.3' only for the per-bar bar-step surface, where the five v1.3 keys are mandatory (see allOf). A 'pt-v1.1' or 'pt-v1.2' document remains governed by its own file."
+        },
+        "tool": { "type": "string", "const": "paper_trade_step" },
+        "account_id": {
+          "type": "string",
+          "minLength": 1,
+          "$comment": "verbatim echo of the input (R4)"
+        },
+        "market": {
+          "type": "string",
+          "enum": ["cn_a", "hk", "us"]
+        },
+        "range": {
+          "type": "object",
+          "required": ["from", "to"],
+          "additionalProperties": false,
+          "properties": {
+            "from": { "type": "string" },
+            "to": { "type": "string" }
+          }
+        },
+        "received_state_hash": {
+          "type": "string",
+          "$comment": "sha256(JCS(non-order inputs)) — AM-4/R7; 64 lowercase hex. The v1.3 bar-state coverage (open_orders/order_seq/bar_time/slippage) is owned by state_hash.compute_bar_state_hash; a v1.1/v1.2 call hashes exactly as before."
+        },
+        "effective_fee_model": {
+          "type": "object",
+          "$comment": "Full echo of the fee parameters in effect (R7-3). Default key names FROZEN per APPROVAL note 5 / REQUIREMENTS §4: cn_a = commission_rate 0.00025, commission_min 5.0, stamp_tax_sell 0.0005, transfer_fee 0.00001; hk = commission_rate 0.0003, commission_min 3.0, stamp_tax_rate 0.001, regulatory_levy_rate 0.00003; us = commission_per_share 0.0049, commission_min 0.99, sec_fee_rate 0.0. Per-key merge keeps the object open by design."
+        },
+        "fills": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["trade_date", "symbol", "side", "qty", "price", "fee", "reason"],
+            "additionalProperties": false,
+            "properties": {
+              "trade_date": { "type": "string" },
+              "symbol": { "type": "string" },
+              "side": { "type": "string", "enum": ["buy", "sell"] },
+              "qty": { "type": "number" },
+              "price": { "type": "number" },
+              "fee": { "type": "number" },
+              "reason": {
+                "type": "string",
+                "$comment": "VD-15: orders mode = empty string; strategy_path mode = strategy reason text truncated to <=200 chars (UTF-8 safe). For a pt-v1.3 bar step this is the order-action reason text."
+              }
+            }
+          }
+        },
+        "rejected_orders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["trade_date", "symbol", "side", "qty", "reason_code", "detail"],
+            "additionalProperties": false,
+            "properties": {
+              "trade_date": { "type": "string" },
+              "symbol": { "type": "string" },
+              "side": { "type": "string", "enum": ["buy", "sell"] },
+              "qty": { "type": "number" },
+              "reason_code": {
+                "type": "string",
+                "enum": ["insufficient_cash", "insufficient_position", "t_plus_1", "limit_up", "limit_down", "suspended", "lot_size", "non_trading_day", "unknown_symbol", "corporate_action_unresolved", "limit_not_marketable"],
+                "$comment": "AM-14 closed vocabulary (11) — FROZEN, unchanged by pt-v1.2/pt-v1.3."
+              },
+              "detail": { "type": "string" }
+            }
+          }
+        },
+        "canceled_orders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["trade_date", "symbol", "side", "qty", "reason_code", "detail"],
+            "additionalProperties": false,
+            "properties": {
+              "trade_date": { "type": "string" },
+              "symbol": { "type": "string" },
+              "side": { "type": "string", "enum": ["buy", "sell"] },
+              "qty": { "type": "number" },
+              "reason_code": {
+                "type": "string",
+                "const": "canceled_after_failed_match",
+                "$comment": "T3 emergency cancel: one row per failed order in 5m mode (D2). Never added to the frozen rejected_orders vocabulary."
+              },
+              "detail": { "type": "string" }
+            }
+          },
+          "$comment": "pt-v1.2 only. Emitted (possibly empty) for a v1.2 call; omitted entirely for a pt-v1.1 call, which stays byte-identical (D2/D8). A v1.3 bar step composes the v1.2 result document and therefore carries it too."
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["trade_date", "symbol", "event_type", "detail"],
+            "additionalProperties": false,
+            "properties": {
+              "trade_date": { "type": "string" },
+              "symbol": { "type": "string" },
+              "event_type": {
+                "type": "string",
+                "enum": ["non_trading_day", "halted", "price_limit", "auction_window"],
+                "$comment": "Session facts (T4, D2). halted = calendar says open, the 5m fetch succeeded, another symbol has bars that day, and this symbol has zero bars for the session (D6)."
+              },
+              "detail": { "type": "string" }
+            }
+          },
+          "$comment": "pt-v1.2 only. Emitted (possibly empty) for a v1.2 call; omitted entirely for a pt-v1.1 call (D2/D8). A v1.3 bar step composes the v1.2 result document and therefore carries it too."
+        },
+        "end_state": {
+          "type": "object",
+          "required": ["cash", "positions"],
+          "additionalProperties": false,
+          "properties": {
+            "cash": { "type": "number" },
+            "positions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["symbol", "qty", "avg_cost"],
+                "additionalProperties": false,
+                "properties": {
+                  "symbol": { "type": "string" },
+                  "qty": { "type": "number" },
+                  "avg_cost": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "nav_series": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["date", "nav", "cash", "position_value"],
+            "additionalProperties": false,
+            "properties": {
+              "date": { "type": "string" },
+              "nav": { "type": "number" },
+              "cash": { "type": "number" },
+              "position_value": { "type": "number" }
+            }
+          }
+        },
+        "skipped_days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["date", "reason"],
+            "additionalProperties": false,
+            "properties": {
+              "date": { "type": "string" },
+              "reason": {
+                "type": "string",
+                "enum": ["non_trading_day", "market_closed_inferred"],
+                "$comment": "AM-14 closed vocabulary (2): non_trading_day = cn_a only (CH calendar truth); market_closed_inferred = hk/us only, always accompanied by a warning (AM-6)"
+              }
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string" },
+          "$comment": "deterministic English strings, never contain timestamps (VD-7 / R1 hard semantics 1)"
+        },
+        "data_provenance": {
+          "type": "object",
+          "required": ["source"],
+          "additionalProperties": false,
+          "properties": {
+            "source": {
+              "type": "string",
+              "$comment": "AM-9 merged-frame form for cn_a, e.g. 'clickhouse+tencent(merged)'"
+            },
+            "ch_as_of": { "type": "string" },
+            "network_as_of": { "type": "string" },
+            "bars_as_of": { "type": "string" },
+            "corporate_actions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["symbol", "date", "ratio", "detected"],
+                "additionalProperties": false,
+                "properties": {
+                  "symbol": { "type": "string" },
+                  "date": { "type": "string" },
+                  "ratio": {
+                    "type": "string",
+                    "$comment": "clean hit = ratio label (e.g. '4:1'); unresolved = the observed close-to-close ratio as a decimal string (fail-closed fact, never a guess)"
+                  },
+                  "detected": {
+                    "type": "boolean",
+                    "$comment": "true = clean split applied; false = unresolved fail-closed rejection (corporate_action_unresolved)"
+                  }
+                }
+              }
+            },
+            "limit_provenance": {
+              "type": "array",
+              "items": { "type": "string" },
+              "$comment": "VD-11 cn_a limit/ST/suspension path tokens, '<symbol>@<date>:<token>' — token set frozen (limits_cn_a.py): limits:stk_limit / limits:heuristic / limits:unavailable / st:stk_st_daily / st:stk_st_daily-no-row / suspend:stk_suspend / suspend:stk_suspend-no-row / limit_list:stk_limit_list_d. Present only for cn_a runs that consulted the band seam"
+            }
+          },
+          "$comment": "Extension set FINALIZED at G1: AM-9 merge-state fields (ch_as_of/network_as_of/bars_as_of), T4 corporate_actions, VD-11 limit_provenance. Optional fields are omitted when unset, never null."
+        },
+        "engine_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "$comment": "sha256(JCS({interval, path_model, fill_model, rules_version, bar_fingerprint})) as lowercase hex. pt-v1.3 extends the fingerprint input with slippage_model/order_model_version (state_hash work, P1 todo 3). Out field only — it never changes matching."
+        },
+        "bar_time": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\+08:00$",
+          "$comment": "pt-v1.3 only (P1 todo 2): canonical echo of the request bar_time — the aware +08:00 minute label this result belongs to. Emitted only for a pt-v1.3 document; absent for v1.1/v1.2."
+        },
+        "order_events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["event_type", "order_id", "client_order_id", "symbol", "side", "qty", "bar_time"],
+            "additionalProperties": false,
+            "properties": {
+              "event_type": {
+                "type": "string",
+                "enum": ["placed", "canceled", "replaced", "filled", "rejected", "expired"],
+                "$comment": "ORDER_EVENT_TYPES in schema_v13.py — one shared vocabulary for every later module. placed/canceled/replaced/filled/rejected/expired, in occurrence order."
+              },
+              "order_id": { "type": "string" },
+              "client_order_id": { "type": "string" },
+              "symbol": { "type": "string" },
+              "side": { "type": "string", "enum": ["buy", "sell"] },
+              "qty": { "type": "number" },
+              "bar_time": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\+08:00$"
+              },
+              "price": { "type": "number" },
+              "reason_code": {
+                "type": "string",
+                "$comment": "Machine-readable rejection/expiry reason; the closed vocabulary is owned by the order book (todo 8+), not pinned here."
+              },
+              "detail": { "type": "string" }
+            }
+          },
+          "$comment": "pt-v1.3 only (P1 todo 2): ordered lifecycle facts of THIS bar. Emitted (possibly empty) for a pt-v1.3 result; absent for v1.1/v1.2."
+        },
+        "open_orders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["order_id", "account_id", "trade_date", "symbol", "side", "qty", "remaining_qty", "limit", "tif", "status", "bar_label"],
+            "additionalProperties": false,
+            "properties": {
+              "order_id": { "type": "string", "minLength": 1 },
+              "account_id": { "type": "string", "minLength": 1 },
+              "trade_date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+              "symbol": { "type": "string", "minLength": 1 },
+              "side": { "type": "string", "enum": ["buy", "sell"] },
+              "qty": { "type": "number", "exclusiveMinimum": 0 },
+              "remaining_qty": { "type": "number", "minimum": 0 },
+              "limit": {
+                "type": ["number", "null"],
+                "exclusiveMinimum": 0,
+                "$comment": "Required but nullable: a market order carries null, a limit order a positive price."
+              },
+              "tif": { "type": "string", "enum": ["day", "ioc", "fok"] },
+              "status": {
+                "type": "string",
+                "enum": ["new", "filled", "canceled", "rejected", "expired"],
+                "$comment": "'new' is the only non-terminal state; filled has remaining_qty == 0 and new implies remaining_qty > 0 (parse_order_state)."
+              },
+              "bar_label": { "type": "string", "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$" },
+              "client_order_id": { "type": "string" },
+              "filled_qty": { "type": "number", "minimum": 0 },
+              "avg_fill_price": { "type": "number", "minimum": 0 },
+              "seq": { "type": "integer", "minimum": 0 }
+            },
+            "$comment": "Order-book row (same shape as request.open_orders). filled_qty defaults to 0, avg_fill_price to 0, seq to 0 and client_order_id to '' — those four are the only optional members."
+          },
+          "$comment": "pt-v1.3 only (P1 todo 2): the carried order book AFTER this bar (open and terminal rows), same row shape as request.open_orders. Emitted (possibly empty) for a pt-v1.3 result; absent for v1.1/v1.2."
+        },
+        "order_seq": {
+          "type": "integer",
+          "minimum": 0,
+          "$comment": "pt-v1.3 only (P1 todo 2): next free deterministic per-account sequence after this bar. Emitted for a pt-v1.3 result; absent for v1.1/v1.2."
+        },
+        "slippage": {
+          "type": "object",
+          "required": ["model", "bps", "amount"],
+          "additionalProperties": false,
+          "properties": {
+            "model": { "type": "string", "enum": ["none", "fixed_bps", "fixed_amount"] },
+            "bps": {
+              "type": "string",
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "$comment": "Decimal STRING, never a float — e.g. '10', '0'. Money never leaves the engine as a JSON float."
+            },
+            "amount": {
+              "type": "string",
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "$comment": "Decimal STRING, never a float — e.g. '0.05', '0'."
+            }
+          },
+          "$comment": "pt-v1.3 only (P1 todo 2): canonical echo of the applied SlippageSpec (SlippageSpec.as_wire). Emitted for a pt-v1.3 result; absent for v1.1/v1.2."
+        }
+      },
+      "dependentRequired": {
+        "order_events": ["bar_time"],
+        "open_orders": ["bar_time"],
+        "slippage": ["bar_time"]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "schema_version": { "const": "pt-v1.2" } },
+            "required": ["schema_version"]
+          },
+          "then": { "required": ["engine_fingerprint", "canceled_orders", "events"] },
+          "$comment": "Preserved verbatim from paper_trade_step-v1.2.json: the three v1.2 keys are mandatory ONLY for a pt-v1.2 document, so v1.1/older documents stay valid under this additive file. The dependency-free validator ignores if/then/allOf; wire.build_success_payload enforces the same rule in Python."
+        },
+        {
+          "if": {
+            "properties": { "schema_version": { "const": "pt-v1.3" } },
+            "required": ["schema_version"]
+          },
+          "then": { "required": ["bar_time", "order_events", "open_orders", "order_seq", "slippage"] },
+          "$comment": "Version-gated requirement (P1 intraday plan todo 2): the five v1.3 keys are mandatory ONLY for a pt-v1.3 document and are deliberately absent from the result's top-level required list, so a pt-v1.1/pt-v1.2 document still validates here. The dependency-free validator defers this if/then gate to the wire builder (as in v1.2) but DOES enforce the dependentRequired guard above, so a v1.3 document with order_events (or open_orders/slippage) and no bar_time is rejected by validate_payload."
+        }
+      ]
+    },
+    "error_envelope": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://vibe-trading.local/schemas/tool_contracts/paper_trade_step-v1.3/error_envelope.json",
+      "title": "paper_trade_step in-band error envelope (pt-v1.3, AM-5)",
+      "type": "object",
+      "required": ["status", "code", "account_id", "market", "range", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "string", "const": "error" },
+        "code": {
+          "type": "string",
+          "enum": ["PAPER_DATA_NOT_READY", "INVALID_REQUEST"],
+          "$comment": "AM-14 closed vocabulary (2 + transport reserved): PAPER_DATA_NOT_READY = retryable (RM 30min x 3); INVALID_REQUEST = non-retryable. Transport-level MCP errors are reserved for engine-internal faults. Unchanged by pt-v1.3."
+        },
+        "account_id": { "type": "string", "$comment": "verbatim echo even on the error path (AM-4-4/AM-5)" },
+        "market": { "type": "string", "enum": ["cn_a", "hk", "us"] },
+        "range": {
+          "type": "object",
+          "required": ["from", "to"],
+          "additionalProperties": false,
+          "properties": {
+            "from": { "type": "string" },
+            "to": { "type": "string" }
+          }
+        },
+        "received_state_hash": {
+          "type": "string",
+          "$comment": "present only when the received account_state was parseable (AM-4-4); omitted otherwise, never null — RM reads the absence as 'state unparseable' and must not burn its retry chain"
+        },
+        "message": {
+          "type": "string",
+          "$comment": "deterministic English, no timestamps (VD-7). Frozen formats include strategy_execution_timeout:{YYYY-MM-DD} and strategy_execution_error:{YYYY-MM-DD}:{exception class} (VD-8/B1, Step 7). pt-v1.3 adds the bar-step gates (bar_time phase/offset, order-action invariants, slippage model)."
+        }
+      }
+    }
+  }
+}

@@ -34,6 +34,12 @@ request fields and adds each to the coverage object ONLY when it is
 non-default, so every pt-v1.1 call hashes byte-identically; and
 :func:`engine_fingerprint` hashes the engine-parameter tuple with the same
 JCS helper.  Neither function changes matching.
+
+pt-v1.3 (D8/GAP-3/GAP-6): :func:`compute_bar_state_hash` covers the carried
+per-bar order state, and :func:`engine_fingerprint` gains two optional
+v1.3 parameters.  Both follow the same D8 rule as pt-v1.2 — a field enters
+the preimage ONLY when it is present — so a v1.1/v1.2 call keeps its exact
+pre-edit digest and the additional state can never be silently dropped.
 """
 
 from __future__ import annotations
@@ -41,8 +47,11 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from collections.abc import Mapping, Sequence
+from dataclasses import fields as dataclass_fields
+from dataclasses import is_dataclass
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .schema import (
     DEFAULT_FILL_MODEL,
@@ -51,13 +60,25 @@ from .schema import (
     DEFAULT_SESSION,
 )
 
+if TYPE_CHECKING:  # annotation-only: importing the v1.3 shapes at runtime is unnecessary
+    from .schema import AccountState, SlippageSpec
+
 __all__ = [
+    "ORDER_MODEL_VERSION",
     "canonicalize",
+    "compute_bar_state_hash",
     "compute_received_state_hash",
     "effective_fee_model",
     "engine_fingerprint",
     "state_hash",
 ]
+
+#: Version of the pt-v1.3 order-book semantics (order identity, lifecycle
+#: transitions, TIF handling).  It is hashed as part of any non-trivial v1.3
+#: bar state and can be passed to :func:`engine_fingerprint`, so bumping it is
+#: a fingerprint-visible change: a stored hash can never claim an order model
+#: the engine no longer implements.
+ORDER_MODEL_VERSION = "pt-v1.3-orderbook-1"
 
 # FROZEN terminal defaults (G1: RM written approval 2026-10-19; APPROVAL note 5
 # + REQUIREMENTS §4 fee matrix).  Key names are the pt-v1.1 final set — cn_a
@@ -167,6 +188,100 @@ def state_hash(value: Any) -> str:
     return hashlib.sha256(canonicalize(value).encode("utf-8")).hexdigest()
 
 
+def _decimal_token(value: Decimal) -> str:
+    """Render a ``Decimal`` exactly as ``SlippageSpec.as_wire`` does.
+
+    Slippage parameters are money/rate values and are ``Decimal`` by contract;
+    the wire echo renders them with ``format(normalize(), "f")``.  Hashing the
+    same string keeps the bar-state hash and the echoed spec on one
+    representation — and a ``Decimal`` never degrades to a binary float.
+    """
+    if not value.is_finite():
+        raise ValueError(f"non-finite Decimal is not hasheable: {value!r}")
+    if not value:
+        return "0"
+    return format(value.normalize(), "f")
+
+
+def _json_native(value: Any) -> Any:
+    """Normalize a hashed state object into the JSON type lattice.
+
+    Typed v1.3 rows (``AccountState`` / ``OrderState`` / ``SlippageSpec``) are
+    accepted alongside their JSON-native forms so the caller may hash the
+    parsed request without a second serializer.  ``Decimal`` renders through
+    :func:`_decimal_token`; everything else is returned unchanged and left for
+    :func:`canonicalize` to accept or reject (it fails closed on non-JSON
+    types and on non-finite floats).
+    """
+    if isinstance(value, Decimal):
+        return _decimal_token(value)
+    if is_dataclass(value) and not isinstance(value, type):
+        return {field.name: _json_native(getattr(value, field.name)) for field in dataclass_fields(value)}
+    if isinstance(value, Mapping):
+        return {key: _json_native(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_native(item) for item in value]
+    return value
+
+
+def compute_bar_state_hash(
+    *,
+    account_state: AccountState | dict[str, Any],
+    open_orders: Sequence[Any] = (),
+    order_seq: int = 0,
+    bar_time: str = "",
+    slippage_model: str | SlippageSpec | dict[str, Any] = "",
+    order_model_version: str = ORDER_MODEL_VERSION,
+) -> str:
+    """D8: hash the per-bar state a pt-v1.3 ``bar_step`` consumes.
+
+    Preimage (a JCS object; :func:`canonicalize` pins the key order):
+
+    * ``account_state`` — always;
+    * ``open_orders`` — only when non-empty;
+    * ``order_seq`` — only when non-zero;
+    * ``bar_time`` — only when non-empty;
+    * ``slippage_model`` — only when non-empty;
+    * ``order_model_version`` — only when at least one of the four v1.3
+      fields above is present.
+
+    The v1.3 additions mirror the D8 rule of
+    :func:`compute_received_state_hash`: a bar with no v1.3 surface hashes
+    EXACTLY as the v1.2 preimage ``{"account_state": ...}``, so a v1.1/v1.2
+    caller cannot gain a different digest.  ``order_model_version`` travels
+    with the order state it describes — it is hashed only when that state is
+    present, which keeps a bump of :data:`ORDER_MODEL_VERSION` visible in
+    every non-trivial bar hash without perturbing the v1.2 boundary.
+
+    ``account_state`` and ``open_orders`` may be the typed dataclasses or their
+    JSON rows; both normalize to the same preimage.  A ``Decimal`` slippage
+    value (e.g. a ``SlippageSpec`` passed whole) renders as the canonical
+    plain-decimal string used by ``SlippageSpec.as_wire``, never as a float.
+    Non-finite input fails closed — floats through :func:`canonicalize`,
+    Decimals through :func:`_decimal_token` — instead of hashing a constant.
+
+    Deterministic: no clock, no environment, no I/O.
+    """
+    coverage: dict[str, Any] = {"account_state": _json_native(account_state)}
+    rows = tuple(open_orders)
+    has_v13_state = False
+    if rows:
+        coverage["open_orders"] = _json_native(rows)
+        has_v13_state = True
+    if order_seq:
+        coverage["order_seq"] = order_seq
+        has_v13_state = True
+    if bar_time:
+        coverage["bar_time"] = bar_time
+        has_v13_state = True
+    if slippage_model:
+        coverage["slippage_model"] = _json_native(slippage_model)
+        has_v13_state = True
+    if has_v13_state:
+        coverage["order_model_version"] = order_model_version
+    return state_hash(coverage)
+
+
 def compute_received_state_hash(
     *,
     account_id: str,
@@ -217,6 +332,8 @@ def engine_fingerprint(
     fill_model: str = DEFAULT_FILL_MODEL,
     bar_fingerprint: str = "",
     rules_version: str | None = None,
+    slippage_model: str | None = None,
+    order_model_version: str | None = None,
 ) -> str:
     """D3: ``sha256(JCS({interval, path_model, fill_model, rules_version,
     bar_fingerprint}))`` as lowercase hex.
@@ -228,20 +345,29 @@ def engine_fingerprint(
     this module — and is injectable so the fingerprint can be audited against
     a past rule set.  No clock, no paths, no environment: the same arguments
     always produce the same hex string.
+
+    D8: ``slippage_model`` and ``order_model_version`` are appended to the
+    preimage ONLY when they are not ``None``, so every pt-v1.1/pt-v1.2 call
+    (which supplies neither) keeps the exact pre-edit digest.  A v1.3 engine
+    passes both, which makes the slippage model and the order-book semantics
+    part of the audited parameter tuple.
     """
     if rules_version is None:
         from .rules import RULES_VERSION
 
         rules_version = RULES_VERSION
-    return state_hash(
-        {
-            "interval": interval,
-            "path_model": path_model,
-            "fill_model": fill_model,
-            "rules_version": rules_version,
-            "bar_fingerprint": bar_fingerprint,
-        }
-    )
+    preimage: dict[str, Any] = {
+        "interval": interval,
+        "path_model": path_model,
+        "fill_model": fill_model,
+        "rules_version": rules_version,
+        "bar_fingerprint": bar_fingerprint,
+    }
+    if slippage_model is not None:
+        preimage["slippage_model"] = slippage_model
+    if order_model_version is not None:
+        preimage["order_model_version"] = order_model_version
+    return state_hash(preimage)
 
 
 def effective_fee_model(market: str, fee_model: dict[str, Any] | None = None) -> dict[str, Any]:

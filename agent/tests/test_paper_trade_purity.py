@@ -20,7 +20,10 @@ Four surfaces (plan §T8, REQUIREMENTS §7 T9, §9 red lines):
    is the SCOPED regex — a bare ``trading_`` grep is a KNOWN FALSE RED:
    the frozen pt-v1.1 vocabulary (``non_trading_day``/``trading_day``) and
    the calendar helpers (``is_trading_day``/``trading_days_in_range``) are
-   contract words, never connector calls, and must not be "fixed".
+   contract words, never connector calls, and must not be "fixed".  The
+   pt-v1.3 wire field names ``cancel_order_ids``/``replace_orders`` are the
+   same class of contract word, so the verb scan matches a bare call token,
+   never a substring inside an identifier.
 4. G1 LEDGER CLOSED (static): zero residual STEP1 ledger markers across the
    ledger scan surface (package source, ``agent/tests``, the pt-v1.1
    contract JSON).  The marker literal is assembled by a runtime join, so
@@ -273,7 +276,15 @@ def test_source_surface_calls_no_live_trading_connector() -> None:
     scoped = re.compile(
         r"trading_(account|orders|positions|quote|history|check|connections|select|place|cancel)"
     )
-    broker_surface = re.compile(r"place_order|cancel_order|src\.trading")
+    # The negative lookaround exempts the pt-v1.3 wire field names
+    # cancel_order_ids / replace_orders (contract words, not connector calls —
+    # same class as the module docstring §3 trading_ false-red note); a real
+    # place_order( / cancel_order( call still matches.
+    broker_surface = re.compile(
+        r"(?<![a-z_])place_order(?![_a-z])"
+        r"|(?<![a-z_])cancel_order(?![_a-z])"
+        r"|src\.trading"
+    )
     sources = _package_sources()
     assert _scan(scoped, sources) == []
     assert _scan(broker_surface, sources) == []

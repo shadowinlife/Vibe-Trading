@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 86 tools (91 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
+Surfaces 89 tools (94 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
 backtest/factor/options/pattern
 analysis, deterministic paper-trading matching (paper_trade_step), market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_southbound_flow /
@@ -1152,6 +1152,222 @@ def paper_trade_step(
     if fill_model is not None:
         payload["fill_model"] = fill_model
     return run_paper_trade_step(payload)
+
+
+@mcp.tool
+def paper_trade_account_create(
+    account_id: str,
+    market: str,
+    start_date: str,
+    initial_cash: float,
+    today: str,
+    next_trading_day: str,
+    initial_positions: _lenient_dict_list_opt = None,
+    interval: str | None = None,
+    path_model: str | None = None,
+    fill_model: str | None = None,
+    slippage_model: str | None = None,
+) -> str:
+    """Create a pt-v1.3 paper-trading account; never places real orders.
+
+    Starts an account that the per-bar tools advance. ``today`` and
+    ``next_trading_day`` are INJECTED by the caller — the package never reads a
+    clock, so the same call is reproducible. A ``start_date`` before ``today``
+    is refused with the ``start_date_in_past`` detail; an existing account id
+    is a conflict and is never overwritten. Returns ONE in-band JSON document
+    (the account summary or an AM-5 ``INVALID_REQUEST`` envelope), never a
+    transport error. Research-only: no broker or trading-connector path exists
+    here. The account is committed to the paper-trading account root under the
+    store's own duplicate guard; a store or shape refusal is an in-band
+    ``INVALID_REQUEST`` naming the cause (``start_date_in_past``,
+    ``account_already_exists``, ...), never a transport error and never an
+    overwritten account.
+
+    Args:
+        account_id: Account identifier (safe single path segment, <=64 chars).
+        market: One of ``cn_a`` / ``hk`` / ``us``.
+        start_date: Tracking start ``YYYY-MM-DD``; must not precede ``today``.
+        initial_cash: Opening cash, a finite number ``>= 0``.
+        today: Caller-injected current date ``YYYY-MM-DD`` (never read from a
+            clock by the package).
+        next_trading_day: Caller-injected next trading day ``YYYY-MM-DD``.
+        initial_positions: Optional opening positions, array of
+            ``{symbol, qty, avg_cost}``.
+        interval: Optional bar interval — ``5m`` (default for the v1.3
+            surface) or ``1d``; ``5m`` is cn_a-only.
+        path_model: Optional reference-price model — ``bar_median`` or
+            ``bar_close``.
+        fill_model: Optional fill model — ``all_or_none`` is the only P0
+            value.
+        slippage_model: Optional adverse-price model — ``none``,
+            ``fixed_bps`` (default) or ``fixed_amount``.
+    """
+    from src.tools.paper_trade.tool import run_paper_trade_account_create
+
+    payload: dict[str, Any] = {
+        "account_id": account_id,
+        "market": market,
+        "start_date": start_date,
+        "initial_cash": initial_cash,
+        "today": today,
+        "next_trading_day": next_trading_day,
+    }
+    optional = {
+        "initial_positions": initial_positions,
+        "interval": interval,
+        "path_model": path_model,
+        "fill_model": fill_model,
+        "slippage_model": slippage_model,
+    }
+    for key, value in optional.items():
+        if value is not None:
+            payload[key] = value
+    return run_paper_trade_account_create(payload)
+
+
+@mcp.tool
+def paper_trade_bar_step(
+    account_id: str,
+    market: str,
+    account_state: _lenient_dict_any,
+    from_date: str,
+    to_date: str,
+    bar_time: str,
+    order_actions: _lenient_dict_list_opt = None,
+    cancel_order_ids: _lenient_str_list_opt = None,
+    replace_orders: _lenient_dict_list_opt = None,
+    slippage: _lenient_dict_any_opt = None,
+    session_phase: str | None = None,
+    open_orders: _lenient_dict_list_opt = None,
+    order_seq: int | None = None,
+    fee_model: _lenient_dict_any_opt = None,
+    interval: str | None = None,
+    session: str | None = None,
+    path_model: str | None = None,
+    fill_model: str | None = None,
+    mode: str = "live",
+    bars: _lenient_dict_list_opt = None,
+    prev_closes: _lenient_dict_any_opt = None,
+) -> str:
+    """Run one pt-v1.3 paper-trading bar; never places real orders.
+
+    Applies the bar's ``order_actions`` / ``cancel_order_ids`` /
+    ``replace_orders`` to the carried ``open_orders`` book under the market's
+    frozen rules and returns ONE in-band JSON document on
+    ``result.content[0].text``: the pt-v1.3 bar result (the v1.2 fields plus
+    ``bar_time``, ``order_events``, ``open_orders``, ``order_seq`` and the
+    echoed ``slippage``), or an AM-5 ``INVALID_REQUEST`` /
+    ``PAPER_DATA_NOT_READY`` envelope on the same channel. A ``bar_time`` must
+    be an aware ``+08:00`` minute label on the session day; a naive or
+    off-offset value is ``INVALID_REQUEST``, never a traceback. Research-only:
+    no broker or trading-connector path exists here.
+
+    ``mode="live"`` (the default) advances the STORED account through the
+    session runner: the carried ``account_state`` / ``open_orders`` /
+    ``order_seq`` must agree with the store (``account_state_stale``) and an
+    already-applied bar is answered ``bar_already_applied`` without a second
+    apply. ``mode="replay"`` applies the carried snapshot and the injected
+    ``bars`` in memory with zero store writes and no network access; it
+    REQUIRES ``bars``. When ``bars`` is supplied in live mode the stored
+    account is advanced from those bars instead of the live 5m source. With no
+    bar runtime installed (a test override), a well-formed request is answered
+    with an ``INVALID_REQUEST`` naming that fact rather than a success-shaped
+    document.
+
+    Args:
+        account_id: Account identifier, echoed verbatim.
+        market: One of ``cn_a`` / ``hk`` / ``us`` — selects the frozen rules.
+        account_state: RM-injected ledger snapshot ``{cash, positions:[{symbol,
+            qty, avg_cost}]}``.
+        from_date: Session day ``YYYY-MM-DD``; must equal ``to_date``.
+        to_date: Session day ``YYYY-MM-DD`` (a bar step covers one day).
+        bar_time: ISO-8601 bar label with the Asia/Shanghai ``+08:00`` offset
+            and zero seconds (e.g. ``2026-10-20T09:35:00+08:00``).
+        order_actions: Optional per-bar intents — ``{action: place|cancel|
+            replace, symbol, side, qty, limit?, order_id?, client_order_id?,
+            tif?, replace_qty?, replace_limit?}``.
+        cancel_order_ids: Optional order ids to cancel directly. Duplicates and
+            ids targeted twice across the three channels are rejected.
+        replace_orders: Optional replace intents; each must carry
+            ``action="replace"`` and ``replace_qty`` and/or ``replace_limit``.
+        slippage: Optional ``{model, bps, amount}`` adverse-price spec; exactly
+            one knob may be non-zero and must match ``model``.
+        session_phase: Optional clock-classified phase — ``continuous``,
+            ``opening_auction_print``, ``auction_window`` or ``outside``.
+            Omitted means the clock layer derives it from ``bar_time``.
+        open_orders: Optional carried order book; quantity conservation and
+            unique ids are enforced.
+        order_seq: Optional next free per-account order sequence; must exceed
+            every carried order's ``seq``.
+        fee_model: Optional per-key fee overrides merged over the market
+            defaults.
+        interval: Optional interval selector — ``1d`` or ``5m`` (cn_a-only).
+        session: Optional session selector — ``auto`` or ``cn_a``.
+        path_model: Optional reference-price model — ``bar_median`` or
+            ``bar_close``.
+        fill_model: Optional fill model — ``all_or_none`` (the only P0 value).
+        mode: Optional execution mode — ``live`` (default, stored account) or
+            ``replay`` (carried ledger, zero store writes, requires ``bars``).
+        bars: Optional injected 5m bars, one ``{symbol, bars: [{bar_time,
+            open, high, low, close, volume}]}`` entry per symbol.
+        prev_closes: Optional ``{symbol: previous_session_close}`` band input.
+            An integer is CENTS (``100000`` = 1000.00); a float/Decimal is
+            yuan.  It feeds the cn_a ``limit_up`` / ``limit_down`` slots; when
+            omitted (and the feed exposes no previous close) the band is
+            UNKNOWN and the band slots are skipped, never fabricated.
+    """
+    from src.tools.paper_trade.tool import run_paper_trade_bar_step
+
+    payload: dict[str, Any] = {
+        "account_id": account_id,
+        "market": market,
+        "account_state": account_state,
+        "from_date": from_date,
+        "to_date": to_date,
+        "bar_time": bar_time,
+    }
+    optional = {
+        "order_actions": order_actions,
+        "cancel_order_ids": cancel_order_ids,
+        "replace_orders": replace_orders,
+        "slippage": slippage,
+        "session_phase": session_phase,
+        "open_orders": open_orders,
+        "order_seq": order_seq,
+        "fee_model": fee_model,
+        "interval": interval,
+        "session": session,
+        "path_model": path_model,
+        "fill_model": fill_model,
+        "mode": mode if mode != "live" else None,
+        "bars": bars,
+        "prev_closes": prev_closes,
+    }
+    for key, value in optional.items():
+        if value is not None:
+            payload[key] = value
+    return run_paper_trade_bar_step(payload)
+
+
+@mcp.tool
+def paper_trade_account_status(account_id: str, market: str) -> str:
+    """Read a pt-v1.3 paper account's state; never trades.
+
+    Returns ONE in-band JSON document: the account summary (cash, positions,
+    open orders and the applied-bar watermark) or an AM-5 ``INVALID_REQUEST``
+    envelope on the same channel. Read-only research surface — it reads the
+    paper ledger and never touches a broker or a live order path. When the
+    pt-v1.3 bar runtime is not installed in the build, a well-formed request is
+    answered with an ``INVALID_REQUEST`` naming that fact rather than a
+    success-shaped document.
+
+    Args:
+        account_id: Account identifier.
+        market: One of ``cn_a`` / ``hk`` / ``us``.
+    """
+    from src.tools.paper_trade.tool import run_paper_trade_account_status
+
+    return run_paper_trade_account_status({"account_id": account_id, "market": market})
 
 
 # ---------------------------------------------------------------------------

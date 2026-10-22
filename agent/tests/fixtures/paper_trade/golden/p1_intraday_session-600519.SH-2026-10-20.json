@@ -1,0 +1,5058 @@
+{
+  "fixture": "p1_intraday_session",
+  "schema_version": "pt-v1.3",
+  "trade_date": "2026-10-20",
+  "market": "cn_a",
+  "symbols": [
+    "600519.SH"
+  ],
+  "witness_symbols": [
+    "000001.SZ"
+  ],
+  "bar_labels": [
+    "09:35",
+    "09:40",
+    "09:45",
+    "09:50",
+    "09:55",
+    "10:00",
+    "10:05",
+    "10:10",
+    "10:15",
+    "10:20",
+    "10:25",
+    "10:30",
+    "10:35",
+    "10:40",
+    "10:45",
+    "10:50",
+    "10:55",
+    "11:00",
+    "11:05",
+    "11:10",
+    "11:15",
+    "11:20",
+    "11:25",
+    "11:30",
+    "13:05",
+    "13:10",
+    "13:15",
+    "13:20",
+    "13:25",
+    "13:30",
+    "13:35",
+    "13:40",
+    "13:45",
+    "13:50",
+    "13:55",
+    "14:00",
+    "14:05",
+    "14:10",
+    "14:15",
+    "14:20",
+    "14:25",
+    "14:30",
+    "14:35",
+    "14:40",
+    "14:45",
+    "14:50",
+    "14:55",
+    "15:00"
+  ],
+  "bars": [
+    {
+      "bar_label": "09:35",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "342c029a188a80dc90dee53171abfde1a3ff34bcaffca98bd4e7ea1810b88bbd",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "price": 1422.42,
+            "fee": 36.98,
+            "reason": ""
+          }
+        ],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357721.02,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.21
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641921.02,
+            "cash": 357721.02,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 09:35"
+          }
+        ],
+        "bar_time": "2026-10-20T09:35:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:09:35:00000000",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T09:35:00+08:00"
+          },
+          {
+            "event_type": "filled",
+            "order_id": "pa_t21_golden:2026-10-20:09:35:00000000",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T09:35:00+08:00",
+            "price": 1422.42
+          }
+        ],
+        "open_orders": [],
+        "order_seq": 1,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "09:40",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "3b108eaff055c892af15f28fe9a3c675d5d992b2027dc11296f69ef1fd5bb938",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "price": 1421.0,
+            "fee": 36.95,
+            "reason": ""
+          }
+        ],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 215584.07,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 300.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641884.07,
+            "cash": 215584.07,
+            "position_value": 426300.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 09:40"
+          }
+        ],
+        "bar_time": "2026-10-20T09:40:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:09:40:00000001",
+            "client_order_id": "limit-fill-1",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T09:40:00+08:00"
+          },
+          {
+            "event_type": "filled",
+            "order_id": "pa_t21_golden:2026-10-20:09:40:00000001",
+            "client_order_id": "limit-fill-1",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T09:40:00+08:00",
+            "price": 1421.0
+          }
+        ],
+        "open_orders": [],
+        "order_seq": 2,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "09:45",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "e45f9adbede0b2df3a821d964320e6339fbcd5e413e13f8a8633996b4ebbb86d",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 215584.07,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 300.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641884.07,
+            "cash": 215584.07,
+            "position_value": 426300.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 09:45"
+          }
+        ],
+        "bar_time": "2026-10-20T09:45:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "client_order_id": "rest-expire-1",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T09:45:00+08:00"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          }
+        ],
+        "order_seq": 3,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "09:50",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "e45f9adbede0b2df3a821d964320e6339fbcd5e413e13f8a8633996b4ebbb86d",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 215584.07,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 300.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641884.07,
+            "cash": 215584.07,
+            "position_value": 426300.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 09:50"
+          }
+        ],
+        "bar_time": "2026-10-20T09:50:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:09:50:00000003",
+            "client_order_id": "rest-cancel-1",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T09:50:00+08:00"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:50:00000003",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:50",
+            "client_order_id": "rest-cancel-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 3
+          }
+        ],
+        "order_seq": 4,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "09:55",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "e45f9adbede0b2df3a821d964320e6339fbcd5e413e13f8a8633996b4ebbb86d",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 215584.07,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 300.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641884.07,
+            "cash": 215584.07,
+            "position_value": 426300.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 09:55"
+          }
+        ],
+        "bar_time": "2026-10-20T09:55:00+08:00",
+        "order_events": [
+          {
+            "event_type": "canceled",
+            "order_id": "pa_t21_golden:2026-10-20:09:50:00000003",
+            "client_order_id": "rest-cancel-1",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T09:55:00+08:00"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          }
+        ],
+        "order_seq": 4,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:00",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "e45f9adbede0b2df3a821d964320e6339fbcd5e413e13f8a8633996b4ebbb86d",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 215584.07,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 300.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641884.07,
+            "cash": 215584.07,
+            "position_value": 426300.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:00"
+          }
+        ],
+        "bar_time": "2026-10-20T10:00:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "client_order_id": "rest-replace-1",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T10:00:00+08:00"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 5,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:05",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "e45f9adbede0b2df3a821d964320e6339fbcd5e413e13f8a8633996b4ebbb86d",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 215584.07,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 300.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641884.07,
+            "cash": 215584.07,
+            "position_value": 426300.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:05"
+          }
+        ],
+        "bar_time": "2026-10-20T10:05:00+08:00",
+        "order_events": [
+          {
+            "event_type": "replaced",
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "client_order_id": "rest-replace-1",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T10:05:00+08:00"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 5,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:10",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "e45f9adbede0b2df3a821d964320e6339fbcd5e413e13f8a8633996b4ebbb86d",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "reason_code": "limit_not_marketable",
+            "detail": "rejected before pricing at 10:10"
+          }
+        ],
+        "end_state": {
+          "cash": 215584.07,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 300.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641884.07,
+            "cash": 215584.07,
+            "position_value": 426300.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:10"
+          }
+        ],
+        "bar_time": "2026-10-20T10:10:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:10:10:00000005",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T10:10:00+08:00"
+          },
+          {
+            "event_type": "rejected",
+            "order_id": "pa_t21_golden:2026-10-20:10:10:00000005",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T10:10:00+08:00",
+            "reason_code": "limit_not_marketable"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 6,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:15",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "e45f9adbede0b2df3a821d964320e6339fbcd5e413e13f8a8633996b4ebbb86d",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "reason_code": "limit_not_marketable",
+            "detail": "rejected before pricing at 10:15"
+          }
+        ],
+        "end_state": {
+          "cash": 215584.07,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 300.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641884.07,
+            "cash": 215584.07,
+            "position_value": 426300.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:15"
+          }
+        ],
+        "bar_time": "2026-10-20T10:15:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:10:15:00000006",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T10:15:00+08:00"
+          },
+          {
+            "event_type": "rejected",
+            "order_id": "pa_t21_golden:2026-10-20:10:15:00000006",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T10:15:00+08:00",
+            "reason_code": "limit_not_marketable"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 7,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:20",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "e45f9adbede0b2df3a821d964320e6339fbcd5e413e13f8a8633996b4ebbb86d",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 200.0,
+            "reason_code": "t_plus_1",
+            "detail": "rejected before pricing at 10:20"
+          }
+        ],
+        "end_state": {
+          "cash": 215584.07,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 300.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641884.07,
+            "cash": 215584.07,
+            "position_value": 426300.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:20"
+          }
+        ],
+        "bar_time": "2026-10-20T10:20:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:10:20:00000007",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 200.0,
+            "bar_time": "2026-10-20T10:20:00+08:00"
+          },
+          {
+            "event_type": "rejected",
+            "order_id": "pa_t21_golden:2026-10-20:10:20:00000007",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 200.0,
+            "bar_time": "2026-10-20T10:20:00+08:00",
+            "reason_code": "t_plus_1"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 8,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:25",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "e45f9adbede0b2df3a821d964320e6339fbcd5e413e13f8a8633996b4ebbb86d",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 100.0,
+            "price": 1419.58,
+            "fee": 107.89,
+            "reason": ""
+          }
+        ],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:25"
+          }
+        ],
+        "bar_time": "2026-10-20T10:25:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:10:25:00000008",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T10:25:00+08:00"
+          },
+          {
+            "event_type": "filled",
+            "order_id": "pa_t21_golden:2026-10-20:10:25:00000008",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T10:25:00+08:00",
+            "price": 1419.58
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 9,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:30",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 100.0,
+            "reason_code": "t_plus_1",
+            "detail": "rejected before pricing at 10:30"
+          }
+        ],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:30"
+          }
+        ],
+        "bar_time": "2026-10-20T10:30:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:10:30:00000009",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T10:30:00+08:00"
+          },
+          {
+            "event_type": "rejected",
+            "order_id": "pa_t21_golden:2026-10-20:10:30:00000009",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T10:30:00+08:00",
+            "reason_code": "t_plus_1"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 10,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:35",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 50.0,
+            "reason_code": "lot_size",
+            "detail": "rejected before pricing at 10:35"
+          }
+        ],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:35"
+          }
+        ],
+        "bar_time": "2026-10-20T10:35:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:10:35:00000010",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 50.0,
+            "bar_time": "2026-10-20T10:35:00+08:00"
+          },
+          {
+            "event_type": "rejected",
+            "order_id": "pa_t21_golden:2026-10-20:10:35:00000010",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 50.0,
+            "bar_time": "2026-10-20T10:35:00+08:00",
+            "reason_code": "lot_size"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 11,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:40",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 400.0,
+            "reason_code": "insufficient_position",
+            "detail": "rejected before pricing at 10:40"
+          }
+        ],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:40"
+          }
+        ],
+        "bar_time": "2026-10-20T10:40:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:10:40:00000011",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 400.0,
+            "bar_time": "2026-10-20T10:40:00+08:00"
+          },
+          {
+            "event_type": "rejected",
+            "order_id": "pa_t21_golden:2026-10-20:10:40:00000011",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "sell",
+            "qty": 400.0,
+            "bar_time": "2026-10-20T10:40:00+08:00",
+            "reason_code": "insufficient_position"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 12,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:45",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 1000.0,
+            "reason_code": "insufficient_cash",
+            "detail": "rejected before pricing at 10:45"
+          }
+        ],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:45"
+          }
+        ],
+        "bar_time": "2026-10-20T10:45:00+08:00",
+        "order_events": [
+          {
+            "event_type": "placed",
+            "order_id": "pa_t21_golden:2026-10-20:10:45:00000012",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 1000.0,
+            "bar_time": "2026-10-20T10:45:00+08:00"
+          },
+          {
+            "event_type": "rejected",
+            "order_id": "pa_t21_golden:2026-10-20:10:45:00000012",
+            "client_order_id": "",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 1000.0,
+            "bar_time": "2026-10-20T10:45:00+08:00",
+            "reason_code": "insufficient_cash"
+          }
+        ],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:50",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:50"
+          }
+        ],
+        "bar_time": "2026-10-20T10:50:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "10:55",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 10:55"
+          }
+        ],
+        "bar_time": "2026-10-20T10:55:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "11:00",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 11:00"
+          }
+        ],
+        "bar_time": "2026-10-20T11:00:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "11:05",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 11:05"
+          }
+        ],
+        "bar_time": "2026-10-20T11:05:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "11:10",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 11:10"
+          }
+        ],
+        "bar_time": "2026-10-20T11:10:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "11:15",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 11:15"
+          }
+        ],
+        "bar_time": "2026-10-20T11:15:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "11:20",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 11:20"
+          }
+        ],
+        "bar_time": "2026-10-20T11:20:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "11:25",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 11:25"
+          }
+        ],
+        "bar_time": "2026-10-20T11:25:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "11:30",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 11:30"
+          }
+        ],
+        "bar_time": "2026-10-20T11:30:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:05",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:05"
+          }
+        ],
+        "bar_time": "2026-10-20T13:05:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:10",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:10"
+          }
+        ],
+        "bar_time": "2026-10-20T13:10:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:15",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:15"
+          }
+        ],
+        "bar_time": "2026-10-20T13:15:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:20",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:20"
+          }
+        ],
+        "bar_time": "2026-10-20T13:20:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:25",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:25"
+          }
+        ],
+        "bar_time": "2026-10-20T13:25:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:30",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:30"
+          }
+        ],
+        "bar_time": "2026-10-20T13:30:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:35",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:35"
+          }
+        ],
+        "bar_time": "2026-10-20T13:35:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:40",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:40"
+          }
+        ],
+        "bar_time": "2026-10-20T13:40:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:45",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:45"
+          }
+        ],
+        "bar_time": "2026-10-20T13:45:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:50",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:50"
+          }
+        ],
+        "bar_time": "2026-10-20T13:50:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "13:55",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 13:55"
+          }
+        ],
+        "bar_time": "2026-10-20T13:55:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:00",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:00"
+          }
+        ],
+        "bar_time": "2026-10-20T14:00:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:05",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:05"
+          }
+        ],
+        "bar_time": "2026-10-20T14:05:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:10",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:10"
+          }
+        ],
+        "bar_time": "2026-10-20T14:10:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:15",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:15"
+          }
+        ],
+        "bar_time": "2026-10-20T14:15:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:20",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:20"
+          }
+        ],
+        "bar_time": "2026-10-20T14:20:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:25",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:25"
+          }
+        ],
+        "bar_time": "2026-10-20T14:25:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:30",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:30"
+          }
+        ],
+        "bar_time": "2026-10-20T14:30:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:35",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:35"
+          }
+        ],
+        "bar_time": "2026-10-20T14:35:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:40",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:40"
+          }
+        ],
+        "bar_time": "2026-10-20T14:40:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:45",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:45"
+          }
+        ],
+        "bar_time": "2026-10-20T14:45:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:50",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:50"
+          }
+        ],
+        "bar_time": "2026-10-20T14:50:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "14:55",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641634.18,
+            "cash": 357434.18,
+            "position_value": 284200.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 14:55"
+          }
+        ],
+        "bar_time": "2026-10-20T14:55:00+08:00",
+        "order_events": [],
+        "open_orders": [
+          {
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.0,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "09:45",
+            "client_order_id": "rest-expire-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 2
+          },
+          {
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "account_id": "pa_t21_golden",
+            "trade_date": "2026-10-20",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "remaining_qty": 100.0,
+            "limit": 1300.5,
+            "tif": "day",
+            "status": "new",
+            "bar_label": "10:00",
+            "client_order_id": "rest-replace-1",
+            "filled_qty": 0.0,
+            "avg_fill_price": 0.0,
+            "seq": 4
+          }
+        ],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    },
+    {
+      "bar_label": "15:00",
+      "document": {
+        "schema_version": "pt-v1.3",
+        "tool": "paper_trade_step",
+        "account_id": "pa_t21_golden",
+        "market": "cn_a",
+        "range": {
+          "from": "2026-10-20",
+          "to": "2026-10-20"
+        },
+        "received_state_hash": "69957580d88388c0bb95f976c371cd4fd9fd267da168d6dff72d526c90edb37a",
+        "effective_fee_model": {
+          "commission_rate": 0.00025,
+          "commission_min": 5.0,
+          "stamp_tax_sell": 0.0005,
+          "transfer_fee": 1e-05
+        },
+        "fills": [],
+        "rejected_orders": [],
+        "end_state": {
+          "cash": 357434.18,
+          "positions": [
+            {
+              "symbol": "600519.SH",
+              "qty": 200.0,
+              "avg_cost": 1421.14
+            }
+          ]
+        },
+        "nav_series": [
+          {
+            "date": "2026-10-20",
+            "nav": 641834.18,
+            "cash": 357434.18,
+            "position_value": 284400.0
+          }
+        ],
+        "skipped_days": [],
+        "warnings": [],
+        "data_provenance": {
+          "source": "paper_trade_bar_engine"
+        },
+        "engine_fingerprint": "a083a80f638509618ec6514b238a30199c1dfbcfae733d4898c5f3866b98f41d",
+        "canceled_orders": [],
+        "events": [
+          {
+            "trade_date": "2026-10-20",
+            "symbol": "000001.SZ",
+            "event_type": "halted",
+            "detail": "halted at 15:00"
+          }
+        ],
+        "bar_time": "2026-10-20T15:00:00+08:00",
+        "order_events": [
+          {
+            "event_type": "expired",
+            "order_id": "pa_t21_golden:2026-10-20:09:45:00000002",
+            "client_order_id": "rest-expire-1",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T15:00:00+08:00",
+            "detail": "day order expired at 15:00"
+          },
+          {
+            "event_type": "expired",
+            "order_id": "pa_t21_golden:2026-10-20:10:00:00000004",
+            "client_order_id": "rest-replace-1",
+            "symbol": "600519.SH",
+            "side": "buy",
+            "qty": 100.0,
+            "bar_time": "2026-10-20T15:00:00+08:00",
+            "detail": "day order expired at 15:00"
+          }
+        ],
+        "open_orders": [],
+        "order_seq": 13,
+        "slippage": {
+          "model": "fixed_bps",
+          "bps": "10",
+          "amount": "0"
+        }
+      }
+    }
+  ],
+  "session": {
+    "final_cash": 357434.18,
+    "final_positions": [
+      {
+        "symbol": "600519.SH",
+        "qty": 200.0,
+        "avg_cost": 1421.14
+      }
+    ],
+    "open_orders": [],
+    "order_seq": 13,
+    "fill_count": 3,
+    "rejected_count": 7,
+    "canceled_count": 1,
+    "expired_count": 2,
+    "final_document_sha256": "f83b3a880827a6668c70a74aea336d48e3c18dcf196d632ed52d0bdf99c79f4c"
+  }
+}
