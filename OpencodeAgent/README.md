@@ -11,7 +11,7 @@ Docker build project for `opencode-serve` — OpenCode Web Server with Vibe-Trad
 
 This project packages the OpenCode Web Server research environment into a reproducible Docker image. It extends the base `opencode-serve` image with:
 
-- **OpenCode CLI** (pinned in `Dockerfile.base`, currently 1.19.0) + **OMO (oh-my-openagent) plugin** (pinned via `OMO_VERSION`, currently 5.1.30, pre-baked into the plugin cache)
+- **OpenCode CLI** (pinned in `Dockerfile.base`, currently 1.19.3) + **OMO (oh-my-openagent) plugin** (pinned via `OMO_VERSION`, currently 5.1.35, pre-baked into the plugin cache)
 - **5 OpenCode skills**: data-warehouse (ClickHouse heavy queries), html-report (ECharts), periodic-execution (cron), escape-top-microstructure (top-detection signals), research-scenarios (scenario playbooks A–F, loaded on demand)
 - **Full AGENTS.md** with behavior instructions for 6 scenarios (A through F), a 4-class question-handling protocol and anti-hallucination discipline
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
@@ -61,7 +61,7 @@ OpencodeAgent/
 ├── config/                     # OpenCode configuration
 │   ├── opencode.json.tmpl      # Jinja2 template (rendered at runtime with ClickHouse creds)
 │   ├── render_config.py        # Config renderer: template + tool governance manifest → opencode.json
-│   ├── oh-my-openagent.json    # Agent/category model assignments (primary qwen3.8-max; light tier qwen3.8-flash)
+│   ├── oh-my-openagent.json    # All agents: deepseek-v4.1-flash-1017; high/max reasoning tiers
 │   ├── tui.json                # TUI plugin configuration
 │   ├── package.json            # OpenCode plugin dependencies
 │   └── vibe-trading-tools.json # Tool governance manifest (disabled VT tools → permission denies)

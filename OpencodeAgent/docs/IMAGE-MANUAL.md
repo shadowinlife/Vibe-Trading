@@ -77,7 +77,7 @@
          ▼                    ▼
    ┌──────────┐       ┌──────────────┐
    │ClickHouse│       │  DashScope    │
-   │(T-1 数据) │       │ (qwen3.8-max) │
+   │(T-1 数据) │       │ (deepseek-v4.1-flash-1017) │
    └──────────┘       └──────────────┘
 ```
 
@@ -85,9 +85,9 @@
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│ opencode-serve:v3.6.0-mymain  (3.99GB)               │
+│ opencode-serve:v3.8.2-mymain  (5.39GB)               │
 │ ├── OMO plugin 预烘焙缓存 (~/.cache/opencode/packages,│
-│ │   oh-my-openagent@5.1.30, ~241MB) + models.json    │
+│ │   oh-my-openagent@5.1.35, ~241MB) + models.json    │
 │ ├── Vibe-Trading mymain (editable install)           │
 │ ├── 项目文件 (configs, skills, scripts)               │
 │ └── entrypoint.sh (渲染配置 + 后台预热)               │
@@ -96,7 +96,7 @@
 │ ├── Ubuntu 22.04                                     │
 │ ├── Python 3.12 (deadsnakes PPA)                     │
 │ ├── Node.js 20                                       │
-│ ├── OpenCode CLI (pin 1.19.0)                        │
+│ ├── OpenCode CLI (pin 1.19.3)                        │
 │ ├── playwright + chromium                            │
 │ └── pip 预装包 (plotly, ta, loguru, etc.)            │
 └──────────────────────────────────────────────────────┘
@@ -210,7 +210,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 | 变量 | 必需 | 默认值 | 说明 |
 |------|------|--------|------|
 | `DASHSCOPE_API_KEY` | ✅（仅直连模式） | — | DashScope API Key。代理模式下不需要（真实 key 不进沙箱，由 RM 上游注入；生产池自 2026-10-09 起已移除该变量） |
-| `LLM_BASE_URL` | ❌ | 空 | v3.4.0-mymain 起（Phase 9a）：RM 内嵌 LLM 代理地址。非空时 `render_config.py` 渲染 `provider.alibaba-cn.options.{baseURL,apiKey,headers.x-sandbox-id=HOSTNAME}` 指向代理；空 = 直连模式（字节等价 v3.3.0） |
+| `LLM_BASE_URL` | ❌ | 空 | v3.4.0-mymain 起（Phase 9a）：RM 内嵌 LLM 代理地址。非空时 `render_config.py` 渲染 `provider.alibaba-cn.options.{baseURL,apiKey,headers.x-sandbox-id=HOSTNAME}` 指向代理；空 = 直连模式（仅渲染 `provider.models`，不渲染 `provider.options`） |
 | `LLM_API_KEY` | ❌ | 空 | 沙箱→RM 代理的调用凭证（渲染 gate 仅看 `LLM_BASE_URL` 非空；生产恒两者同设——缺本键时 apiKey 渲染为空串，请求将被代理 401 拒绝） |
 | `OPENCODE_SERVER_PASSWORD` | ✅ | — | Web Server 密码 |
 | `CLICKHOUSE_HOST` | ✅ | — | ClickHouse 地址 |
@@ -224,7 +224,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 | `SMTP_HOST` | ❌ | — | SMTP 服务器 |
 | `SMTP_AUTH_CODE` | ❌ | — | SMTP 授权码 |
 | `LANGCHAIN_PROVIDER` | ❌ | `dashscope` | LLM 提供商 |
-| `LANGCHAIN_MODEL_NAME` | ❌ | `qwen3.8-max` | 模型名称 |
+| `LANGCHAIN_MODEL_NAME` | ❌ | `qwen3.8-max` | VT LangChain 内部模型名；OMO 走 opencode provider，不受此变量影响 |
 | `LANGCHAIN_TEMPERATURE` | ❌ | `0.3` | 生成温度 |
 | `TUSHARE_TOKEN` | ❌ | — | Tushare Pro Token |
 
@@ -242,7 +242,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 
 | 变量 | 镜像默认 | 说明 |
 |------|--------|------|
-| `OMO_VERSION` | `5.1.30` | 预烘焙插件版本（构建 ARG 提升为 ENV）；升级需 Dockerfile ARG / opencode.json.tmpl / tui.json / entrypoint fallback **四处逐字一致**后重建 |
+| `OMO_VERSION` | `5.1.35` | 预烘焙插件版本（构建 ARG 提升为 ENV）；升级需 Dockerfile ARG / opencode.json.tmpl / tui.json / entrypoint fallback **四处逐字一致**后重建。5.1.40 在 opencode 1.19.3 上首次 `/config` 会挂起，已回退到与本地一致的 5.1.35 |
 | `OMO_DISABLE_POSTHOG` | `1` | 禁用 OMO PostHog 遥测（含每日 daily-active 打点） |
 | `OMO_SEND_ANONYMOUS_TELEMETRY` | `0` | 禁用 OMO 匿名遥测 |
 | `OPENCODE_DISABLE_MODELS_FETCH` | `1` | 禁用 models 目录后台刷新（目录已构建期固化于 `~/.cache/opencode/models.json`）；在线环境想恢复刷新，运行时覆盖为空值即可 |
@@ -288,7 +288,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 
 ### 6.5 工具载荷与超时上限（FE-1 R7 契约文档）
 
-前端 / Agent 消费 VT MCP 工具结果时存在三层独立的载荷上限（opencode 版本对应：本镜像 pin `opencode-ai@1.19.0`；下表 Truncate/超时行为经 1.18.18 源码核实，1.19.0 经 v3.6.0 冒烟 Stage2 实证启动接受同一配置键，跨版本语义未逐行复核）：
+前端 / Agent 消费 VT MCP 工具结果时存在三层独立的载荷上限（opencode 版本对应：本镜像 pin `opencode-ai@1.19.3`；下表 Truncate/超时行为经 1.18.18 源码核实，1.19.0 经 v3.6.0 冒烟 Stage2 实证启动接受同一配置键，1.19.3 沿用同一配置键，跨版本语义未逐行复核）：
 
 | 层 | 上限 | 超限行为 | 配置位置 |
 |---|---|---|---|
@@ -296,7 +296,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 | ② opencode Truncate（**所有** MCP 工具结果统一过此层） | opencode 默认 2,000 行 / 50KB；**本镜像提升为 8,000 行 / 256KB** | 全文写盘到 opencode truncation 目录，模型与前端 SSE 只收到前缀预览 + `metadata.truncated/outputPath`——**JSON 会被拦腰截断**，因此 VT 侧大载荷工具自带更低的③层预算 | `opencode.json` 顶层 `tool_output.{max_lines,max_bytes}`（本镜像 tmpl 已配置并有单测 pin） |
 | ③ VT `read_run_artifact` 工具 | **~120,000 字符/页**（`_BYTE_BUDGET`） | 整记录收缩：`rows` 模式缩小 `returned_rows` 并给出诚实的 `truncated`/`next_offset`；`downsample` 模式减少采样点并重算 `stride`——**永不产出破碎 JSON**，尾部永不静默丢失 | 代码常量 `agent/src/tools/run_artifact_tool.py` |
 
-MCP 调用超时（与载荷正交，经 1.18.18 源码核实；1.19.0 启动接受性经冒烟实证）：
+MCP 调用超时（与载荷正交，经 1.18.18 源码核实；1.19.0 启动接受性经冒烟实证，1.19.3 沿用）：
 
 | 项 | 值 | 说明 |
 |---|---|---|
@@ -538,6 +538,50 @@ print(f'Tools: {len(mcp._tool_manager._tools)}')
 print(f'MemoryGuard: OK' if hasattr(mcp, '_middleware') else 'MemoryGuard: MISSING')
 "
 ```
+
+### 9.5 启动就绪检查（镜像打包期门禁）
+
+`opencode serve` 会先绑定 `:4096`、再完成首次 `/config` bootstrap。该 bootstrap 若很慢，
+缺少 startupProbe 的 Pod 会过早 Ready，请求直接撞上 ReadTimeout。下面的脚本在**镜像**
+上量出「容器启动 → 首次认证 `GET /config` 返回 200」的墙钟，把慢镜像挡在打包阶段。
+
+```bash
+cd OpencodeAgent
+./scripts/check_startup_readiness.sh                    # 默认镜像与 60s 预算
+IMAGE=opencode-serve:v3.8.2-mymain \
+  STARTUP_BUDGET_S=300 ./scripts/check_startup_readiness.sh
+```
+
+> 2026-10-23 v3.8.2（opencode 1.19.3 + OMO 5.1.35）QEMU 离线实测：
+> listening 6.8s，首次 `/config` 200 = 164.3s；`STARTUP_BUDGET_S=300` 通过。
+> 首启 bootstrap 明显慢于 v3.8.0 的 8.0s；production startupProbe 300s 仍覆盖。
+> OMO 5.1.40 在 opencode 1.19.3 上首次 `/config` 挂起，镜像回退 5.1.35。
+
+脚本行为：
+
+| 项 | 说明 |
+|----|------|
+| 启动参数 | `--platform linux/amd64`、`--network none`（`OFFLINE=0` 可放开）、随机 dummy `OPENCODE_SERVER_PASSWORD`、`DASHSCOPE_API_KEY=dummy-not-a-real-key`、`CLICKHOUSE_HOST=` 为空 |
+| 通过条件 | 日志同时出现 `opencode server listening` 与 `[entrypoint] warmup complete`，且首次 `/config` 200 的耗时 ≤ `STARTUP_BUDGET_S`（默认 60s），并用 `docker exec curl` 复核返回 200 |
+| 失败条件 | 任一标记缺失、首次 200 超预算、容器提前退出、复核请求非 200 |
+| 清理 | `trap` 保证退出时 `docker rm -f`；`KEEP_CONTAINER=1` 可保留现场 |
+| 镜像缺失 | 默认打印 `SKIP` 并退出 0（便于无镜像的 CI）；`REQUIRE_IMAGE=1` 时视为失败 |
+| 其它变量 | `CONTAINER_NAME` 自定义容器名；`HARD_TIMEOUT_S` 等待标记的上限（默认预算 + 60s） |
+
+> 计量口径：`FIRST_200_S` 取容器日志里 `[entrypoint] warmup complete` 的时间戳，因此包含
+> entrypoint 固定的 20s settle 等待；它量的是「容器启动 → 就绪」的墙钟，不是单次 HTTP
+> 请求的耗时。跨版本对比数字时按同一口径读。
+
+失败处置：
+
+1. **`warmup complete` 缺失 / 超预算**：先看日志里是否出现
+   `background dependency install failed`。首次 `/config` 会在
+   `/home/opencode/.config/opencode` 与 `/home/opencode/.opencode` 两处安装
+   `@opencode-ai/plugin`；镜像已通过 `PREBAKE_PLUGIN_SDK=1`（默认）预烘，
+   `--build-arg PREBAKE_PLUGIN_SDK=0` 构建的镜像会重新付出这段成本。
+2. **容器提前退出**：`docker logs <container>` 查 entrypoint 报错（配置渲染、权限、端口）。
+3. **QEMU 环境**：aarch64 主机模拟 amd64 时整体启动会明显变慢（v3.8.2 实测 164.3s），
+   属预期差异；请到 native amd64 builder 复跑，或仅在本地用更大的预算做冒烟验证。
 
 ---
 
@@ -835,7 +879,7 @@ docker builder prune
    ├── Ubuntu 22.04
    ├── Python 3.12 (deadsnakes)
    ├── Node.js 20
-   ├── OpenCode CLI (pin opencode-ai@1.19.0)
+   ├── OpenCode CLI (pin opencode-ai@1.19.3)
    ├── pip 预装包
    ├── playwright + chromium
    └── opencode 用户
@@ -845,6 +889,7 @@ docker builder prune
    ├── Vibe-Trading mymain (editable install)
    ├── VT MCP import 构建期门禁
    ├── OMO plugin 预烘焙 (npm install → ~/.cache/opencode/packages/oh-my-openagent@${OMO_VERSION})
+   ├── @opencode-ai/plugin SDK 预烘焙 (~/.config/opencode 与 ~/.opencode 两处，可 PREBAKE_PLUGIN_SDK=0 关闭)
    ├── models.json 预烘焙 (curl models.opencode.ai/api.json)
    ├── 项目文件 (configs, skills, scripts)
    └── entrypoint.sh

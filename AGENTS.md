@@ -44,3 +44,109 @@
 
 1. **当前环境禁止 `scp` 命令**: 任何文件传输、部署、上传、同步任务一律不得使用 `scp`。需要跨主机复制时改用 `rsync`、`ssh <host> 'cat > <path>'`、`git push`/`git fetch`，或目标平台提供的 API/CLI；脚本、文档、示例与子代理提示词中也不得出现 `scp` 调用。
 2. **违规即阻断**: 若某个既有脚本或文档依赖 `scp`，必须先就地替换为上述替代方案再执行；不得以“历史遗留”为由放行。
+
+# 10. 服务启动就绪纪律（opencode sandbox / ACS）
+
+> 来源：2026-10-23 ACS sandbox startupProbe canary 与镜像预烘。本节是 `mymain` 本地分支知识，**不回流上游**。
+
+## 10.1 故障形状
+
+生产 2026-10-22 连续三次置备失败，形状固定：
+
+- sandbox 实际创建成功，pod 进入 `Running`，容器内 `opencode serve` 已 bind `0.0.0.0:4096`；
+- 首次 `/config` bootstrap（plugin SDK 安装、skill index、`opencode.db`）尚未完成，请求 TCP 能连上却拿不到响应；
+- 上游 route-wait 在应用就绪前反复探测，日志表现为 `ReadTimeout` / `503` / `route not ready after Ns`，最终判失败并 kill sandbox；
+- 生产模板没有 probe。Kubernetes 的 `Ready` 是 pod 级：容器进程起来就算，不等于应用可服务。
+
+`Ready` 在任何时刻都不证明「首次请求会很快返回」，它只证明容器没死。
+
+## 10.2 根因
+
+`opencode serve` 的启动顺序是「先 bind 端口，再做首次初始化」。bind 之后端口立即可连，而首次 bootstrap 会阻塞 event loop 数十秒。没有 `startupProbe` 时，manager 的 WaitReady 只等到 pod `Ready`，随即把 route 标成 `running`，把尚未 warm 的应用直接暴露给上游。
+
+任何「先 listen 后初始化」的长驻进程都有这个形状，不是 opencode 独有。
+
+## 10.3 强制规则：就绪必须由真实 warm 路径定义
+
+1. **「进程存活 / 端口可连」不是就绪**。凡是 bind 早于初始化的服务，必须提供与真实业务路径一致的 readiness 端点（本项目为 `GET /config?directory=/home/opencode`），并由 `startupProbe` 或 `readinessProbe` 门控。
+2. **优先 `startupProbe`**：它在成功前抑制 readiness/liveness，且不会因为启动慢被重启。`readinessProbe` 只适合启动快、但可能阶段性失去服务能力的场景。
+3. **probe 必须打真实入口**。探一个静态 `/health`、而业务入口另有 bootstrap 成本，等于没门控。
+4. **禁止用「进程存活 + 端口可连」的脚本或 sidecar 推断就绪**。
+
+## 10.4 预算规则
+
+probe 预算必须覆盖 bootstrap 尾延迟，并与上游 route-wait / create timeout 同向对齐。**不允许**只放大 route-wait 预算来掩盖慢启动：那只是把失败推迟，并把 bootstrap 期间的 `ReadTimeout` 变成常态。
+
+生产 canary 采用的具体 profile：
+
+```yaml
+startupProbe:
+  exec:
+    command:
+      - /bin/bash
+      - -c
+      - 'curl -sf --max-time 40 -u "opencode:${OPENCODE_SERVER_PASSWORD}" "http://127.0.0.1:4096/config?directory=/home/opencode"'
+  periodSeconds: 5
+  timeoutSeconds: 45
+  failureThreshold: 6
+```
+
+- 单次等待 45s 覆盖正常约 35s 的 bootstrap；首次 probe 可能在 server listen 前快速失败，随后 5s 周期会在 warm 完成后通过（canary 实测 00:04:01 失败一次，00:04:23 后成功）。
+- 总预算 `6 × (45s + 5s) ≈ 300s`，与 `RM_ROUTE_WAIT_BUDGET_S=300` 对齐；
+- 若 `RM_CREATE_TIMEOUT_S`、CLI `--request-timeout` 或前端 loader 上限变化，probe 总预算必须**一起**重算，不能单边放宽；
+- 若 probe 反而拖慢 bootstrap（短请求反复取消初始化），先加 `timeoutSeconds`（如 120），不要加 probe 次数。
+
+## 10.5 镜像打包规则：慢启动在构建期就该失败
+
+发布前必须执行：
+
+```bash
+cd OpencodeAgent
+./scripts/check_startup_readiness.sh
+```
+
+- 默认预算 60s、`OFFLINE=1`（`--network none`），量的是「容器启动到首次认证 `GET /config` 返回 200」的墙钟；
+- 判定：日志必须同时出现 `opencode server listening` 与 `[entrypoint] warmup complete`，且首次 `/config` 200 不超过 `STARTUP_BUDGET_S`；
+- 缺少 `warmup complete` 或首次 200 超预算时脚本非零退出，**构建/发布应据此失败**；
+- `REQUIRE_IMAGE=1` 把「本地镜像不存在」从 `SKIP` 升级为失败，发布流水线应置 1。
+
+镜像侧已完成预烘：`OpencodeAgent/Dockerfile` 的 `PREBAKE_PLUGIN_SDK=1`（默认开启，`--build-arg PREBAKE_PLUGIN_SDK=0` 可关闭）把 `@opencode-ai/plugin` 同时装进 `/home/opencode/.config/opencode` 与 `/home/opencode/.opencode`。两处都必须有：只烘 global 目录时，项目目录仍会在离线状态下重试安装。
+
+实测（amd64 镜像在 aarch64 + QEMU 下，离线）：
+
+| 场景 | 首次 `/config` 200 |
+|---|---|
+| 预烘前（v3.8.0 原镜像） | 78.6s |
+| 预烘后 | 8.0s |
+| 预烘后独立复跑 | 8.2s |
+
+native amd64 的生产 bootstrap 约 35s（生产观测值，不是 QEMU）。QEMU 数字只能用于同环境前后对比，不能当作生产时延。
+
+v3.8.2（opencode 1.19.3 + OMO 5.1.35）QEMU 离线实测：listening 6.8s，首次 `/config` 200 = 164.3s；`STARTUP_BUDGET_S=300` 通过。OMO 5.1.40 在 opencode 1.19.3 上首次 `/config` 挂起，镜像 pin 5.1.35。
+
+## 10.6 Canary 证据（2026-10-23）
+
+一次成功的 create 时序：
+
+| 项 | 值 |
+|---|---|
+| `claim_s` | 43.42s |
+| pod Ready | `1/2 Running` 直到 bootstrap 完成，随后 `2/2` |
+| `Startup probe failed` | 00:04:01Z，此时 server 尚未 listening（listening 日志在 00:04:04），属预期噪声 |
+| `warmup complete` | 00:04:23.853Z |
+| `Ready=True` | 00:04:23Z（k8s 只到秒） |
+| `RESTARTS` | 0 |
+| route-wait | `{"ready": true, "route_ready_s": 0.1, "attempts": 1}` |
+
+对照历史失败形状（`claim 77s 到 89s` + `route 35s 到 61s`），本次是单次 create 成功、单次 route-wait 成功、零重启。三条 caveat 必须一起记住，不要把结论说过头：
+
+1. `Ready` 的 `lastTransitionTime` 只到秒级，无法证明「200 早于 Ready」在毫秒尺度成立；能证明的是采样序列里没有 Ready 早于 bootstrap。
+2. `claim_s=43.42` 与 bootstrap 结束相差 0.4 到 3.4s（受 ssh 启动与 pod 创建时间的区间约束），严格意义的「claim_s 包含完整 bootstrap」**未被证明**；被证明的是旧的失败形状不再出现。
+3. route-wait 在 create 返回约 10s 后才调用，`0.1s` 只是「调用时已就绪」的快照；路由传播的真实耗时上界应读作不超过约 10s。
+
+## 10.7 指针
+
+- 执行计划与通过条件：`.omo/plans/sandbox-startup-probe-canary.md`
+- 原始证据：`.omo/evidence/sandbox-startup-probe/`（`t3-ready-timeline.txt`、`t4-route.txt`、`t9-image-check.txt`）
+- 生产模板建议 patch：`.omo/evidence/sandbox-startup-probe/t6-prod-patch.diff`。**仅作为 HIL review 输入，未 apply**；apply 前需确认生产 sandbox 已归零且模板保持 `replicas: 0`。
+- 打包期检查脚本与失败处置：`OpencodeAgent/scripts/check_startup_readiness.sh`、`OpencodeAgent/docs/IMAGE-MANUAL.md` §9.5

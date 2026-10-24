@@ -9,8 +9,8 @@ inlined in ``entrypoint.sh``:
   removed from the model's visible tool surface.
 - Per-agent tool scoping keeps finance MCP tools away from agents that do
   not need them (explore / multimodal-looker).
-- ``oh-my-openagent.json`` model tiering invariants (cheap agents stay
-  cheap, deep agents stay on the max model).
+- ``oh-my-openagent.json`` model/effort invariants (all agents DeepSeek;
+  high/max reasoning tiers).
 - ``AGENTS.md`` stays within the always-loaded context budget.
 - The ``research-scenarios`` skill keeps its frontmatter + playbook body.
 """
@@ -36,13 +36,33 @@ SCENARIOS_SKILL_PATH = OPENCODE_AGENT_DIR / "skills" / "research-scenarios" / "S
 # research-scenarios skill instead.
 AGENTS_MD_MAX_LINES = 450
 
-# Captured verbatim from the v3.3.0 template (pre-proxy) rendered with the
-# fixture env below — contract A.7 requires direct mode to stay byte-identical
-# so the image can ship before the RM proxy exists.
-DIRECT_MODE_GOLDEN_V330 = """\
+# Captured verbatim from the current template (direct mode, no proxy) rendered
+# with the fixture env below.
+DIRECT_MODE_GOLDEN = """\
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "alibaba-cn/qwen3.8-max",
+  "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+  "provider": {
+    "alibaba-cn": {
+      "models": {
+        "deepseek-v4.1-flash-1017": {
+          "attachment": true,
+          "limit": {
+            "context": 1000000,
+            "input": 500000,
+            "output": 131072
+          },
+          "name": "DeepSeek V4.1 Flash 1017",
+          "options": {
+            "enable_thinking": true,
+            "reasoning_effort": "high"
+          },
+          "reasoning": true,
+          "tool_call": true
+        }
+      }
+    }
+  },
   "tool_output": {
     "max_bytes": 262144,
     "max_lines": 8000
@@ -82,7 +102,7 @@ DIRECT_MODE_GOLDEN_V330 = """\
     }
   },
   "plugin": [
-    "oh-my-openagent@5.1.30"
+    "oh-my-openagent@5.1.35"
   ],
   "permission": {
     "vibe-trading_trading_*": "deny",
@@ -160,18 +180,17 @@ class TestTemplateRender:
 
 
 class TestLlmProxyRender:
-    """Contract A.7 (Phase 9a): the provider block renders ONLY when
-    LLM_BASE_URL is set; direct mode stays byte-identical to v3.3.0 so the
-    image can ship before the RM proxy. Provider ID must stay ``alibaba-cn``
+    """The provider block always declares the DeepSeek model; proxy options
+    render only when LLM_BASE_URL is set. Provider ID must stay ``alibaba-cn``
     (opencode hardcodes enable_thinking injection against that ID)."""
 
     LLM_BASE_URL = "http://resource-manager.default.svc.cluster.local:8900/llm/v1"
     LLM_API_KEY = "pool-fake-token"
 
-    def test_direct_mode_matches_v330_golden_byte_for_byte(self):
+    def test_direct_mode_matches_golden_byte_for_byte(self):
         raw = render_config.render(TEMPLATE_PATH, MANIFEST_PATH)
         json.loads(raw)
-        assert raw == DIRECT_MODE_GOLDEN_V330
+        assert raw == DIRECT_MODE_GOLDEN
 
     def test_proxy_mode_renders_provider_block(self, monkeypatch):
         monkeypatch.setenv("LLM_BASE_URL", self.LLM_BASE_URL)
@@ -183,7 +202,8 @@ class TestLlmProxyRender:
         assert options["baseURL"] == self.LLM_BASE_URL
         assert options["apiKey"] == self.LLM_API_KEY
         assert options["headers"] == {"x-sandbox-id": "opencode-poc-smoke1"}
-        assert config["model"] == "alibaba-cn/qwen3.8-max"
+        assert config["model"] == "alibaba-cn/deepseek-v4.1-flash-1017"
+        assert "deepseek-v4.1-flash-1017" in config["provider"]["alibaba-cn"]["models"]
         assert "{{" not in raw
         assert "}}" not in raw
 
@@ -243,47 +263,74 @@ class TestPerAgentToolScoping:
 
 
 class TestOmoModelConfig:
-    """Two-tier model policy (aligned with the maintainer's local OMO roster):
-    qwen3.8-max is the primary model for every reasoning-heavy role; the
-    high-frequency, low-complexity, latency-sensitive roles (explore agent,
-    quick / unspecified-low categories) run on qwen3.8-flash. multimodal-looker
-    stays on the primary tier: qwen3.8-max is verified multimodal, flash is
-    not."""
+    """All OMO agents run the same DeepSeek v4.1 Flash 1017 model. DeepSeek
+    exposes low/high/max reasoning; roles that need deep planning or
+    implementation run at max, while research/search/light roles run at high."""
 
-    PRIMARY_MODEL = "alibaba-cn/qwen3.8-max"
-    LIGHT_MODEL = "alibaba-cn/qwen3.8-flash"
-    LIGHT_AGENTS = {"explore"}
-    LIGHT_CATEGORIES = {"quick", "unspecified-low"}
+    MODEL = "alibaba-cn/deepseek-v4.1-flash-1017"
+    LIGHT_AGENTS = {"explore", "librarian", "multimodal-looker"}
+    HEAVY_AGENTS = {
+        "build",
+        "plan",
+        "sisyphus",
+        "hephaestus",
+        "sisyphus-junior",
+        "OpenCode-Builder",
+        "prometheus",
+        "metis",
+        "momus",
+        "oracle",
+        "atlas",
+    }
+    HEAVY_CATEGORIES = {
+        "ultrabrain",
+        "deep",
+        "deep-high",
+        "artistry",
+        "unspecified-high",
+    }
+    LIGHT_CATEGORIES = {
+        "visual-engineering",
+        "deep-low",
+        "quick",
+        "unspecified-low",
+        "writing",
+    }
 
     def _omo_config(self) -> dict:
         with open(CONFIG_DIR / "oh-my-openagent.json", encoding="utf-8") as f:
             return json.load(f)
 
-    def test_agents_follow_the_two_tier_policy(self):
+    def test_all_agents_use_deepseek_with_tiered_reasoning(self):
         omo = self._omo_config()
-        assert omo["agents"], "agents section must not be empty"
+        assert set(omo["agents"]) == self.HEAVY_AGENTS | self.LIGHT_AGENTS
         for agent_name, spec in omo["agents"].items():
-            if agent_name in self.LIGHT_AGENTS:
-                assert spec["model"] == self.LIGHT_MODEL, agent_name
-                assert spec["reasoningEffort"] == "medium", agent_name
-            else:
-                assert spec["model"] == self.PRIMARY_MODEL, agent_name
-                assert spec["reasoningEffort"] == "max", agent_name
+            assert spec["model"] == self.MODEL, agent_name
+            expected = "high" if agent_name in self.LIGHT_AGENTS else "max"
+            assert spec["reasoningEffort"] == expected, agent_name
+            assert spec["thinking"] == {"type": "enabled"}, agent_name
 
-    def test_categories_follow_the_two_tier_policy(self):
+    def test_all_categories_use_deepseek_with_tiered_reasoning(self):
         omo = self._omo_config()
-        assert omo["categories"], "categories section must not be empty"
+        assert set(omo["categories"]) == self.HEAVY_CATEGORIES | self.LIGHT_CATEGORIES
         for category, spec in omo["categories"].items():
-            if category in self.LIGHT_CATEGORIES:
-                assert spec["model"] == self.LIGHT_MODEL, category
-                assert spec["reasoningEffort"] == "medium", category
-            else:
-                assert spec["model"] == self.PRIMARY_MODEL, category
-                assert spec["reasoningEffort"] == "max", category
+            assert spec["model"] == self.MODEL, category
+            expected = "high" if category in self.LIGHT_CATEGORIES else "max"
+            assert spec["reasoningEffort"] == expected, category
+            assert spec["thinking"] == {"type": "enabled"}, category
 
     def test_opencode_default_model_matches(self):
         config = _rendered()
-        assert config["model"] == self.PRIMARY_MODEL
+        assert config["model"] == self.MODEL
+
+    def test_provider_declares_the_deepseek_model(self):
+        config = _rendered()
+        model = config["provider"]["alibaba-cn"]["models"]["deepseek-v4.1-flash-1017"]
+        assert model["reasoning"] is True
+        assert model["tool_call"] is True
+        assert model["attachment"] is True
+        assert model["options"]["enable_thinking"] is True
+        assert model["options"]["reasoning_effort"] == "high"
 
 
 class TestAlwaysLoadedContextBudget:

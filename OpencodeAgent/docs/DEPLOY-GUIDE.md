@@ -27,7 +27,7 @@
 │   ├── opencode.json.tmpl             # 配置模板（Jinja2，宿主机路径版）
 │   ├── render_config.py               # 渲染器：模板 + 工具治理清单 → opencode.json
 │   ├── opencode.json                  # 渲染产物（含 CH 凭证，勿外传）
-│   ├── oh-my-openagent.json           # OMO 配置：主力 alibaba-cn/qwen3.8-max；轻量档 qwen3.8-flash
+│   ├── oh-my-openagent.json           # OMO 配置：统一 alibaba-cn/deepseek-v4.1-flash-1017；high/max 思考档
 │   ├── vibe-trading-tools.json        # 工具治理清单（disabled: trading_*）
 │   ├── tui.json / package.json
 │   └── skills/                        # 5 个 OpenCode skills（data-warehouse / html-report /
@@ -70,13 +70,15 @@ fork 仓库为 public，HTTPS 匿名 clone 即可，无需在目标机配置 git
 ## 4. opencode 与 oh-my-openagent
 
 ```bash
-npm install -g opencode-ai@latest     # 当前部署版本 1.18.23
+npm install -g opencode-ai@1.19.3     # 当前部署版本
 ```
 
 - OMO 以 opencode 插件形式装载：opencode.json 中 `"plugin": ["oh-my-openagent@<pinned>"]`。opencode ≥1.18 首次加载时经 npm 安装到 `~/.cache/opencode/packages/<spec>/`（spec 逐字为目录名；`node_modules/<name>` 存在即零网络短路加载）。裸机部署建议 pin 版本并预装该缓存目录；docker 镜像（v3.2.0+）已在构建期预烘焙，启动零下载。
-- `.opencode/oh-my-openagent.json` 两级模型（与本机 OMO roster 一致）：**主力档** `alibaba-cn/qwen3.8-max` + `reasoningEffort: max`（build / hephaestus / oracle / librarian / multimodal-looker / prometheus / metis / momus / atlas / sisyphus-junior 及 visual-engineering / ultrabrain / deep / artistry / unspecified-high / writing 类别）；**轻量档** `alibaba-cn/qwen3.8-flash` + `reasoningEffort: medium`（explore agent 与 quick / unspecified-low 类别——高频、低复杂度、延迟敏感）。multimodal-looker 保持主力档：qwen3.8-max 多模态已验证，flash 未验证。
+- `.opencode/oh-my-openagent.json` 统一模型（与本机 OMO roster 一致）：所有 14 个 agent（build / plan / sisyphus / hephaestus / sisyphus-junior / OpenCode-Builder / prometheus / metis / momus / oracle / atlas / librarian / explore / multimodal-looker）均使用 `alibaba-cn/deepseek-v4.1-flash-1017`。重规划/实现/审查角色与 ultrabrain / deep / deep-high / artistry / unspecified-high 类别使用 `reasoningEffort: max`；检索/视觉/轻量角色（librarian / explore / multimodal-looker）与 visual-engineering / deep-low / quick / unspecified-low / writing 类别使用 `reasoningEffort: high`。`thinking.type=enabled` 全量开启。
+- 镜像 catalog 的 `alibaba-cn` 尚未登记该 DeepSeek 模型，`opencode.json.tmpl` 在 `provider.alibaba-cn.models` 显式声明模型、`enable_thinking=true` 与 `reasoning_effort=high` 默认值；OMO agent 级 `reasoningEffort` 覆盖到 max/high。
+- 直连模式（不设 `LLM_*`）现在也带 provider/models 声明，因此不再与 v3.3.0 字节等价；proxy 模式仅额外渲染 `provider.alibaba-cn.options`。
 - 模型供应商 `alibaba-cn` 的认证来自环境变量 `DASHSCOPE_API_KEY`（systemd EnvironmentFile 注入，不入任何配置文件）。
-  - **v3.4.0-mymain 起新增代理模式（Phase 9a，对应 RM 仓 ADR-019）**：池环境设置 `LLM_BASE_URL` / `LLM_API_KEY` 时，`render_config.py` 渲染 `provider.alibaba-cn.options.{baseURL,apiKey,headers.x-sandbox-id=HOSTNAME}` 指向 RM 内嵌 LLM 代理——真实 DashScope key 不进入沙箱，由 RM 在上游注入；`x-sandbox-id` 取 Pod 名（HOSTNAME）供代理侧归属。直连模式（不设 `LLM_*`）行为不变，渲染输出与 v3.3.0 字节等价（golden 测试锚定）。
+  - **v3.4.0-mymain 起新增代理模式（Phase 9a，对应 RM 仓 ADR-019）**：池环境设置 `LLM_BASE_URL` / `LLM_API_KEY` 时，`render_config.py` 渲染 `provider.alibaba-cn.options.{baseURL,apiKey,headers.x-sandbox-id=HOSTNAME}` 指向 RM 内嵌 LLM 代理——真实 DashScope key 不进入沙箱，由 RM 在上游注入；`x-sandbox-id` 取 Pod 名（HOSTNAME）供代理侧归属。直连模式（不设 `LLM_*`）只渲染 `provider.models`、不渲染 `provider.options`，完整输出由 golden 测试逐字节锚定。
 
 ## 5. 配置目录（项目级 `.opencode/`，非默认全局目录）
 
@@ -108,7 +110,7 @@ set -a && source /opt/my-vibe-trading/.env && set +a
 
 | 变量 | 必填 | 说明 |
 |------|:--:|------|
-| `DASHSCOPE_API_KEY` | ✅ | DashScope key（qwen3.8-max 推理）。**不入库** —— `<见服务器 .env>` |
+| `DASHSCOPE_API_KEY` | ✅ | DashScope key（VT 内部 LangChain + OMO provider）。**不入库** —— `<见服务器 .env>` |
 | `OPENCODE_SERVER_PASSWORD` | ✅ | HTTP Basic Auth 密码（用户名 `opencode`）。`<见服务器 .env>` |
 | `TUSHARE_TOKEN` | ✅ | Tushare Pro token（数据联邦当日补数）。**不入库** —— `<见服务器 .env>` |
 | `CLICKHOUSE_HOST` / `CLICKHOUSE_PORT` | ✅ | `172.24.165.51` / `8123`（同 VPC 内网地址） |
@@ -116,7 +118,7 @@ set -a && source /opt/my-vibe-trading/.env && set +a
 | `CLICKHOUSE_DATABASE` | ✅ | `ashare` |
 | `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | ✅ | `llm_role` 只读账户，专供 `ch_*` 语义层工具；缺失时 ch_* 报错且**绝不回退** default。`<见服务器 .env>` |
 | `VT_MEMORY` / `VT_MEMORY_MCP_TOOLS` / `VT_MEMORY_BASE_DIR` | ✅ | `full` / `1` / `/opt/my-vibe-trading/.vt-memory` —— 记忆体系全开（MCP 工具 85→90） |
-| `LANGCHAIN_PROVIDER` / `LANGCHAIN_MODEL_NAME` | ✅ | `dashscope` / `qwen3.8-max` |
+| `LANGCHAIN_PROVIDER` / `LANGCHAIN_MODEL_NAME` | ✅ | `dashscope` / `qwen3.8-max`（VT 内部 LangChain；OMO 模型由 `oh-my-openagent.json` 决定） |
 | `DASHSCOPE_BASE_URL` | ✅ | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
 | `TZ` | 可选 | `Asia/Shanghai` |
 | `DINGTALK_WEBHOOK` / `SMTP_HOST` / `SMTP_AUTH_CODE` | 可选 | 周期任务通知通道 |

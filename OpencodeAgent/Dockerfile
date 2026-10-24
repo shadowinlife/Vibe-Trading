@@ -9,6 +9,13 @@ FROM opencode-serve-base:latest
 
 USER root
 
+# The base image owns the opencode binary. Keep the image on the same v1 max
+# version as the local harness; rebuild Dockerfile.base when this pin moves.
+RUN test "$(opencode --version)" = "1.19.3" || { \
+        echo "ERROR: base image must ship opencode-ai@1.19.3; rebuild --base"; \
+        exit 1; \
+    }
+
 RUN mkdir -p /root/.config/pip && \
     printf '[global]\nindex-url=https://mirrors.aliyun.com/pypi/simple/\ntimeout=60\nretries=5\n\n[install]\ntrusted-host=mirrors.aliyun.com\n' \
     > /root/.config/pip/pip.conf
@@ -42,7 +49,7 @@ RUN /opt/venv/bin/python3 -c "import sys; sys.path.insert(0, '/opt/vibe-trading/
 # produces an identical cache layout. <spec> MUST match the plugin entry
 # rendered from config/opencode.json.tmpl VERBATIM (directory name = spec).
 # Upgrade SOP: bump OMO_VERSION here AND in opencode.json.tmpl, then rebuild.
-ARG OMO_VERSION=5.1.30
+ARG OMO_VERSION=5.1.35
 RUN mkdir -p "/home/opencode/.cache/opencode/packages/oh-my-openagent@${OMO_VERSION}" && \
     cd "/home/opencode/.cache/opencode/packages/oh-my-openagent@${OMO_VERSION}" && \
     printf '{\n  "dependencies": {\n    "oh-my-openagent": "%s"\n  }\n}\n' "${OMO_VERSION}" > package.json && \
@@ -50,6 +57,41 @@ RUN mkdir -p "/home/opencode/.cache/opencode/packages/oh-my-openagent@${OMO_VERS
     rm -rf /tmp/npm-cache && \
     test -d node_modules/oh-my-openagent && \
     chown -R opencode:opencode /home/opencode/.cache
+
+# ── Pre-bake the @opencode-ai/plugin SDK into BOTH config dirs ─────────────
+# The first /config bootstrap runs opencode's bundled npm installer for
+# `@opencode-ai/plugin` in every config directory it loads:
+#   /home/opencode/.config/opencode  (global)  and
+#   /home/opencode/.opencode         (project, next to the rendered opencode.json).
+# With registry access that install costs 10s..1min (measured 57s under QEMU);
+# without registry access it retries for ~70s and then logs
+# "background dependency install failed" — a network-dependent first request,
+# which is exactly the cost the startupProbe plan (sandbox-startup-probe-canary
+# T9) wants removed. Measured on this image: first /config 200 67s online /
+# 79s offline before the pre-bake, 8.0s offline after it.
+# Same trick as the OMO cache above: plain `npm install` produces the tree
+# opencode expects, so no opencode binary is executed at build time
+# (SIGILL under cross-arch QEMU). The SDK version is read from the installed
+# opencode-ai package instead of a hand-maintained ARG, so a base-image bump
+# cannot leave a stale pin behind.
+# Offline/slim builds can skip the extra registry call: --build-arg
+# PREBAKE_PLUGIN_SDK=0 (the image still works, but the first request pays the
+# install again). This layer changes nothing at runtime once it is baked in.
+ARG PREBAKE_PLUGIN_SDK=1
+RUN if [ "$PREBAKE_PLUGIN_SDK" = "1" ]; then \
+        set -eux; \
+        SDK_VERSION="$(node -e "console.log(require('/usr/lib/node_modules/opencode-ai/package.json').version)")"; \
+        for dir in /home/opencode/.config/opencode /home/opencode/.opencode; do \
+            mkdir -p "$dir"; \
+            printf '{\n  "dependencies": {\n    "@opencode-ai/plugin": "%s"\n  }\n}\n' "$SDK_VERSION" > "$dir/package.json"; \
+            cd "$dir"; \
+            npm install --no-audit --no-fund --cache /tmp/npm-cache-sdk; \
+            test -d node_modules/@opencode-ai/plugin; \
+            printf 'node_modules\npackage.json\npackage-lock.json\nbun.lock\n.gitignore\n' > "$dir/.gitignore"; \
+        done; \
+        rm -rf /tmp/npm-cache-sdk; \
+        chown -R opencode:opencode /home/opencode/.config /home/opencode/.opencode; \
+    fi
 
 # ── Pre-bake the models catalog ─────────────────────────────────────────────
 # opencode reads ~/.cache/opencode/models.json from disk before any fetch, and

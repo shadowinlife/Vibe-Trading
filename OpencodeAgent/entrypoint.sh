@@ -69,11 +69,12 @@ import json, os, sys
 path = sys.argv[1]
 with open(path, encoding="utf-8") as f:
     config = json.load(f)
-config["provider"] = {"alibaba-cn": {"options": {
+provider = config.setdefault("provider", {}).setdefault("alibaba-cn", {})
+provider["options"] = {
     "baseURL": os.environ["LLM_BASE_URL"],
     "apiKey": os.environ.get("LLM_API_KEY", ""),
     "headers": {"x-sandbox-id": os.environ.get("SANDBOX_ID", "")},
-}}}
+}
 tmp = path + ".tmp"
 with open(tmp, "w", encoding="utf-8") as f:
     json.dump(config, f, ensure_ascii=False, indent=2)
@@ -95,8 +96,29 @@ else
         echo "[entrypoint] ERROR: No fallback config at $FALLBACK, writing minimal config"
         cat > "$TARGET" << EOFMIN
 {
-  "model": "alibaba-cn/qwen3.8-max",
-  "plugin": ["oh-my-openagent@${OMO_VERSION:-5.1.30}"]
+  "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+  "provider": {
+    "alibaba-cn": {
+      "models": {
+        "deepseek-v4.1-flash-1017": {
+          "attachment": true,
+          "limit": {
+            "context": 1000000,
+            "input": 500000,
+            "output": 131072
+          },
+          "name": "DeepSeek V4.1 Flash 1017",
+          "options": {
+            "enable_thinking": true,
+            "reasoning_effort": "high"
+          },
+          "reasoning": true,
+          "tool_call": true
+        }
+      }
+    }
+  },
+  "plugin": ["oh-my-openagent@${OMO_VERSION:-5.1.35}"]
 }
 EOFMIN
     fi
@@ -150,10 +172,12 @@ fi
 # API request — warn loudly so the regression is visible in container logs.
 # (The old /workspace/.opencode/node_modules symlink targeted a pre-1.18
 # plugin path that opencode no longer reads — removed as dead code.)
-if ls -d /home/opencode/.cache/opencode/packages/oh-my-openagent@*/node_modules/oh-my-openagent >/dev/null 2>&1; then
-    echo "[entrypoint] OMO plugin cache present: $(ls -d /home/opencode/.cache/opencode/packages/oh-my-openagent@* | head -1)"
+OMO_SPEC="oh-my-openagent@${OMO_VERSION:-5.1.35}"
+OMO_CACHE="/home/opencode/.cache/opencode/packages/${OMO_SPEC}/node_modules/oh-my-openagent"
+if [ -d "$OMO_CACHE" ]; then
+    echo "[entrypoint] OMO plugin cache present: ${OMO_CACHE%/node_modules/oh-my-openagent}"
 else
-    echo "[entrypoint] WARNING: OMO plugin cache missing — opencode will download it on first request (needs npm registry access; see Dockerfile pre-bake)"
+    echo "[entrypoint] WARNING: OMO plugin cache missing: ${OMO_CACHE} — opencode will download it on first request (needs npm registry access; see Dockerfile pre-bake)"
 fi
 
 # ── Verify VT MCP server is importable ────────────────────────────────────────
@@ -190,24 +214,25 @@ except Exception as e:
     fi
 fi
 
-# ── Background warmup of the app instance ─────────────────────────────────────
+# ── Start opencode serve ──────────────────────────────────────────────────────
+opencode serve --port 4096 --hostname 0.0.0.0 &
+SERVER_PID=$!
+trap 'kill -TERM "$SERVER_PID" 2>/dev/null || true' TERM INT
+
 # First bootstrap of a fresh container performs one-time LOCAL init (plugin
 # module load, skill index build, db setup). It is CPU-only — no downloads,
 # everything is pre-baked in the image — but it blocks the first API request
-# for seconds (native amd64) up to ~a minute (QEMU emulation). Fire a
-# read-only warmup request in the background so the first real client request
-# hits a warm instance. Retries until the server accepts connections.
-(
-    for _ in $(seq 1 90); do
-        if curl -sf --max-time 240 -u opencode:"${OPENCODE_SERVER_PASSWORD:-}" \
-            "http://localhost:4096/config?directory=/home/opencode" >/dev/null 2>&1; then
-            echo "[entrypoint] warmup complete — first client request will be fast"
-            exit 0
-        fi
-        sleep 2
-    done
-    echo "[entrypoint] WARNING: warmup did not complete within 180 retries"
-) &
+# for seconds (native amd64) up to a minute (QEMU emulation). Send one
+# read-only request after the server has settled so the first real client
+# request hits a warm instance.
+# opencode 1.19.x can stall its first bootstrap when a request arrives before
+# local init finishes; let it settle before the warmup probe.
+sleep 20
+if curl -sf --max-time 300 -u opencode:"${OPENCODE_SERVER_PASSWORD:-}" \
+    "http://127.0.0.1:4096/config?directory=/home/opencode" >/dev/null 2>&1; then
+    echo "[entrypoint] warmup complete — first client request will be fast"
+else
+    echo "[entrypoint] WARNING: warmup request did not complete within 300s"
+fi
 
-# ── Start opencode serve ──────────────────────────────────────────────────────
-exec opencode serve --port 4096 --hostname 0.0.0.0
+wait "$SERVER_PID"

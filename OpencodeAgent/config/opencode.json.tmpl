@@ -1,19 +1,34 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "alibaba-cn/qwen3.8-max",
-{%- if LLM_BASE_URL %}
+  "model": "alibaba-cn/deepseek-v4.1-flash-1017",
   "provider": {
     "alibaba-cn": {
+      "models": {
+        "deepseek-v4.1-flash-1017": {
+          "attachment": true,
+          "limit": {
+            "context": 1000000,
+            "input": 500000,
+            "output": 131072
+          },
+          "name": "DeepSeek V4.1 Flash 1017",
+          "options": {
+            "enable_thinking": true,
+            "reasoning_effort": "high"
+          },
+          "reasoning": true,
+          "tool_call": true
+        }
+      }{%- if LLM_BASE_URL %},
       "options": {
         "baseURL": "{{ LLM_BASE_URL }}",
         "apiKey": "{{ LLM_API_KEY }}",
         "headers": {
           "x-sandbox-id": "{{ SANDBOX_ID }}"
         }
-      }
+      }{%- endif %}
     }
   },
-{%- endif %}
   "tool_output": {
     "max_bytes": 262144,
     "max_lines": 8000
@@ -53,6 +68,6 @@
     }
   },
   "plugin": [
-    "oh-my-openagent@5.1.30"
+    "oh-my-openagent@5.1.35"
   ]
 }
