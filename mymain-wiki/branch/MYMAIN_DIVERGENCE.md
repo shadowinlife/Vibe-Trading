@@ -1,10 +1,10 @@
 ---
 title: mymain 分支差异说明（DIVERGENCE）
-description: mymain 与上游 main 的权威差异台账——独有功能 F1-F8、上游贡献队列、验证门禁、维护约定、已知债务。改代码/发 PR/rebase 前必读。触发词：分支差异、上游、回流、rebase、门禁、D1-D4、engine-bridge。
+description: mymain 与上游 main 的权威差异台账——独有功能 F1-F9、上游贡献队列、验证门禁、维护约定、已知债务。改代码/发 PR/rebase 前必读。触发词：分支差异、上游、回流、rebase、门禁、D1-D4、engine-bridge。
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-10-17
+updated: 2026-10-25
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -32,6 +32,9 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **F5** | ClickHouse A 股数据源 + 语义层 | CH HTTP connector + OHLCV loader（DataLoaderProtocol）+ 基本面 Provider（回退 Tushare）+ 四只资金流工具 CH 优先回退；A 股 chain 与路由以 clickhouse 为首选。**语义层 Phase 0–2**（2026-08-12）：56 表 DDL 快照 + 9 表 444 列 COMMENT + 单位 registry（`clickhouse_units.py`）+ 显式 199 列（`clickhouse_columns.py`）+ `get_valuation` + llm_role 受约束灵活性通道（`ch_list_tables` / `ch_describe_table` / `ch_query`，sqlglot AST 守卫） | `agent/src/clickhouse_connector.py`、`agent/backtest/loaders/clickhouse.py`、`agent/src/tools/clickhouse_fallbacks.py`、`schema/clickhouse/`、`agent/src/tools/clickhouse_query_tool.py`、`agent/src/tools/clickhouse_explore_tools.py`、`agent/src/tools/valuation_tool.py` 等 97 文件 | `CLICKHOUSE_*`（DataConfig）；灵活性通道 `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | 个人部署独有，不回流 |
 | **F7** | OpencodeAgent harness 层 | opencode + omo + 本仓库 MCP 的独立部署 harness（Docker 镜像 `opencode-serve`）：问题处理协议（明确/开放/待澄清/宏观四类分流，Least-to-Most 收敛漏斗 + Step-Back 拆分 + 单轮 ≤3 问轮次预算）、防幻觉与诚实拒答纪律（数字溯源三来源、弃权一等公民、五要素拒答模板）、escape-top 微观结构信号（CH 数据层 + 7 门验证框架）、三层选股、VT 联邦行情 scanner、cron + 钉钉通知基础设施；**2026-09-27 起 opencode 主循环直接集成 VT MCP 全工具面**（12 领域子代理层与 nano-search-mcp 经验证不够有效已回退，通用检索由 VT `web_search` 承接、A 股结构化检索为已知缺口，见 §5 与 §4.6） | `OpencodeAgent/`（整目录，源自独立仓库 vibetrading-opencode-instruct，2026-08-17 引入） | 容器 env（`CLICKHOUSE_*` / `CLICKHOUSE_LLM_*` / `DASHSCOPE_API_KEY` 等，见 `OpencodeAgent/.env.example`） | 个人部署独有，不回流；消费 F5 语义层（ch_* 工具）与 F1–F4 记忆能力 |
 | **F8** | ~~opencode 引擎桥~~ **已移出本分支（2026-09-27）** | SessionService 接缝置换 + 多租户基础设施 = 前端兼容路线，整体移至 `mymain-engine-bridge` 分支独立演进（两线零兼容/零相互索引）；mymain 树内不再含 `agent/src/opencode_bridge/`、tenant 容器栈与相关 env。原 F8 附带产出 `scheduled_research` MCP wrapper 作为纯 MCP 面增量**保留本分支**（见队列 ⑦） | 历史代码见 `backup/mymain-pre-rebase-20260926` 与引擎桥线；本 wiki f8 卡为冻结墓碑。**2026-10-10 线废弃封存**：worktree 已移除，`mymain-engine-bridge`/`backup/engine-bridge-pre-rebase-20260918`/`wip/opencode-llm-proxy-20261010`（含渲染事故修复 WIP 封存提交 `1b9a1140`）为只读档案 | — | 分支特有，不回流；上游候选 ⑦①③ 随引擎桥线**一并废弃**（② wrapper 已留存本分支） |
+| **F9** | 策略库与调度 | 版本化策略快照 + code/workflow 双门就绪 + 复用定时研究的排程；Web 策略库与排程页 | `agent/src/strategy_library/`、`agent/src/api/strategy_library_routes.py` / `strategy_schedule_routes.py`、`frontend/src/pages/StrategyLibrary.tsx` / `StrategySchedules.tsx` | 见功能卡 | 本地 `mymain` 已合入（81df3a992）；未回上游 HKUDS |
+
+> F9 于 2026-10-25 合入本地 `mymain`（81df3a992）。本表上方“差异总量 / commit 数”仍是 2026-10-17 基线，未重算；最新运行计数见 [timeline](../history/timeline.md) 的 2026-10-22/10-25 条。
 
 ### 2.2 已随对齐消除的历史分歧（上游已承接）
 

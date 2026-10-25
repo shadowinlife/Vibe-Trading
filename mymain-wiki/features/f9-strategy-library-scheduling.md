@@ -40,6 +40,13 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 - 异步执行：`start` 立即返回 in-flight handle，`sweep` 对账，进程重启后收敛；超过 `run_timeout_s` 的作业记录为 failed 并带原因
 - 报告保持有界：每个策略的 run 报告最多保留最近 20 条
 
+## P1 服务入口（开发中）
+
+- 目标：为 RM 控制面提供按版本运行和状态查询的 service entry，复用本卡 runner，不重造执行器。
+- 基线：本地 `mymain`（已含 F9）；开发分支 `feat/strategy-run-entry`，基于 `mymain` 新建 worktree。
+- 跨仓需求：RM 仓 `docs/vt-change-requests/0001-strategy-run-entry.md`（仓外路径）；字段、鉴权、幂等与 per-box 契约以该需求为准。
+- 状态：未实现；P1 完成并通过 RM E2E 后再更新本卡。
+
 ## UI 面
 
 - `/strategies`：KPI bar、搜索、kind/readiness 过滤、demo 标记；空库提供一键 demo seed
@@ -53,7 +60,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 - 不编造指标或历史；库内只保存当前与上一次评审结论，不是完整审计账本
 - 请求路径内不执行策略；执行只发生在异步 runner
 - 策略运行不触达 broker/order 路径，调度也不下单
-- 本卡能力为本分支部署面，不并入上游 `mymain`
+- 已合入本地 `mymain`（2026-10-25，合并提交 81df3a992）；未回上游 HKUDS。F9 源分支 `feat/strategy-library-scheduling` 已合并，不再单独演进。
 
 ## 关键文件与开关
 
@@ -80,6 +87,6 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 
 ## 状态与上游关系
 
-- 个人部署独有，**不回流**：依赖本分支的 scheduled-research 存储内核与会话级工具白名单，上游没有对应的策略库/排程面
+- 本地 `mymain` 独有，**未回上游**：依赖本分支的 scheduled-research 存储内核与会话级工具白名单，上游没有对应的策略库/排程面。2026-10-25 已合入本地 `mymain`（81df3a992）。
 - 与 SDM 策略发现互补：本卡管理人工评审与调度，SDM 负责证据发现与适配；两者共用同一份 strategy store，不产生第二套登记表
 - 差异台账与贡献队列见 [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md)
