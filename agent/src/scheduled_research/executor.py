@@ -27,6 +27,7 @@ from typing import Awaitable, Callable, Optional
 
 from src.config.accessor import get_env_config
 from src.channels.bus.events import DeliveryReceipt
+from src.scheduled_research import strategy_execution as _strategy
 from src.scheduled_research.internal_dispatch import (
     InternalDispatchCallback,
     InternalRunSupervisor,
@@ -168,6 +169,7 @@ class ScheduledResearchExecutor:
         channel_sender: "ChannelSender | None" = None,
         delivery_lease_ms: int = DEFAULT_DELIVERY_LEASE_MS,
         internal_dispatcher: "InternalDispatchCallback | None" = None,
+        strategy_runner: _strategy.StrategyRunner | None = None,
     ) -> None:
         """Initialize the executor.
 
@@ -197,6 +199,7 @@ class ScheduledResearchExecutor:
                 dispatch-failure path. The resolved callable never runs on
                 the tick loop; :class:`InternalRunSupervisor` owns the
                 non-blocking run and its terminal write.
+            strategy_runner: Runnable for strategy jobs; ``None`` fails closed.
 
         Raises:
             ValueError: If the retry policy is invalid.
@@ -207,6 +210,7 @@ class ScheduledResearchExecutor:
         self._store = store
         self._dispatch = dispatch
         self._internal_dispatcher = internal_dispatcher
+        self._strategy_runner = strategy_runner
         self._briefing_reader = briefing_reader
         self._channel_sender = channel_sender
         self._delivery_lease_ms = delivery_lease_ms
@@ -229,6 +233,7 @@ class ScheduledResearchExecutor:
             if retry_max_delay_ms is not None
             else tuning.vibe_trading_scheduler_retry_max_delay_ms
         )
+        self._strategy = _strategy.StrategyExecution(self)
         # The kernel validates the resolved retry policy; its ValueError
         # messages are byte-identical to the ones this constructor raised
         # before the loop machinery moved there. The kernel never reads the
@@ -312,6 +317,7 @@ class ScheduledResearchExecutor:
         # between "run finished" and "message sent", or a transient send error
         # is picked up here on the next tick.
         await self.sweep_deliveries()
+        self._strategy.sweep(now)
 
     def _expire_elapsed_jobs(self, now_ms: int) -> int:
         """Persist jobs whose configured end boundary has elapsed."""
@@ -347,6 +353,9 @@ class ScheduledResearchExecutor:
         recovered = 0
         for job in jobs.values():
             if job.status != JobStatus.RUNNING:
+                continue
+            if job.executor_kind == "strategy":
+                recovered += self._strategy.recover(job, self._now_fn())
                 continue
             job.status = JobStatus.PENDING
             recovered += 1
@@ -410,6 +419,8 @@ class ScheduledResearchExecutor:
             self._internal.launch(job, now_ms)
             return
 
+        if job.executor_kind == "strategy":
+            return await self._strategy.start(job, now_ms)
         job.status = JobStatus.RUNNING
         # Lifecycle writes bypass validation: this record is already persisted,
         # and a write that cannot land would strand the job mid-flight.

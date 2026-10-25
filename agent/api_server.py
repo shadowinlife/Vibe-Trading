@@ -223,6 +223,10 @@ from src.api.pixel_office_routes import register_pixel_office_routes  # noqa: E4
 register_pixel_office_routes(app, require_local_or_auth, require_settings_write_auth)
 from src.api.strategy_adaptation_routes import register_strategy_adaptation_routes  # noqa: E402
 register_strategy_adaptation_routes(app, require_settings_write_auth)
+from src.api.strategy_library_routes import register_strategy_library_routes  # noqa: E402
+register_strategy_library_routes(app)
+from src.api.strategy_schedule_routes import register_strategy_schedule_routes  # noqa: E402
+register_strategy_schedule_routes(app)
 
 # --- Uploads ---
 from src.api.uploads_routes import register_uploads_routes  # noqa: E402
