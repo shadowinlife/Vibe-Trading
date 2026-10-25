@@ -34,6 +34,10 @@ function run(overrides: Partial<ScheduledRun> = {}): ScheduledRun {
     prompt: "pre-open scan of NZX names",
     title: "",
     source_type: "prompt",
+    // Optional strategy-execution provenance; a prompt row leaves it unset.
+    executor_kind: "prompt",
+    strategy_id: undefined,
+    strategy_version: undefined,
     playbook_slug: null,
     end_at: null,
     schedule: "30 23 * * 1-5",
