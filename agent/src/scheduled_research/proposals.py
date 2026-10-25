@@ -100,6 +100,25 @@ def _ensure_not_system_job(job_id: object, source_type: object, operation: str) 
         )
 
 
+def _ensure_not_strategy_job(job: object, operation: str) -> None:
+    """Refuse any proposal that would create, replace or cancel a strategy job.
+
+    Strategy schedules are version-pinned and, for workflows, gated by a
+    one-time confirmation token on the dedicated REST surface. This proposal
+    path has neither, so it must never author or remove one. The check reads
+    both coupled fields because hand-written proposal files are untrusted
+    input, and either field alone identifies a strategy job.
+    """
+    if (
+        getattr(job, "executor_kind", None) == "strategy"
+        or getattr(job, "source_type", None) == "strategy"
+    ):
+        raise ProposalError(
+            f"scheduled research job {getattr(job, 'id', None)!r} is a strategy "
+            f"schedule and cannot be {operation} by a proposal"
+        )
+
+
 def propose_create(
     draft: Mapping[str, Any], *, session_id: str | None = None
 ) -> dict[str, Any]:
@@ -125,6 +144,7 @@ def propose_cancel(job_id: str, *, session_id: str | None = None) -> dict[str, A
     if job is None:
         raise ProposalError(f"scheduled research job {job_id!r} was not found")
     _ensure_not_system_job(job.id, job.source_type, "cancelled")
+    _ensure_not_strategy_job(job, "cancelled")
     now = int(time.time() * 1000)
     payload = {
         "proposal_id": f"srp_{uuid.uuid4().hex}",
@@ -196,11 +216,15 @@ def commit_proposal(proposal_id: str) -> dict[str, Any]:
             # be hand-written or edited between propose and commit, and the
             # row on disk may have become a system job in between.
             _ensure_not_system_job(job.id, job.source_type, "created or replaced")
+            _ensure_not_strategy_job(job, "created or replaced")
             existing = store.get(job.id)
             if existing is not None:
                 _ensure_not_system_job(
                     existing.id, existing.source_type, "created or replaced"
                 )
+                # The proposal must never upsert over a strategy job: its pin,
+                # run policy and history belong to the strategy schedule path.
+                _ensure_not_strategy_job(existing, "created or replaced")
             if job.protect_pdf:
                 from src.scheduled_research.service import email_pdf_password_configured
 
@@ -212,6 +236,7 @@ def commit_proposal(proposal_id: str) -> dict[str, Any]:
             target = store.get(payload["job_id"])
             if target is not None:
                 _ensure_not_system_job(target.id, target.source_type, "cancelled")
+                _ensure_not_strategy_job(target, "cancelled")
             _ensure_not_system_job(payload["job_id"], None, "cancelled")
             if not store.delete(payload["job_id"]):
                 raise ProposalError("scheduled research job no longer exists")

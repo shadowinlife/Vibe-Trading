@@ -12,7 +12,7 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from src.session.checkpoint import ResponseCheckpoint
 from src.session.events import EventBus
@@ -206,6 +206,7 @@ class SessionService:
         title: str = "",
         config: Optional[Dict[str, Any]] = None,
         owner: Optional["Principal"] = None,
+        tool_allowlist: Optional[List[str]] = None,
     ) -> Session:
         """Create a new session.
 
@@ -218,11 +219,25 @@ class SessionService:
                 ``None``, which reads as "owner unknown" and is deliberately
                 distinct from a principal that authenticated but cannot be
                 attributed to a person (see ``Principal.attributable``).
+            tool_allowlist: Exact tool names this session may expose to the
+                agent, or None for the unrestricted registry. This is an
+                enforcement boundary, not user preference -- it is persisted on
+                the session (never accepted from the user-controlled
+                ``config``) and applied when the tool registry is built, so a
+                session rehydrated by ``send_message`` cannot regain tools it
+                was created without. Empty is normalised to None; duplicates
+                are removed and the names are sorted for a stable stored form.
 
         Returns:
             The newly created Session.
         """
-        session = Session(title=title, config=config or {}, owner=owner)
+        allowlist = sorted(set(tool_allowlist)) if tool_allowlist else None
+        session = Session(
+            title=title,
+            config=config or {},
+            owner=owner,
+            tool_allowlist=allowlist,
+        )
         self.store.create_session(session)
         self._search_index.index_session(session.session_id, title)
         self.event_bus.emit(session.session_id, "session.created", {"session_id": session.session_id, "title": title})
@@ -367,6 +382,7 @@ class SessionService:
                 messages=messages,
                 include_shell_tools=include_shell_tools,
                 session_config=dict(session.config),
+                tool_allowlist=session.tool_allowlist,
             )
             status = result.get("status")
             if status == "success":
@@ -479,6 +495,7 @@ class SessionService:
         *,
         include_shell_tools: bool = False,
         session_config: Optional[Dict[str, Any]] = None,
+        tool_allowlist: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Execute an attempt with the V5 AgentLoop.
 
@@ -490,6 +507,10 @@ class SessionService:
                 definitions under the ``mcpServers`` key are merged on top of
                 the user config file via ``load_runtime_agent_config`` so each
                 session can extend or override the global MCP server list.
+            tool_allowlist: Exact tool names the session may expose, or None
+                for the unrestricted registry. Passed to ``build_registry``,
+                which applies it after MCP tools are appended so remote tools
+                cannot bypass the boundary.
 
         Returns:
             Result dictionary containing status, run_dir, run_id, metrics, and related fields.
@@ -511,6 +532,9 @@ class SessionService:
 
         safe_overrides = sanitize_session_overrides(session_config) if session_config else session_config
         agent_config = load_runtime_agent_config(overrides=safe_overrides)
+        # The session allowlist narrows the registry the agent actually
+        # receives; it is never a prompt instruction. Empty means unrestricted.
+        registry_allowlist = frozenset(tool_allowlist) if tool_allowlist else None
 
         def event_callback(event_type: str, data: Dict[str, Any]) -> None:
             """Forward AgentLoop events to the SSE event bus."""
@@ -542,6 +566,7 @@ class SessionService:
                 session_id=session_id,
                 event_callback=event_callback,
                 warn_callback=_mcp_collision_warn,
+                tool_allowlist=registry_allowlist,
             ),
         )
 

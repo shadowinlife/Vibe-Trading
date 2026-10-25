@@ -5,6 +5,38 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **A reviewable strategy library with gated promotion and scheduling**. `code`
+  and `workflow` strategies now share one library: every edit creates a
+  versioned snapshot, and each verdict is written with a single-statement
+  compare-and-swap on that version, so a stale view can never overwrite a
+  newer review. A `code` strategy becomes ready only after a completed
+  backtest plus bench evidence read from the run's own artifacts; a `workflow`
+  strategy must pass all eight rubric checks (any failure is a failure, not an
+  average), and a check that cannot be judged within 90 seconds is
+  `inconclusive` rather than a pass. Manual review can reject but never
+  approve, and any edit requires re-evaluation. Four agent tools
+  (`promote_strategy`, `evaluate_strategy`, `list_strategy_library`,
+  `schedule_strategy`) drive the library, three mirrored over MCP behind an
+  explicit mutating gate, and per-session tool allowlists are persisted and
+  enforced after MCP tools are appended. Scheduling reuses scheduled research
+  with version pinning at attach time, a one-time confirmation token for
+  workflow strategies, one primary schedule per strategy, run-now,
+  skipped/missed semantics and bounded retention; runs execute asynchronously,
+  so `start` returns an in-flight handle, `sweep` reconciles, a restart
+  converges, and a job that exceeds its timeout is recorded as failed with a
+  reason. The Web UI adds `/strategies` (KPI bar, search, kind and readiness
+  filters, a one-click demo seed and a six-tab inspector) and
+  `/strategy-schedules` (inline history, a 20-run drawer and a three-step
+  create flow), while a 90-second storyboard respects reduced-motion settings.
+  **Boundaries:** nothing is approved automatically, no metric is fabricated,
+  history is the current and previous verdict rather than a complete ledger,
+  no strategy executes inside the request path, and nothing here is merged
+  into upstream `mymain` — it depends on this branch's scheduled-research
+  kernel and session-scoped tool allowlisting, so it stays a mymain
+  deployment feature instead of an upstream patch.
+
 ### Fixed
 
 - **A retried provider error no longer halts live model decisions for the

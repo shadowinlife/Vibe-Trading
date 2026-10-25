@@ -1,6 +1,6 @@
 ---
-title: 功能卡索引（mymain 独有特性 F1-F5、F7、F8）
-description: mymain 分支相对上游的独有功能索引。改代码前确认能力归属、查上游回流计划、定位验证基线时先读这里。触发词：F1、F2、F3、F4、F5、F7、F8、功能卡、feature、reflections、memory MCP、MemoryGuard、ClickHouse、OpencodeAgent、engine-bridge、opencode 引擎桥。
+title: 功能卡索引（mymain 独有特性 F1-F5、F7-F9）
+description: mymain 分支相对上游的独有功能索引。改代码前确认能力归属、查上游回流计划、定位验证基线时先读这里。触发词：F1、F2、F3、F4、F5、F7、F8、F9、功能卡、feature、reflections、memory MCP、MemoryGuard、ClickHouse、OpencodeAgent、engine-bridge、opencode 引擎桥、策略库、strategy library、策略调度。
 type: index
 status: active
 created: 2026-08-30
@@ -25,6 +25,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 | F5 | ClickHouse A 股数据源 + 语义层 | CH 为 A 股首选数据源；语义层 Phase 0-2 含 ch_* 受约束查询通道 | 个人部署独有，不回流 | [f5-clickhouse-data-source.md](f5-clickhouse-data-source.md) |
 | F7 | OpencodeAgent harness 层 | opencode + omo + 本仓库 MCP 的独立部署 harness（2026-09-27 起主循环直连 VT MCP 全工具面；子代理层与 nano-search-mcp 已回退） | 个人部署独有，不回流 | [f7-opencode-agent.md](f7-opencode-agent.md) |
 | F8 | ~~opencode 引擎桥~~ **已移出（2026-09-27）** | 前端兼容路线（SessionService 置换 + 多租户）整体移至 `mymain-engine-bridge` 分支独立演进；mymain = 纯粹 opencode + omo + VT MCP 路线 | 卡片为冻结墓碑；scheduled_research wrapper 作为纯 MCP 增量保留本分支（队列 ⑦②） | [f8-engine-bridge.md](f8-engine-bridge.md)（archived） |
+| F9 | 策略库与调度 | 版本化策略快照 + code/workflow 双门就绪 + 复用定时研究的排程；Web 策略库与排程页 | 个人部署独有，不回流 | [f9-strategy-library-scheduling.md](f9-strategy-library-scheduling.md) |
 
 ## 为什么没有 F6
 

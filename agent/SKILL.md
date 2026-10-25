@@ -97,6 +97,8 @@ Example workflow:
 3. Use `write_file()` to create `config.json` and `code/signal_engine.py`
 4. Use `backtest()` to run and get metrics (Sharpe, return, drawdown, etc.)
 
+The **strategy library** stores reviewable `code` and `workflow` strategies with versioned snapshots, a readiness gate and a scheduling model; use `promote_strategy`, `evaluate_strategy`, `list_strategy_library` and `schedule_strategy` to manage it, and note that it never approves a strategy automatically and never places an order.
+
 ### Multi-Agent Swarm Teams
 30 pre-built agent teams for complex research:
 - **Investment Committee**: bull/bear debate → risk review → PM decision
@@ -133,7 +135,7 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (86)
+## Available MCP Tools (89)
 
 | Tool | Description | API Key |
 |------|-------------|---------|
@@ -188,6 +190,9 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `list_strategies` | Browse discoverable strategies (Alpha Zoo + SDM store) | None |
 | `query_strategies` | Evidence-gated query: regime / Sharpe / quality / cost filters | None |
 | `get_strategy_evidence` | Per-regime evidence rows for one strategy | None |
+| `promote_strategy` | Register a strategy draft; code strategies are evaluated immediately | None |
+| `evaluate_strategy` | Re-run the kind-matched gate and persist the version-bound verdict | None |
+| `schedule_strategy` | Prepare a schedule proposal for a ready strategy (workflow jobs need human confirmation) | None |
 | `adapt_strategy` | Prepare an evidence-gated child strategy for generation and its own backtest |
 | `refresh_strategy_evidence` | Rebuild the disposable strategy-evidence cache from run artifacts | None |
 | `analyze_trade_journal` | Parse broker CSV → profile + behavior diagnostics | None |

@@ -398,9 +398,10 @@ def test_kernel_rejects_the_removed_speculative_seams() -> None:
 
 
 def test_executor_kind_domain_is_closed() -> None:
-    assert EXECUTOR_KINDS == ("prompt", "internal")
+    assert EXECUTOR_KINDS == ("prompt", "internal", "strategy")
     assert is_executor_kind("prompt")
     assert is_executor_kind("internal")
+    assert is_executor_kind("strategy")
     assert not is_executor_kind("shell")
     assert not is_executor_kind(None)
     assert not is_executor_kind("")

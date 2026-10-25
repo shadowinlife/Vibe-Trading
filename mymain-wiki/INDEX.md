@@ -33,6 +33,7 @@ tags: [index]
 - [features/f5-clickhouse-data-source.md](features/f5-clickhouse-data-source.md) — ClickHouse A 股数据源 + 语义层 Phase 0-2 — active
 - [features/f7-opencode-agent.md](features/f7-opencode-agent.md) — OpencodeAgent harness 层（2026-09-27 起主循环直连 VT MCP；子代理/nano-search 已回退） — active
 - [features/f8-engine-bridge.md](features/f8-engine-bridge.md) — opencode 引擎桥（2026-09-27 移出 mymain；**2026-10-10 线废弃封存**，opencode 桥接方式验证不可行） — archived-discarded（冻结墓碑）
+- [features/f9-strategy-library-scheduling.md](features/f9-strategy-library-scheduling.md) — 策略库与调度（code/workflow 双门就绪 + 版本 CAS + 复用定时研究） — active
 
 ## harness-evolution/ — harness 演进研究档案（2026-08-21~30）
 
