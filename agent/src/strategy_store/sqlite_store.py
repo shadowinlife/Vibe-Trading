@@ -790,6 +790,80 @@ class SqliteStrategyStore:
             )
             return cursor.rowcount
 
+    @_synchronized
+    def _update_spec_and_version(
+        self,
+        strategy_id: str,
+        *,
+        spec_json: str,
+        artifact_version: str,
+        spec_sha256: str,
+        readiness: str,
+        evaluator_verdict: dict | None,
+        previous_verdict: dict | None,
+        expected_version: str,
+        expected_spec_sha256: str,
+    ) -> int:
+        """Install a new spec version in one compare-and-swap UPDATE.
+
+        Editing a strategy must invalidate the verdict issued against the old
+        bytes in the same statement that installs the new ones: a separate
+        clearing write would leave a window where the new version is schedulable
+        on the old verdict. ``spec_sha256 IS ?`` is NULL-safe; both guards are
+        required (not optional) because this method exists only for the
+        versioned edit path, and a legacy row without comparable state is
+        handled by the facade instead.
+
+        Args:
+            strategy_id: Artifact id to update.
+            spec_json: Canonical JSON text of the new spec.
+            artifact_version: New version string to store.
+            spec_sha256: sha256 of exactly ``spec_json``.
+            readiness: New scheduling readiness.
+            evaluator_verdict: Verdict to store; an edit always clears it.
+            previous_verdict: The current verdict this edit displaces.
+            expected_version: Require this ``artifact_version``.
+            expected_spec_sha256: Require this ``spec_sha256``.
+
+        Returns:
+            The UPDATE rowcount: 1 when written, 0 when the row is missing or
+            either guard failed.
+
+        Raises:
+            ValueError: if *readiness* is outside the closed set.
+        """
+        validate_artifact_readiness(readiness)
+        with self._write_transaction():
+            cursor = self._conn.execute(
+                """
+                UPDATE artifacts
+                SET spec = ?, artifact_version = ?, spec_sha256 = ?,
+                    readiness = ?, evaluator_verdict = ?, previous_verdict = ?,
+                    validation_status = ?, updated_at = ?
+                WHERE id = ? AND artifact_version = ? AND spec_sha256 IS ?
+                """,
+                (
+                    spec_json,
+                    artifact_version,
+                    spec_sha256,
+                    readiness,
+                    _json_dumps(evaluator_verdict)
+                    if evaluator_verdict is not None
+                    else None,
+                    _json_dumps(previous_verdict)
+                    if previous_verdict is not None
+                    else None,
+                    # A new version has never been validated; the gate records
+                    # VALIDATED/REJECTED for it later.
+                    ValidationStatus.UNVALIDATED.value,
+                    _now_iso(),
+                    strategy_id,
+                    expected_version,
+                    expected_spec_sha256,
+                ),
+            )
+            return cursor.rowcount
+
     # -- Bench history ------------------------------------------------------
 
     @staticmethod

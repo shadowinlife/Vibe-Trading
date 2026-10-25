@@ -1755,6 +1755,103 @@ def refresh_strategy_evidence(manifest_path: str | None = None, runs: list | Non
 
 
 # ---------------------------------------------------------------------------
+# Strategy library tools
+#
+# These three are WRITE tools on the agent side (``is_readonly = False``), so
+# _register_mirrored_tool refuses them by design; they are registered here
+# explicitly instead of through the read-only mirror. Their envelopes are the
+# tools' own, so no schema is re-declared.
+# ---------------------------------------------------------------------------
+
+
+def _strategy_library_execute(tool_name: str, params: dict[str, Any]) -> str:
+    """Forward a strategy-library call, never leaking a raw traceback."""
+    try:
+        return _get_registry().execute(tool_name, params)
+    except Exception:  # noqa: BLE001 - an honest error beats a raw traceback
+        logger.exception("strategy library tool %s unavailable", tool_name)
+        return json.dumps(
+            {
+                "ok": False,
+                "error": "strategy library tool unavailable; see server logs",
+                "code": "tool_unavailable",
+            },
+            ensure_ascii=False,
+        )
+
+
+@mcp.tool
+def promote_strategy(
+    spec: _lenient_dict_any,
+    run_dir: str | None = None,
+    demo: bool = False,
+) -> str:
+    """Register a strategy draft in the library.
+
+    A code strategy requires ``run_dir`` (its source backtest directory) and
+    is evaluated by the deterministic gate immediately; a workflow strategy is
+    registered as ``needs_work`` for the independent rubric review. Returns the
+    strategy id, readiness and any deterministic gaps.
+
+    Args:
+        spec: Strategy spec object (name, kind, thesis, universe, steps, ...).
+        run_dir: Source backtest run directory; required for kind=code.
+        demo: Mark the strategy as demonstration data.
+    """
+    return _strategy_library_execute(
+        "promote_strategy",
+        {"spec": spec, "run_dir": run_dir, "demo": demo},
+    )
+
+
+@mcp.tool
+def evaluate_strategy(strategy_id: str) -> str:
+    """Evaluate one strategy and persist the version-bound verdict.
+
+    Code strategies use the deterministic backtest gate; workflow strategies
+    use the independent rubric review. Returns passed, the failure reasons and
+    the resulting readiness.
+
+    Args:
+        strategy_id: Library id of the strategy to evaluate.
+    """
+    return _strategy_library_execute(
+        "evaluate_strategy", {"strategy_id": strategy_id}
+    )
+
+
+@mcp.tool
+def schedule_strategy(
+    strategy_id: str,
+    schedule: str,
+    timezone: str | None = None,
+    run_timeout_s: int | None = None,
+) -> str:
+    """Prepare a schedule for a ready strategy without creating it blindly.
+
+    A code strategy is attached directly and returns its job id. A workflow
+    strategy returns a proposal that a human must confirm with a one-time
+    token; that token is never part of this response. No order is placed and
+    no broker is touched.
+
+    Args:
+        strategy_id: Library id of the strategy to schedule.
+        schedule: Five-field cron expression.
+        timezone: Optional IANA timezone name.
+        run_timeout_s: Optional per-run timeout in seconds.
+    """
+    return _strategy_library_execute(
+        "schedule_strategy",
+        {
+            "strategy_id": strategy_id,
+            "schedule": schedule,
+            "timezone": timezone,
+            "run_timeout_s": run_timeout_s,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
 # Trading connector tools
 # ---------------------------------------------------------------------------
 
