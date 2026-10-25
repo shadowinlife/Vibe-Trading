@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
 
@@ -68,6 +68,9 @@ class ValidationStatus(str, Enum):
     itself, for an idempotent re-approval) — see
     ``validate_validation_status_transition``. An unvalidated model can
     never be marked approved.
+
+    This state machine is SDM model-risk governance. It is independent of
+    ``Artifact.readiness``, which is the scheduling gate.
     """
 
     UNVALIDATED = "unvalidated"
@@ -75,6 +78,50 @@ class ValidationStatus(str, Enum):
     VALIDATED = "validated"
     APPROVED = "approved"
     REJECTED = "rejected"
+
+
+#: Kinds of strategy artifact: ``code`` ships a backtested signal engine,
+#: ``workflow`` ships a declarative ``Artifact.spec`` interpreted as a prompt.
+ARTIFACT_KINDS: tuple[str, ...] = ("code", "workflow")
+
+#: Scheduling-readiness states. Only ``ready`` strategies may be attached to
+#: a schedule. Written exclusively through the gate writer in the SQLite
+#: store; ``ValidationStatus`` still tracks SDM model-risk governance.
+ARTIFACT_READINESS_STATES: tuple[str, ...] = (
+    "draft",
+    "needs_work",
+    "reviewing",
+    "ready",
+    "rejected",
+)
+
+
+def validate_artifact_kind(kind: str) -> None:
+    """Reject a kind outside the closed set the scheduler can execute.
+
+    Args:
+        kind: Candidate ``Artifact.kind`` value.
+
+    Raises:
+        ValueError: if *kind* is not ``code`` or ``workflow``.
+    """
+    if kind not in ARTIFACT_KINDS:
+        raise ValueError(f"kind must be one of {ARTIFACT_KINDS}; got {kind!r}")
+
+
+def validate_artifact_readiness(readiness: str) -> None:
+    """Reject a readiness value outside the closed scheduling-gate set.
+
+    Args:
+        readiness: Candidate ``Artifact.readiness`` value.
+
+    Raises:
+        ValueError: if *readiness* is not one of ``ARTIFACT_READINESS_STATES``.
+    """
+    if readiness not in ARTIFACT_READINESS_STATES:
+        raise ValueError(
+            f"readiness must be one of {ARTIFACT_READINESS_STATES}; got {readiness!r}"
+        )
 
 
 @dataclass(frozen=True)
@@ -132,6 +179,26 @@ class Artifact:
     limitations: str | None = None
     validation_status: ValidationStatus = ValidationStatus.UNVALIDATED
     validation_date: str | None = None
+    # Strategy library (scheduling) — a state machine independent of the
+    # ValidationStatus governance state above. ``kind`` selects the execution
+    # body; ``spec`` is the declarative contract for a workflow strategy;
+    # ``spec_sha256`` pins the exact spec bytes a verdict was issued against.
+    # The version string is the pre-existing ``artifact_version``
+    # (``v<N>-<spec_sha256[:8]>``), not a separate field. Gate writes go
+    # through ``SqliteStrategyStore._update_gate_columns``; ``update_artifact``
+    # ignores readiness/verdicts so it cannot bypass a verdict.
+    kind: str = "code"
+    spec: dict | None = None
+    spec_sha256: str | None = None
+    readiness: str = "draft"
+    evaluator_verdict: dict | None = None
+    previous_verdict: dict | None = None
+    demo: bool = False
+
+    def __post_init__(self) -> None:
+        """Reject closed-set values the storage layer could never schedule."""
+        validate_artifact_kind(self.kind)
+        validate_artifact_readiness(self.readiness)
 
 
 #: Bench types the ``bench_history`` schema accepts.
