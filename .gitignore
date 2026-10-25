@@ -58,8 +58,10 @@ agent/uploads/
 /shadow_accounts/
 /shadow_reports/
 /strategies/
+/versions/
 /swarm/
 /live/
+/logs/
 /uploads/
 /generated_reports/
 /imports/
@@ -82,6 +84,7 @@ agent/uploads/
 /connections.json
 /trading-connections.json
 /portfolio.json
+/config.json
 /config.yaml
 /swarm-agent.json
 /strategy_discovery.db

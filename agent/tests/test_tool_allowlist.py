@@ -39,9 +39,25 @@ def test_omitting_the_allowlist_keeps_the_legacy_registry_shape() -> None:
     explicit_none = build_registry(tool_allowlist=None)
     empty = build_registry(tool_allowlist=frozenset())
 
-    assert len(default) == LEGACY_DEFAULT_TOOL_COUNT
+    # Tool discovery is process-global: stub BaseTool subclasses defined by
+    # other test modules join it, so the count is exact only in a single-file
+    # run. This is a floor against a shrinking default registry; the equality
+    # across the three constructions is the contract.
+    assert len(default) >= LEGACY_DEFAULT_TOOL_COUNT
     assert explicit_none.tool_names == default.tool_names
     assert empty.tool_names == default.tool_names
+
+
+def test_default_registry_keeps_the_strategy_library_tools() -> None:
+    """The strategy-library surface must stay registered without an allowlist."""
+    registry = build_registry()
+
+    assert {
+        "promote_strategy",
+        "evaluate_strategy",
+        "list_strategy_library",
+        "schedule_strategy",
+    } <= set(registry.tool_names)
 
 
 def test_allowlist_registry_contains_exactly_the_named_tools() -> None:
@@ -307,4 +323,5 @@ def test_send_message_rehydrates_the_allowlist_from_disk(
     asyncio.run(scenario())
 
     assert captured[0]["tool_allowlist"] is None
-    assert len(_CapturingAgentLoop.last_registry) == LEGACY_DEFAULT_TOOL_COUNT
+    # Same shared-discovery floor as the legacy-shape test above.
+    assert len(_CapturingAgentLoop.last_registry) >= LEGACY_DEFAULT_TOOL_COUNT
