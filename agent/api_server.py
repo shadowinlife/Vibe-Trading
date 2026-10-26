@@ -9,6 +9,7 @@ infrastructure lives in ``src.api.{security,models,helpers,state}``.
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
@@ -227,6 +228,16 @@ from src.api.strategy_library_routes import register_strategy_library_routes  # 
 register_strategy_library_routes(app)
 from src.api.strategy_schedule_routes import register_strategy_schedule_routes  # noqa: E402
 register_strategy_schedule_routes(app)
+
+# RM service entry, default OFF: the dedicated in-box entry
+# (``agent/strategy_run_server.py``) is the production mount point, so the
+# full API surface stays free of these routes unless an operator opts in.
+_VT_STRATEGY_RUN_ENABLED = os.environ.get(  # noqa: env-gate — default-off operator switch
+    "VT_STRATEGY_RUN_ENABLED", ""
+).lower() in {"1", "true", "yes", "on"}
+if _VT_STRATEGY_RUN_ENABLED:
+    from src.api.strategy_run_routes import register_strategy_run_routes  # noqa: E402
+    register_strategy_run_routes(app)
 
 # --- Uploads ---
 from src.api.uploads_routes import register_uploads_routes  # noqa: E402
