@@ -8,7 +8,6 @@ proposal surface gets its runtime root from ``VIBE_TRADING_HOME``.
 from __future__ import annotations
 
 import hashlib
-import inspect
 import json
 from pathlib import Path
 
@@ -632,35 +631,44 @@ def test_request_schedule_returns_a_tokenless_proposal_for_a_workflow(
     assert "scp_" not in blob
 
 
-def test_schedule_strategy_tool_bridges_to_request_schedule(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_schedule_strategy_tool_delegates_to_the_rm_control_plane(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("VIBE_TRADING_HOME", str(tmp_path))
-    store = _make_store(tmp_path)
-    jobs = ScheduledResearchJobStore(tmp_path / "jobs.json")
-    monkeypatch.setattr("src.strategy_store._shared._store", store)
-    from src.scheduled_research import service
+    envelope = {
+        "ok": True,
+        "schedule_id": "ss_0001",
+        "next_run_at": "2026-10-27T01:00:00Z",
+        "pinned_version": "v1-aaaaaaaa",
+    }
+    calls: list[dict] = []
 
-    monkeypatch.setattr(service, "default_store", lambda: jobs)
-    artifact = _make_ready(store, tmp_path, _code_spec())
+    def fake_schedule(**kwargs):
+        calls.append(kwargs)
+        return envelope
 
-    declared = set(inspect.signature(request_schedule).parameters)
-    assert {
-        "strategy_id",
-        "schedule",
-        "timezone",
-        "run_timeout_s",
-        "session_id",
-    } <= declared
+    def refuse(*_args, **_kwargs):
+        raise AssertionError("the retired local request_schedule bridge was called")
+
+    monkeypatch.setattr("src.agent_schedules.tools.schedule_strategy", fake_schedule)
+    monkeypatch.setattr("src.strategy_library.scheduling.request_schedule", refuse)
 
     text = ScheduleStrategyTool().execute(
-        strategy_id=artifact.id, schedule=_SCHEDULE
+        strategy_id="stg-001", kind="cron", cron_spec=_SCHEDULE
     )
-    payload = json.loads(text)
-    assert payload["ok"] is True, payload
-    assert payload["data"]["requires_confirmation"] is False
-    assert jobs.get(payload["data"]["job_id"]) is not None
-    assert "confirm_token" not in text
+
+    assert json.loads(text) == envelope
+    assert calls == [
+        {
+            "strategy_id": "stg-001",
+            "kind": "cron",
+            "strategy_version": None,
+            "name": None,
+            "cron_spec": _SCHEDULE,
+            "interval_s": None,
+            "time_of_day": None,
+            "tz": None,
+        }
+    ]
 
 
 def test_request_schedule_treats_a_blank_timezone_as_utc(tmp_path: Path) -> None:

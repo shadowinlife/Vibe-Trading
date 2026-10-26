@@ -1,14 +1,13 @@
 """Strategy-library agent tools: promote, evaluate, list and schedule.
 
 The three writers declare ``is_readonly = False`` — the MCP read-only mirror
-refuses such a class, so the MCP server wraps them explicitly. A schedule's
-one-time confirmation token never reaches an agent envelope, and no
+refuses such a class, so the MCP server wraps them explicitly. Scheduling is
+delegated to the RM control plane and never touches the local job store. No
 ``execute`` raises.
 """
 
 from __future__ import annotations
 
-import inspect
 import json
 import logging
 from collections.abc import Mapping
@@ -276,124 +275,84 @@ class ListStrategyLibraryTool(BaseTool):
         })
 
 
-class _SchedulingUnavailable(RuntimeError):
-    """The strategy scheduling module or its entry point is not installed."""
-
-
-def _request_schedule(**candidates: Any) -> Any:
-    """Call ``scheduling.request_schedule`` with only the arguments it declares."""
-    try:
-        from src.strategy_library import scheduling
-    except ImportError as exc:
-        raise _SchedulingUnavailable(
-            "schedule_strategy is unavailable: the strategy scheduling module is not installed"
-        ) from exc
-    request = getattr(scheduling, "request_schedule", None)
-    if not callable(request):
-        raise _SchedulingUnavailable(
-            "schedule_strategy is unavailable: no request_schedule entry point"
-        )
-    parameters = inspect.signature(request).parameters
-    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values()):
-        return request(**candidates)
-    return request(**{
-        name: value
-        for name, value in candidates.items()
-        if name in parameters and value is not None
-    })
-
-
-def _plain(value: Any) -> Any:
-    """Recursively convert to JSON containers and drop confirmation-token keys."""
-    value = asdict(value) if is_dataclass(value) and not isinstance(value, type) else value
-    if isinstance(value, Mapping):
-        return {
-            str(key): _plain(item)
-            for key, item in value.items()
-            if "confirm_token" not in str(key).lower()
-        }
-    return [_plain(item) for item in value] if isinstance(value, (list, tuple)) else value
-
-
-def _schedule_payload(result: Any) -> dict[str, Any]:
-    """Normalize a scheduling result and attach the human next step."""
-    if isinstance(result, str):
-        payload: dict[str, Any] = {"job_id": result}
-    elif isinstance(result, Mapping):
-        payload = dict(result)
-    elif is_dataclass(result) and not isinstance(result, type):
-        payload = asdict(result)
-    else:
-        payload = {"result": result}
-    payload = _plain(payload)
-
-    proposal_id, job_id = payload.get("proposal_id"), payload.get("job_id")
-    if proposal_id:
-        payload["requires_confirmation"] = True
-        payload["next_step"] = (
-            "A human must confirm this proposal with its one-time token before the schedule exists "
-            f"(POST /strategy-schedule-proposals/{proposal_id}/commit)."
-        )
-    elif job_id:
-        payload["requires_confirmation"] = False
-        payload["next_step"] = f"The schedule is attached as job {job_id}; inspect it at /strategy-schedules/{job_id}."
-    return payload
-
-
 class ScheduleStrategyTool(BaseTool):
-    """Prepare a strategy schedule proposal; never create the job itself."""
+    """Create a strategy schedule in the RM control plane; never write locally."""
 
     name = "schedule_strategy"
     description = (
-        "Prepare a schedule for a ready strategy. A code strategy is attached "
-        "directly and returns its job id; a workflow strategy returns a "
-        "proposal a human must confirm with a one-time token this tool never "
-        "sees. WRITE-preparation tool: creates no schedule by itself and "
-        "never places an order."
+        "Create a schedule for a ready strategy through the RM control plane. "
+        "Kind is cron, interval or daily; returns the RM schedule id, the next "
+        "run time and the pinned strategy version. Fails closed with "
+        "scheduling_unavailable when RM is not configured, and never writes "
+        "the local job store. WRITE tool: places no order."
     )
     parameters = {
         "type": "object",
         "properties": {
             "strategy_id": {"type": "string", "description": "Library id to schedule."},
-            "schedule": {"type": "string", "description": "Five-field cron expression."},
-            "timezone": {"type": "string", "description": "IANA timezone name."},
-            "run_timeout_s": {"type": "integer", "minimum": 1},
+            "kind": {"type": "string", "enum": ["cron", "interval", "daily"]},
+            "strategy_version": {
+                "type": "string",
+                "description": "Version to pin; defaults to the library's current version.",
+            },
+            "name": {"type": "string", "description": "Human-readable schedule name."},
+            "cron_spec": {
+                "type": "string",
+                "description": "Five-field cron expression; required for kind=cron.",
+            },
+            "interval_s": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Interval in seconds; required for kind=interval.",
+            },
+            "time_of_day": {
+                "type": "string",
+                "description": "HH:MM wall-clock time; required for kind=daily.",
+            },
+            "tz": {"type": "string", "description": "IANA timezone name."},
         },
-        "required": ["strategy_id", "schedule"],
+        "required": ["strategy_id", "kind"],
     }
     repeatable = False
     is_readonly = False
 
-    def __init__(self, default_session_id: str | None = None, **_kwargs: Any) -> None:
-        self._default_session_id = default_session_id
+    def __init__(self, **_kwargs: Any) -> None:
+        """Accept host-injected construction kwargs; this tool needs none of them."""
 
     def execute(self, **kwargs: Any) -> str:
-        """Request a schedule and return the token-free proposal envelope."""
+        """Create the schedule through ``agent_schedules.tools`` and return its envelope."""
         try:
             strategy_id = _text(kwargs.get("strategy_id"), "strategy_id")
-            expression = _text(kwargs.get("schedule"), "schedule")
-            timezone = _text(kwargs.get("timezone"), "timezone")
-            run_timeout_s = _integer(kwargs.get("run_timeout_s"), "run_timeout_s")
+            kind = _text(kwargs.get("kind"), "kind")
+            version = _text(kwargs.get("strategy_version"), "strategy_version")
+            name = _text(kwargs.get("name"), "name")
+            cron_spec = _text(kwargs.get("cron_spec"), "cron_spec")
+            time_of_day = _text(kwargs.get("time_of_day"), "time_of_day")
+            tz = _text(kwargs.get("tz"), "tz")
+            interval_s = _integer(kwargs.get("interval_s"), "interval_s")
         except ValueError as exc:
             return _error(str(exc), code="invalid_argument")
         if not strategy_id:
             return _error("strategy_id is required", code="invalid_argument")
-        if not expression:
-            return _error("schedule is required", code="invalid_argument")
-        if run_timeout_s is not None and run_timeout_s < 1:
-            return _error("run_timeout_s must be >= 1", code="invalid_argument")
-        session_id = str(kwargs.get("session_id") or self._default_session_id or "").strip()
+        if not kind:
+            return _error("kind is required", code="invalid_argument")
         try:
-            result = _request_schedule(
+            from src.agent_schedules.tools import schedule_strategy
+        except ImportError:
+            logger.warning("schedule_strategy is unavailable: agent scheduling tools are not installed")
+            return _error("scheduling is unavailable", code="scheduling_unavailable")
+        try:
+            result = schedule_strategy(
                 strategy_id=strategy_id,
-                schedule=expression,
-                timezone=timezone,
-                run_timeout_s=run_timeout_s,
-                session_id=session_id or None,
+                kind=kind,
+                strategy_version=version,
+                name=name,
+                cron_spec=cron_spec,
+                interval_s=interval_s,
+                time_of_day=time_of_day,
+                tz=tz,
             )
-        except _SchedulingUnavailable as exc:
-            return _error(str(exc), code="scheduling_unavailable")
-        except Exception as exc:  # noqa: BLE001 - the envelope is the contract
+        except Exception:  # noqa: BLE001 - the envelope is the contract; RM details stay out
             logger.exception("schedule_strategy failed for %s", strategy_id)
-            return _error(str(exc) or type(exc).__name__, code=type(exc).__name__)
-        return _ok(_schedule_payload(result))
+            return _error("scheduling call failed", code="rm_unreachable")
+        return json.dumps(result, ensure_ascii=False, sort_keys=True, default=str)
