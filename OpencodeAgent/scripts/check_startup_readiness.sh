@@ -1,18 +1,23 @@
 #!/usr/bin/env bash
-# check_startup_readiness.sh — 镜像打包期启动就绪门禁 (T9)
+# check_startup_readiness.sh — 镜像打包期启动就绪门禁 (T9 / T8)
 #
 # 背景：`opencode serve` 在首次 /config bootstrap 完成之前就已绑定 :4096。
 # 没有 startupProbe 时 Pod 会过早 Ready，bootstrap 期间的所有请求都撞上
 # ReadTimeout（生产事故见 .omo/plans/sandbox-startup-probe-canary.md）。
-# 本脚本在镜像打包阶段把「启动慢」挡住，避免把缺陷带到生产。
+# 自 T8 起容器还必须在 `${VT_STRATEGY_RUN_PORT:-8000}` 上提供专用的
+# strategy-run entry；只测 opencode 会把「入口没起来」的镜像放行。
+# 本脚本在镜像打包阶段把「启动慢 / 入口缺失」挡住，避免把缺陷带到生产。
 #
-# 做四件事（不接真实 LLM，不使用任何真实凭据）：
+# 做五件事（不接真实 LLM，不使用任何真实凭据，不挂载 RM token）：
 #   1. 用一次性的 dummy OPENCODE_SERVER_PASSWORD 启动容器；
-#   2. 等待日志出现 `opencode server listening` 与 `[entrypoint] warmup complete`；
+#   2. 等待日志出现 `opencode server listening`、`[entrypoint] warmup complete`
+#      与 `strategy-run entry listening` 三条标记；
 #   3. 计算「容器启动 → 首次认证 GET /config?directory=/home/opencode 成功」的墙钟。
 #      entrypoint 的 warmup curl 就是这次请求，所以取该日志行的时间戳；
 #      再用一次显式 `docker exec curl` 复核端点确实返回 200；
-#   4. 标记缺失 / 首次 200 超过 STARTUP_BUDGET_S / 容器提前退出 → 非零退出；
+#   4. 计算「容器启动 → strategy-run entry /health 返回 200」的墙钟，同样用
+#      `docker exec curl` 复核（/health 无需 token，未挂载 token 也必须 200）；
+#   5. 标记缺失 / 任一首次 200 超过 STARTUP_BUDGET_S / 容器提前退出 → 非零退出；
 #      无论成功失败都通过 trap 清理容器。
 #
 # 用法：
@@ -22,7 +27,9 @@
 #
 # 环境变量：
 #   IMAGE              默认 opencode-serve:v3.8.2-mymain
-#   STARTUP_BUDGET_S   默认 60（首次 /config 200 的秒数上限）
+#   STARTUP_BUDGET_S   默认 60（opencode 首次 /config 200 与入口首次 /health 200
+#                      各自相对容器启动的秒数上限）
+#   ENTRY_PORT         strategy-run entry 端口，默认 ${VT_STRATEGY_RUN_PORT:-8000}
 #   CONTAINER_NAME     默认 opencode-readiness-<pid>-<epoch>
 #   PLATFORM           默认 linux/amd64（与 tests/smoke-v370.sh 一致）
 #   OFFLINE            默认 1：加 --network none，证明启动零下载；
@@ -51,14 +58,21 @@ PLATFORM="${PLATFORM:-linux/amd64}"
 OFFLINE="${OFFLINE:-1}"
 REQUIRE_IMAGE="${REQUIRE_IMAGE:-0}"
 KEEP_CONTAINER="${KEEP_CONTAINER:-0}"
+ENTRY_PORT="${ENTRY_PORT:-${VT_STRATEGY_RUN_PORT:-8000}}"
+case "$ENTRY_PORT" in
+    '' | *[!0-9]*) die "ENTRY_PORT 必须是正整数（当前：${ENTRY_PORT}）" ;;
+esac
 CONTAINER_NAME="${CONTAINER_NAME:-opencode-readiness-$$-$(date +%s)}"
 HARD_TIMEOUT_S="${HARD_TIMEOUT_S:-$((STARTUP_BUDGET_S + 60))}"
 
 LISTEN_MARKER="opencode server listening"
 # 镜像里的这行由 opencode 二进制打印（无 [entrypoint] 前缀），warmup 行由
-# entrypoint 打印；两者都必须出现。
+# entrypoint 打印；入口行由 strategy_run_server 在成功 bind 后打印。
+# 三者都必须出现。
 WARMUP_MARKER="[entrypoint] warmup complete"
+ENTRY_LISTEN_MARKER="strategy-run entry listening"
 CONFIG_URL="http://127.0.0.1:4096/config?directory=/home/opencode"
+ENTRY_HEALTH_URL="http://127.0.0.1:${ENTRY_PORT}/health"
 
 CID=""
 
@@ -126,6 +140,7 @@ say "预算: ${STARTUP_BUDGET_S}s | 平台: $PLATFORM | 离线: $OFFLINE | 容�
 RUN_ARGS=(--name "$CONTAINER_NAME" --platform "$PLATFORM"
     -e "OPENCODE_SERVER_PASSWORD=$DUMMY_PASSWORD"
     -e "DASHSCOPE_API_KEY=dummy-not-a-real-key"
+    -e "VT_STRATEGY_RUN_PORT=$ENTRY_PORT"
     -e "CLICKHOUSE_HOST=")
 if [ "$OFFLINE" = "1" ]; then
     RUN_ARGS+=(--network none)
@@ -153,6 +168,7 @@ fi
 DEADLINE=$(( $(date +%s) + HARD_TIMEOUT_S ))
 saw_listening=0
 saw_warmup=0
+saw_entry=0
 
 while :; do
     LOGS="$(docker logs --timestamps "$CID" 2>&1 || true)"
@@ -162,7 +178,10 @@ while :; do
     if printf '%s\n' "$LOGS" | grep -Fq -- "$WARMUP_MARKER"; then
         saw_warmup=1
     fi
-    if [ "$saw_listening" = "1" ] && [ "$saw_warmup" = "1" ]; then
+    if printf '%s\n' "$LOGS" | grep -Fq -- "$ENTRY_LISTEN_MARKER"; then
+        saw_entry=1
+    fi
+    if [ "$saw_listening" = "1" ] && [ "$saw_warmup" = "1" ] && [ "$saw_entry" = "1" ]; then
         break
     fi
 
@@ -171,20 +190,22 @@ while :; do
         EXIT_CODE="$(docker inspect --format '{{.State.ExitCode}}' "$CID" 2>/dev/null || echo unknown)"
         say "--- 容器日志（尾部） ---"
         printf '%s\n' "$LOGS" | tail -n 40
-        die "容器提前退出（exit=${EXIT_CODE}），未出现 listening/warmup 标记"
+        die "容器提前退出（exit=${EXIT_CODE}），未出现 listening/warmup/entry 标记"
     fi
     if [ "$(date +%s)" -ge "$DEADLINE" ]; then
         say "--- 容器日志（尾部） ---"
         printf '%s\n' "$LOGS" | tail -n 40
-        die "在 ${HARD_TIMEOUT_S}s 内未看到启动标记（listening=${saw_listening} warmup=${saw_warmup}）"
+        die "在 ${HARD_TIMEOUT_S}s 内未看到启动标记（listening=${saw_listening} warmup=${saw_warmup} entry=${saw_entry}）"
     fi
     sleep 1
 done
 
 LISTEN_TS="$(log_timestamp_for "$LISTEN_MARKER")"
 WARMUP_TS="$(log_timestamp_for "$WARMUP_MARKER")"
+ENTRY_TS="$(log_timestamp_for "$ENTRY_LISTEN_MARKER")"
 LISTEN_EPOCH="$(iso_to_epoch "$LISTEN_TS" || true)"
 WARMUP_EPOCH="$(iso_to_epoch "$WARMUP_TS" || true)"
+ENTRY_EPOCH="$(iso_to_epoch "$ENTRY_TS" || true)"
 
 if [ -z "$WARMUP_EPOCH" ]; then
     die "无法解析 warmup 时间戳（${WARMUP_TS}）"
@@ -192,23 +213,39 @@ fi
 if [ -z "$LISTEN_EPOCH" ]; then
     die "无法解析 listening 时间戳（${LISTEN_TS}）"
 fi
+if [ -z "$ENTRY_EPOCH" ]; then
+    die "无法解析 entry listening 时间戳（${ENTRY_TS}）"
+fi
 
 LISTEN_S="$(elapsed_since "$START_EPOCH" "$LISTEN_EPOCH")"
 FIRST_200_S="$(elapsed_since "$START_EPOCH" "$WARMUP_EPOCH")"
+ENTRY_LISTEN_S="$(elapsed_since "$START_EPOCH" "$ENTRY_EPOCH")"
 
 # 显式复核：entrypoint 之外再发一次认证请求，确认端点此刻确实是 200。
 HTTP_CODE="$(docker exec "$CID" curl -s -o /dev/null -w '%{http_code}' --max-time 15 \
     -u "opencode:$DUMMY_PASSWORD" "$CONFIG_URL" 2>/dev/null || true)"
+# 入口 /health 无需认证；未挂载 RM token 时也必须返回 200（服务路由才 403）。
+ENTRY_HTTP_CODE="$(docker exec "$CID" curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
+    "$ENTRY_HEALTH_URL" 2>/dev/null || true)"
 PROBE_S="$(elapsed_since "$START_EPOCH" "$(date +%s)")"
+ENTRY_HEALTH_S="$PROBE_S"
 
 say "[ok] opencode server listening @ ${LISTEN_S}s"
 say "[ok] warmup complete（首次 /config 200）@ ${FIRST_200_S}s"
 say "[ok] docker exec 复核 GET /config → HTTP ${HTTP_CODE:-N/A} @ ≈${PROBE_S}s"
+say "[ok] strategy-run entry listening @ ${ENTRY_LISTEN_S}s"
+say "[ok] docker exec 复核 GET ${ENTRY_HEALTH_URL} → HTTP ${ENTRY_HTTP_CODE:-N/A} @ ≈${ENTRY_HEALTH_S}s"
 
 if [ "$HTTP_CODE" != "200" ]; then
     say "--- 容器日志（尾部） ---"
     docker logs --timestamps "$CID" 2>&1 | tail -n 40
     die "复核请求未返回 200（实际：${HTTP_CODE:-无响应}）"
+fi
+
+if [ "$ENTRY_HTTP_CODE" != "200" ]; then
+    say "--- 容器日志（尾部） ---"
+    docker logs --timestamps "$CID" 2>&1 | tail -n 40
+    die "strategy-run entry /health 未返回 200（实际：${ENTRY_HTTP_CODE:-无响应}）"
 fi
 
 if awk -v value="$FIRST_200_S" -v budget="$STARTUP_BUDGET_S" 'BEGIN { exit !(value > budget) }'; then
@@ -217,4 +254,10 @@ if awk -v value="$FIRST_200_S" -v budget="$STARTUP_BUDGET_S" 'BEGIN { exit !(val
     die "首次 /config 200 用了 ${FIRST_200_S}s，超过预算 ${STARTUP_BUDGET_S}s（镜像应预烘插件 SDK，见 Dockerfile PREBAKE_PLUGIN_SDK）"
 fi
 
-say "PASS: 首次 /config 200 = ${FIRST_200_S}s ≤ 预算 ${STARTUP_BUDGET_S}s"
+if awk -v value="$ENTRY_HEALTH_S" -v budget="$STARTUP_BUDGET_S" 'BEGIN { exit !(value > budget) }'; then
+    say "--- 容器日志（尾部） ---"
+    docker logs --timestamps "$CID" 2>&1 | tail -n 40
+    die "strategy-run entry 首次 /health 200 用了 ${ENTRY_HEALTH_S}s，超过预算 ${STARTUP_BUDGET_S}s"
+fi
+
+say "PASS: 首次 /config 200 = ${FIRST_200_S}s ≤ 预算 ${STARTUP_BUDGET_S}s；entry /health 200 = ${ENTRY_HEALTH_S}s ≤ 预算 ${STARTUP_BUDGET_S}s（端口 ${ENTRY_PORT}）"
