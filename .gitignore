@@ -200,6 +200,8 @@ agent/tests/artifacts/
 
 /pixel-office.sqlite3
 /pixel-office.sqlite3-*
+/strategy_runs.sqlite3
+/strategy_runs.sqlite3-*
 
 # Local simulated account ledgers
 /paper-trading/
