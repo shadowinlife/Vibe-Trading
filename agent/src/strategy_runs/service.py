@@ -7,6 +7,10 @@ convergence. The ledger is the only status authority — :meth:`status` never
 polls or writes, and terminal writes go through the store's compare-and-swap so
 a stale poll or recovery pass cannot overwrite a finished run.
 
+Per-box targeting is checked *before* the claim: a request naming another box
+is refused with ``403 target_mismatch`` and never consumes this box's
+``run_key``, so the target box's later, correct request still starts normally.
+
 A service run builds a ``ScheduledResearchJob`` in memory only; it is never
 written to ``scheduled_research_jobs.json`` and never registered with the F9
 scheduler. A ``running`` row with no handle is left alone inside the recovery
@@ -23,11 +27,14 @@ import json
 import logging
 import math
 import os
+import socket
 import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
+
+from fastapi import HTTPException
 
 from src.api.strategy_run_routes import DuplicateRunKeyError, StrategyRunCommand
 from src.config.paths import get_runtime_root
@@ -47,10 +54,12 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "DEFAULT_RECOVERY_GRACE_S",
+    "DEFAULT_SANDBOX_ID_PREFIX",
     "DEFAULT_SWEEP_INTERVAL_S",
     "MAX_ERROR_CHARS",
     "SubmitResult",
     "StrategyRunService",
+    "TARGET_MISMATCH",
     "build_service",
 ]
 
@@ -58,6 +67,11 @@ DEFAULT_SWEEP_INTERVAL_S = 5.0
 DEFAULT_RECOVERY_GRACE_S = 120.0
 MIN_SWEEP_INTERVAL_S = 1.0
 MIN_RECOVERY_GRACE_S = 1.0
+
+#: Fixed ``detail`` for a request that names another box.
+TARGET_MISMATCH = "target_mismatch"
+#: RM stores ``sandbox_id`` as this prefix plus the pod hostname.
+DEFAULT_SANDBOX_ID_PREFIX = "default--"
 
 #: Bound on stored diagnostics; enough to diagnose, small enough to GET.
 MAX_ERROR_CHARS = 500
@@ -93,6 +107,7 @@ class StrategyRunService:
         strategy_lookup: Callable[[str], Any | None],
         version_checker: Callable[[str, str, str], str | None],
         now_ms: Callable[[], int],
+        target_validator: Callable[[StrategyRunCommand], bool] | None = None,
         sweep_interval_s: float = DEFAULT_SWEEP_INTERVAL_S,
         recovery_grace_s: float = DEFAULT_RECOVERY_GRACE_S,
     ) -> None:
@@ -100,13 +115,17 @@ class StrategyRunService:
 
         ``strategy_lookup`` returns the artifact (needs ``kind``) or ``None``;
         ``version_checker`` returns an ``error_kind`` or ``None``. Both
-        intervals must be positive and finite.
+        intervals must be positive and finite. ``target_validator`` answers
+        *is this request for this box?* and is consulted before the claim;
+        ``None`` accepts every target for tests that do not exercise
+        targeting.
         """
         self._store = store
         self._runner = runner
         self._strategy_lookup = strategy_lookup
         self._version_checker = version_checker
         self._now_ms = now_ms
+        self._target_validator = target_validator
         self.sweep_interval_s = _positive_seconds("sweep_interval_s", sweep_interval_s)
         self.recovery_grace_s = _positive_seconds("recovery_grace_s", recovery_grace_s)
         self._task: asyncio.Task[None] | None = None
@@ -122,7 +141,16 @@ class StrategyRunService:
         Every failure after the claim — missing strategy, missing version
         snapshot, or a runner exception — persists a terminal row and still
         returns the run id, so the caller's 202 always has something to poll.
+        A request for another box is refused before the claim, so it cannot
+        consume this box's ``run_key``.
+
+        Raises:
+            HTTPException: ``403 target_mismatch`` when the command names
+                another box.
+            DuplicateRunKeyError: When ``run_key`` was already claimed.
         """
+        if self._target_validator is not None and not self._target_validator(command):
+            raise HTTPException(status_code=403, detail=TARGET_MISMATCH)
         row = self._claim(command)
         artifact = self._strategy_lookup(command.strategy_id)
         if artifact is None:
@@ -351,7 +379,12 @@ def build_service() -> StrategyRunService:
 
 
 def _build_default_service() -> StrategyRunService:
-    """Wire the production ledger, F9 runner, library and clocks."""
+    """Wire the production ledger, F9 runner, library and clocks.
+
+    The box identity is resolved once here, so one service instance keeps
+    answering for the same box even if the process environment is mutated
+    later.
+    """
     raw = os.environ.get("VT_STRATEGY_RUN_SWEEP_INTERVAL_S", "5")  # noqa: env-gate
     sweep_interval_s = _clamped_seconds(
         raw, DEFAULT_SWEEP_INTERVAL_S, MIN_SWEEP_INTERVAL_S
@@ -366,9 +399,42 @@ def _build_default_service() -> StrategyRunService:
         strategy_lookup=strategy_store.get,
         version_checker=_version_checker,
         now_ms=lambda: int(time.time() * 1000),
+        target_validator=_target_validator(_rm_sandbox_id()),
         sweep_interval_s=sweep_interval_s,
         recovery_grace_s=recovery_grace_s,
     )
+
+
+def _rm_sandbox_id() -> str:
+    """Return the RM sandbox id this process runs inside.
+
+    RM stores ``sandbox_id`` as ``RM_LLM_SANDBOX_ID_PREFIX + HOSTNAME`` (the
+    pod hostname), so a bare hostname is never a valid target. An explicit
+    ``VT_SANDBOX_ID`` wins when set.
+    """
+    explicit = os.environ.get("VT_SANDBOX_ID")  # noqa: env-gate
+    if explicit is not None and explicit.strip():
+        return explicit.strip()
+    prefix = os.environ.get("RM_LLM_SANDBOX_ID_PREFIX")  # noqa: env-gate
+    if prefix is None or not prefix.strip():
+        prefix = DEFAULT_SANDBOX_ID_PREFIX
+    host = os.environ.get("HOSTNAME")  # noqa: env-gate
+    if host is None or not host.strip():
+        host = socket.gethostname()
+    return f"{prefix.strip()}{host.strip()}"
+
+
+def _target_validator(box_id: str) -> Callable[[StrategyRunCommand], bool]:
+    """Return a validator that accepts only *box_id* or no explicit target.
+
+    A command without ``sandbox_id`` is upstream-only: the request already
+    arrived on this box and ``upstream`` is a declaration, never dialled.
+    """
+
+    def _validate(command: StrategyRunCommand) -> bool:
+        return command.sandbox_id is None or command.sandbox_id == box_id
+
+    return _validate
 
 
 def _version_checker(strategy_id: str, strategy_version: str, kind: str) -> str | None:

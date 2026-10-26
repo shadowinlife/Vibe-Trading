@@ -9,15 +9,18 @@ from __future__ import annotations
 
 import asyncio
 import json
+import socket
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Callable
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 import strategy_run_server
 from src.api.strategy_run_routes import DuplicateRunKeyError, StrategyRunCommand
+from src.scheduled_research.models import ScheduledResearchJob
 from src.scheduled_research.strategy_policy import InFlightHandle
 from src.strategy_library.history import RunOutcome
 from src.strategy_runs import StrategyRunStore
@@ -27,6 +30,7 @@ from src.strategy_runs.service import StrategyRunService, SubmitResult
 NOW = 1_700_000_000_000
 TIMEOUT_S = 900
 RUN_KEY = "user-1:schedule-1:2026-10-26T00:00:00Z:0"
+TOKEN_ENV = "RM_VT_STRATEGY_RUN_TOKEN_FILE"
 
 
 class _Clock:
@@ -82,13 +86,15 @@ def _command(
     strategy_id: str = "momentum-1",
     strategy_version: str = "v1-aaaaaaaa",
     timeout_s: int = TIMEOUT_S,
+    sandbox_id: str | None = "box-1",
+    upstream: str | None = None,
 ) -> StrategyRunCommand:
     return StrategyRunCommand(
         strategy_id=strategy_id,
         strategy_version=strategy_version,
         run_key=run_key,
-        sandbox_id="box-1",
-        upstream=None,
+        sandbox_id=sandbox_id,
+        upstream=upstream,
         timeout_s=timeout_s,
     )
 
@@ -102,6 +108,7 @@ def _service(
     version_error: str | None = None,
     grace_s: float = 120.0,
     interval_s: float = 5.0,
+    target_validator: Callable[[StrategyRunCommand], bool] | None = None,
 ) -> StrategyRunService:
     def default_lookup(strategy_id: str) -> object:
         return SimpleNamespace(kind=runner.kind)
@@ -112,9 +119,18 @@ def _service(
         strategy_lookup=lookup if lookup is not None else default_lookup,
         version_checker=lambda *_args: version_error,
         now_ms=clock,
+        target_validator=target_validator,
         sweep_interval_s=interval_s,
         recovery_grace_s=grace_s,
     )
+
+
+def _auth_header(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
+    token = "dummy-service-token-t5-4c9d"
+    path = tmp_path / "rm_vt_strategy_run_token"
+    path.write_text(token + "\n", encoding="utf-8")
+    monkeypatch.setenv(TOKEN_ENV, str(path))
+    return {"Authorization": f"Bearer {token}"}
 
 
 def _submit(service: StrategyRunService, command: StrategyRunCommand) -> str:
@@ -532,6 +548,7 @@ def test_build_service_is_a_process_wide_singleton(
 ) -> None:
     runtime = tmp_path / "runtime"
     monkeypatch.setenv("VIBE_TRADING_HOME", str(runtime))
+    monkeypatch.setenv("VT_SANDBOX_ID", "default--built-box")
     monkeypatch.setattr(service_module, "_SERVICE", None)
 
     first = service_module.build_service()
@@ -541,6 +558,13 @@ def test_build_service_is_a_process_wide_singleton(
     assert first._store.path == runtime / "strategy_runs.sqlite3"
     assert first.sweep_interval_s == 5.0
     assert first.recovery_grace_s == 120.0
+
+    validator = first._target_validator
+    assert validator is not None
+    assert validator(_command(sandbox_id="default--built-box")) is True
+    monkeypatch.setenv("VT_SANDBOX_ID", "default--changed-box")
+    assert validator(_command(sandbox_id="default--built-box")) is True
+    assert validator(_command(sandbox_id="default--changed-box")) is False
 
 
 def test_build_service_reads_clamped_env_overrides(
@@ -555,3 +579,210 @@ def test_build_service_reads_clamped_env_overrides(
 
     assert service.sweep_interval_s == 1.0
     assert service.recovery_grace_s == 45.0
+
+
+class _MismatchService:
+    def __init__(self) -> None:
+        self.calls: list[object] = []
+
+    async def submit(self, command):  # noqa: ANN001, ANN201 — duck-typed seam
+        self.calls.append(command)
+        raise HTTPException(status_code=403, detail="target_mismatch")
+
+    def status(self, vt_run_id: str):
+        return None
+
+
+def test_route_passes_a_service_http_exception_through(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    auth = _auth_header(tmp_path, monkeypatch)
+    service = _MismatchService()
+    app = strategy_run_server.create_app(lambda: service)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/strategy-runs",
+            json={
+                "strategy_id": "momentum-1",
+                "strategy_version": "v1-aaaaaaaa",
+                "run_key": RUN_KEY,
+                "sandbox_id": "default--other-box",
+                "timeout_s": TIMEOUT_S,
+            },
+            headers=auth,
+        )
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "target_mismatch"}
+    assert len(service.calls) == 1
+
+
+def test_target_mismatch_fails_closed_before_the_claim(tmp_path: Path) -> None:
+    clock = _Clock()
+    runner = _FakeRunner(clock)
+    service = _service(
+        tmp_path / "runs.sqlite3",
+        runner,
+        clock,
+        target_validator=service_module._target_validator("default--box-a"),
+    )
+
+    with pytest.raises(HTTPException) as excinfo:
+        asyncio.run(service.submit(_command(sandbox_id="default--box-b")))
+
+    assert excinfo.value.status_code == 403
+    assert excinfo.value.detail == "target_mismatch"
+    assert runner.starts == []
+    assert service._store.get_by_run_key(RUN_KEY) is None
+
+    vt_run_id = _submit(service, _command(sandbox_id="default--box-a"))
+    row = service.status(vt_run_id)
+    assert row is not None and row.status == "running"
+    assert len(runner.starts) == 1
+
+
+def test_route_refuses_another_box_then_accepts_the_same_run_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    auth = _auth_header(tmp_path, monkeypatch)
+    clock = _Clock()
+    runner = _FakeRunner(clock)
+    service = _service(
+        tmp_path / "runs.sqlite3",
+        runner,
+        clock,
+        interval_s=30.0,
+        target_validator=service_module._target_validator("default--this-box"),
+    )
+    body = {
+        "strategy_id": "momentum-1",
+        "strategy_version": "v1-aaaaaaaa",
+        "run_key": RUN_KEY,
+        "sandbox_id": "default--other-box",
+        "timeout_s": TIMEOUT_S,
+    }
+    app = strategy_run_server.create_app(lambda: service)
+
+    with TestClient(app) as client:
+        rejected = client.post("/strategy-runs", json=body, headers=auth)
+        assert rejected.status_code == 403
+        assert rejected.json() == {"detail": "target_mismatch"}
+        assert runner.starts == []
+        assert service._store.get_by_run_key(RUN_KEY) is None
+
+        accepted = client.post(
+            "/strategy-runs",
+            json={**body, "sandbox_id": "default--this-box"},
+            headers=auth,
+        )
+
+    assert accepted.status_code == 202
+    claimed = service._store.get_by_run_key(RUN_KEY)
+    assert claimed is not None and claimed.status == "running"
+    assert accepted.json() == {"vt_run_id": claimed.vt_run_id}
+    assert len(runner.starts) == 1
+
+
+def test_box_identity_prefers_vt_sandbox_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("VT_SANDBOX_ID", "default--explicit")
+    monkeypatch.setenv("HOSTNAME", "pod-host")
+
+    assert service_module._rm_sandbox_id() == "default--explicit"
+
+
+def test_box_identity_is_the_rm_prefix_plus_hostname(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("VT_SANDBOX_ID", raising=False)
+    monkeypatch.delenv("RM_LLM_SANDBOX_ID_PREFIX", raising=False)
+    monkeypatch.setenv("HOSTNAME", "pod-host")
+    assert service_module._rm_sandbox_id() == "default--pod-host"
+
+    monkeypatch.setenv("RM_LLM_SANDBOX_ID_PREFIX", "team--")
+    assert service_module._rm_sandbox_id() == "team--pod-host"
+
+    monkeypatch.delenv("RM_LLM_SANDBOX_ID_PREFIX")
+    monkeypatch.delenv("HOSTNAME")
+    monkeypatch.setattr(socket, "gethostname", lambda: "socket-host")
+    assert service_module._rm_sandbox_id() == "default--socket-host"
+
+
+def test_bare_hostname_is_never_a_valid_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("VT_SANDBOX_ID", raising=False)
+    monkeypatch.delenv("RM_LLM_SANDBOX_ID_PREFIX", raising=False)
+    monkeypatch.setenv("HOSTNAME", "pod-host")
+    validator = service_module._target_validator(service_module._rm_sandbox_id())
+
+    assert validator(_command(sandbox_id="pod-host")) is False
+    assert validator(_command(sandbox_id="default--pod-host")) is True
+    assert validator(_command(sandbox_id="default--other")) is False
+    assert (
+        validator(
+            _command(sandbox_id=None, upstream="https://gw.example/kruise/x/8000")
+        )
+        is True
+    )
+
+
+def test_upstream_only_is_accepted_and_never_dialled(tmp_path: Path) -> None:
+    clock = _Clock()
+    runner = _FakeRunner(clock)
+    service = _service(
+        tmp_path / "runs.sqlite3",
+        runner,
+        clock,
+        target_validator=service_module._target_validator("default--this-box"),
+    )
+
+    vt_run_id = _submit(
+        service,
+        _command(sandbox_id=None, upstream="https://gw.example/kruise/other/8000"),
+    )
+
+    row = service.status(vt_run_id)
+    assert row is not None and row.status == "running"
+    assert len(runner.starts) == 1
+    assert not hasattr(runner.starts[0], "upstream")
+
+
+@pytest.mark.parametrize("kind", ["code", "workflow"])
+def test_both_kinds_reach_the_runner_with_the_in_memory_job(
+    tmp_path: Path, kind: str
+) -> None:
+    clock = _Clock()
+    runner = _FakeRunner(clock, kind=kind)
+    service = _service(tmp_path / "runs.sqlite3", runner, clock)
+    runner.outcomes.append(RunOutcome(status="completed", summary="done"))
+
+    vt_run_id = _submit(service, _command())
+
+    assert len(runner.starts) == 1
+    job = runner.starts[0]
+    assert isinstance(job, ScheduledResearchJob)
+    assert job.id == f"svc-{vt_run_id}"
+    assert job.schedule == "60000"
+    assert job.prompt == ""
+    assert job.source_type == "strategy"
+    assert job.executor_kind == "strategy"
+    assert job.strategy_id == "momentum-1"
+    assert job.strategy_version == "v1-aaaaaaaa"
+    assert job.run_policy["run_timeout_s"] == TIMEOUT_S
+
+    asyncio.run(service.sweep_once())
+
+    assert len(runner.polls) == 1
+    assert runner.polls[0].kind == kind
+    row = service.status(vt_run_id)
+    assert row is not None and row.status == "completed"
+
+
+def test_service_module_does_not_dispatch_runners_itself() -> None:
+    source = Path(service_module.__file__).read_text(encoding="utf-8")
+
+    assert "start_code_run" not in source
+    assert "start_workflow_run" not in source
