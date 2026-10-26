@@ -169,15 +169,55 @@ class SqliteStrategyStore:
         self.db_path = (
             Path(db_path) if db_path is not None else _default_db_path()
         )
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA foreign_keys=ON")
-        self._conn.execute("PRAGMA busy_timeout=5000")
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA synchronous=NORMAL")
         self._lock = threading.RLock()
+        self._closed = False
+        self._conn = self._open_connection()
         self._init_db()
+
+    # -- Connection lifecycle -----------------------------------------------
+
+    def _open_connection(self) -> sqlite3.Connection:
+        """Open the SQLite connection with this store's standard PRAGMAs."""
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.execute("PRAGMA busy_timeout=5000")
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        return conn
+
+    def close(self) -> None:
+        """Close the underlying connection.  Idempotent.
+
+        A closed store keeps its ``db_path``; call ``reopen()`` to use it
+        again.  Until then every query raises ``sqlite3.ProgrammingError``.
+        """
+        with self._lock:
+            if self._closed:
+                return
+            self._conn.close()
+            self._closed = True
+
+    def reopen(self) -> SqliteStrategyStore:
+        """Reconnect a closed store and re-run the schema bootstrap.
+
+        Returns:
+            ``self``.  An already-open store is returned unchanged; the
+            database path, schema and PRAGMAs are never altered.
+        """
+        with self._lock:
+            if not self._closed:
+                return self
+            conn = self._open_connection()
+            try:
+                self._conn = conn
+                self._init_db()
+            except BaseException:
+                conn.close()
+                raise
+            self._closed = False
+            return self
 
     # -- Schema bootstrap ---------------------------------------------------
 

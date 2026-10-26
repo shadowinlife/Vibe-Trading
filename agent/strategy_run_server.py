@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Dedicated in-box HTTP entry for RM-triggered strategy runs.
+"""Dedicated in-box HTTP entry for RM-triggered strategy runs and state.
 
-This app exists so the box can answer the two RM service routes without
-exposing the full VT REST surface and without starting a second F9 scheduler.
-It mounts ``/health`` plus ``POST /strategy-runs`` and
-``GET /strategy-runs/{vt_run_id}`` and nothing else — there is deliberately no
-SPA fallback or catch-all, so an unregistered path stays a framework ``404``.
+This app exists so the box can answer the RM service routes without exposing
+the full VT REST surface and without starting a second F9 scheduler. It mounts
+``/health``, ``POST /strategy-runs``, ``GET /strategy-runs/{vt_run_id}``,
+``POST /state/export`` and ``POST /state/import`` and nothing else — there is
+deliberately no SPA fallback or catch-all, so an unregistered path (including
+``/strategy-schedules``) stays a framework ``404``. No scheduler is started and
+no lifespan beyond this module's own is executed.
 
 ``api_server`` is imported at module scope on purpose and is load-bearing:
 :func:`src.strategy_library.runner.resolve_session_service` resolves the
@@ -30,6 +32,7 @@ from fastapi import FastAPI
 # session-service lookup reads. Never call api_server._run_startup_preflight()
 # from here — it starts the F9 scheduler, which this entry must not run.
 import api_server  # noqa: F401
+from src.api.state_routes import register_state_routes
 from src.api.strategy_run_auth import log_token_configuration
 from src.api.strategy_run_routes import (
     ServiceProvider,
@@ -83,7 +86,8 @@ def create_app(service_provider: ServiceProvider | None = None) -> FastAPI:
             production provider (``src.strategy_runs.service``).
 
     Returns:
-        An app carrying ``/health`` and exactly the two service routes.
+        An app carrying ``/health``, the two strategy-run routes and the two
+        state routes.
     """
     provider = (
         service_provider if service_provider is not None else default_service_provider
@@ -140,6 +144,7 @@ def create_app(service_provider: ServiceProvider | None = None) -> FastAPI:
         return _health_payload()
 
     register_strategy_run_routes(app, _service_for_request)
+    register_state_routes(app)
     log_token_configuration()
     return app
 
