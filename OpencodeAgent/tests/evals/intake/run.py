@@ -1,0 +1,400 @@
+"""Drive the frozen intake corpus against a running opencode server.
+
+Posts prompts via ``opencode run --attach``, derives the four events from
+the ``--format json`` stream, appends validated JSONL records. ``--dry-run``
+is offline; the validator is a focused stdlib subset of JSON Schema 2020-12.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import subprocess
+import sys
+import tempfile
+import time
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterable, Iterator
+
+BASE_DIR = Path(__file__).resolve().parent
+CORPUS_PATH = BASE_DIR / "corpus.jsonl"
+EXPECTED_PATH = BASE_DIR / "expected.json"
+SCHEMA_PATH = BASE_DIR / "events.schema.json"
+
+EXPECT_LABELS = ("direct_answer", "execute_with_defaults", "clarify_private", "refuse")
+PRODUCT_LABELS = "个股体检 选股清单 策略回测 组合体检 事件/宏观影响 交易复盘 定时监控 报告 none".split()
+REQUIRED_CORPUS_FIELDS = ("id", "prompt", "expect", "negative", "open_ended", "expected_product", "rationale")
+EVENT_TYPES = ("route_class", "intake_loaded", "question_called", "params_compiled")
+RUN_ERROR = "run_error"
+
+NUMBERED_CHOICE = re.compile(r"(?m)^\s*(?:\d{1,2}[.)、)]|[（(]\d{1,2}[)）])\s+\S")
+CHOICE_CUES = ("选项", "以上都不是", "请选择", "哪个", "还是", "希望", "偏好", "成本价", "仓位")
+REFUSAL_MARKERS = ("无法转账", "无法划转", "无法执行", "无法完成", "无法办理", "无法操作", "无法协助", "不支持", "超出", "cannot", "unable", "not able", "out of scope")
+VT_TOOL_PREFIXES = ("vibe-trading_", "vibe_trading_", "ch_")
+
+FIELD_TYPES: dict[str, tuple[type, ...]] = {
+    "run_id": (str,), "corpus_id": (str,), "event": (str,), "ts": (str,),
+    "observed": (str, bool, type(None)), "expected": (str, bool, type(None)),
+    "evidence": (str,), "tool": (str,), "args_digest": (str,),
+    "question_count": (int,), "user_turns": (int,),
+    "tokens": (int, type(None)), "wall_s": (int, float, type(None)),
+}
+
+
+def load_corpus(path: Path = CORPUS_PATH) -> list[dict[str, Any]]:
+    """Parse the JSONL corpus; raises ValueError on malformed lines."""
+    items: list[dict[str, Any]] = []
+    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path}:{lineno}: invalid JSON: {exc}") from exc
+        if not isinstance(item, dict):
+            raise ValueError(f"{path}:{lineno}: corpus line must be a JSON object")
+        items.append(item)
+    return items
+
+
+def load_expected(path: Path = EXPECTED_PATH) -> dict[str, dict[str, Any]]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: expected.json must map corpus ids to objects")
+    return data
+
+
+def validate_corpus(
+    items: Iterable[dict[str, Any]], expected: dict[str, dict[str, Any]] | None = None
+) -> list[str]:
+    """Return human-readable contract errors; an empty list means valid."""
+    items = list(items)
+    errors: list[str] = []
+    if len(items) != 10:
+        errors.append(f"corpus must contain exactly 10 items, found {len(items)}")
+    seen: set[str] = set()
+    for index, item in enumerate(items, 1):
+        label = str(item.get("id") or f"line {index}")
+        for key in REQUIRED_CORPUS_FIELDS:
+            value = item.get(key)
+            if key not in item or value is None or (isinstance(value, str) and not value.strip()):
+                errors.append(f"{label}: missing or empty required field {key!r}")
+        item_id = item.get("id")
+        if isinstance(item_id, str) and not re.fullmatch(r"c\d{2}", item_id):
+            errors.append(f"{label}: id must match cNN")
+        if item_id in seen:
+            errors.append(f"{label}: duplicate id")
+        seen.add(item_id)
+        if item.get("expect") not in EXPECT_LABELS:
+            errors.append(f"{label}: expect must be one of {EXPECT_LABELS}")
+        if item.get("expected_product") not in PRODUCT_LABELS:
+            errors.append(f"{label}: expected_product must be one of the 9 labels")
+        for flag in ("negative", "open_ended"):
+            if not isinstance(item.get(flag), bool):
+                errors.append(f"{label}: {flag} must be a boolean")
+    negatives = [item for item in items if item.get("negative") is True]
+    if len(negatives) < 2:
+        errors.append(f"at least 2 negative items required, found {len(negatives)}")
+    for item in negatives:
+        if (item.get("expect"), item.get("expected_product")) != ("direct_answer", "none"):
+            errors.append(f"{item.get('id', '?')}: negative item must be direct_answer/none")
+    if expected is None:
+        return errors
+    item_ids = {item.get("id") for item in items}
+    if missing := sorted(item_ids - set(expected)):
+        errors.append(f"expected.json is missing ids: {missing}")
+    if extra := sorted(set(expected) - item_ids):
+        errors.append(f"expected.json has unknown ids: {extra}")
+    for item in items:
+        detail = expected.get(item.get("id")) or {}
+        for key in ("expect", "expected_product", "negative"):
+            if detail.get(key) != item.get(key):
+                errors.append(f"{item.get('id')}: expected.json disagrees on {key}")
+        if detail.get("max_user_turns") != 2:
+            errors.append(f"{item.get('id')}: max_user_turns must be 2")
+        markers = detail.get("required_markers") or []
+        if not all(isinstance(m, str) and m for m in markers):
+            errors.append(f"{item.get('id')}: required_markers must be a non-empty string list")
+    return errors
+
+
+def _walk(value: Any) -> Iterator[dict[str, Any]]:
+    if isinstance(value, dict):
+        yield value
+        value = list(value.values())
+    if isinstance(value, list):
+        for nested in value:
+            yield from _walk(nested)
+
+
+def _tool_name(obj: dict[str, Any]) -> str | None:
+    name = obj.get("tool") or obj.get("name")
+    if obj.get("type") in ("tool", "tool_use", "tool_call") and isinstance(name, str):
+        return name
+    return obj["tool"] if isinstance(obj.get("tool"), str) and "state" in obj else None
+
+
+def _tool_args(obj: dict[str, Any]) -> dict[str, Any]:
+    state = obj.get("state") if isinstance(obj.get("state"), dict) else {}
+    candidates = (obj.get("input"), obj.get("args"), obj.get("arguments"), state.get("input"), state.get("args"))
+    for candidate in candidates:
+        if isinstance(candidate, dict):
+            return candidate
+        if isinstance(candidate, str) and candidate.strip().startswith("{"):
+            try:
+                parsed = json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(parsed, dict):
+                return parsed
+    return {}
+
+
+def parse_stream(stdout: str) -> dict[str, Any]:
+    """Extract tool calls, assistant text and tokens from --format json output."""
+    calls: list[dict[str, Any]] = []
+    texts: list[str] = []
+    tokens: int | None = None
+    for line in stdout.splitlines():
+        try:
+            objects = list(_walk(json.loads(line.strip())))
+        except json.JSONDecodeError:
+            continue
+        for obj in objects:
+            name = _tool_name(obj)
+            if name:
+                call = {"name": name, "args": _tool_args(obj)}
+                if call not in calls:
+                    calls.append(call)
+            if obj.get("type") == "text" and isinstance(obj.get("text"), str):
+                texts.append(obj["text"])
+            elif obj.get("role") == "assistant" and isinstance(obj.get("content"), str):
+                texts.append(obj["content"])
+            usage = obj.get("tokens") or obj.get("usage")
+            if tokens is None and isinstance(usage, dict):
+                total = sum(v for v in usage.values() if isinstance(v, (int, float)) and not isinstance(v, bool))
+                tokens = int(total) or None
+    return {"calls": calls, "text": "\n".join(texts), "tokens": tokens}
+
+
+def _is_question(name: str) -> bool:
+    lowered = name.lower()
+    return lowered == "question" or lowered.startswith(("question.", "question_"))
+
+
+def _is_vt_tool(name: str) -> bool:
+    return name.startswith(VT_TOOL_PREFIXES)
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _names(calls: Iterable[dict[str, Any]]) -> str:
+    return ",".join(sorted({call["name"] for call in calls})) or "-"
+
+
+def derive_route(stream: dict[str, Any]) -> tuple[str, str]:
+    calls = stream["calls"]
+    question_calls = [call for call in calls if _is_question(call["name"])]
+    vt_calls = [call for call in calls if _is_vt_tool(call["name"]) and call["args"]]
+    numbered = NUMBERED_CHOICE.findall(stream["text"])
+    choice_list = len(numbered) >= 2 and any(cue in stream["text"] for cue in CHOICE_CUES)
+    if question_calls or choice_list:
+        evidence = f"question_calls={len(question_calls)} numbered_lines={len(numbered)}"
+        return "clarify_private", evidence
+    if vt_calls:
+        return "execute_with_defaults", f"tools={_names(vt_calls)}"
+    marker = next((m for m in REFUSAL_MARKERS if m in stream["text"].lower()), None)
+    if marker:
+        return "refuse", f"refusal_marker={marker!r} tools=-"
+    return "direct_answer", f"tools=- text_len={len(stream['text'])}"
+
+
+def build_events(
+    run_id: str, item: dict[str, Any], stream: dict[str, Any], *, wall_s: float, stderr_tail: str = ""
+) -> list[dict[str, Any]]:
+    calls, text = stream["calls"], stream["text"]
+    route, route_evidence = derive_route(stream)
+    question_calls = [call for call in calls if _is_question(call["name"])]
+    vt_calls = [call for call in calls if _is_vt_tool(call["name"]) and call["args"]]
+    intake = any("skills/intake" in json.dumps(call["args"], ensure_ascii=False) for call in calls)
+    intake = intake or "intake" in text.lower()
+    base = dict(
+        run_id=run_id, corpus_id=item["id"], ts=_now(), user_turns=1,
+        wall_s=round(wall_s, 3), tokens=stream["tokens"],
+    )
+    events = [
+        dict(event="route_class", observed=route, expected=item["expect"], evidence=route_evidence),
+        dict(event="intake_loaded", observed=intake, expected=True, evidence=f"path_mention={intake}"),
+        dict(
+            event="question_called", observed=bool(question_calls),
+            expected=item["expect"] == "clarify_private",
+            evidence=f"question_calls={len(question_calls)}", question_count=len(question_calls),
+        ),
+        dict(
+            event="params_compiled", observed=bool(vt_calls),
+            expected=item["expect"] == "execute_with_defaults",
+            evidence=f"tools={_names(vt_calls)} stderr_tail={len(stderr_tail)}",
+        ),
+    ]
+    if vt_calls:
+        payload = json.dumps(vt_calls[0]["args"], sort_keys=True, ensure_ascii=False, default=str)
+        events[-1].update(tool=vt_calls[0]["name"], args_digest=hashlib.sha256(payload.encode()).hexdigest())
+    return [{**base, **event} for event in events]
+
+
+def build_run_error(
+    run_id: str, item: dict[str, Any], *, wall_s: float, reason: str,
+    stdout_tail: str = "", stderr_tail: str = "", tokens: int | None = None,
+) -> dict[str, Any]:
+    evidence = reason + (f" | stdout_tail={stdout_tail[-500:]}" if stdout_tail else "")
+    evidence += f" | stderr_tail={stderr_tail[-1500:]}" if stderr_tail else ""
+    return {
+        "run_id": run_id, "corpus_id": item["id"], "event": RUN_ERROR, "ts": _now(),
+        "observed": "error", "expected": None, "evidence": evidence[-2000:],
+        "user_turns": 1, "wall_s": round(wall_s, 3), "tokens": tokens,
+    }
+
+
+def validate_event(record: dict[str, Any], schema: dict[str, Any] | None = None) -> list[str]:
+    """Focused validator: required keys, known fields and event narrowing."""
+    schema = schema if schema is not None else json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    event = record.get("event")
+    if event not in EVENT_TYPES + (RUN_ERROR,):
+        return [f"unknown event {event!r}"]
+    required = schema.get("$defs", {}).get("base_record", {}).get("required", [])
+    errors = [f"missing required field {key!r}" for key in required if key not in record]
+    for key, value in record.items():
+        if key not in FIELD_TYPES:
+            errors.append(f"unexpected field {key!r}")
+        elif not isinstance(value, FIELD_TYPES[key]) or (isinstance(value, bool) and key not in ("observed", "expected")):
+            errors.append(f"field {key!r} has invalid type {type(value).__name__}")
+    if event == "route_class":
+        if any(record.get(key) not in EXPECT_LABELS for key in ("observed", "expected")):
+            errors.append(f"route_class observed/expected must be one of {EXPECT_LABELS}")
+    elif event == RUN_ERROR:
+        if record.get("observed") != "error":
+            errors.append("run_error observed must be 'error'")
+        if record.get("expected") is not None:
+            errors.append("run_error expected must be null")
+    elif any(not isinstance(record.get(key), bool) for key in ("observed", "expected")):
+        errors.append(f"{event} observed/expected must be booleans")
+    return errors
+
+
+def append_records(path: Path, records: list[dict[str, Any]], schema: dict[str, Any]) -> list[str]:
+    """Validate every record first, then append the batch as JSONL."""
+    problems = [
+        f"{record.get('corpus_id')}:{record.get('event')}: {message}"
+        for record in records for message in validate_event(record, schema)
+    ]
+    if problems:
+        return problems
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.writelines(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n" for record in records)
+    return []
+
+
+def build_command(args: argparse.Namespace, corpus_id: str, prompt: str) -> list[str]:
+    cmd = ["docker", "exec", args.container, "opencode"] if args.container else ["opencode"]
+    cmd += ["run", "--attach", args.attach, "--format", "json", "--title", corpus_id]
+    for flag, value in (("--model", args.model), ("--agent", args.agent), ("--command", args.command)):
+        if value:
+            cmd += [flag, value]
+    cmd.append(prompt)
+    return cmd
+
+
+def _run_one(args: argparse.Namespace, item: dict[str, Any]) -> list[dict[str, Any]]:
+    run_id = uuid.uuid4().hex
+    command = build_command(args, item["id"], item["prompt"])
+    started = time.monotonic()
+    try:
+        proc = subprocess.run(command, capture_output=True, text=True, timeout=args.timeout)
+    except subprocess.TimeoutExpired as exc:
+        tail = exc.stderr.decode("utf-8", "replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+        return [build_run_error(run_id, item, wall_s=time.monotonic() - started,
+                                reason=f"timeout after {args.timeout}s", stderr_tail=tail)]
+    except OSError as exc:
+        return [build_run_error(run_id, item, wall_s=time.monotonic() - started, reason=f"exec failed: {exc}")]
+    wall_s = time.monotonic() - started
+    stream = parse_stream(proc.stdout)
+    if args.raw_dir:
+        raw = Path(args.raw_dir)
+        raw.mkdir(parents=True, exist_ok=True)
+        (raw / f"{run_id}.stdout.txt").write_text(proc.stdout, encoding="utf-8")
+        (raw / f"{run_id}.stderr.txt").write_text(proc.stderr, encoding="utf-8")
+    if proc.returncode == 0 and (stream["calls"] or stream["text"]):
+        return build_events(run_id, item, stream, wall_s=wall_s, stderr_tail=proc.stderr)
+    reason = f"exit={proc.returncode}" if proc.returncode else "no parseable assistant text or tool call"
+    return [build_run_error(run_id, item, wall_s=wall_s, reason=reason, stdout_tail=proc.stdout,
+                            stderr_tail=proc.stderr, tokens=stream["tokens"])]
+
+
+def _real_run(args: argparse.Namespace) -> int:
+    corpus = load_corpus()
+    if problems := validate_corpus(corpus, load_expected()):
+        for problem in problems:
+            print(f"[corpus] {problem}", file=sys.stderr)
+        return 2
+    items = corpus[: args.limit] if args.limit is not None else corpus
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    out_path = Path(args.out) if args.out else Path("results") / f"run_{stamp}.jsonl"
+    total = terminal = 0
+    for _ in range(args.repeat):
+        for item in items:
+            total += 1
+            records = _run_one(args, item)
+            failures = append_records(out_path, records, schema)
+            if failures:
+                print(f"[schema] {failures}", file=sys.stderr)
+            terminal += int(not failures and bool(records))
+            print(f"[{item['id']}] {records[-1]['event'] if records else 'none'}", file=sys.stderr)
+    print(f"[done] {terminal}/{total} terminal records -> {out_path}", file=sys.stderr)
+    return 0 if terminal == total else 1
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--dry-run", action="store_true", help="print the frozen corpus and exit")
+    parser.add_argument("--attach", default="http://localhost:4096", help="opencode server URL")
+    parser.add_argument("--container", help="run the CLI through `docker exec <container>`")
+    parser.add_argument("--limit", type=int, help="only drive the first N corpus items")
+    parser.add_argument("--repeat", type=int, default=1, help="repeat the corpus N times")
+    parser.add_argument("--timeout", type=float, default=600.0, help="per-item timeout in seconds")
+    parser.add_argument("--out", help="output JSONL path (default results/run_<utc>.jsonl)")
+    parser.add_argument("--raw-dir", help="raw stdout/stderr directory (default under $TMPDIR)")
+    parser.add_argument("--model", help="passed through as --model")
+    parser.add_argument("--agent", help="passed through as --agent")
+    parser.add_argument("--command", help="passed through as --command")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.dry_run:
+        items = load_corpus()
+        if problems := validate_corpus(items):
+            for problem in problems:
+                print(f"[corpus] {problem}", file=sys.stderr)
+            return 2
+        for item in items:
+            print(f"{item['id']} | {item['expect']} | {item['expected_product']} | {str(item['negative']).lower()} | {item['prompt']}")
+        return 0
+    if (args.limit is not None and args.limit < 1) or args.repeat < 1:
+        parser.error("--limit and --repeat must be >= 1")
+    if not args.raw_dir:
+        args.raw_dir = str(Path(tempfile.gettempdir()) / "vt-intake-eval-raw")
+    return _real_run(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

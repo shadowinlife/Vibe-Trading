@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-trading.local/schemas/intake-events.schema.json",
+  "title": "Intake eval event record",
+  "description": "One JSONL record per instrumentation event emitted by tests/evals/intake/run.py. Each record is rooted in base_record; the four event $defs carry the judge_rule that says how observed is derived from `opencode run --format json` output. run_error is an operational terminal record, not one of the four measured layers.",
+  "type": "object",
+  "$defs": {
+    "base_record": {
+      "type": "object",
+      "required": [
+        "run_id",
+        "corpus_id",
+        "event",
+        "ts",
+        "observed",
+        "expected",
+        "evidence"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "corpus_id": {
+          "type": "string",
+          "pattern": "^c[0-9]{2}$"
+        },
+        "event": {
+          "type": "string"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "observed": {
+          "type": [
+            "string",
+            "boolean",
+            "null"
+          ]
+        },
+        "expected": {
+          "type": [
+            "string",
+            "boolean",
+            "null"
+          ]
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "string"
+        },
+        "args_digest": {
+          "type": "string"
+        },
+        "question_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "user_turns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "wall_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "route_class": {
+      "judge_rule": "Expected class is the corpus `expect` label. Observed class is derived from the run's `opencode run --format json` stream: any `question` tool call, or a numbered choice list (at least two numbered lines plus a choice cue such as 选项/请选择/成本价/仓位/希望), in the first assistant turn => clarify_private; otherwise any data/backtest tool call (`vibe-trading_*` or `ch_*`) with non-empty arguments => execute_with_defaults; otherwise text containing an explicit capability refusal (无法转账/无法执行/不支持/超出/cannot/unable) => refuse; otherwise a text-only answer with no tool call => direct_answer.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_record"
+        },
+        {
+          "properties": {
+            "event": {
+              "const": "route_class"
+            },
+            "observed": {
+              "enum": [
+                "direct_answer",
+                "execute_with_defaults",
+                "clarify_private",
+                "refuse"
+              ]
+            },
+            "expected": {
+              "enum": [
+                "direct_answer",
+                "execute_with_defaults",
+                "clarify_private",
+                "refuse"
+              ]
+            }
+          },
+          "required": [
+            "observed",
+            "expected"
+          ]
+        }
+      ]
+    },
+    "intake_loaded": {
+      "judge_rule": "Observed true when the event stream contains a read-style tool call whose arguments mention a path containing `skills/intake`, or an assistant message that quotes the intake skill name (`intake`). Expected true for every item: the target design loads intake on every request so it can route; a baseline run against the pre-intake build is expected to observe false.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_record"
+        },
+        {
+          "properties": {
+            "event": {
+              "const": "intake_loaded"
+            },
+            "observed": {
+              "type": "boolean"
+            },
+            "expected": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "observed",
+            "expected"
+          ]
+        }
+      ]
+    },
+    "question_called": {
+      "judge_rule": "Observed true when any tool part in the stream is named `question` or matches the `question.*` variant namespace; question_count carries the number of such tool calls. Expected is true exactly when the corpus `expect` label is `clarify_private`.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_record"
+        },
+        {
+          "properties": {
+            "event": {
+              "const": "question_called"
+            },
+            "observed": {
+              "type": "boolean"
+            },
+            "expected": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "observed",
+            "expected"
+          ]
+        }
+      ]
+    },
+    "params_compiled": {
+      "judge_rule": "Observed true when any tool call named `vibe-trading_*` (or `vibe_trading_*`) or `ch_*` carries non-empty arguments, i.e. collected options were compiled into tool parameters; tool names the first such call and args_digest is the SHA-256 of its canonical JSON arguments. Expected is true exactly when the corpus `expect` label is `execute_with_defaults`; a first-turn clarify asks for private slots and produces no parameters yet.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_record"
+        },
+        {
+          "properties": {
+            "event": {
+              "const": "params_compiled"
+            },
+            "observed": {
+              "type": "boolean"
+            },
+            "expected": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "observed",
+            "expected"
+          ]
+        }
+      ]
+    },
+    "run_error": {
+      "judge_rule": "Operational record written when the CLI invocation fails (nonzero exit, timeout, executable missing) or yields no parseable assistant text or tool call; evidence carries the stderr tail capped at 2000 characters. It is terminal for the item and keeps one failed item from aborting the whole run.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_record"
+        },
+        {
+          "properties": {
+            "event": {
+              "const": "run_error"
+            },
+            "observed": {
+              "const": "error"
+            },
+            "expected": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "observed",
+            "expected"
+          ]
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/route_class"
+    },
+    {
+      "$ref": "#/$defs/intake_loaded"
+    },
+    {
+      "$ref": "#/$defs/question_called"
+    },
+    {
+      "$ref": "#/$defs/params_compiled"
+    },
+    {
+      "$ref": "#/$defs/run_error"
+    }
+  ]
+}
