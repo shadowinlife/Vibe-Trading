@@ -1,8 +1,7 @@
 """Drive the frozen intake corpus against a running opencode server.
 
-Posts prompts via ``opencode run --attach``, derives the four events from
-the ``--format json`` stream, appends validated JSONL records. ``--dry-run``
-is offline; the validator is a focused stdlib subset of JSON Schema 2020-12.
+Posts prompts via ``opencode run --attach``, derives four events from the
+``--format json`` stream, and appends validated JSONL; ``--dry-run`` is offline.
 """
 
 from __future__ import annotations
@@ -228,9 +227,10 @@ def build_events(
         run_id=run_id, corpus_id=item["id"], ts=_now(), user_turns=1,
         wall_s=round(wall_s, 3), tokens=stream["tokens"],
     )
+    intake_expected = bool(item.get("open_ended")) or item["expect"] == "clarify_private"
     events = [
         dict(event="route_class", observed=route, expected=item["expect"], evidence=route_evidence),
-        dict(event="intake_loaded", observed=intake, expected=True, evidence=f"path_mention={intake}"),
+        dict(event="intake_loaded", observed=intake, expected=intake_expected, evidence=f"path_mention={intake}"),
         dict(
             event="question_called", observed=bool(question_calls),
             expected=item["expect"] == "clarify_private",
@@ -302,8 +302,8 @@ def append_records(path: Path, records: list[dict[str, Any]], schema: dict[str, 
 
 
 def build_command(args: argparse.Namespace, corpus_id: str, prompt: str) -> list[str]:
-    cmd = ["docker", "exec", args.container, "opencode"] if args.container else ["opencode"]
-    cmd += ["run", "--attach", args.attach, "--format", "json", "--title", corpus_id]
+    cmd = ["docker", "exec", "-w", args.dir, args.container, "opencode"] if args.container else ["opencode"]
+    cmd += ["run", "--attach", args.attach, "--dir", args.dir, "--format", "json", "--title", corpus_id]
     for flag, value in (("--model", args.model), ("--agent", args.agent), ("--command", args.command)):
         if value:
             cmd += [flag, value]
@@ -365,15 +365,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--dry-run", action="store_true", help="print the frozen corpus and exit")
     parser.add_argument("--attach", default="http://localhost:4096", help="opencode server URL")
+    parser.add_argument("--dir", default="/workspace", help="cwd for docker exec and --dir for opencode run")
     parser.add_argument("--container", help="run the CLI through `docker exec <container>`")
     parser.add_argument("--limit", type=int, help="only drive the first N corpus items")
     parser.add_argument("--repeat", type=int, default=1, help="repeat the corpus N times")
     parser.add_argument("--timeout", type=float, default=600.0, help="per-item timeout in seconds")
     parser.add_argument("--out", help="output JSONL path (default results/run_<utc>.jsonl)")
     parser.add_argument("--raw-dir", help="raw stdout/stderr directory (default under $TMPDIR)")
-    parser.add_argument("--model", help="passed through as --model")
-    parser.add_argument("--agent", help="passed through as --agent")
-    parser.add_argument("--command", help="passed through as --command")
+    for flag in ("--model", "--agent", "--command"):
+        parser.add_argument(flag, help=f"passed through as {flag}")
     return parser
 
 

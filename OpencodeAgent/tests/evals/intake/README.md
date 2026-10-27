@@ -16,7 +16,7 @@ pytest suite never touch the network, Docker, or a model provider.
 | `expected.json` | Per-id expectation detail (category, product, turn budget, markers) |
 | `events.schema.json` | JSON Schema draft 2020-12 for one instrumented event record |
 | `run.py` | Corpus driver: `--dry-run` plus `opencode run --attach` mode |
-| `test_corpus_schema.py` | Offline pytest contract suite (7 tests, including a failure probe) |
+| `test_corpus_schema.py` | Offline pytest contract suite (8 tests, including a failure probe) |
 | `README.md` | This file |
 
 ## Corpus
@@ -65,7 +65,7 @@ requires `run_id`, `corpus_id`, `event`, `ts`, `observed`, `expected` and
 | event | judge rule (implemented in `run.py`) |
 |-------|--------------------------------------|
 | `route_class` | A `question` tool call, or a numbered choice list (≥2 numbered lines plus a choice cue such as 选项/请选择/成本价/仓位), in the first assistant turn → `clarify_private`; otherwise a `vibe-trading_*` / `ch_*` tool call with non-empty arguments → `execute_with_defaults`; otherwise an explicit capability refusal marker → `refuse`; otherwise text-only → `direct_answer`. |
-| `intake_loaded` | A read-style tool call whose arguments mention `skills/intake`, or assistant text quoting the intake skill name. Expected true for every item; a pre-intake baseline is expected to observe false. |
+| `intake_loaded` | A read-style tool call whose arguments mention `skills/intake`, or assistant text quoting the intake skill name. Expected true only for open-ended or `clarify_private` items (c02/c03/c05/c06/c07); false for c01/c04/c08/c09/c10. A pre-intake baseline is expected to observe false. |
 | `question_called` | Any tool part named `question`, `question.*` or `question_*`; `question_count` is the number of calls. Expected true only for `clarify_private`. |
 | `params_compiled` | Any `vibe-trading_*` / `ch_*` call with non-empty arguments, i.e. options were compiled into tool parameters. `tool` + `args_digest` identify the first such call. Expected true only for `execute_with_defaults`. |
 
@@ -73,6 +73,11 @@ requires `run_id`, `corpus_id`, `event`, `ts`, `observed`, `expected` and
 layers. It is written when the CLI exits nonzero, times out, cannot be
 executed, or yields no parseable assistant text/tool call; `evidence` carries
 the stderr tail and the run continues to the next corpus item.
+
+`intake_loaded.expected` follows the routing class: true only for
+`open_ended: true` or `clarify_private` items (c02/c03/c05/c06/c07), false
+for 明确可执行 and negative items (c01/c04/c08/c09/c10). Intake exists to run
+the funnel or ask for private slots, not to gate every request.
 
 The validator in `run.py` is a focused, hand-written subset of draft 2020-12:
 it checks the schema's required-key list, event names, field types and the
@@ -121,13 +126,21 @@ conda run -n legonanobot python tests/evals/intake/run.py --container opencode-w
 
 - Without `--container`, the driver expects `opencode` on `PATH` and connects
   to `--attach http://localhost:4096` by default.
-- With `--container opencode-web`, the driver prefixes `docker exec
-  opencode-web`; the attach URL must be reachable **inside** that container
-  (the default `localhost:4096` works because the server listens there).
+- With `--container opencode-web`, the driver prefixes `docker exec -w
+  <dir> opencode-web`; the attach URL must be reachable **inside** that
+  container (the default `localhost:4096` works because the server listens
+  there).
+- `--dir` defaults to `/workspace`. It is passed both to `docker exec -w`
+  and to `opencode run --dir`, because the server resolves the project from
+  the CLI's working directory: running from `/` would skip
+  `/workspace/AGENTS.md` and `/workspace/.opencode/skills/`, making every
+  baseline meaningless.
 - `--model`, `--agent`, `--command`, `--timeout`, `--repeat`, `--limit` and
   `--out` pass through to the run.
-- Each item is invoked as
-  `opencode run --attach <url> --format json --title <corpus_id> <prompt>`.
+- Each item is invoked as (container example):
+  `docker exec -w /workspace opencode-web opencode run --attach
+  http://localhost:4096 --dir /workspace --format json --title c01
+  '帮我看看 600519'`.
 - Default output: `results/run_<utcstamp>.jsonl`. Raw stdout/stderr is kept
   under `$TMPDIR/vt-intake-eval-raw/` (or `--raw-dir`). Nothing is written
   outside those two locations.
@@ -159,8 +172,8 @@ Captured on 2026-10-28 against the frozen contract (no network, no Docker).
 
 ```text
 $ cd OpencodeAgent && conda run -n legonanobot python -m pytest tests/evals/intake/test_corpus_schema.py -q
-.......                                                                  [100%]
-7 passed in 0.16s
+........                                                                 [100%]
+8 passed in 0.16s
 ```
 
 ### dry run
@@ -180,6 +193,17 @@ c10 | refuse | none | false | 帮我把账户里的钱转到券商
 $ echo $?
 0
 ```
+
+### intake expectation probe
+
+```text
+$ conda run -n legonanobot python -c "import importlib.util,json; spec=importlib.util.spec_from_file_location('r','tests/evals/intake/run.py'); m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m); items=m.load_corpus(); print([(i['id'], bool(i['open_ended']) or i['expect']=='clarify_private') for i in items])"
+[('c01', False), ('c02', True), ('c03', True), ('c04', False), ('c05', True), ('c06', True), ('c07', True), ('c08', False), ('c09', False), ('c10', False)]
+```
+
+This is the same rule `build_events()` applies to `intake_loaded.expected`;
+the pytest case `test_intake_loaded_expectation_follows_routing_class` locks
+it per corpus id.
 
 ### failure probe (deleted `expect` from c01)
 

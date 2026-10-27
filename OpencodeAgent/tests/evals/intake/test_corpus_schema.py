@@ -151,6 +151,15 @@ def test_event_validator_accepts_valid_and_rejects_incomplete_records():
     assert run.validate_event(bad_label, schema)
 
 
+def test_intake_loaded_expectation_follows_routing_class(corpus):
+    expected_true = {"c02", "c03", "c05", "c06", "c07"}
+    stream = {"calls": [], "text": "", "tokens": None}
+    for item in corpus:
+        events = run.build_events("run-1", item, stream, wall_s=0.0)
+        intake = next(event for event in events if event["event"] == "intake_loaded")
+        assert intake["expected"] == (item["id"] in expected_true), item["id"]
+
+
 def test_failure_probe_missing_expect_fails_validation(tmp_path):
     lines = CORPUS_PATH.read_text(encoding="utf-8").splitlines()
     probe_item = json.loads(lines[0])

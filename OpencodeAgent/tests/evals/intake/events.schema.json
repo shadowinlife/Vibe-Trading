@@ -116,7 +116,7 @@
       ]
     },
     "intake_loaded": {
-      "judge_rule": "Observed true when the event stream contains a read-style tool call whose arguments mention a path containing `skills/intake`, or an assistant message that quotes the intake skill name (`intake`). Expected true for every item: the target design loads intake on every request so it can route; a baseline run against the pre-intake build is expected to observe false.",
+      "judge_rule": "Observed true when the event stream contains a read-style tool call whose arguments mention a path containing `skills/intake`, or an assistant message that quotes the intake skill name (`intake`). Expected is true only when the item is open-ended (`open_ended: true`) or expects `clarify_private` (c02/c03/c05/c06/c07), and false for the 明确可执行 items and negatives (c01/c04/c08/c09/c10): intake routes only requests that need the funnel or private-slot clarification. A baseline run against the pre-intake build is expected to observe false everywhere.",
       "allOf": [
         {
           "$ref": "#/$defs/base_record"
