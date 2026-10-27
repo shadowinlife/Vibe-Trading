@@ -4,7 +4,7 @@ description: wiki 内每份文档的一行式索引（路径 + 一句话 + 状�
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-10-25
+updated: 2026-10-27
 tags: [index]
 ---
 
@@ -20,7 +20,7 @@ tags: [index]
 
 ## branch/ — 分支治理
 
-- [branch/MYMAIN_DIVERGENCE.md](branch/MYMAIN_DIVERGENCE.md) — 与上游差异权威台账：F1-F5/F7（F8 已移出）、贡献队列（⑥ specialist-arch 终结；⑦ 随引擎桥线移出；⑧ FE-1 R1/R2 已合入上游销账）、验证门禁、债务 D1-D4、待办研究 R1/R2、**2026-09-27 路线裁决（纯 opencode+omo+VT MCP）与三项回退** — active
+- [branch/MYMAIN_DIVERGENCE.md](branch/MYMAIN_DIVERGENCE.md) — 与上游差异权威台账：F1-F5/F7/F9（F8 已移出）、贡献队列（⑥ specialist-arch 终结；⑦ 随引擎桥线移出；⑧ FE-1 R1/R2 已合入上游销账）、验证门禁、债务 D1-D4、待办研究 R1/R2、**2026-09-27 路线裁决（纯 opencode+omo+VT MCP）与三项回退** — active
 - [branch/MYMAIN_README.md](branch/MYMAIN_README.md) — 发布 changelog：基线/迭代/验证基线/ tag 约定 — active
 
 ## features/ — 迭代功能卡

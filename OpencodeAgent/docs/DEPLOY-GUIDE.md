@@ -104,7 +104,7 @@ set -a && source /opt/my-vibe-trading/.env && set +a
 | `AGENTS.md` | `/opt/venv` → legonanobot conda；`/workspace` → `/opt/my-vibe-trading`；`/opt/vibe-trading` → `repo/`；容器/compose 措辞 → systemd/宿主机目录 |
 | `config/opencode.json.tmpl` | `/opt/venv/bin/*` → `/opt/miniconda3/envs/legonanobot/bin/*`；`/opt/vibe-trading/agent/mcp_server.py` → `repo/agent/mcp_server.py`；`VT_MEMORY_BASE_DIR` `/workspace/.vt-memory` → `/opt/my-vibe-trading/.vt-memory` |
 | `cron_jobs/trigger.sh`、`cron_jobs/manage.py` | `OPENCODE_API` 默认端口 `4096` → `4097`（repo 内 4096 是容器内端口，勿改 repo） |
-| `OpencodeAgent/AGENTS.md`（repo 侧） | 计数口径随 mymain 演进同步（当前 MCP OFF=80 / ON=85、技能 91） |
+| `OpencodeAgent/AGENTS.md`（repo 侧） | 计数口径随 mymain 演进同步（当前 MCP OFF=89 / ON=94、技能 91） |
 
 ## 6. 环境变量（`/opt/my-vibe-trading/.env`，chmod 600）
 
