@@ -167,6 +167,18 @@ export interface PortfolioConnectorCompatibility {
  * as history — never as a current valuation.
  */
 export interface PortfolioAccount {
+  balance_details?: {
+    currency: string | null;
+    max_finance_amount: number | null;
+    remaining_finance_amount: number | null;
+    cash_infos: {
+      currency: string | null;
+      available_cash: number | null;
+      withdraw_cash: number | null;
+      frozen_cash: number | null;
+      settling_cash: number | null;
+    }[];
+  }[];
   source_kind?: "connection" | "extraetf";
   import_metadata?: { source_mtime: string; expires_at: string; as_of_source: string } | null;
   source_id?: string;
