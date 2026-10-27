@@ -4,7 +4,7 @@ description: mymain 分支每次对齐/发布的 changelog——上游基线、�
 type: reference
 status: active
 created: 2026-08-11
-updated: 2026-10-17
+updated: 2026-10-27
 tags: [branch, release, changelog]
 related: [MYMAIN_DIVERGENCE.md]
 ---
@@ -36,9 +36,21 @@ related: [MYMAIN_DIVERGENCE.md]
 
 ---
 
+### 对齐记录 · 2026-10-27 — 基线：上游 `3cbb167e`（+119 commit；未发布、tag 未移动）
+
+- **发布 commit**：不适用——本轮只做上游对齐与推送，未移动 `release/mymain`（tag 仍为 `0104bb38`，2026-10-17 发布）
+- **上游基线**：`3cbb167e`（自 `11cff3f3` 前进 **119 commit / 72 非 merge**：paper-trade/quantlib/factors/loaders/backtest 正确性批次、memory frontmatter UTC、session/swarm/scheduled 修复、十月 23/25 新闻等）
+- **差异总量**：706 个文件、+139441/−250 行（`git diff origin/main mymain --shortstat`）
+- **对齐方式**：一次性直接 merge（`78b1e9fd`；回退点 `backup/mymain-20261027` = `72c95db7`），普通 fast-forward 推送，非 force-push；27 个路径重叠、真冲突仅 2 处（`build_registry` 与 `_run_attempt` 的 `tool_allowlist` × `cancel_event`，双参数保留）
+- **核心变更**：上游全量吸收；F1–F5/F7/F9 逐项核查未被取代（上游 clickhouse/reflections/memory_guard/strategy_library/OpencodeAgent 文件数均为 0；上游 82 个 MCP 工具与 113 个 agent tools 全部保留）；本地仅多 7 个 MCP（3 `ch_*` + 3 `strategy_*` + 1 `scheduled_research`）与 8 个 agent tools（3 `ch_*` + `get_valuation` + 4 策略工具）。**计数校正**：MCP **89/94**、agent tools **121**（旧台账 86/91、117 为 F9 合入前口径）
+- **验证基线**：memory **353/3**、ClickHouse **144/11**、schema **53/1 + exit 0**、README/manifest **122**、env gate **exit 0**、routing **184**、F9 策略 **813**、session/allowlist/swarm **148+19**、backtest/run_card **121**、render **31**、MCP 冒烟 **89/94**、memory 往返 + 回测反思冒烟 OK；**全量 21142 passed / 36 failed / 168 skipped**（36 = 17 上游/环境既有 + 19 本地 D5 既有，零回归）
+- **推送**：`fork/mymain` fast-forward（非 force-push）；无镜像交付，`release/mymain` tag 不移动
+
+---
+
 ### release/mymain · 2026-10-17 — 基线：上游 `596fcf3d`（上游历史重写后 296 commit）+ 镜像 v3.7.0-mymain
 
-- **发布 commit**：`release/mymain` tag 所指 commit（即本条发布记录 commit）
+- **发布 commit**：`0104bb38`（`release/mymain` tag 当前所指；2026-10-17 发布记录 commit）
 - **上游基线**：`596fcf3d`（**上游 main 遭 force-push 历史重写**：旧基线 `b1f6ce71` 及其下 ~35 个旧上游 commit 不再可达，同批 PR 以不同 SHA 重制；本轮覆盖重写等价点后 **296** 个上游 commit：BrazilEquity 第 11 引擎 + b3_cotahist 源、get_fund_nav、Gildata 研究三件套、adapt_strategy、claude-cli provider、波斯语 locale、十月正确性批次 #1779-#1891 等）
 - **差异总量**：602 个文件、+113,484/−171 行（复核命令 `git diff origin/main release/mymain --shortstat`）
 - **对齐方式**：**双轨（merge 目标树 + rebase --onto 重放）**——tmp 分支 merge 一次解 28 文件冲突得目标树；`git rebase --onto origin/main b1f6ce71` 重放 18 个本地 commit；最终树与目标树逐字节一致（唯一例外：上游重写时删除的 `docs/sessions/2026-10-08_analysis_reliability.md` 随上游丢弃）；「上游 main 为祖先」不变量修复；回退点 `backup/mymain-pre-align-20261017`。过程事故一例（冲突标记混入 F5 commit → abort 重做 + 逐步强制校验），详见 DIVERGENCE §5 2026-10-17 条
