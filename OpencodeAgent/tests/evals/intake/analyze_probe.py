@@ -82,19 +82,29 @@ def verify_lanes(merged: dict[str, dict[str, dict[str, Any]]]) -> dict[str, list
     return lane_ids
 
 
+def _closing_note(complete: bool, artifact: bool) -> str:
+    if complete:
+        return ""
+    if not artifact:
+        return "no artifact (600 s cap, recovered session truncated mid-tool-loop); counted as a miss because the request ended without an artifact"
+    return "emitted an artifact; contract-compliance miss (rewrote `数据截止 T-1` as a concrete date), not a routing miss"
+
+
 def closing_block(probe: dict[str, dict[str, Any]]) -> dict[str, Any]:
     rows = []
     for corpus_id in CLOSING_IDS:
         text_path = TEXT_DIR / f"{corpus_id}.txt"
         text = text_path.read_text(encoding="utf-8") if text_path.is_file() else ""
         result = checks.find_closing_block(text)
+        artifact = runner._is_artifact(text)
         rows.append({
             "id": corpus_id,
             "route": probe[corpus_id]["route_observed"],
             "complete": result["complete"],
             "missing": result["missing"],
             "text_chars": len(text),
-            "artifact": runner._is_artifact(text),
+            "artifact": artifact,
+            "note": _closing_note(result["complete"], artifact),
         })
     k = sum(1 for row in rows if row["complete"])
     n = len(rows)
@@ -143,17 +153,75 @@ def two_turn() -> dict[str, Any]:
     return json.loads(match.group(1))
 
 
-def behavioural_gate(paired: dict[str, Any], n_complete: int) -> dict[str, Any]:
+def observation(records: dict[str, dict[str, Any]], event: str) -> tuple[Any, Any]:
+    record = records.get(event)
+    if record is None:
+        return None, None
+    return record.get("observed"), record.get("expected")
+
+
+def agrees(groups: dict[str, dict[str, dict[str, Any]]], corpus_id: str, event: str) -> bool:
+    observed, expected = observation(groups.get(corpus_id, {}), event)
+    return observed is not None and observed == expected
+
+
+def agreement_summary(groups: dict[str, dict[str, dict[str, Any]]], corpus_ids: list[str]) -> dict[str, dict[str, Any]]:
+    summary: dict[str, dict[str, Any]] = {}
+    for event in EVENTS:
+        k = sum(1 for corpus_id in corpus_ids if agrees(groups, corpus_id, event))
+        summary[event] = {"successes": k, **wave1.wilson(k, len(corpus_ids))}
+    return summary
+
+
+def paired_agreement(
+    baseline_groups: dict[str, dict[str, dict[str, Any]]],
+    probe_groups: dict[str, dict[str, dict[str, Any]]],
+    corpus_ids: list[str],
+) -> dict[str, Any]:
+    """Agreement = `observed == expected` on every layer, symmetrically for both arms."""
+    layers: dict[str, dict[str, Any]] = {}
+    for event in EVENTS:
+        base_only: list[str] = []
+        probe_only: list[str] = []
+        base_true = probe_true = base_agree = probe_agree = 0
+        for corpus_id in corpus_ids:
+            base_observed, _ = observation(baseline_groups.get(corpus_id, {}), event)
+            probe_observed, _ = observation(probe_groups.get(corpus_id, {}), event)
+            base_hit = agrees(baseline_groups, corpus_id, event)
+            probe_hit = agrees(probe_groups, corpus_id, event)
+            base_true += int(base_observed is True)
+            probe_true += int(probe_observed is True)
+            base_agree += int(base_hit)
+            probe_agree += int(probe_hit)
+            if base_hit and not probe_hit:
+                base_only.append(corpus_id)
+            if probe_hit and not base_hit:
+                probe_only.append(corpus_id)
+        layers[event] = {
+            # `route_class` is nominal, so an observed-true count does not exist for it.
+            "baseline_observed_true": None if event == "route_class" else base_true,
+            "probe_observed_true": None if event == "route_class" else probe_true,
+            "baseline_agreement": base_agree,
+            "probe_agreement": probe_agree,
+            "base_only": base_only,
+            "wave_only": probe_only,
+            "discordant": len(base_only) + len(probe_only),
+            "mcnemar_exact_p": wave1.mcnemar_exact(len(base_only), len(probe_only)),
+        }
+    return {"ids": corpus_ids, "layers": layers}
+
+
+def behavioural_gate(agreement: dict[str, Any], n_complete: int) -> dict[str, Any]:
     if n_complete < MIN_PAIRED_IDS:
         return {"verdict": "inconclusive", "n": n_complete, "reason": f"only {n_complete}/{len(PROBE_IDS)} probe items carry all four layers (< {MIN_PAIRED_IDS})"}
-    dropped = [event for event in EVENTS if paired["layers"][event]["wave1_successes"] < paired["layers"][event]["baseline_successes"]]
+    dropped = [event for event in EVENTS if agreement["layers"][event]["probe_agreement"] < agreement["layers"][event]["baseline_agreement"]]
     summary = ", ".join(
-        f"{event} {paired['layers'][event]['wave1_successes']}/10 vs {paired['layers'][event]['baseline_successes']}/10"
+        f"{event} {agreement['layers'][event]['probe_agreement']}/10 vs {agreement['layers'][event]['baseline_agreement']}/10"
         for event in EVENTS
     )
     if dropped:
-        return {"verdict": "fail", "n": n_complete, "reason": "paired point estimate below baseline on " + ", ".join(dropped) + ": " + summary}
-    return {"verdict": "pass", "n": n_complete, "reason": "no layer's paired point estimate is below baseline: " + summary}
+        return {"verdict": "fail", "n": n_complete, "reason": "paired agreement below baseline on " + ", ".join(dropped) + ": " + summary}
+    return {"verdict": "pass", "n": n_complete, "reason": "no layer's paired agreement is below baseline: " + summary}
 
 
 def build_metrics() -> dict[str, Any]:
@@ -163,18 +231,19 @@ def build_metrics() -> dict[str, Any]:
     probe = wave1.build_per_items(groups, list(PROBE_IDS))
     baseline = wave1.build_per_items(baseline_groups, list(FROZEN))
     paired = wave1.paired_comparison(baseline, probe, list(FROZEN))
+    agreement = paired_agreement(baseline_groups, groups, list(FROZEN))
     n_complete = sum(1 for item in probe.values() if item["event_complete"])
     closing = closing_block(probe)
     spend = budget(probe)
     twoturn = two_turn()
     gates = {
-        "todo6_behaviour": behavioural_gate(paired, n_complete),
+        "todo6_behaviour": behavioural_gate(agreement, n_complete),
         "todo8_closing_block": {
             "verdict": closing["verdict"],
             "n": closing["wilson95"]["n"],
             "reason": f"{closing['wilson95']['k']}/{closing['wilson95']['n']} complete ({pct(closing['wilson95']['rate'])}), threshold {pct(CLOSING_THRESHOLD)}; denominator = frozen execute-contract ids (c01-c04, c07) + c27",
         },
-        "todo9_no_regression": behavioural_gate(paired, n_complete),
+        "todo9_no_regression": behavioural_gate(agreement, n_complete),
     }
     return {
         "image": IMAGE,
@@ -200,8 +269,9 @@ def build_metrics() -> dict[str, Any]:
             )
         ],
         "layers_probe11": {event: wave1.layer_summary(probe, list(PROBE_IDS))[event] for event in EVENTS},
-        "layers_baseline10": {event: wave1.layer_summary(baseline, list(FROZEN))[event] for event in EVENTS},
+        "agreement_probe11": agreement_summary(groups, list(PROBE_IDS)),
         "paired": paired,
+        "paired_agreement": agreement,
         "closing_block": closing,
         "budget": spend,
         "two_turn": twoturn,
@@ -210,7 +280,7 @@ def build_metrics() -> dict[str, Any]:
 
 
 def render_report(m: dict[str, Any]) -> str:
-    paired = m["paired"]["layers"]
+    agreement = m["paired_agreement"]["layers"]
     closing = m["closing_block"]
     spend = m["budget"]
     two = m["two_turn"]
@@ -245,23 +315,39 @@ def render_report(m: dict[str, Any]) -> str:
         "",
         "## 2. Paired comparison on the frozen ten",
         "",
-        "Criterion: same `analyze_wave1.py` instrument. For `route_class`, success is"
-        " `observed == expected`; for the other three layers, success is `observed is True`.",
+        "Criterion: the gate metric is **agreement** = `observed == expected` on every layer,"
+        " computed identically for both arms from the committed JSONL. The observed-true column"
+        " is kept beside it so the previous revision's numbers stay auditable.",
+        "observed-true is not a gate metric on this corpus: `params_compiled` is expected FALSE"
+        " for clarify and direct-answer items, so scoring `observed is True` rewards"
+        " over-execution — the baseline's 9/10 there is its defect, not its quality.",
         "",
-        "| layer | baseline k/10 | probe k/10 | delta | baseline-only | probe-only | discordant | exact McNemar p |",
-        "|---|---|---|---|---|---|---|---|",
+        "| layer | baseline observed-true | probe observed-true | baseline agreement | probe agreement | delta (agreement) | baseline-only | probe-only | discordant | exact McNemar p |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for event in EVENTS:
-        row = paired[event]
-        delta = f"{(row['wave1_successes'] - row['baseline_successes']) * 10:+.0f} pp"
+        row = agreement[event]
+        delta = f"{(row['probe_agreement'] - row['baseline_agreement']) * 10:+.0f} pp"
+        observed_true = [
+            "—" if row[key] is None else str(row[key])
+            for key in ("baseline_observed_true", "probe_observed_true")
+        ]
         lines.append(
-            f"| `{event}` | {row['baseline_successes']} | {row['wave1_successes']} | {delta} | "
+            f"| `{event}` | {observed_true[0]} | {observed_true[1]} | "
+            f"{row['baseline_agreement']} | {row['probe_agreement']} | {delta} | "
             f"{', '.join(row['base_only']) or '—'} | {', '.join(row['wave_only']) or '—'} | "
             f"{row['discordant']} | {row['mcnemar_exact_p']:.4f} |"
         )
     lines += [
         "",
-        "Probe rates on all 11 items (descriptive): "
+        "`route_class` is nominal (`observed` is a class name, not a boolean), so it has no"
+        " observed-true count; its 6 → 7 was already an agreement count in the previous revision.",
+        "",
+        "Agreement on all 11 items (descriptive, same definition as the gate): "
+        + "; ".join(
+            f"`{event}` {m['agreement_probe11'][event]['successes']}/11 ({pct(m['agreement_probe11'][event]['rate'])})"
+            for event in EVENTS
+        ) + ". Observed-true on all 11 items (descriptive, not gated): "
         + "; ".join(
             f"`{event}` {m['layers_probe11'][event]['successes']}/11 ({pct(m['layers_probe11'][event]['rate'])})"
             for event in EVENTS
@@ -269,29 +355,34 @@ def render_report(m: dict[str, Any]) -> str:
         "",
         "## 3. Closing block",
         "",
-        "Denominator: the frozen execute-contract items `c01,c02,c03,c04,c07` plus `c27`."
+        "Denominator: the frozen execute-contract items `c01,c02,c03,c04,c07` plus `c27`"
+        " (6 ids); a second denominator counts only the ids that emitted an artifact."
         " Each row is checked with `checks.find_closing_block` on the stored answer text.",
         "",
-        "| id | observed route | complete | missing lines | chars |",
-        "|---|---|---|---|---|",
+        "| id | observed route | complete | missing lines | chars | note |",
+        "|---|---|---|---|---|---|",
     ]
     for row in closing["rows"]:
         lines.append(
             f"| `{row['id']}` | {row['route'] or '—'} | {'yes' if row['complete'] else 'no'} | "
-            f"{'、'.join(row['missing']) or '—'} | {row['text_chars']} |"
+            f"{'、'.join(row['missing']) or '—'} | {row['text_chars']} | {row['note'] or '—'} |"
         )
     artifact = closing["artifact_only"]
     lines += [
         "",
-        f"Occurrence: **{closing['wilson95']['k']}/{closing['wilson95']['n']} = {pct(closing['wilson95']['rate'])}** "
-        f"(Wilson 95% {ci(closing['wilson95'])}); threshold {pct(CLOSING_THRESHOLD)} → **`{closing['verdict']}`**.",
-        f"Artifact-only sensitivity (excludes the timed-out, artifact-less `c02`): "
-        f"**{artifact['k']}/{artifact['n']} = {pct(artifact['k'] / artifact['n'])}**; still below threshold.",
+        f"Contract denominator: **{closing['wilson95']['k']}/{closing['wilson95']['n']} = {pct(closing['wilson95']['rate'])}** "
+        f"(Wilson 95% {ci(closing['wilson95'])}). "
+        f"Emitted-artifact denominator (`{', '.join(artifact['ids'])}`): "
+        f"**{artifact['k']}/{artifact['n']} = {pct(artifact['k'] / artifact['n'])}**. "
+        f"Both are below the {pct(CLOSING_THRESHOLD)} threshold → **`{closing['verdict']}`**.",
         "",
-        "`c02` hit the 600 s cap before emitting its artifact (the recovered text stops at the"
-        " screening pipeline and carries none of the four lines). `c27` ran as a clarification"
-        " turn and closed with a plain disclaimer that says `数据截止 2026-10-28`, not `T-1`;"
-        " all four canonical lines are therefore missing.",
+        "`c02` produced **no artifact** — the 600 s cap fired and the recovered session is"
+        " truncated mid-tool-loop — and it counts as a miss because the contract says an"
+        " artifact-bearing request must end with the block, and this request ended without an"
+        " artifact.",
+        "`c27` **emitted an artifact** but rewrote `数据截止 T-1` into a concrete date"
+        " (`数据截止 2026-10-28`), so it is a **contract-compliance miss**, not a routing miss;"
+        " all four canonical lines are missing.",
         "",
         "## 4. Two-turn clarification probe",
         "",

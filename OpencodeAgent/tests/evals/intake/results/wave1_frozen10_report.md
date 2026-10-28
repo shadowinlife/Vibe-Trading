@@ -21,34 +21,37 @@ Image: `opencode-serve:v3.11.1-onboarding-20261028-71572199-fix1`. This is an **
 
 ## 2. Paired comparison on the frozen ten
 
-Criterion: same `analyze_wave1.py` instrument. For `route_class`, success is `observed == expected`; for the other three layers, success is `observed is True`.
+Criterion: the gate metric is **agreement** = `observed == expected` on every layer, computed identically for both arms from the committed JSONL. The observed-true column is kept beside it so the previous revision's numbers stay auditable.
+observed-true is not a gate metric on this corpus: `params_compiled` is expected FALSE for clarify and direct-answer items, so scoring `observed is True` rewards over-execution — the baseline's 9/10 there is its defect, not its quality.
 
-| layer | baseline k/10 | probe k/10 | delta | baseline-only | probe-only | discordant | exact McNemar p |
-|---|---|---|---|---|---|---|---|
-| `route_class` | 6 | 7 | +10 pp | c10 | c05, c08 | 3 | 1.0000 |
-| `intake_loaded` | 0 | 5 | +50 pp | — | c02, c03, c05, c06, c09 | 5 | 0.0625 |
-| `question_called` | 0 | 0 | +0 pp | — | — | 0 | 1.0000 |
-| `params_compiled` | 9 | 7 | -20 pp | c05, c08 | — | 2 | 0.5000 |
+| layer | baseline observed-true | probe observed-true | baseline agreement | probe agreement | delta (agreement) | baseline-only | probe-only | discordant | exact McNemar p |
+|---|---|---|---|---|---|---|---|---|---|
+| `route_class` | — | — | 6 | 7 | +10 pp | c10 | c05, c08 | 3 | 1.0000 |
+| `intake_loaded` | 0 | 5 | 5 | 8 | +30 pp | c09 | c02, c03, c05, c06 | 5 | 0.3750 |
+| `question_called` | 0 | 0 | 8 | 8 | +0 pp | — | — | 0 | 1.0000 |
+| `params_compiled` | 9 | 7 | 6 | 8 | +20 pp | — | c05, c08 | 2 | 0.5000 |
 
-Probe rates on all 11 items (descriptive): `route_class` 7/11 (63.6%); `intake_loaded` 6/11 (54.5%); `question_called` 0/11 (0.0%); `params_compiled` 8/11 (72.7%).
+`route_class` is nominal (`observed` is a class name, not a boolean), so it has no observed-true count; its 6 → 7 was already an agreement count in the previous revision.
+
+Agreement on all 11 items (descriptive, same definition as the gate): `route_class` 7/11 (63.6%); `intake_loaded` 9/11 (81.8%); `question_called` 8/11 (72.7%); `params_compiled` 8/11 (72.7%). Observed-true on all 11 items (descriptive, not gated): `route_class` 7/11 (63.6%); `intake_loaded` 6/11 (54.5%); `question_called` 0/11 (0.0%); `params_compiled` 8/11 (72.7%).
 
 ## 3. Closing block
 
-Denominator: the frozen execute-contract items `c01,c02,c03,c04,c07` plus `c27`. Each row is checked with `checks.find_closing_block` on the stored answer text.
+Denominator: the frozen execute-contract items `c01,c02,c03,c04,c07` plus `c27` (6 ids); a second denominator counts only the ids that emitted an artifact. Each row is checked with `checks.find_closing_block` on the stored answer text.
 
-| id | observed route | complete | missing lines | chars |
-|---|---|---|---|---|
-| `c01` | execute_with_defaults | yes | — | 2460 |
-| `c02` | execute_with_defaults | no | 我假设了什么：、换一个会怎样：、下一步能做什么：、仅供研究，不构成投资建议；数据截止 T-1。 | 580 |
-| `c03` | execute_with_defaults | yes | — | 2624 |
-| `c04` | execute_with_defaults | yes | — | 2123 |
-| `c07` | execute_with_defaults | yes | — | 2950 |
-| `c27` | refuse | no | 我假设了什么：、换一个会怎样：、下一步能做什么：、仅供研究，不构成投资建议；数据截止 T-1。 | 2363 |
+| id | observed route | complete | missing lines | chars | note |
+|---|---|---|---|---|---|
+| `c01` | execute_with_defaults | yes | — | 2460 | — |
+| `c02` | execute_with_defaults | no | 我假设了什么：、换一个会怎样：、下一步能做什么：、仅供研究，不构成投资建议；数据截止 T-1。 | 580 | no artifact (600 s cap, recovered session truncated mid-tool-loop); counted as a miss because the request ended without an artifact |
+| `c03` | execute_with_defaults | yes | — | 2624 | — |
+| `c04` | execute_with_defaults | yes | — | 2123 | — |
+| `c07` | execute_with_defaults | yes | — | 2950 | — |
+| `c27` | refuse | no | 我假设了什么：、换一个会怎样：、下一步能做什么：、仅供研究，不构成投资建议；数据截止 T-1。 | 2363 | emitted an artifact; contract-compliance miss (rewrote `数据截止 T-1` as a concrete date), not a routing miss |
 
-Occurrence: **4/6 = 66.7%** (Wilson 95% [30.0%, 90.3%]); threshold 90.0% → **`fail`**.
-Artifact-only sensitivity (excludes the timed-out, artifact-less `c02`): **4/5 = 80.0%**; still below threshold.
+Contract denominator: **4/6 = 66.7%** (Wilson 95% [30.0%, 90.3%]). Emitted-artifact denominator (`c01, c03, c04, c07, c27`): **4/5 = 80.0%**. Both are below the 90.0% threshold → **`fail`**.
 
-`c02` hit the 600 s cap before emitting its artifact (the recovered text stops at the screening pipeline and carries none of the four lines). `c27` ran as a clarification turn and closed with a plain disclaimer that says `数据截止 2026-10-28`, not `T-1`; all four canonical lines are therefore missing.
+`c02` produced **no artifact** — the 600 s cap fired and the recovered session is truncated mid-tool-loop — and it counts as a miss because the contract says an artifact-bearing request must end with the block, and this request ended without an artifact.
+`c27` **emitted an artifact** but rewrote `数据截止 T-1` into a concrete date (`数据截止 2026-10-28`), so it is a **contract-compliance miss**, not a routing miss; all four canonical lines are missing.
 
 ## 4. Two-turn clarification probe
 
@@ -71,9 +74,9 @@ Budget verdict: **`fail`**.
 
 | todo | verdict | n | exact criterion | reason |
 |---|---|---|---|---|
-| `todo6_behaviour` | `fail` | 11 | no layer's paired point estimate below baseline on the 10 frozen ids; `inconclusive` if <8 ids have all four layers | paired point estimate below baseline on params_compiled: route_class 7/10 vs 6/10, intake_loaded 5/10 vs 0/10, question_called 0/10 vs 0/10, params_compiled 7/10 vs 9/10 |
+| `todo6_behaviour` | `pass` | 11 | no layer's paired point estimate below baseline on the 10 frozen ids; `inconclusive` if <8 ids have all four layers | no layer's paired agreement is below baseline: route_class 7/10 vs 6/10, intake_loaded 8/10 vs 5/10, question_called 8/10 vs 8/10, params_compiled 8/10 vs 6/10 |
 | `todo8_closing_block` | `fail` | 6 | complete/denominator ≥ 90.0% with denominator ≥ 5; `inconclusive` below that denominator | 4/6 complete (66.7%), threshold 90.0%; denominator = frozen execute-contract ids (c01-c04, c07) + c27 |
-| `todo9_no_regression` | `fail` | 11 | same paired criterion as `todo6_behaviour` | paired point estimate below baseline on params_compiled: route_class 7/10 vs 6/10, intake_loaded 5/10 vs 0/10, question_called 0/10 vs 0/10, params_compiled 7/10 vs 9/10 |
+| `todo9_no_regression` | `pass` | 11 | same paired criterion as `todo6_behaviour` | no layer's paired agreement is below baseline: route_class 7/10 vs 6/10, intake_loaded 8/10 vs 5/10, question_called 8/10 vs 8/10, params_compiled 8/10 vs 6/10 |
 
 ## 7. Limitations
 
@@ -99,6 +102,44 @@ wc -l tests/evals/intake/results/wave1_probe.jsonl
 <!-- wave1-probe:begin -->
 ```json
 {
+  "agreement_probe11": {
+    "intake_loaded": {
+      "high": 0.94863231,
+      "k": 9,
+      "low": 0.523019438,
+      "method": "wilson score interval (95%, z=1.959964)",
+      "n": 11,
+      "rate": 0.818181818,
+      "successes": 9
+    },
+    "params_compiled": {
+      "high": 0.902539407,
+      "k": 8,
+      "low": 0.434354699,
+      "method": "wilson score interval (95%, z=1.959964)",
+      "n": 11,
+      "rate": 0.727272727,
+      "successes": 8
+    },
+    "question_called": {
+      "high": 0.902539407,
+      "k": 8,
+      "low": 0.434354699,
+      "method": "wilson score interval (95%, z=1.959964)",
+      "n": 11,
+      "rate": 0.727272727,
+      "successes": 8
+    },
+    "route_class": {
+      "high": 0.848335289,
+      "k": 7,
+      "low": 0.353801175,
+      "method": "wilson score interval (95%, z=1.959964)",
+      "n": 11,
+      "rate": 0.636363636,
+      "successes": 7
+    }
+  },
   "budget": {
     "ids": [
       "c01",
@@ -156,6 +197,7 @@ wc -l tests/evals/intake/results/wave1_probe.jsonl
         "complete": true,
         "id": "c01",
         "missing": [],
+        "note": "",
         "route": "execute_with_defaults",
         "text_chars": 2460
       },
@@ -169,6 +211,7 @@ wc -l tests/evals/intake/results/wave1_probe.jsonl
           "下一步能做什么：",
           "仅供研究，不构成投资建议；数据截止 T-1。"
         ],
+        "note": "no artifact (600 s cap, recovered session truncated mid-tool-loop); counted as a miss because the request ended without an artifact",
         "route": "execute_with_defaults",
         "text_chars": 580
       },
@@ -177,6 +220,7 @@ wc -l tests/evals/intake/results/wave1_probe.jsonl
         "complete": true,
         "id": "c03",
         "missing": [],
+        "note": "",
         "route": "execute_with_defaults",
         "text_chars": 2624
       },
@@ -185,6 +229,7 @@ wc -l tests/evals/intake/results/wave1_probe.jsonl
         "complete": true,
         "id": "c04",
         "missing": [],
+        "note": "",
         "route": "execute_with_defaults",
         "text_chars": 2123
       },
@@ -193,6 +238,7 @@ wc -l tests/evals/intake/results/wave1_probe.jsonl
         "complete": true,
         "id": "c07",
         "missing": [],
+        "note": "",
         "route": "execute_with_defaults",
         "text_chars": 2950
       },
@@ -206,6 +252,7 @@ wc -l tests/evals/intake/results/wave1_probe.jsonl
           "下一步能做什么：",
           "仅供研究，不构成投资建议；数据截止 T-1。"
         ],
+        "note": "emitted an artifact; contract-compliance miss (rewrote `数据截止 T-1` as a concrete date), not a routing miss",
         "route": "refuse",
         "text_chars": 2363
       }
@@ -224,8 +271,8 @@ wc -l tests/evals/intake/results/wave1_probe.jsonl
   "gates": {
     "todo6_behaviour": {
       "n": 11,
-      "reason": "paired point estimate below baseline on params_compiled: route_class 7/10 vs 6/10, intake_loaded 5/10 vs 0/10, question_called 0/10 vs 0/10, params_compiled 7/10 vs 9/10",
-      "verdict": "fail"
+      "reason": "no layer's paired agreement is below baseline: route_class 7/10 vs 6/10, intake_loaded 8/10 vs 5/10, question_called 8/10 vs 8/10, params_compiled 8/10 vs 6/10",
+      "verdict": "pass"
     },
     "todo8_closing_block": {
       "n": 6,
@@ -234,49 +281,11 @@ wc -l tests/evals/intake/results/wave1_probe.jsonl
     },
     "todo9_no_regression": {
       "n": 11,
-      "reason": "paired point estimate below baseline on params_compiled: route_class 7/10 vs 6/10, intake_loaded 5/10 vs 0/10, question_called 0/10 vs 0/10, params_compiled 7/10 vs 9/10",
-      "verdict": "fail"
+      "reason": "no layer's paired agreement is below baseline: route_class 7/10 vs 6/10, intake_loaded 8/10 vs 5/10, question_called 8/10 vs 8/10, params_compiled 8/10 vs 6/10",
+      "verdict": "pass"
     }
   },
   "image": "opencode-serve:v3.11.1-onboarding-20261028-71572199-fix1",
-  "layers_baseline10": {
-    "intake_loaded": {
-      "high": 0.2775328,
-      "k": 0,
-      "low": 0.0,
-      "method": "wilson score interval (95%, z=1.959964)",
-      "n": 10,
-      "rate": 0.0,
-      "successes": 0
-    },
-    "params_compiled": {
-      "high": 0.982123787,
-      "k": 9,
-      "low": 0.595849973,
-      "method": "wilson score interval (95%, z=1.959964)",
-      "n": 10,
-      "rate": 0.9,
-      "successes": 9
-    },
-    "question_called": {
-      "high": 0.2775328,
-      "k": 0,
-      "low": 0.0,
-      "method": "wilson score interval (95%, z=1.959964)",
-      "n": 10,
-      "rate": 0.0,
-      "successes": 0
-    },
-    "route_class": {
-      "high": 0.83181967,
-      "k": 6,
-      "low": 0.31267377,
-      "method": "wilson score interval (95%, z=1.959964)",
-      "n": 10,
-      "rate": 0.6,
-      "successes": 6
-    }
-  },
   "layers_probe11": {
     "intake_loaded": {
       "high": 0.787287284,
@@ -373,6 +382,77 @@ wc -l tests/evals/intake/results/wave1_probe.jsonl
         "discordant": 3,
         "mcnemar_exact_p": 1.0,
         "wave1_successes": 7,
+        "wave_only": [
+          "c05",
+          "c08"
+        ]
+      }
+    }
+  },
+  "paired_agreement": {
+    "ids": [
+      "c01",
+      "c02",
+      "c03",
+      "c04",
+      "c05",
+      "c06",
+      "c07",
+      "c08",
+      "c09",
+      "c10"
+    ],
+    "layers": {
+      "intake_loaded": {
+        "base_only": [
+          "c09"
+        ],
+        "baseline_agreement": 5,
+        "baseline_observed_true": 0,
+        "discordant": 5,
+        "mcnemar_exact_p": 0.375,
+        "probe_agreement": 8,
+        "probe_observed_true": 5,
+        "wave_only": [
+          "c02",
+          "c03",
+          "c05",
+          "c06"
+        ]
+      },
+      "params_compiled": {
+        "base_only": [],
+        "baseline_agreement": 6,
+        "baseline_observed_true": 9,
+        "discordant": 2,
+        "mcnemar_exact_p": 0.5,
+        "probe_agreement": 8,
+        "probe_observed_true": 7,
+        "wave_only": [
+          "c05",
+          "c08"
+        ]
+      },
+      "question_called": {
+        "base_only": [],
+        "baseline_agreement": 8,
+        "baseline_observed_true": 0,
+        "discordant": 0,
+        "mcnemar_exact_p": 1.0,
+        "probe_agreement": 8,
+        "probe_observed_true": 0,
+        "wave_only": []
+      },
+      "route_class": {
+        "base_only": [
+          "c10"
+        ],
+        "baseline_agreement": 6,
+        "baseline_observed_true": null,
+        "discordant": 3,
+        "mcnemar_exact_p": 1.0,
+        "probe_agreement": 7,
+        "probe_observed_true": null,
         "wave_only": [
           "c05",
           "c08"
