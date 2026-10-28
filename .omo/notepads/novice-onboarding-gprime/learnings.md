@@ -113,3 +113,10 @@ _Auto-scaffolded by /ulw-execute. Append new entries below - never overwrite._
 - **Wall**: 72 runs recorded, 3 ok / 69 run_error / 0 incomplete; ok runs were 161.4s, 166.4s, 195.2s (mean 174.326s). The three ok runs completed by validating artifacts left by earlier runs in the shared `/workspace`; no cell reached two usable repeats. Recovery count 0 (no short-answer race).
 - **Verdict headline**: all six slots INCONCLUSIVE; kill criterion not fired (0/6 default-worthy). The 240s per-run budget is the binding constraint, not an observed absence of slot effect. Todo 12 must not take a default set from this run; a re-run with a larger per-run budget (baseline used 1800s) is required.
 - **Harness**: `run_slots.py` reuses `../run.py`'s `parse_stream` / `recover_stream`; `judge.py --write` emits every verdict table row and `--check` recomputes with zero tolerance; the `judge_spec.json` digest is recorded in `results.json` before the first run.
+
+## 2026-10-28 — todo 6: clarification protocol moved to intake skill (Wave 1)
+
+- **Moved**: `OpencodeAgent/AGENTS.md:66-125`（四类分支细节、漏斗、槽位清单、轮次预算、Step-Back 全文）下沉到 `OpencodeAgent/skills/intake/SKILL.md`；AGENTS.md 只保留四类分流表 + 三行指针，389 → 343 行（≤350）。
+- **Single-source files**: 轮次规则唯一存在于 `skills/intake/SKILL.md`（`tests/test_agents_md.py` 扫 AGENTS.md + `skills/**/SKILL.md` 断言唯一命中）；行数预算唯一常量 `tests/test_config_render.py:AGENTS_MD_MAX_LINES = 350`，由 test_agents_md 直接 import。场景 C（`research-scenarios`）改为一行指针，intake 正文不含「场景 C」，消除互指。
+- **Second-round exception (intentional semantic change)**: 默认 1 轮 ≤3 问；仅当用户明确答「不知道 / 不确定」时追加 1 轮且只问该槽位；第三次提问仍禁止。旧 AGENTS.md 原文禁止任何第二轮，故这是有意的语义变更，不是等价搬移。
+- **Pending**: 验收项⑥（40 条语料四层分率重跑，点估计不降且 CI 不含显著恶化）**未执行** —— 机器被 todo 3 兄弟 lane 占用；todo 6 仅完成结构面验证（58 passed），`intake_loaded` 期望 >0 待下个 checkpoint 确认，不得声称已行为验证。
