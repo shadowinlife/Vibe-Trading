@@ -9,6 +9,8 @@ inlined in ``entrypoint.sh``:
   removed from the model's visible tool surface.
 - Per-agent tool scoping keeps finance MCP tools away from agents that do
   not need them (explore / multimodal-looker).
+- The ``question`` tool is enabled only for user-selectable primary agents;
+  subagents must never ask (they have no interactive renderer and hang).
 - ``oh-my-openagent.json`` model/effort invariants (all agents DeepSeek;
   high/max reasoning tiers).
 - ``AGENTS.md`` stays within the always-loaded context budget.
@@ -29,7 +31,9 @@ CONFIG_DIR = OPENCODE_AGENT_DIR / "config"
 TEMPLATE_PATH = CONFIG_DIR / "opencode.json.tmpl"
 MANIFEST_PATH = CONFIG_DIR / "vibe-trading-tools.json"
 AGENTS_MD_PATH = OPENCODE_AGENT_DIR / "AGENTS.md"
+OMO_CONFIG_PATH = CONFIG_DIR / "oh-my-openagent.json"
 SCENARIOS_SKILL_PATH = OPENCODE_AGENT_DIR / "skills" / "research-scenarios" / "SKILL.md"
+INTAKE_SKILL_PATH = OPENCODE_AGENT_DIR / "skills" / "intake" / "SKILL.md"
 
 # Always-loaded instruction budget: every AGENTS.md line is paid on every
 # turn, so growth must be deliberate. Scenario playbooks live in the
@@ -91,6 +95,16 @@ DIRECT_MODE_GOLDEN = """\
     }
   },
   "agent": {
+    "build": {
+      "permission": {
+        "question": "allow"
+      }
+    },
+    "plan": {
+      "permission": {
+        "question": "allow"
+      }
+    },
     "explore": {
       "permission": {
         "vibe-trading_*": "deny"
@@ -261,6 +275,59 @@ class TestPerAgentToolScoping:
     def test_finance_mcp_tools_denied_for_non_finance_agents(self, agent_name):
         permission = _rendered()["agent"][agent_name]["permission"]
         assert permission["vibe-trading_*"] == "deny"
+
+
+class TestQuestionToolPermission:
+    """``question`` is granted per agent (``agent.<name>.permission.question``).
+
+    Tool registration is gated by the serve/web client or
+    ``OPENCODE_ENABLE_QUESTION_TOOL``; the per-agent permission is what lets
+    a custom primary agent actually ask, instead of rendering its questions
+    as plain text. Subagents must never get it: a question raised from a
+    nested subagent has no interactive renderer and hangs the run
+    (Metis A4/A13).
+
+    The user-selectable primary set is ``{build, plan}`` plus every agent in
+    ``oh-my-openagent.json`` declaring ``mode: "primary"``. Verified
+    2026-10-28: no agent in that file declares ``mode``, so the set is
+    exactly ``{build, plan}``. The set is enumerated dynamically so a future
+    ``mode: primary`` addition fails here rather than silently shipping
+    without the permission.
+    """
+
+    def _expected_primary_agents(self) -> set[str]:
+        with open(OMO_CONFIG_PATH, encoding="utf-8") as f:
+            omo = json.load(f)
+        declared_primary = {
+            name
+            for name, spec in omo["agents"].items()
+            if spec.get("mode") == "primary"
+        }
+        return declared_primary | {"build", "plan"}
+
+    def test_every_user_selectable_primary_agent_can_ask(self):
+        agents = _rendered()["agent"]
+        for agent_name in self._expected_primary_agents():
+            permission = agents[agent_name]["permission"]
+            assert permission["question"] == "allow", agent_name
+
+    def test_subagents_never_get_question_permission(self):
+        agents = _rendered()["agent"]
+        for agent_name in ("explore", "multimodal-looker", "librarian"):
+            permission = agents.get(agent_name, {}).get("permission", {})
+            assert permission.get("question") != "allow", agent_name
+        asking = {
+            name
+            for name, spec in agents.items()
+            if spec.get("permission", {}).get("question") == "allow"
+        }
+        assert asking == self._expected_primary_agents()
+
+    def test_non_interactive_sessions_must_not_ask(self):
+        """The template has no way to say "interactive sessions only", so the
+        non-interactive rule lives in the intake skill's execution contract."""
+        body = INTAKE_SKILL_PATH.read_text(encoding="utf-8")
+        assert "非交互会话（cron / headless `opencode run` / IM）不得调用 question" in body
 
 
 class TestOmoModelConfig:

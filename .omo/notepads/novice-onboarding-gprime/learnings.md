@@ -135,3 +135,11 @@ _Auto-scaffolded by /ulw-execute. Append new entries below - never overwrite._
 - **Command list endpoint (todo 7)**: `/doc` advertises both `/command` and `/api/command`, but only `GET /command?directory=/workspace` is scoped to the workspace project — `/api/command` ignores `directory` and answers from the global project (`location.directory: "/"`, only `init`/`review`), so smoke discovers the path from `/doc` and always passes `directory`.
 - **`/checkup` runtime outcome (todo 7)**: one `opencode run --attach http://127.0.0.1:4096 --dir /workspace --command checkup --format json "600519"` session (7m41s wall on QEMU amd64) produced a non-empty assistant reply: "I detect implementation/analysis intent — a structured stock checkup on 600519 (贵州茅台) requiring the scenario A workflow…".
 - **Dev image (todo 7)**: `opencode-serve:onboarding-w1-89e398f5` (`sha256:e0c397f440b9…`, 4.15GB), built with `DOCKER_BUILDKIT=0` because buildkit tries to pull `opencode-serve-base:latest` from the mirror and gets `pull access denied` (the cached local base must be used); todo 11 rebuilds the delivery image.
+- **question 权限枚举 (todo 10)**: `config/oh-my-openagent.json` 的 14 个 agent 均未声明 `mode`，故 primary 集合 = `{build, plan}`；测试仍动态枚举 `mode == "primary"`，未来新增 primary 未加 permission 会失败而不是静默漏过。
+- **Golden 再生成 (todo 10)**: `DIRECT_MODE_GOLDEN` 必须先跑 renderer（清空 CLICKHOUSE_*/LLM_*/HOSTNAME 的 fixture 环境）拿到真实输出再回填，手改 golden 即使碰巧通过也是缺陷；本次差异仅在 `agent` 段新增 build/plan 的 `permission.question = "allow"`。
+- **非交互限制 (todo 10)**: 模板无法表达「question 仅交互会话可用」，该限制写入 `skills/intake/SKILL.md` 执行承诺第 5 条（cron / headless `opencode run` / IM 不得调用 question），并由 `test_non_interactive_sessions_must_not_ask` 断言。
+
+- **todo 9 removed block**: `OpencodeAgent/AGENTS.md:191-220` = `# 能力索引` heading + 29 行表（表头 + 分隔 + 27 数据行）；整表逐字迁至附录，与 `git show HEAD:OpencodeAgent/AGENTS.md` 逐行比对 29/29 identical、0 diff。
+- **todo 9 appendix**: `OpencodeAgent/skills/research-scenarios/SKILL.md` 末尾新增 `## 附录：能力索引（按需查阅）`（第 225 行起；文件 223 → 257 行），表格行数 27，与冻结常量 `CAPABILITY_INDEX_DATA_ROWS = 27` 一致。
+- **todo 9 AGENTS.md**: 343 → 328 行（≤350），`# 能力索引` 原位替换为 `# 产物索引（8 个具名产物）`（5 列 × 8 行）+ 兜底行；`pytest tests/test_agents_md.py tests/test_config_render.py` 81 passed。
+- **todo 9 pending**: 40 条语料 harness behavioral regression（todo 6 同判据）**未运行**，由另一 lane 负责；本 todo 只做结构面验证，不得声称已行为验证。
