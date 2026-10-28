@@ -1,7 +1,7 @@
 # F1 计划符合性审计 — novice-onboarding-gprime
 
 - 审计日期：2026-10-28
-- 复审：2026-10-29（文末「Re-audit 2026-10-28」，HEAD `ec22686e`，`d6bbbd6c~1..HEAD` 49 commits）
+- 复审：2026-10-29（文末「Re-audit 2026-10-28」，被审 HEAD `ec22686e` / 49 commits；二次复核时 HEAD `4aab6cf4`（含上一版报告），`d6bbbd6c~1..HEAD` 50 commits）
 - 审计范围：`.omo/plans/novice-onboarding-gprime.md` 的 todo 1–15、commit 粒度、DCO、AI trailer
 - 分支：`mymain`
 - 审计区间：`d6bbbd6c~1..HEAD`（45 个 commit）。任务书给的是 `4fcdad7e~1..HEAD`；该区间少算了一个 commit，把 todo 4 的 `d6bbbd6c` 排除在外。见 §6 G7。
@@ -32,7 +32,7 @@
 | 11 | `results/image_delivery.md`、`results/image_build.log`、`tests/smoke-v311.sh` | 镜像 tag `opencode-serve:v3.11.0-onboarding-20261028-6e635820`；Image `Id sha256:7b6c5d1b…`；`image_build.log` 648 行；`SMOKE_OK`；**无 `RepoDigest`**（本地构建、从未 push），交付文档明确写「不要编造 digest」 | `967968cd` | 是 | met（偏差：没有 repo digest；用 Image Id 作内容身份并已记录，见 §6 G2） |
 | 12 | `skills/intake/SKILL.md`、`tests/evals/intake/brief.schema.json`、`tests/test_intake_brief.py`、`brief_validation.py`、`fixtures/tool_list.json` | `pytest tests/test_intake_brief.py` → **13 passed**；槽位默认值表（六公共槽位 INCONCLUSIVE → 默认化，仅成本价/仓位规模提问）+ 选项→工具参数编译表；编译表工具名逐行在 `tool_list.json` 快照中存在 | `7d606d3e` | 是 | met |
 | 13 | `AGENTS.md` 产物索引（场景/Skill 列 + 菜单外兜底行）、`tests/test_agents_md.py` | `pytest tests/test_agents_md.py` → **37 passed**：8 行映射逐格断言、兜底行存在、`AGENTS.md` ≤350 | `f3d39b40` | 是 | met |
-| 14 | `tests/evals/intake/ab/{corpus_ab.jsonl,run_ab.py,ab_analysis.py,ab_report.md,judge_spec.json}`、`tests/test_ab_assets.py` | `pytest tests/test_ab_assets.py` → **7 passed**；`ab_analysis.py --check` **OK**；`ab_report.md`：n_pairs=**10**、eligible=**7**、p=**1.0**、verdict=**INCONCLUSIVE**（n_min=30，需 55 pairs） | `6ec79a9a` | 是 | **gap（`[x]` 仍过报，blocking）**：Acceptance 要求配对样本 ≥30；实际 n_pairs=**10**、eligible=**7**、p=**1.0**、verdict=**INCONCLUSIVE**、required N=**55**。计划 QA-failure 要求「INCONCLUSIVE **并升级**」，仓库内无升级记录，且计划自身把「升级」与「todo 完成」互斥（todo 2 第 91 行）。`[x]` 仍与 artifact 不一致（见 R3） |
+| 14 | `tests/evals/intake/ab/{corpus_ab.jsonl,run_ab.py,ab_analysis.py,ab_report.md,judge_spec.json}`、`tests/test_ab_assets.py` | `pytest tests/test_ab_assets.py` → **7 passed**；`ab_analysis.py --check` **OK**；`ab_report.md`：n_pairs=**10**、eligible=**7**、p=**1.0**、verdict=**INCONCLUSIVE**（n_min=30，需 55 pairs） | `6ec79a9a` | 是 | **gap（`[~]`，与 artifact 一致）**：Acceptance 要求配对样本 ≥30；实际 n_pairs=**10**、eligible=**7**、verdict=**INCONCLUSIVE**、required N=**55**。计划 QA-failure 要求「INCONCLUSIVE **并升级**」：第 196 行已改 `[~]`，执行记录第 8 条记录升级（30 对 / 60 会话 / 约 5 小时，待操作者裁决），`[~]` 不再过报（见 R9） |
 | 15 | `OpencodeAgent/README.md`、`mymain-wiki/agent-ux/2026-10-27-novice-onboarding-guidance.md`、`tests/test_readme_inventory.py` | `pytest tests/test_readme_inventory.py` → **8 passed**；README 6 skills / 4 commands；报告第 11 行有「已立项」；`git show --numstat ee620577 -- <report>` = **777 0**（0 deletions）；但 §13.5 仍写 `wave1_report.md` 尚未提交（实际已提交），见 §6 G6 | `ee620577` | 是 | met（README/链接/追加段达标；报告 §13.5 过期，计划 checkbox 仍为 `[ ]`） |
 
 ### 判定口径说明
@@ -330,14 +330,14 @@ BYTE_IDENTICAL
 |---|---|---|---|
 | 1 | Todo 6 的 40 条 Acceptance 未满足 | **resolved（表示层）** | 计划第 125 行改为 `[~]`，写出三次 attempt 的失败原因与 11 条探针四层数字；数字与 `wave1_frozen10_report.md` §6 逐项一致（route 7/10 vs 6/10、intake 8/10 vs 5/10、question 8/10 vs 8/10、params 8/10 vs 6/10）。40 条门未达标的事实保留，未用探针冒充 |
 | 2 | Todo 9 同判据未满足 | **resolved（表示层）** | 计划第 150 行改为 `[~]`，写明「同 todo 6，40 条非回归门未完成」；`pytest tests/test_agents_md.py` 37 passed 不变 |
-| 3 | Todo 14 配对样本 10 < 30 且无升级 | **STILL BLOCKING** | 见 R3 |
+| 3 | Todo 14 配对样本 10 < 30 且无升级 | **resolved（表示层 + 升级记录）** | 计划第 196 行改 `[~]` 并写明「10 对（有效 7）< 30，INCONCLUSIVE，N=55」；执行记录第 8 条给出升级动作（60 会话 / 约 5 小时 / `run_ab.py --dry-run` / 阈值冻结在 `judge_spec.json`）。`ab_report.md` 仍为 INCONCLUSIVE、N=55（`--check` OK）。见 R9 |
 | 4 | Wave 1 出口门被跳过 | **resolved（记录层）** | 计划「执行记录」第 2 条记录三次 attempt 与探针替代，并据此把 6/9 改 `[~]`。历史违规不可撤销；计划不再声称门通过，后果由 6/9 的 `[~]` 与 F3 承接。该条是计划级顺序门，不属 F1 的 per-todo 交付物口径，不另立 blocker |
 | 5 | 证据漂移 | **resolved** | R0 |
 | 6 | 预算 150 → ≥283 | **resolved（裁决 + 记录）** | 计划「执行记录」第 1 条：操作者裁决 Q1=A，上限 150 → ~320；按 artifact 重算实际 280（R4），≤ 放宽后的上限。计划第 63 行的「超限即停并报告」被满足：停了、报告了、操作者追加了预算 |
 
 三个点名要的决定：
 
-- **todo 14（n=10<30）是否 blocker？** 是，但原因不是「INCONCLUSIVE」。INCONCLUSIVE 是计划 Acceptance 明列的三种合法裁决句之一；blocker 是计划把 n<30 定义为 **QA failure**，处置是「INCONCLUSIVE **并升级**」，而仓库里没有升级记录。见 R3。
+- **todo 14（n=10<30）是否 blocker？** 复核时曾判 blocker（缺升级记录），现 **已解除**：计划第 196 行改 `[~]`，执行记录第 8 条把升级写成可执行动作（30 对 / 60 会话 / ~5 小时 / 复跑命令与冻结阈值）。INCONCLUSIVE 仍是合法裁决句，checkbox 也不再过报。见 R9。
 - **Wave 1 门被跳过，文档 + 诚实 `[~]` 是否可接受？** 是。F1 能要求的是「不冒充通过」，现在做到了；门本身没通过无法用文档修好，已如实交给 6/9 的 `[~]` 与 F3。
 - **预算超限是否因操作者裁决解除？** 是。Q1=A 把上限改到 ~320，实际 280 ≤ 320；走的是计划预设的「停下 → 报告 → 操作者裁决」路径。
 
@@ -348,11 +348,13 @@ BYTE_IDENTICAL
 | 6 | `[x]`（与 40 条 fail 矛盾） | `[~]` + gap 文本 | **一致** |
 | 8 | `[~]` + gap 文本 | `[~]` + gap 文本 + commit + F-wave 项 | **一致** |
 | 9 | `[x]`（与 40 条 fail 矛盾） | `[~]` + gap 文本 | **一致** |
-| 14 | `[x]`（与 n=10、INCONCLUSIVE 矛盾） | `[x]`（未改） | **不一致** |
+| 14 | `[x]`（与 n=10、INCONCLUSIVE 矛盾） | `[~]` + gap 文本 + 升级指针 | **一致** |
 
-三条 `[~]` 都写了具体数字、失败原因和证据文件，未出现「已达标」字样；与初审把 todo 8 的 `[~]` 判为「诚实」的口径保持连续。
+四条 `[~]`（6/8/9/14）都写了具体数字、失败原因和证据文件，未出现「已达标」字样；与初审把 todo 8 的 `[~]` 判为「诚实」的口径保持连续。
 
-### R3. Todo 14 仍是唯一 blocker
+### R3. Todo 14：复核时的 blocker（已由 R9 关闭）
+
+> 二次复核（R9）已关闭本条：计划改 `[~]`、升级记录落地。下文保留当时的判定依据。
 
 事实：
 
@@ -426,8 +428,13 @@ BYTE_IDENTICAL
 
 ### R8. 复审裁决
 
-- 6 条初审 blocking：**5 条 resolved**（todo 6、todo 9、Wave 1 门、证据漂移、预算），**1 条 still blocking**（todo 14）。
+- 6 条初审 blocking：**6 条 resolved**（todo 6、todo 9、Wave 1 门、证据漂移、预算；todo 14 在 R9 关闭）。
 - DCO 与 AI trailer 仍然干净：43/43 非 merge 有 `Signed-off-by`，0 个 AI trailer；3 个 merge 无 DCO 按任务口径 `n/a (merge)`。
-- 剩下的问题不是证据造假，而是一个 checkbox 仍把「pilot + INCONCLUSIVE」写成「完成」；证据漂移、`[~]` 诚实性与预算授权都已收口。
+- 全部 todo 的 checkbox 与 artifact 一致（6/8/9/14 均为 `[~]` 并带 gap）；证据漂移、`[~]` 诚实性、预算授权与 todo-14 升级均已收口。F1 放行。
 
-VERDICT: REJECT
+### R9. 二次复核（todo-14 升级落地，2026-10-29）
+
+- 复核四点全部成立：计划第 196 行 `[~]` + gap「10 对（有效 7）< 30，INCONCLUSIVE，N=55」+ 升级指针；执行记录第 8 条给出升级动作（30 对 / 60 会话 / 约 5 小时 / `run_ab.py --dry-run` / 阈值冻结在 `judge_spec.json`）；`ab_report.md` 仍 INCONCLUSIVE、N=55（`ab_analysis.py --check` OK）。
+- 区间变化：相对初审 45 个 commit，当前 50 个，新增 5 个——`8c4feddf`（plan，证据修复）、`0093e625`（audit，F1 报告）、`2b4d57c0`（audit，F2 报告）、`ec22686e`（plan，todo 7 smoke 修复）、`4aab6cf4`（audit，本报告）；相对被审 HEAD `ec22686e` 只多 `4aab6cf4`。复核时 HEAD `4aab6cf4`（本报告自身的 commit 不计入被审集合），无 blocker 残留。
+
+VERDICT: APPROVE
