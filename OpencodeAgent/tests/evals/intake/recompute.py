@@ -35,6 +35,7 @@ REPORT_BLOCK = re.compile(
     r"<!-- recompute:begin -->\s*```json\s*(\{.*?\})\s*```\s*<!-- recompute:end -->",
     re.DOTALL,
 )
+REPORT_BLOCK_FULL = re.compile(r"<!-- recompute:begin -->.*?<!-- recompute:end -->", re.DOTALL)
 
 
 def wilson(k: int, n: int) -> dict[str, float] | None:
@@ -283,6 +284,35 @@ def _published_from_report() -> Any:
     return json.loads(match.group(1))
 
 
+def write(metrics: dict[str, Any]) -> None:
+    """Rewrite the meta ``published`` block and the report's machine block."""
+    if not META_PATH.is_file():
+        raise SystemExit(f"--write: missing {META_PATH}")
+    meta = json.loads(META_PATH.read_text(encoding="utf-8"))
+    meta["published"] = metrics
+    meta["per_item"] = {
+        corpus_id: {
+            "event_terminal": item["event_terminal"],
+            "wall_s": item["wall_s"],
+            "tokens": item["tokens"],
+        }
+        for corpus_id, item in metrics["per_item"].items()
+    }
+    meta["tokens_total"] = metrics["tokens_total"]
+    meta["wall_s_total"] = metrics["wall_s_total"]
+    meta["n_event_complete"] = metrics["n_event_complete"]
+    meta["n_run_error"] = metrics["n_run_error"]
+    META_PATH.write_text(json.dumps(meta, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if not REPORT_PATH.is_file():
+        raise SystemExit(f"--write: missing {REPORT_PATH}")
+    block = "<!-- recompute:begin -->\n```json\n" + json.dumps(metrics, ensure_ascii=False, indent=2, sort_keys=True) + "\n```\n<!-- recompute:end -->"
+    text, count = REPORT_BLOCK_FULL.subn(block, REPORT_PATH.read_text(encoding="utf-8"))
+    if count != 1:
+        raise SystemExit(f"--write: expected one recompute block in {REPORT_PATH}, found {count}")
+    REPORT_PATH.write_text(text, encoding="utf-8")
+    print(f"wrote published metrics to {META_PATH} and {REPORT_PATH}")
+
+
 def check(metrics: dict[str, Any]) -> int:
     failures = 0
     for label, published in (
@@ -308,18 +338,25 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="compare against baseline_meta.json and baseline_report.md (0 tolerance)",
     )
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="rewrite the meta published block and the report machine block",
+    )
     args = parser.parse_args(argv)
     try:
         metrics = compute()
     except (ValueError, KeyError, json.JSONDecodeError) as exc:
         print(f"recompute: {exc}", file=sys.stderr)
         return 2
+    if args.write:
+        write(metrics)
     if args.json:
         print(json.dumps(metrics, ensure_ascii=False, indent=2, sort_keys=True))
-    elif not args.check:
-        print_human(metrics)
     if args.check:
         return check(metrics)
+    if not args.json:
+        print_human(metrics)
     return 0
 
 

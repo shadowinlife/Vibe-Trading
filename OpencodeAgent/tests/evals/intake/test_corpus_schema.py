@@ -190,3 +190,56 @@ def test_dry_run_prints_ten_lines_offline():
     assert len(lines) == 10
     assert lines[0].startswith("c01 | execute_with_defaults | 个股体检 | false |")
     assert lines[-1].startswith("c10 | refuse | none | false |")
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        '{"type":"step_start","sessionID":"ses_x"}',
+        '{"type":"step_start","session_id":"ses_x"}',
+        '{"type":"step_start","session.id":"ses_x"}',
+        '{"session":{"id":"ses_x"}}',
+    ],
+)
+def test_stream_session_id_accepts_all_spellings(line):
+    assert run.stream_session_id(line) == "ses_x"
+
+
+def test_recovery_merges_session_messages_without_network():
+    stdout = '{"type":"step_start","sessionID":"ses_fake"}\n'
+    assert run.parse_stream(stdout)["calls"] == []
+    assert run.parse_stream(stdout)["text"] == ""
+    payload = [
+        {"info": {"role": "user"}, "parts": [{"type": "text", "text": "用户消息不应进入路由"}]},
+        {
+            "info": {"role": "assistant", "tokens": {"total": 7}},
+            "parts": [
+                {"type": "text", "text": "因子是横截面上可计算的收益解释变量。"},
+                {"type": "tool", "tool": "vibe-trading_get_market_data", "state": {"input": {"code": "600519"}}},
+            ],
+        },
+    ]
+
+    def fake_fetch(url, username, password):
+        if url.endswith("/doc"):
+            return {"paths": {"/session/{sessionID}/message": {}}}
+        assert url.endswith("/session/ses_fake/message"), url
+        return payload
+
+    session_id = run.stream_session_id(stdout)
+    assert session_id == "ses_fake"
+    recovered = run.recover_stream("http://fake:4096", session_id, "opencode", "pw", fetch=fake_fetch)
+    assert "因子" in recovered["text"]
+    assert "用户消息" not in recovered["text"]
+    assert recovered["calls"] == [{"name": "vibe-trading_get_market_data", "args": {"code": "600519"}}]
+    assert recovered["tokens"] == 7
+    item = next(item for item in run.load_corpus() if item["id"] == "c08")
+    events = run.build_events("run-1", item, recovered, wall_s=9.5, prefix=run.RECOVERY_PREFIX)
+    assert all(event["evidence"].startswith(run.RECOVERY_PREFIX) for event in events)
+    assert events[0]["observed"] == "execute_with_defaults"
+
+
+def test_parser_supports_only_and_disable_recovery():
+    args = run.build_parser().parse_args(["--only", "c08", "--only", "c09", "--disable-recovery"])
+    assert args.only == ["c08", "c09"]
+    assert args.disable_recovery is True

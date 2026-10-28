@@ -1,11 +1,14 @@
 {
   "budget": {
     "baseline_sessions": 10,
-    "diagnostic_sessions": 2,
-    "note": "smoke timed out at 300s (server session completed later); one manual probe + one c08 re-run proved the fast-response CLI streaming race reproduces",
+    "control_c01": 1,
+    "failed_recovery_attempt": 3,
+    "note": "The repair dispatch added 7 sessions, not 4: 1 control + 3 in a first recovery attempt that failed because the host did not export OPENCODE_SERVER_PASSWORD + 3 successful recovery runs. The harness default is correct; the caller must pass --password or export the variable.",
+    "original_diagnostics": 3,
     "plan_allocation": 11,
-    "sessions_used_total": 13,
-    "smoke_sessions": 1
+    "repair_allocation": 4,
+    "sessions_used_total": 20,
+    "successful_recovery": 3
   },
   "environment": {
     "agent": "Sisyphus - ultraworker",
@@ -37,17 +40,20 @@
       "budget_s": 300,
       "first_start_s": 41,
       "fresh_start_s": 47,
-      "probe": "GET /config?directory=/workspace"
+      "probe": "GET /config?directory=/workspace",
+      "recovery_start_s": 50
     },
     "volumes_gotcha": "pre-created ./volumes/{cron-state,cron-logs,vt-memory}; Docker auto-create chown failed under Colima",
     "workspace": "/workspace (image layer; no host bind of the repository)"
   },
-  "finished_at": "2026-10-28T00:34:17Z",
+  "finished_at": "2026-10-28T02:03:09Z",
   "git_commit": "abcaf2629b4537c7e909b607dd99702c860728b8",
   "image_digest": "sha256:64f9566215ce9b6f6aa3a71bb6aaee37e4d421864a19d1cd010f723805956a46",
   "image_id": "sha256:77548a02382efb27f3ef69d1abb238a32dc19167e78c00a367fcdcff4a6a0e37",
   "image_ref": "opencode-serve:v3.10.0-mymain",
   "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+  "n_event_complete": 10,
+  "n_run_error": 0,
   "per_item": {
     "c01": {
       "event_terminal": "params_compiled",
@@ -85,77 +91,77 @@
       "wall_s": 32.273
     },
     "c08": {
-      "event_terminal": "run_error",
-      "tokens": null,
-      "wall_s": 12.02
+      "event_terminal": "params_compiled",
+      "tokens": 59186,
+      "wall_s": 17.602
     },
     "c09": {
-      "event_terminal": "run_error",
-      "tokens": null,
-      "wall_s": 12.279
+      "event_terminal": "params_compiled",
+      "tokens": 60382,
+      "wall_s": 56.491
     },
     "c10": {
-      "event_terminal": "run_error",
-      "tokens": null,
-      "wall_s": 8.716
+      "event_terminal": "params_compiled",
+      "tokens": 60200,
+      "wall_s": 10.901
     }
   },
   "published": {
     "layers": {
       "intake_loaded": {
-        "agreement": 2,
+        "agreement": 5,
         "expected_k": 5,
-        "expected_rate": 0.714286,
+        "expected_rate": 0.5,
         "kind": "binary_positive",
-        "n": 7,
+        "n": 10,
         "observed_k": 0,
         "observed_rate": 0.0,
         "wilson95": {
-          "high": 0.35433,
+          "high": 0.277533,
           "low": 0.0
         }
       },
       "params_compiled": {
-        "agreement": 5,
+        "agreement": 6,
         "expected_k": 5,
-        "expected_rate": 0.714286,
+        "expected_rate": 0.5,
         "kind": "binary_positive",
-        "n": 7,
-        "observed_k": 7,
-        "observed_rate": 1.0,
+        "n": 10,
+        "observed_k": 9,
+        "observed_rate": 0.9,
         "wilson95": {
-          "high": 1.0,
-          "low": 0.64567
+          "high": 0.982124,
+          "low": 0.59585
         }
       },
       "question_called": {
-        "agreement": 5,
+        "agreement": 8,
         "expected_k": 2,
-        "expected_rate": 0.285714,
+        "expected_rate": 0.2,
         "kind": "binary_positive",
-        "n": 7,
+        "n": 10,
         "observed_k": 0,
         "observed_rate": 0.0,
         "wilson95": {
-          "high": 0.35433,
+          "high": 0.277533,
           "low": 0.0
         }
       },
       "route_class": {
-        "agreement": 5,
+        "agreement": 6,
         "expected_rate": 1.0,
         "kind": "agreement",
-        "n": 7,
-        "observed_rate": 0.714286,
+        "n": 10,
+        "observed_rate": 0.6,
         "wilson95": {
-          "high": 0.917781,
-          "low": 0.358934
+          "high": 0.83182,
+          "low": 0.312674
         }
       }
     },
-    "n_event_complete": 7,
+    "n_event_complete": 10,
     "n_items": 10,
-    "n_run_error": 3,
+    "n_run_error": 0,
     "n_terminal": 10,
     "operational": {
       "n": 10,
@@ -217,25 +223,25 @@
         "wall_s": 32.273
       },
       "c08": {
-        "event_terminal": "run_error",
+        "event_terminal": "params_compiled",
         "route_expected": "direct_answer",
-        "route_observed": null,
-        "tokens": null,
-        "wall_s": 12.02
+        "route_observed": "execute_with_defaults",
+        "tokens": 59186,
+        "wall_s": 17.602
       },
       "c09": {
-        "event_terminal": "run_error",
+        "event_terminal": "params_compiled",
         "route_expected": "direct_answer",
-        "route_observed": null,
-        "tokens": null,
-        "wall_s": 12.279
+        "route_observed": "execute_with_defaults",
+        "tokens": 60382,
+        "wall_s": 56.491
       },
       "c10": {
-        "event_terminal": "run_error",
+        "event_terminal": "params_compiled",
         "route_expected": "refuse",
-        "route_observed": null,
-        "tokens": null,
-        "wall_s": 8.716
+        "route_observed": "refuse",
+        "tokens": 60200,
+        "wall_s": 10.901
       }
     },
     "route_by_class": {
@@ -250,9 +256,12 @@
       },
       "direct_answer": {
         "agreement": 0,
-        "n": 0,
-        "rate": null,
-        "wilson95": null
+        "n": 2,
+        "rate": 0.0,
+        "wilson95": {
+          "high": 0.65762,
+          "low": 0.0
+        }
       },
       "execute_with_defaults": {
         "agreement": 5,
@@ -264,19 +273,45 @@
         }
       },
       "refuse": {
-        "agreement": 0,
-        "n": 0,
-        "rate": null,
-        "wilson95": null
+        "agreement": 1,
+        "n": 1,
+        "rate": 1.0,
+        "wilson95": {
+          "high": 1.0,
+          "low": 0.206549
+        }
       }
     },
-    "run_error_ids": [
+    "run_error_ids": [],
+    "tokens_total": 600360,
+    "wall_s_total": 2213.718
+  },
+  "recovery": {
+    "api_recovered": [
+      "c10"
+    ],
+    "archived": "results/baseline_run_errors.jsonl",
+    "control_c01": {
+      "matches_existing": true,
+      "route_class": "execute_with_defaults",
+      "route_expected": "execute_with_defaults",
+      "run_id": "acf9dd238309442d94b49c549e090378",
+      "tokens": 117004,
+      "wall_s": 454.7
+    },
+    "endpoint": "GET /doc -> /session/{sessionID}/message",
+    "evidence_prefix": "recovered_via_session_api;",
+    "items": [
       "c08",
       "c09",
       "c10"
     ],
-    "tokens_total": 420592,
-    "wall_s_total": 2161.739
+    "method": "server session messages API",
+    "natively_captured": [
+      "c08",
+      "c09"
+    ],
+    "note": "c08/c09 produced tool calls and were captured by the raw CLI stream on rerun; c10 hit the fast-response race and was rebuilt from its persisted session messages."
   },
   "run": {
     "corpus": "tests/evals/intake/corpus.jsonl",
@@ -284,92 +319,16 @@
     "note": "single pass, all 10 corpus items attempted; run.py output appended unedited",
     "output": "tests/evals/intake/results/baseline.jsonl",
     "per_item_timeout_s": 1800,
-    "raw_dir": "$TMPDIR/baseline-raw (deleted after capture)"
-  },
-  "session_tokens": {
-    "c01": {
-      "cache_read": 2926592,
-      "cache_write": 0,
-      "input": 94052,
-      "output": 16752,
-      "reasoning": 13943,
-      "sum_no_cache": 124747
-    },
-    "c02": {
-      "cache_read": 1511936,
-      "cache_write": 0,
-      "input": 60582,
-      "output": 6590,
-      "reasoning": 11856,
-      "sum_no_cache": 79028
-    },
-    "c03": {
-      "cache_read": 114688,
-      "cache_write": 0,
-      "input": 3252,
-      "output": 876,
-      "reasoning": 807,
-      "sum_no_cache": 4935
-    },
-    "c04": {
-      "cache_read": 9335296,
-      "cache_write": 0,
-      "input": 221864,
-      "output": 19577,
-      "reasoning": 9768,
-      "sum_no_cache": 251209
-    },
-    "c05": {
-      "cache_read": 232960,
-      "cache_write": 0,
-      "input": 3176,
-      "output": 732,
-      "reasoning": 280,
-      "sum_no_cache": 4188
-    },
-    "c06": {
-      "cache_read": 2153472,
-      "cache_write": 0,
-      "input": 182687,
-      "output": 6868,
-      "reasoning": 7327,
-      "sum_no_cache": 196882
-    },
-    "c07": {
-      "cache_read": 177664,
-      "cache_write": 0,
-      "input": 7230,
-      "output": 1755,
-      "reasoning": 1603,
-      "sum_no_cache": 10588
-    },
-    "c08": {
-      "cache_read": 57856,
-      "cache_write": 0,
-      "input": 412,
-      "output": 882,
-      "reasoning": 226,
-      "sum_no_cache": 1520
-    },
-    "c09": {
-      "cache_read": 57856,
-      "cache_write": 0,
-      "input": 414,
-      "output": 364,
-      "reasoning": 511,
-      "sum_no_cache": 1289
-    },
-    "c10": {
-      "cache_read": 57344,
-      "cache_write": 0,
-      "input": 929,
-      "output": 372,
-      "reasoning": 149,
-      "sum_no_cache": 1450
+    "raw_dir": "$TMPDIR/baseline-raw (deleted after capture)",
+    "recovery_run": {
+      "command": "run.py --only c08 --only c09 --only c10 --password $OPENCODE_SERVER_PASSWORD",
+      "finished_at": "2026-10-28T02:03:09Z",
+      "output": "$TMPDIR/recover.jsonl",
+      "started_at": "2026-10-28T02:02:02Z"
     }
   },
   "sessions": 10,
   "started_at": "2026-10-27T23:58:14Z",
-  "tokens_total": 420592,
-  "wall_s_total": 2161.739
+  "tokens_total": 600360,
+  "wall_s_total": 2213.718
 }

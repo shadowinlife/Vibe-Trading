@@ -137,6 +137,12 @@ conda run -n legonanobot python tests/evals/intake/run.py --container opencode-w
   baseline meaningless.
 - `--model`, `--agent`, `--command`, `--timeout`, `--repeat`, `--limit` and
   `--out` pass through to the run.
+- `--only c08 --only c09` is repeatable and restricts the run to those corpus
+  ids (default: all). It is applied before `--limit`; unknown ids exit 2.
+- `--disable-recovery` proves the raw CLI path by turning off the
+  server-session recovery described below. `--username` / `--password`
+  override the recovery credentials (defaults: `opencode` and
+  `$OPENCODE_SERVER_PASSWORD`).
 - Each item is invoked as (container example):
   `docker exec -w /workspace opencode-web opencode run --attach
   http://localhost:4096 --dir /workspace --format json --title c01
@@ -146,6 +152,35 @@ conda run -n legonanobot python tests/evals/intake/run.py --container opencode-w
   outside those two locations.
 - Exit code is 0 when every attempted item produced a terminal record (four
   events, or a `run_error`); a single failed item does not abort the batch.
+
+## Short-run recovery (CLI streaming race)
+
+`opencode run --attach --format json` can exit 0 after printing only
+`{"type":"step_start",...}` for very fast answers. Observed on the baseline
+run for c08/c09/c10 (8.7–12.3s wall): the server-side session completed with
+assistant text and `finish=stop`, but the CLI's event subscription lost the
+final parts. This is a `misleading_success_output` failure: exit 0 with no
+assistant content.
+
+`run.py` therefore uses a recovery path **only when** the CLI stream yields
+no parseable assistant text and no tool call:
+
+1. Extract `sessionID`, `session_id`, `session.id` (or a nested
+   `session.id`) from the raw stdout.
+2. Discover the messages path from the server's OpenAPI document
+   `GET /doc`. Confirmed on opencode 1.19.3: `/session/{sessionID}/message`.
+   The path is looked up at runtime, not hardcoded.
+3. Fetch it with stdlib `urllib.request` and basic auth (`--username`,
+   default `opencode`; `--password`, default `$OPENCODE_SERVER_PASSWORD`).
+4. Parse only the assistant messages with the same `_walk` / `_tool_name` /
+   `_tool_args` helpers, then build the four events normally. Every recovered
+   record's `evidence` starts with the literal prefix
+   `recovered_via_session_api;`.
+5. If discovery, auth, or parsing yields nothing, write `run_error` as
+   before. No text or tool call is fabricated.
+
+Use `--disable-recovery` to prove the raw CLI path; a fast run then records
+`run_error` instead of recovered events.
 
 ## Reading the JSONL
 
