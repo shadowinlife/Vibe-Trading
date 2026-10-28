@@ -116,7 +116,7 @@
       ]
     },
     "intake_loaded": {
-      "judge_rule": "Observed true when the event stream contains a read-style tool call whose arguments mention a path containing `skills/intake`, or an assistant message that quotes the intake skill name (`intake`). Expected is true only when the item is open-ended (`open_ended: true`) or expects `clarify_private` (c02/c03/c05/c06/c07), and false for the 明确可执行 items and negatives (c01/c04/c08/c09/c10): intake routes only requests that need the funnel or private-slot clarification. A baseline run against the pre-intake build is expected to observe false everywhere.",
+      "judge_rule": "Observed true when the event stream contains (a) a read-style tool call whose arguments mention a path containing `skills/intake`, (b) an opencode `skill` tool call (name `skill`, `*.skill` or `*_skill`) whose arguments name `intake`, (c) any tool call whose name contains `intake`, or (d) an assistant message that quotes the intake skill name (`intake`). Rule (b) was added on 2026-10-28 after the delivered image shipped the skill: opencode loads project skills through the `skill` tool, which the original path-only rule missed. It cannot retroactively affect `results/baseline.jsonl`, where the skill did not exist. Expected is true only when the item is open-ended (`open_ended: true`) or expects `clarify_private` (c02/c03/c05/c06/c07 in the frozen corpus), and false for the 明确可执行 items and negatives (c01/c04/c08/c09/c10): intake routes only requests that need the funnel or private-slot clarification. A pre-intake baseline observes false everywhere.",
       "allOf": [
         {
           "$ref": "#/$defs/base_record"

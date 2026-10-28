@@ -178,6 +178,26 @@ def _is_question(name: str) -> bool:
 def _is_vt_tool(name: str) -> bool:
     return name.startswith(VT_TOOL_PREFIXES)
 
+def _intake_loader(call: dict[str, Any]) -> str:
+    """Classify a tool call as an intake-skill load; matches opencode's `skill` tool."""
+    name = call["name"].lower()
+    args = json.dumps(call["args"], ensure_ascii=False).lower()
+    if "skills/intake" in args:
+        return "path"
+    if (name == "skill" or name.endswith((".skill", "_skill"))) and "intake" in args:
+        return "skill"
+    return "name" if "intake" in name else ""
+
+def _write_text(args: argparse.Namespace, item: dict[str, Any], stream: dict[str, Any], *, run_id: str, wall_s: float, recovered: bool) -> None:
+    if not args.text_out:
+        return
+    out = Path(args.text_out)
+    out.mkdir(parents=True, exist_ok=True)
+    texts = stream["text"]
+    (out / f"{item['id']}.txt").write_text(texts, encoding="utf-8")
+    meta = {"corpus_id": item["id"], "run_id": run_id, "wall_s": round(wall_s, 3), "tokens": stream["tokens"], "recovered": bool(recovered), "text_chars": len(texts)}
+    (out / f"{item['id']}.json").write_text(json.dumps(meta, ensure_ascii=False) + "\n", encoding="utf-8")
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -204,12 +224,13 @@ def build_events(run_id: str, item: dict[str, Any], stream: dict[str, Any], *, w
     route, route_evidence = derive_route(stream)
     question_calls = [call for call in calls if _is_question(call["name"])]
     vt_calls = [call for call in calls if _is_vt_tool(call["name"]) and call["args"]]
-    intake = any("skills/intake" in json.dumps(call["args"], ensure_ascii=False) for call in calls) or "intake" in text.lower()
+    loader = next((kind for kind in (_intake_loader(call) for call in calls) if kind), "")
+    intake = bool(loader) or "intake" in text.lower()
     base = dict(run_id=run_id, corpus_id=item["id"], ts=_now(), user_turns=1, wall_s=round(wall_s, 3), tokens=stream["tokens"])
     intake_expected = bool(item.get("open_ended")) or item["expect"] == "clarify_private"
     events = [
         dict(event="route_class", observed=route, expected=item["expect"], evidence=route_evidence),
-        dict(event="intake_loaded", observed=intake, expected=intake_expected, evidence=f"path_mention={intake}"),
+        dict(event="intake_loaded", observed=intake, expected=intake_expected, evidence=f"loader={loader or ('text' if intake else 'none')}"),
         dict(event="question_called", observed=bool(question_calls), expected=item["expect"] == "clarify_private", evidence=f"question_calls={len(question_calls)}", question_count=len(question_calls)),
         dict(event="params_compiled", observed=bool(vt_calls), expected=item["expect"] == "execute_with_defaults", evidence=f"tools={_names(vt_calls)} stderr_tail={len(stderr_tail)}"),
     ]
@@ -277,25 +298,32 @@ def _run_one(args: argparse.Namespace, item: dict[str, Any]) -> list[dict[str, A
             # Killing docker exec does not kill the in-container CLI; do it explicitly
             # so a timed-out item cannot accumulate a zombie process and memory.
             subprocess.run(["docker", "exec", args.container, "pkill", "-f", f"opencode run .*--title {item['id']}"], capture_output=True, timeout=30)
+        _write_text(args, item, EMPTY_STREAM, run_id=run_id, wall_s=time.monotonic() - started, recovered=False)
         return [build_run_error(run_id, item, wall_s=time.monotonic() - started, reason=f"timeout after {args.timeout}s", stderr_tail=tail)]
     except OSError as exc:
+        _write_text(args, item, EMPTY_STREAM, run_id=run_id, wall_s=time.monotonic() - started, recovered=False)
         return [build_run_error(run_id, item, wall_s=time.monotonic() - started, reason=f"exec failed: {exc}")]
     wall_s = time.monotonic() - started
     stream = parse_stream(proc.stdout)
     recovered = False
-    if not args.disable_recovery and not stream["calls"] and not stream["text"]:
-        session_id = stream_session_id(proc.stdout)
-        if session_id:
-            stream = recover_stream(args.recovery_url or args.attach, session_id, args.username, args.password)
-            recovered = bool(stream["calls"] or stream["text"])
+    session_id = stream_session_id(proc.stdout)
+    if not args.disable_recovery and session_id:
+        # The CLI stream can stop after the first assistant step even when tool
+        # calls are present; the server transcript is authoritative.
+        fetched = recover_stream(args.recovery_url or args.attach, session_id, args.username, args.password)
+        if fetched["calls"] or fetched["text"]:
+            recovered = fetched != stream
+            stream = fetched
     if args.raw_dir:
         raw = Path(args.raw_dir)
         raw.mkdir(parents=True, exist_ok=True)
         (raw / f"{run_id}.stdout.txt").write_text(proc.stdout, encoding="utf-8")
         (raw / f"{run_id}.stderr.txt").write_text(proc.stderr, encoding="utf-8")
     if (proc.returncode == 0 or recovered) and (stream["calls"] or stream["text"]):
+        _write_text(args, item, stream, run_id=run_id, wall_s=wall_s, recovered=recovered)
         return build_events(run_id, item, stream, wall_s=wall_s, stderr_tail=proc.stderr, prefix=RECOVERY_PREFIX if recovered else "")
     reason = f"exit={proc.returncode}" if proc.returncode else "no parseable assistant text or tool call"
+    _write_text(args, item, stream, run_id=run_id, wall_s=wall_s, recovered=recovered)
     return [build_run_error(run_id, item, wall_s=wall_s, reason=reason, stdout_tail=proc.stdout, stderr_tail=proc.stderr, tokens=stream["tokens"])]
 
 def _real_run(args: argparse.Namespace) -> int:
@@ -343,6 +371,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repeat", type=int, default=1, help="repeat the corpus N times")
     parser.add_argument("--timeout", type=float, default=600.0, help="per-item timeout in seconds")
     parser.add_argument("--out", help="output JSONL path (default results/run_<utc>.jsonl)")
+    parser.add_argument("--text-out", help="write each run's assistant text + JSON sidecar to this directory")
     parser.add_argument("--raw-dir", help="raw stdout/stderr directory (default under $TMPDIR)")
     for flag in ("--model", "--agent", "--command"):
         parser.add_argument(flag, help=f"passed through as {flag}")

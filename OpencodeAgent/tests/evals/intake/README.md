@@ -65,7 +65,7 @@ requires `run_id`, `corpus_id`, `event`, `ts`, `observed`, `expected` and
 | event | judge rule (implemented in `run.py`) |
 |-------|--------------------------------------|
 | `route_class` | A `question` tool call, or a numbered choice list (≥2 numbered lines plus a choice cue such as 选项/请选择/成本价/仓位), in the first assistant turn → `clarify_private`; otherwise a `vibe-trading_*` / `ch_*` tool call with non-empty arguments → `execute_with_defaults`; otherwise an explicit capability refusal marker → `refuse`; otherwise text-only → `direct_answer`. |
-| `intake_loaded` | A read-style tool call whose arguments mention `skills/intake`, or assistant text quoting the intake skill name. Expected true only for open-ended or `clarify_private` items (c02/c03/c05/c06/c07); false for c01/c04/c08/c09/c10. A pre-intake baseline is expected to observe false. |
+| `intake_loaded` | A read-style tool call whose arguments mention `skills/intake`, an opencode `skill` tool call (`skill` / `*.skill` / `*_skill`) whose arguments name `intake`, any tool call whose name contains `intake`, or assistant text quoting the intake skill name. Rule extended 2026-10-28: the delivered image loads project skills through the `skill` tool, which the original path-only rule missed; it cannot retroactively change `results/baseline.jsonl` (the skill did not exist there). Expected true only for open-ended or `clarify_private` items (c02/c03/c05/c06/c07); false for c01/c04/c08/c09/c10. A pre-intake baseline is expected to observe false. |
 | `question_called` | Any tool part named `question`, `question.*` or `question_*`; `question_count` is the number of calls. Expected true only for `clarify_private`. |
 | `params_compiled` | Any `vibe-trading_*` / `ch_*` call with non-empty arguments, i.e. options were compiled into tool parameters. `tool` + `args_digest` identify the first such call. Expected true only for `execute_with_defaults`. |
 
@@ -137,6 +137,12 @@ conda run -n legonanobot python tests/evals/intake/run.py --container opencode-w
   baseline meaningless.
 - `--model`, `--agent`, `--command`, `--timeout`, `--repeat`, `--limit` and
   `--out` pass through to the run.
+- `--text-out DIR` writes the full assistant text for every run (including a
+  session-API recovery) to `DIR/<corpus_id>.txt` and a
+  `DIR/<corpus_id>.json` sidecar carrying
+  `{corpus_id, run_id, wall_s, tokens, recovered, text_chars}`. A run with no
+  parseable assistant output writes an empty text file and `text_chars: 0`, so
+  the closing-block checker sees an explicit miss rather than a missing file.
 - `--only c08 --only c09` is repeatable and restricts the run to those corpus
   ids (default: all). It is applied before `--limit`; unknown ids exit 2.
 - `--disable-recovery` proves the raw CLI path by turning off the
