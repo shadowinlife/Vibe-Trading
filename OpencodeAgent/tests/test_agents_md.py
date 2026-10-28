@@ -233,7 +233,7 @@ PRODUCT_INDEX_HEADING = "# 产物索引"
 CAPABILITY_INDEX_HEADING = "# 能力索引"
 CAPABILITY_TABLE_HEADER = "| 能力 | Skill/工具 | 触发词 |"
 APPENDIX_HEADING = "## 附录：能力索引（按需查阅）"
-PRODUCT_COLUMNS = ("产物", "用户说法", "输入", "产出", "不能做")
+PRODUCT_COLUMNS = ("产物", "场景/Skill", "用户说法", "输入", "产出", "不能做")
 PRODUCT_ROWS = (
     "个股体检",
     "选股清单",
@@ -245,6 +245,34 @@ PRODUCT_ROWS = (
     "报告",
 )
 FALLBACK_LINE = "未命中产物 → 加载 research-scenarios 附录查能力索引。"
+FALLBACK_ROUTING_LINE = (
+    "菜单外请求（未命中以上 8 个产物）→ 先按分流表判定类型："
+    "明确可执行直接路由；开放型/待澄清型加载 intake；宏观型走场景 F；"
+    "仍无匹配则说明能力边界并给出可回答的替代菜单。"
+)
+
+# Report §12.2 P1-1: 6 of the 8 products map 1:1 onto a research-scenarios
+# playbook; 组合体检 (A + risk-analysis) and 报告 (html-report) are the two
+# named exceptions. The mapping is asserted cell-by-cell so a reorder or a
+# silent re-routing cannot pass as cosmetic.
+PRODUCT_SCENARIOS = (
+    ("个股体检", "场景 A"),
+    ("选股清单", "场景 E"),
+    ("策略回测", "场景 B"),
+    ("组合体检", "组合（场景 A + risk-analysis）"),
+    ("事件/宏观影响", "场景 F"),
+    ("交易复盘", "场景 B2"),
+    ("定时监控", "场景 D"),
+    ("报告", "html-report"),
+)
+
+SCENARIO_TARGETS = ("场景 A", "场景 B", "场景 B2", "场景 D", "场景 E", "场景 F")
+
+HTML_REPORT_SKILL_PATH = SKILLS_DIR / "html-report" / "SKILL.md"
+# ``risk-analysis`` is a VT built-in skill, not an OpencodeAgent skill dir: the
+# container reaches it through ``vibe-trading_load_skill`` from the installed
+# Vibe-Trading tree, which this repo carries at ``agent/src/skills/``.
+VT_SKILLS_DIR = OPENCODE_AGENT_DIR.parent / "agent" / "src" / "skills"
 
 # Pre-migration count, measured before the move: AGENTS.md:191-220 held
 # heading + header + separator + 27 data rows. Frozen because the source
@@ -281,7 +309,7 @@ class TestProductIndex:
         assert CAPABILITY_INDEX_HEADING not in body
         assert CAPABILITY_TABLE_HEADER not in body
 
-    def test_product_table_has_eight_rows_and_five_columns(self):
+    def test_product_table_has_eight_rows_and_six_columns(self):
         rows = _table_rows(_read(AGENTS_MD_PATH), PRODUCT_INDEX_HEADING)
         assert rows, "product index table not found"
         assert tuple(rows[0]) == PRODUCT_COLUMNS
@@ -292,11 +320,36 @@ class TestProductIndex:
         for name in PRODUCT_ROWS:
             assert names.count(name) == 1, name
 
-    def test_every_product_row_keeps_all_five_columns(self):
+    def test_every_product_row_keeps_all_six_columns(self):
         data_rows = _table_rows(_read(AGENTS_MD_PATH), PRODUCT_INDEX_HEADING)[1:]
         assert len(data_rows) == 8
         for row in data_rows:
-            assert len(row) == 5, row
+            assert len(row) == 6, row
+
+    def test_each_product_maps_to_its_scenario_or_skill(self):
+        data_rows = _table_rows(_read(AGENTS_MD_PATH), PRODUCT_INDEX_HEADING)[1:]
+        actual = [(row[0].strip("*"), row[1]) for row in data_rows]
+        assert actual == list(PRODUCT_SCENARIOS)
+
+    def test_scenario_targets_exist_in_the_scenarios_skill(self):
+        text = _read(SCENARIOS_SKILL_PATH)
+        for target in SCENARIO_TARGETS:
+            heading = f"## {target}："
+            assert heading in text, f"{target} has no playbook: {heading}"
+
+    def test_risk_analysis_resolves_to_the_vt_skill_tree(self):
+        appendix = _read(SCENARIOS_SKILL_PATH)
+        assert "`risk-analysis` (VT)" in appendix, (
+            "组合体检 maps to risk-analysis, which must stay labelled as a VT "
+            "skill in the capability appendix"
+        )
+        assert (VT_SKILLS_DIR / "risk-analysis" / "SKILL.md").is_file(), (
+            f"risk-analysis is not an OpencodeAgent skill dir; expected the VT "
+            f"tree at {VT_SKILLS_DIR / 'risk-analysis' / 'SKILL.md'}"
+        )
+
+    def test_html_report_target_exists_locally(self):
+        assert HTML_REPORT_SKILL_PATH.is_file(), HTML_REPORT_SKILL_PATH
 
     def test_fallback_line_follows_the_table(self):
         lines = _read(AGENTS_MD_PATH).splitlines()
@@ -306,6 +359,12 @@ class TestProductIndex:
         assert lines[fallback_index - 1].startswith("|"), (
             "the fallback line must immediately follow the product table"
         )
+
+    def test_off_menu_routing_follows_the_fallback_line(self):
+        lines = _read(AGENTS_MD_PATH).splitlines()
+        assert FALLBACK_ROUTING_LINE in lines
+        assert lines.index(FALLBACK_ROUTING_LINE) == lines.index(FALLBACK_LINE) + 1
+        assert "菜单外请求" in FALLBACK_ROUTING_LINE
 
     def test_appendix_carries_the_migrated_table(self):
         text = _read(SCENARIOS_SKILL_PATH)
