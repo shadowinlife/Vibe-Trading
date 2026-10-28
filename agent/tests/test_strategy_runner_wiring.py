@@ -244,8 +244,9 @@ class _CapturingLoop:
         event_callback,
         max_iterations,
         persistent_memory,
+        cancel_event=None,
     ) -> None:
-        del llm, event_callback, max_iterations, persistent_memory
+        del llm, event_callback, max_iterations, persistent_memory, cancel_event
         _CapturingLoop.registries.append(registry)
 
     def run(self, *, user_message: str, history, session_id: str) -> dict[str, str]:
