@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "spec_id": "intake-ask-first-vs-artifact-first-v1",
+  "preregistered_at": "2026-10-28",
+  "preregistered_on_commit": "2eb53a82",
+  "status": "PRE-REGISTERED for the full paired run. The committed 10-pair pilot pre-dates this file and is reported separately; it cannot settle the question because n=10 < n_min=30.",
+  "question": "For open-type artifact requests, does an artifact-first protocol reach a usable artifact with retrievable parameters in no more than two user turns more often than the frozen ask-first protocol, and does it reduce manual parameter completion?",
+  "unit": "One corpus item = one first user turn delivered with `opencode run` through tests/evals/intake/run.py (or the thin ab/run_ab.py wrapper). The harness records one event per layer: route_class, intake_loaded, question_called, params_compiled.",
+  "arms": {
+    "control": {
+      "name": "ask-first (frozen protocol)",
+      "image": "opencode-serve:v3.10.0-mymain",
+      "image_digest": "sha256:64f9566215ce9b6f6aa3a71bb6aaee37e4d421864a19d1cd010f723805956a46",
+      "source_commit": "abcaf2629b4537c7e909b607dd99702c860728b8",
+      "protocol_snapshot": "OpencodeAgent/tests/evals/intake/fixtures/ask_first_protocol_snapshot.md",
+      "protocol_snapshot_sha256": "754e402d707185b540b75eb1918df8eb07738b82ff9ebd05761c66ad562538c9",
+      "protocol_blocks": {
+        "agents-protocol": {
+          "source": "OpencodeAgent/AGENTS.md:66-125",
+          "lines": 60,
+          "sha256": "598dbd1546f426baff3e890ff39c15b9b25cce6b87f567a297d20973a17f068f"
+        },
+        "research-scenarios-scenario-c": {
+          "source": "OpencodeAgent/skills/research-scenarios/SKILL.md:64-70",
+          "lines": 7,
+          "sha256": "b23b6da54e1f4b48aea2706144bb2883eb09c6cc3d0fe8dbc2645f12f27bac11"
+        }
+      },
+      "fidelity_claim": "The image was built from abcaf262; its AGENTS.md:66-125 and scenario C are byte-identical to the two snapshot blocks. test_protocol_snapshot.py recomputes both block digests from the fixture alone and asserts the frozen constants, so the control protocol cannot drift silently.",
+      "committed_pilot_data": "OpencodeAgent/tests/evals/intake/results/baseline.jsonl"
+    },
+    "experiment": {
+      "name": "artifact-first (onboarding bundle)",
+      "image": "opencode-serve:v3.11.1-onboarding-20261028-71572199-fix1",
+      "contents": [
+        "intake skill loaded for open-type requests instead of asking first",
+        "closing block contract on artifact outputs",
+        "product index and scenario mapping",
+        "question tool permission for primary agents"
+      ],
+      "committed_pilot_data": "OpencodeAgent/tests/evals/intake/results/wave1_probe.jsonl",
+      "fidelity_caveat": "The committed fix1 image digest was not recorded in results/; the arm is identified by its immutable tag. The wave-1 delivery image opencode-serve:v3.11.0-onboarding-20261028-6e635820 is a different tag and is not the experiment arm."
+    }
+  },
+  "corpus": {
+    "path": "OpencodeAgent/tests/evals/intake/ab/corpus_ab.jsonl",
+    "min_items": 30,
+    "item_fields": [
+      "id",
+      "prompt",
+      "source",
+      "expected_artifact",
+      "open_ended",
+      "rationale"
+    ],
+    "sources": [
+      "frozen",
+      "extended_generated",
+      "real_label_guided"
+    ],
+    "eligibility": "Every corpus item is open_ended=true, declares a non-none expected_artifact, and is therefore artifact-bearing. The committed pilot additionally contains three non-artifact routing controls (c08 direct_answer, c09 direct_answer, c10 refuse); those are reported but excluded from the success and manual-param denominators.",
+    "generator": "OpencodeAgent/tests/evals/intake/ab/gen_corpus_ab.py (no hand-written generated prompts)"
+  },
+  "success": {
+    "definition": "first usable artifact within <=2 user turns AND parameters retrievable",
+    "automated_proxy": [
+      "route_class.observed == 'execute_with_defaults' (the arm went to execution, not only to clarification)",
+      "params_compiled.observed is true (at least one VT/ch_* tool call carried non-empty arguments, so parameters can be recovered from the run record)",
+      "user_turns <= 2 (all four layer records carry user_turns; the committed single-turn runs record 1)"
+    ],
+    "not_automated": "Whether the artifact is actually usable, and whether the chosen defaults are appropriate for the user's intent. Both are reported under human_review and are NOT scored."
+  },
+  "failure": {
+    "definition": "manual parameter completion required",
+    "automated_proxy": "question_called.observed is true OR (route_class.observed == 'clarify_private' AND params_compiled.observed is not true). An item can be neither a success nor a manual-parameter failure (for example a refusal or a text-only answer); both columns are reported, not collapsed."
+  },
+  "manual_param_rate": {
+    "definition": "manual-parameter items / eligible paired items, reported per arm as a separate column",
+    "reported_separately": true
+  },
+  "primary_test": {
+    "name": "exact McNemar test, two-sided",
+    "alpha": 0.05,
+    "implementation": "mcnemar_exact imported from tests/evals/intake/analyze_wave1.py; it must not be re-implemented",
+    "discordant_definition": "b = control success and experiment failure; c = experiment success and control failure; p = exact two-sided binomial over b+c discordant pairs"
+  },
+  "n_min": 30,
+  "verdict_rule": "n<30 ⇒ INCONCLUSIVE",
+  "verdicts": {
+    "INCONCLUSIVE": "fewer than 30 paired ids, or n>=30 without a significant discordance; no direction may be claimed",
+    "ARTIFACT_FIRST": "n>=30 and exact McNemar p<0.05 with more control-success-only pairs than experiment-success-only pairs",
+    "ASK_FIRST": "n>=30 and exact McNemar p<0.05 with more experiment-success-only pairs than control-success-only pairs",
+    "NO_SIGNIFICANT_DIFFERENCE": "n>=30 and exact McNemar p>=0.05; the Wave-1 adoption decision does not fire"
+  },
+  "required_n": {
+    "method": "normal approximation for paired proportions: ceil((z_{1-alpha/2} + z_{power})^2 * (p_b + p_c) / (p_b - p_c)^2), with p_b and p_c the observed discordant proportions among eligible pairs",
+    "alpha": 0.05,
+    "power": 0.8,
+    "caveat": "With one discordant pair and one zero cell the estimate is unstable; it is a planning number, not a promise."
+  },
+  "human_review": [
+    {
+      "id": "params_reasonable",
+      "dimension": "参数改动是否合理",
+      "flag": "human-review-needed",
+      "scored": false,
+      "why": "The JSONL stores tool names and argument digests, not whether a declared default (market, horizon, risk, holdings) matches the user's intent. Any automated verdict here would be a guess."
+    },
+    {
+      "id": "artifact_usable",
+      "dimension": "first usable artifact 是否真可用",
+      "flag": "human-review-needed",
+      "scored": false,
+      "why": "The event contract records that an execution route and parameters existed, not that the stored artifact is complete and usable. The committed wave-1 gate report already shows one case where the proxy and the artifact disagree."
+    }
+  ],
+  "exclusions": [
+    "Direct-answer and refusal items are not artifact requests and cannot be scored as success or manual-parameter failure.",
+    "Run errors, timeouts without a recovered session, and items missing any of the four event layers are dropped from the paired denominator and counted separately.",
+    "No raw user text, .env, token, or PII enters the corpus; the label-guided slice reads only the aggregate counts in results/request_labels.json."
+  ],
+  "rollback_if_ask_first": [
+    "Revert the behavior commits for todos 6 (protocol moved to intake), 8 (closing block) and 9 (product index) in reverse order with `git revert`; keep this A/B apparatus and report as evidence.",
+    "Restore AGENTS.md:66-125 and scenario C from fixtures/ask_first_protocol_snapshot.md (verified by test_protocol_snapshot.py), then re-run the 40-item wave-1 gate."
+  ]
+}
