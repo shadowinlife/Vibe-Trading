@@ -573,8 +573,8 @@ def test_production_api_keeps_strategy_schedule_routes_off_by_default(
 ) -> None:
     script = (
         "import json, api_server; "
-        "print(json.dumps(sorted({route.path for route in api_server.app.routes "
-        "if 'strategy-schedules' in getattr(route, 'path', '')})))"
+        "print(json.dumps(sorted(p for p in api_server.app.openapi()['paths'] "
+        "if 'strategy-schedules' in p)))"
     )
 
     off = _run_python(script, tmp_path / "routes-off")
@@ -596,7 +596,7 @@ def test_entry_app_starts_no_scheduler_and_mounts_no_schedule_routes() -> None:
     assert "_start_scheduled_research_executor" not in source
 
     app = strategy_run_server.create_app(lambda: object())
-    paths = [getattr(route, "path", "") for route in app.routes]
+    paths = set(app.openapi()["paths"])
     assert not any("strategy-schedules" in path for path in paths)
 
 

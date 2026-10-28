@@ -469,5 +469,5 @@ def test_provider_failure_never_leaks_to_the_client(
 
 
 def test_summary_route_is_registered_before_the_id_route():
-    paths = [route.path for route in api_server.app.routes]
+    paths = list(api_server.app.openapi()["paths"])
     assert paths.index("/strategies/summary") < paths.index("/strategies/{strategy_id}")

@@ -4,7 +4,7 @@ description: wiki 内每份文档的一行式索引（路径 + 一句话 + 状�
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-10-27
+updated: 2026-10-28
 tags: [index]
 ---
 
@@ -33,7 +33,10 @@ tags: [index]
 - [features/f5-clickhouse-data-source.md](features/f5-clickhouse-data-source.md) — ClickHouse A 股数据源 + 语义层 Phase 0-2 — active
 - [features/f7-opencode-agent.md](features/f7-opencode-agent.md) — OpencodeAgent harness 层（2026-09-27 起主循环直连 VT MCP；子代理/nano-search 已回退） — active
 - [features/f8-engine-bridge.md](features/f8-engine-bridge.md) — opencode 引擎桥（2026-09-27 移出 mymain；**2026-10-10 线废弃封存**，opencode 桥接方式验证不可行） — archived-discarded（冻结墓碑）
-- [features/f9-strategy-library-scheduling.md](features/f9-strategy-library-scheduling.md) — 策略库与调度（code/workflow 双门就绪 + 版本 CAS + 复用定时研究） — active（本地 mymain 已合入；P1 服务入口开发中）
+- [features/f9-strategy-library-scheduling.md](features/f9-strategy-library-scheduling.md) — 策略库与调度（code/workflow 双门就绪 + 版本 CAS + 复用定时研究） — active（本地 mymain 已合入；P1 入口/状态/工具已交付）
+- [features/f10-strategy-run-entry.md](features/f10-strategy-run-entry.md) — 策略运行服务入口（`/strategy-runs`、run_key、per-box、sweeper） — active
+- [features/f11-state-export-import.md](features/f11-state-export-import.md) — 状态导出/导入（`vt-state-v1`、digest、原子安装、generation marker） — active
+- [features/f12-rm-schedule-tools.md](features/f12-rm-schedule-tools.md) — 六个 RM 调度 MCP 工具（create/list/pause/resume/delete/retarget） — active
 
 ## harness-evolution/ — harness 演进研究档案（2026-08-21~30）
 

@@ -135,7 +135,7 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (89)
+## Available MCP Tools (94)
 
 | Tool | Description | API Key |
 |------|-------------|---------|
@@ -193,6 +193,11 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `promote_strategy` | Register a strategy draft; code strategies are evaluated immediately | None |
 | `evaluate_strategy` | Re-run the kind-matched gate and persist the version-bound verdict | None |
 | `schedule_strategy` | Prepare a schedule proposal for a ready strategy (workflow jobs need human confirmation) | None |
+| `list_strategy_schedules` | List RM schedules with local version-drift annotations | None |
+| `pause_strategy_schedule` | Pause one RM schedule without deleting its run history | None |
+| `resume_strategy_schedule` | Re-enable one paused RM schedule | None |
+| `delete_strategy_schedule` | Delete one RM schedule; its history stays with RM | None |
+| `retarget_strategy_schedule` | Re-pin one RM schedule to a version, keeping the schedule id and history | None |
 | `adapt_strategy` | Prepare an evidence-gated child strategy for generation and its own backtest |
 | `refresh_strategy_evidence` | Rebuild the disposable strategy-evidence cache from run artifacts | None |
 | `analyze_trade_journal` | Parse broker CSV → profile + behavior diagnostics | None |

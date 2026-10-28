@@ -12,7 +12,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, AsyncIterator
+from typing import AsyncIterator
 
 from fastapi import FastAPI, HTTPException, Request, status  # noqa: F401
 from fastapi.responses import FileResponse  # noqa: F401
@@ -124,8 +124,10 @@ from src.api.scheduled_routes import (  # noqa: F401, E402
     _stop_scheduled_research_executor,
     _stop_scheduled_research_on_shutdown,
 )
-
-_strategy_run_service: Any | None = None
+from src.api.strategy_run_lifecycle import (  # noqa: F401, E402
+    start_strategy_run_service,
+    stop_strategy_run_service,
+)
 
 
 async def _run_startup_preflight() -> None:
@@ -151,37 +153,15 @@ async def _run_startup_preflight() -> None:
         await _start_channel_runtime()
 
 
-def _build_strategy_run_service() -> Any:
-    """Build the process-wide RM entry service (one per process)."""
-    from src.strategy_runs.service import build_service
-
-    return build_service()
-
-
 async def _start_strategy_run_service() -> None:
-    """Start the opt-in RM entry service on the full API surface.
-
-    ``VT_STRATEGY_RUN_ENABLED`` registers ``/strategy-runs`` on this app, so this
-    lifespan must own the service lifecycle: a mounted route whose sweeper never
-    starts would accept runs and leave them ``running`` forever. The dedicated
-    ``agent/strategy_run_server.py`` entry starts the same process-wide service
-    (``build_service`` is a singleton); the two entry points never run together.
-    """
-    global _strategy_run_service
-    if not _VT_STRATEGY_RUN_ENABLED:
-        return
-    service = _build_strategy_run_service()
-    await service.start()
-    _strategy_run_service = service
-    logging.getLogger(__name__).info("strategy-run service started")
+    """Start the opt-in RM entry service on the full API surface."""
+    if _VT_STRATEGY_RUN_ENABLED:
+        await start_strategy_run_service()
 
 
 async def _stop_strategy_run_service() -> None:
     """Stop the opt-in entry service; safe when it never started."""
-    global _strategy_run_service
-    service, _strategy_run_service = _strategy_run_service, None
-    if service is not None:
-        await service.stop()
+    await stop_strategy_run_service()
 
 
 @asynccontextmanager

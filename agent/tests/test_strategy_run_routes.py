@@ -366,17 +366,18 @@ def test_api_server_opt_in_lifespan_starts_and_stops_the_service(
     script = (
         "import asyncio, api_server\n"
         "calls = []\n"
-        "class _Service:\n"
-        "    async def start(self): calls.append('start')\n"
-        "    async def stop(self): calls.append('stop')\n"
-        "api_server._build_strategy_run_service = lambda: _Service()\n"
+        "async def _start(): calls.append('start')\n"
+        "async def _stop(): calls.append('stop')\n"
+        "api_server.start_strategy_run_service = _start\n"
+        "if api_server._VT_STRATEGY_RUN_ENABLED:\n"
+        "    api_server.stop_strategy_run_service = _stop\n"
         "asyncio.run(api_server._start_strategy_run_service())\n"
         "asyncio.run(api_server._stop_strategy_run_service())\n"
-        "print(calls, api_server._strategy_run_service)"
+        "print(calls)"
     )
     on = _run_python(script, tmp_path / "lifespan-on", VT_STRATEGY_RUN_ENABLED="1")
     off = _run_python(script, tmp_path / "lifespan-off")
     assert on.returncode == 0, on.stderr
     assert off.returncode == 0, off.stderr
-    assert on.stdout.strip() == "['start', 'stop'] None"
-    assert off.stdout.strip() == "[] None"
+    assert on.stdout.strip() == "['start', 'stop']"
+    assert off.stdout.strip() == "[]"
