@@ -289,13 +289,9 @@ def test_dedicated_app_mounts_only_health_and_the_two_service_routes(
     service: _FakeService,
 ) -> None:
     app = strategy_run_server.create_app(lambda: service)
-    paths = [route.path for route in app.routes]
-    assert set(paths) == {"/health", "/strategy-runs", "/strategy-runs/{vt_run_id}"}
+    paths = set(app.openapi()["paths"])
+    assert paths == {"/strategy-runs", "/strategy-runs/{vt_run_id}"}
     assert not any(path.endswith("{path:path}") for path in paths)
-    assert set(app.openapi()["paths"]) == {
-        "/strategy-runs",
-        "/strategy-runs/{vt_run_id}",
-    }
 
 
 def _run_python(
@@ -348,7 +344,7 @@ def test_entry_module_import_starts_no_threads_and_touches_no_files(
 def test_api_server_registration_is_gated(tmp_path: Path) -> None:
     script = (
         "import api_server; "
-        "print(any(getattr(route, 'path', '') == '/strategy-runs' for route in api_server.app.routes))"
+        "print('/strategy-runs' in api_server.app.openapi()['paths'])"
     )
     off = _run_python(script, tmp_path / "gated-off")
     on = _run_python(script, tmp_path / "gated-on", VT_STRATEGY_RUN_ENABLED="1")
@@ -357,3 +353,25 @@ def test_api_server_registration_is_gated(tmp_path: Path) -> None:
     assert off.stdout.strip() == "False"
     assert on.stdout.strip() == "True"
     assert TOKEN not in off.stdout + off.stderr + on.stdout + on.stderr
+
+
+def test_api_server_opt_in_lifespan_starts_and_stops_the_service(
+    tmp_path: Path,
+) -> None:
+    script = (
+        "import asyncio, api_server\n"
+        "calls = []\n"
+        "class _Service:\n"
+        "    async def start(self): calls.append('start')\n"
+        "    async def stop(self): calls.append('stop')\n"
+        "api_server._build_strategy_run_service = lambda: _Service()\n"
+        "asyncio.run(api_server._start_strategy_run_service())\n"
+        "asyncio.run(api_server._stop_strategy_run_service())\n"
+        "print(calls, api_server._strategy_run_service)"
+    )
+    on = _run_python(script, tmp_path / "lifespan-on", VT_STRATEGY_RUN_ENABLED="1")
+    off = _run_python(script, tmp_path / "lifespan-off")
+    assert on.returncode == 0, on.stderr
+    assert off.returncode == 0, off.stderr
+    assert on.stdout.strip() == "['start', 'stop'] None"
+    assert off.stdout.strip() == "[] None"
