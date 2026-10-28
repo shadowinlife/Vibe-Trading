@@ -57,6 +57,29 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 - `/strategy-schedules`：最近 5 次内联历史、20 条 run 抽屉、三步创建流（就绪策略 → cadence → 输出/边界）；workflow 策略出现确认卡，code 策略直接创建
 - 90 秒六帧 storyboard 尊重 `prefers-reduced-motion`，最后一帧只跳转 demo，不触发网络请求
 
+## API 面（全量 Web，箱内不挂载）
+
+鉴权为 VT 自己的 `require_auth`（session / API key），不是 RM 的 service token；箱内 entry 不注册这些路由。
+
+| 方法 | 路径 | 作用 |
+|---|---|---|
+| GET | `/strategies` | 列表（kind / readiness / 搜索） |
+| GET | `/strategies/summary` | KPI 汇总 |
+| POST | `/strategies` | 登记 spec / run_dir；体 `{"spec": {...}, "run_dir": null, "demo": false}` |
+| POST | `/strategies/demo` | 一键 demo seed |
+| PATCH | `/strategies/{id}` | 只更新 spec，生成新版本 |
+| GET | `/strategies/{id}` | 详情（含当前/上一次评审） |
+| GET | `/strategies/{id}/runs` | 最近运行 |
+| POST | `/strategies/{id}/evaluate` | 重跑就绪门 |
+| GET | `/strategy-schedules` | 本地排程列表（每行带最近 5 次 run） |
+| POST | `/strategies/{id}/schedule` | attach；体 `{"schedule": "0 9 * * 1-5", "timezone": "Asia/Shanghai"}` |
+| POST | `/strategy-schedule-proposals/{pid}/commit` | workflow 提案提交；体 `{"confirm_token": "..."}` |
+| DELETE | `/strategy-schedules/{job_id}` | 删除本地排程 |
+| GET | `/strategy-schedules/{job_id}/runs` | 有界运行历史（5–100） |
+| POST | `/strategy-schedules/{job_id}/run-now` | 立即运行一次 |
+
+`POST /strategies` 返回库行（`id` / `version` / `readiness` / `spec` 等）；`POST /strategies/{id}/schedule` 对 `code` 直接创建、对 `workflow` 返回 proposal（`confirm_token` 只在此 REST 面出现）。RM 侧的运行入口与调度工具见 F10 / F12，不复用这些路由。
+
 ## 边界
 
 - 不自动批准任何策略；人工评审只有否决权
