@@ -40,6 +40,25 @@
 4. **PR 描述模板**: 每个社区 PR 必须包含: Summary / Why / Changes / Test Plan / Checklist（参考 `.github/PULL_REQUEST_TEMPLATE.md`）。
 5. **差异文档同步**: 社区 PR 合入后，从 `mymain-wiki/branch/MYMAIN_DIVERGENCE.md` 移除对应条目。全部合入后本分支回归为纯跟踪分支。
 
+## 8.4 分支与提交纪律（2026-10-29 起）
+
+1. **`mymain` 是本地开发的保护分支**：禁止在 `mymain` 上直接提交功能改动；本地开发必须从 `mymain` 拉出独立 worktree 与功能分支，完成验证后再通过 PR 合并回 `mymain`。
+2. **标准流程**：
+
+   ```bash
+   git fetch fork
+   git worktree add ../mymain-<feature> -b feat/<feature> fork/mymain
+   # 在 worktree 内开发、验证、git commit -s
+   git push fork feat/<feature>
+   gh pr create --repo shadowinlife/Vibe-Trading --base mymain --head feat/<feature>
+   # 合并后
+   git worktree remove ../mymain-<feature>
+   ```
+
+3. **每个全新 feature 必须打 tag**：不可变命名（语义化版本 + 日期，如 `vX.Y.Z-<feature>-YYYYMMDD`），打在合并点或 PR head 上并推送到 fork；禁止移动、覆盖或复用已有 tag。
+4. **提交与 PR 纪律**：`git commit -s`（DCO 是唯一允许的 trailer），禁止任何 AI 归属行；PR 描述遵循 `.github/PULL_REQUEST_TEMPLATE.md`，合入前跑通对应测试与 `--check` 门。
+5. 既有历史提交不追溯重写；本规则自本节合入后生效。
+
 # 9. 环境约束（强制）
 
 1. **当前环境禁止 `scp` 命令**: 任何文件传输、部署、上传、同步任务一律不得使用 `scp`。需要跨主机复制时改用 `rsync`、`ssh <host> 'cat > <path>'`、`git push`/`git fetch`，或目标平台提供的 API/CLI；脚本、文档、示例与子代理提示词中也不得出现 `scp` 调用。
