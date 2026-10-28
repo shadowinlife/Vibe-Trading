@@ -40,12 +40,12 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 - 异步执行：`start` 立即返回 in-flight handle，`sweep` 对账，进程重启后收敛；超过 `run_timeout_s` 的作业记录为 failed 并带原因
 - 报告保持有界：每个策略的 run 报告最多保留最近 20 条
 
-## P1 服务入口（开发中）
+## P1 服务入口
 
 - 目标：为 RM 控制面提供按版本运行和状态查询的 service entry，复用本卡 runner，不重造执行器。
 - 基线：本地 `mymain`（已含 F9）；开发分支 `feat/strategy-run-entry`，基于 `mymain` 新建 worktree。
 - 跨仓需求：RM 仓 `docs/vt-change-requests/0001-strategy-run-entry.md`（仓外路径）；字段、鉴权、幂等与 per-box 契约以该需求为准。
-- 状态：未实现；P1 完成并通过 RM E2E 后再更新本卡。
+- 状态：delivered（VT 本地交付；RM E2E 是最终验收 gate，验收结论由 RM 填写）。交付 commit：e373076e；证据：.omo/evidence/strategy-run-entry/delivery.md。
 
 ## UI 面
 

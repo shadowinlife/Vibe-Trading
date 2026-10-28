@@ -1,9 +1,83 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# ── Process supervision ───────────────────────────────────────────────────────
+# The container serves two long-lived processes: opencode on :4096 and the
+# dedicated strategy-run entry on ${VT_STRATEGY_RUN_PORT:-8000}. Both are
+# load-bearing, so this script supervises them instead of waiting on opencode
+# alone ("only MCP is up" must be a container failure, never a silent state).
+SERVER_PID=""
+ENTRY_PID=""
+STOP_GRACE_S="${VT_ENTRYPOINT_STOP_GRACE_S:-10}"
+case "$STOP_GRACE_S" in
+    '' | *[!0-9]*) STOP_GRACE_S=10 ;;
+esac
+
+# Liveness from bash's job table: `kill -0` still answers for an exited child
+# that has not been reaped yet (zombie), which would hide a dead service.
+pid_running() {
+    local pid="$1"
+    [ -n "$pid" ] || return 1
+    local running
+    running=" $(jobs -pr 2>/dev/null | tr '\n' ' ') "
+    case "$running" in
+        *" $pid "*) return 0 ;;
+    esac
+    return 1
+}
+
+# TERM both children, wait a bounded grace period, KILL whatever ignored it,
+# and reap the job table so no orphan/zombie survives this process.
+stop_children() {
+    local pids=""
+    [ -n "$SERVER_PID" ] && pids="$SERVER_PID"
+    [ -n "$ENTRY_PID" ] && pids="${pids:+$pids }$ENTRY_PID"
+    [ -n "$pids" ] || return 0
+
+    local pid
+    # shellcheck disable=SC2086  # pids is a deliberate space-separated list
+    kill -TERM $pids 2>/dev/null || true
+
+    local deadline=$((SECONDS + STOP_GRACE_S))
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        local alive=0
+        for pid in $pids; do
+            if pid_running "$pid"; then
+                alive=1
+            fi
+        done
+        [ "$alive" -eq 0 ] && break
+        sleep 0.2
+    done
+
+    for pid in $pids; do
+        if pid_running "$pid"; then
+            printf '[entrypoint] process %s ignored TERM for %ss — sending KILL\n' \
+                "$pid" "$STOP_GRACE_S"
+            kill -KILL "$pid" 2>/dev/null || true
+        fi
+    done
+    # shellcheck disable=SC2086
+    wait $pids 2>/dev/null || true
+    SERVER_PID=""
+    ENTRY_PID=""
+}
+
+shutdown_and_exit() {
+    local code="$1"
+    trap - TERM INT
+    printf '[entrypoint] received shutdown signal — stopping supervised processes\n'
+    stop_children
+    exit "$code"
+}
+# TERM/INT traps are installed once both children exist (see "Supervise both");
+# before that there is nothing to stop.
+
 # ── Cleanup trap ──────────────────────────────────────────────────────────────
 cleanup() {
     local exit_code=$?
+    trap - EXIT
+    stop_children
     rm -f /tmp/entrypoint_render_err 2>/dev/null || true
     exit $exit_code
 }
@@ -214,10 +288,9 @@ except Exception as e:
     fi
 fi
 
-# ── Start opencode serve ──────────────────────────────────────────────────────
+# ── Start opencode serve (unchanged: :4096) ───────────────────────────────────
 opencode serve --port 4096 --hostname 0.0.0.0 &
 SERVER_PID=$!
-trap 'kill -TERM "$SERVER_PID" 2>/dev/null || true' TERM INT
 
 # First bootstrap of a fresh container performs one-time LOCAL init (plugin
 # module load, skill index build, db setup). It is CPU-only — no downloads,
@@ -235,4 +308,71 @@ else
     echo "[entrypoint] WARNING: warmup request did not complete within 300s"
 fi
 
-wait "$SERVER_PID"
+if ! pid_running "$SERVER_PID"; then
+    echo "[entrypoint] ERROR: opencode serve exited before the strategy-run entry could start"
+    exit 1
+fi
+
+# ── Start the dedicated strategy-run entry ────────────────────────────────────
+# `agent/strategy_run_server.py` mounts only /health and the two RM service
+# routes and never runs api_server's lifespan, so the F9 scheduler stays off.
+# It is started after opencode is warm on purpose: the entry's own bind failure
+# must be unambiguous (a shared port conflict can only be the entry's fault).
+VT_STRATEGY_RUN_HOST="${VT_STRATEGY_RUN_HOST:-0.0.0.0}"
+VT_STRATEGY_RUN_PORT="${VT_STRATEGY_RUN_PORT:-8000}"
+VT_STRATEGY_RUN_HEALTH_BUDGET_S="${VT_STRATEGY_RUN_HEALTH_BUDGET_S:-120}"
+case "$VT_STRATEGY_RUN_HEALTH_BUDGET_S" in
+    '' | *[!0-9]*)
+        echo "[entrypoint] WARNING: invalid VT_STRATEGY_RUN_HEALTH_BUDGET_S — using 120"
+        VT_STRATEGY_RUN_HEALTH_BUDGET_S=120
+        ;;
+esac
+
+echo "[entrypoint] starting strategy-run entry on ${VT_STRATEGY_RUN_HOST}:${VT_STRATEGY_RUN_PORT}"
+/opt/venv/bin/python /opt/vibe-trading/agent/strategy_run_server.py \
+    --host "$VT_STRATEGY_RUN_HOST" \
+    --port "$VT_STRATEGY_RUN_PORT" &
+ENTRY_PID=$!
+
+trap 'shutdown_and_exit 143' TERM
+trap 'shutdown_and_exit 130' INT
+
+# ── Gate startup on the entry's real /health ──────────────────────────────────
+# /health is unauthenticated by design (the RM token only guards the service
+# routes), so no token mount is needed to prove the process is serving.
+ENTRY_HEALTH_URL="http://127.0.0.1:${VT_STRATEGY_RUN_PORT}/health"
+ENTRY_HEALTH_DEADLINE=$((SECONDS + VT_STRATEGY_RUN_HEALTH_BUDGET_S))
+ENTRY_READY=0
+while :; do
+    if ! pid_running "$ENTRY_PID"; then
+        echo "[entrypoint] ERROR: strategy-run entry exited before ${ENTRY_HEALTH_URL} returned 200"
+        break
+    fi
+    if curl -sf --max-time 2 "$ENTRY_HEALTH_URL" >/dev/null 2>&1; then
+        ENTRY_READY=1
+        echo "[entrypoint] strategy-run entry /health OK → ${ENTRY_HEALTH_URL} (${SECONDS}s after entrypoint start)"
+        break
+    fi
+    if [ "$SECONDS" -ge "$ENTRY_HEALTH_DEADLINE" ]; then
+        echo "[entrypoint] ERROR: strategy-run entry /health did not return 200 within ${VT_STRATEGY_RUN_HEALTH_BUDGET_S}s → ${ENTRY_HEALTH_URL}"
+        break
+    fi
+    sleep 1
+done
+if [ "$ENTRY_READY" != "1" ]; then
+    echo "[entrypoint] FATAL: refusing to serve opencode without the strategy-run entry"
+    exit 1
+fi
+
+# ── Supervise both ────────────────────────────────────────────────────────────
+# `wait -n` returns as soon as either process exits (bash >= 4.3; the base
+# image ships 5.1). Any exit — even status 0 — tears the sibling down and
+# fails the container, so a half-alive service can never look healthy.
+echo "[entrypoint] supervising opencode (pid=${SERVER_PID}) and strategy-run entry (pid=${ENTRY_PID})"
+set +e
+wait -n
+SUPERVISOR_RC=$?
+set -e
+echo "[entrypoint] ERROR: a supervised process exited (status ${SUPERVISOR_RC}) — stopping the sibling"
+stop_children
+exit 1

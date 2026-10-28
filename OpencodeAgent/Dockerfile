@@ -151,12 +151,16 @@ ENV OMO_DISABLE_POSTHOG=1 \
     OPENCODE_DISABLE_AUTOUPDATE=1 \
     OMO_VERSION=${OMO_VERSION}
 
-EXPOSE 4096
+EXPOSE 4096 8000
 
-# opencode serve requires HTTP basic auth when OPENCODE_SERVER_PASSWORD is set;
-# an unauthenticated probe gets 401 and the container reports unhealthy.
+# Both supervised services define container health: opencode on :4096 and the
+# strategy-run entry on ${VT_STRATEGY_RUN_PORT:-8000} (the entrypoint exits if
+# either process dies; this probe also covers a hung entry). opencode requires
+# HTTP basic auth when OPENCODE_SERVER_PASSWORD is set; an unauthenticated
+# probe gets 401 and the container reports unhealthy.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -sf -u opencode:"$OPENCODE_SERVER_PASSWORD" http://localhost:4096/health || exit 1
+    CMD curl -sf -u opencode:"$OPENCODE_SERVER_PASSWORD" http://localhost:4096/health \
+     && curl -sf --max-time 5 "http://localhost:${VT_STRATEGY_RUN_PORT:-8000}/health" || exit 1
 
 USER opencode
 

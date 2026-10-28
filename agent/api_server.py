@@ -9,9 +9,10 @@ infrastructure lives in ``src.api.{security,models,helpers,state}``.
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator
+from typing import Any, AsyncIterator
 
 from fastapi import FastAPI, HTTPException, Request, status  # noqa: F401
 from fastapi.responses import FileResponse  # noqa: F401
@@ -124,6 +125,8 @@ from src.api.scheduled_routes import (  # noqa: F401, E402
     _stop_scheduled_research_on_shutdown,
 )
 
+_strategy_run_service: Any | None = None
+
 
 async def _run_startup_preflight() -> None:
     """Run preflight checks on server startup."""
@@ -148,13 +151,48 @@ async def _run_startup_preflight() -> None:
         await _start_channel_runtime()
 
 
+def _build_strategy_run_service() -> Any:
+    """Build the process-wide RM entry service (one per process)."""
+    from src.strategy_runs.service import build_service
+
+    return build_service()
+
+
+async def _start_strategy_run_service() -> None:
+    """Start the opt-in RM entry service on the full API surface.
+
+    ``VT_STRATEGY_RUN_ENABLED`` registers ``/strategy-runs`` on this app, so this
+    lifespan must own the service lifecycle: a mounted route whose sweeper never
+    starts would accept runs and leave them ``running`` forever. The dedicated
+    ``agent/strategy_run_server.py`` entry starts the same process-wide service
+    (``build_service`` is a singleton); the two entry points never run together.
+    """
+    global _strategy_run_service
+    if not _VT_STRATEGY_RUN_ENABLED:
+        return
+    service = _build_strategy_run_service()
+    await service.start()
+    _strategy_run_service = service
+    logging.getLogger(__name__).info("strategy-run service started")
+
+
+async def _stop_strategy_run_service() -> None:
+    """Stop the opt-in entry service; safe when it never started."""
+    global _strategy_run_service
+    service, _strategy_run_service = _strategy_run_service, None
+    if service is not None:
+        await service.stop()
+
+
 @asynccontextmanager
 async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Run API startup and guaranteed reverse-order shutdown."""
     try:
         await _run_startup_preflight()
+        await _start_strategy_run_service()
         yield
     finally:
+        await _stop_strategy_run_service()
         await _stop_scheduled_research_on_shutdown()
 
 
@@ -227,6 +265,16 @@ from src.api.strategy_library_routes import register_strategy_library_routes  # 
 register_strategy_library_routes(app)
 from src.api.strategy_schedule_routes import register_strategy_schedule_routes  # noqa: E402
 register_strategy_schedule_routes(app)
+
+# RM service entry, default OFF: the dedicated in-box entry
+# (``agent/strategy_run_server.py``) is the production mount point, so the
+# full API surface stays free of these routes unless an operator opts in.
+_VT_STRATEGY_RUN_ENABLED = os.environ.get(  # noqa: env-gate — default-off operator switch
+    "VT_STRATEGY_RUN_ENABLED", ""
+).lower() in {"1", "true", "yes", "on"}
+if _VT_STRATEGY_RUN_ENABLED:
+    from src.api.strategy_run_routes import register_strategy_run_routes  # noqa: E402
+    register_strategy_run_routes(app)
 
 # --- Uploads ---
 from src.api.uploads_routes import register_uploads_routes  # noqa: E402
