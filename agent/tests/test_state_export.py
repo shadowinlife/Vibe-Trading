@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 import sqlite3
 import tarfile
 from pathlib import Path
@@ -242,6 +243,33 @@ def test_a_tree_mutated_between_scan_and_read_is_export_unstable(
     with pytest.raises(ExportUnstable):
         export_full(root, db_paths=_db_paths(root))
     assert list(root.glob(".state-export-*")) == []
+
+
+def test_a_same_name_content_change_after_the_read_is_export_unstable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "runtime"
+    root.mkdir()
+    strategy_id, _version = _seed_strategy(root)
+    target = root / "strategies" / strategy_id / "strategy.json"
+    real_walk = export_module._walk_regular_files
+    calls = 0
+
+    def walk_then_rewrite(strategies_root: Path) -> list[Path]:
+        nonlocal calls
+        calls += 1
+        paths = real_walk(strategies_root)
+        if calls == 2:
+            info = target.lstat()
+            data = target.read_bytes()
+            target.write_bytes(bytes([data[0] ^ 1]) + data[1:])
+            os.utime(target, ns=(info.st_atime_ns, info.st_mtime_ns + 1_000_000))
+        return paths
+
+    monkeypatch.setattr(export_module, "_walk_regular_files", walk_then_rewrite)
+
+    with pytest.raises(ExportUnstable):
+        export_full(root, db_paths=_db_paths(root))
 
 
 def test_symlinked_strategy_paths_are_refused_not_skipped(tmp_path: Path) -> None:

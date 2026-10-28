@@ -19,6 +19,7 @@ from fastapi.testclient import TestClient
 
 import strategy_run_server
 from src.api import state_routes
+from src.state_export import _run_report as run_report_module
 from src.state_export._errors import BlobCorrupt, ExportUnstable, ImportFailed, ImportInProgress, UnknownRunId
 from src.state_export._models import ImportResult
 from src.state_export.manifest import LAYOUT_VERSION, BlobTooLarge, LayoutUnsupported, ManifestInvalid, PathEscape
@@ -358,6 +359,48 @@ def test_run_scope_payload_has_the_thirteen_frozen_fields(tmp_path: Path) -> Non
     assert payload["trades"] == [{"ts": 1, "side": "buy"}]
     assert payload["truncated"] is False
     assert payload["finished_at"] is not None
+
+
+def test_a_byte_capped_csv_reports_truncation_and_drops_the_partial_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, vt_run_id = _seed_run(tmp_path)
+    csv_path = (
+        root / "runs" / "scheduled" / f"svc-{vt_run_id}" / "job-1" / "artifacts" / "equity.csv"
+    )
+    csv_path.write_text("ts,value\n1,100\n2,101\n", encoding="utf-8")
+    monkeypatch.setattr(run_report_module, "_MAX_SOURCE_FILE_BYTES", 18)
+
+    payload = export_run(vt_run_id, runtime_root=root)
+
+    assert payload["truncated"] is True
+    assert payload["equity_curve"] == [{"ts": 1, "value": 100}]
+
+
+def test_a_row_capped_csv_reports_truncation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, vt_run_id = _seed_run(tmp_path)
+    monkeypatch.setattr(run_report_module, "_MAX_CSV_ROWS", 1)
+
+    payload = export_run(vt_run_id, runtime_root=root)
+
+    assert payload["truncated"] is True
+    assert payload["equity_curve"] == [{"ts": 1, "value": 100}]
+
+
+def test_a_byte_capped_report_markdown_reports_truncation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, vt_run_id = _seed_run(tmp_path)
+    run_dir = root / "runs" / "scheduled" / f"svc-{vt_run_id}" / "job-1"
+    (run_dir / "run_card.md").write_text("x" * 50, encoding="utf-8")
+    monkeypatch.setattr(run_report_module, "_MAX_SOURCE_FILE_BYTES", 30)
+
+    payload = export_run(vt_run_id, runtime_root=root)
+
+    assert payload["truncated"] is True
+    assert payload["report_markdown"] == "x" * 30
 
 
 def test_run_route_serves_the_payload_and_truncates_an_oversized_artifact(

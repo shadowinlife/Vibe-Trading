@@ -5,8 +5,8 @@ The payload follows the existing backtest-report shape (``metrics`` /
 Run directories are constrained to ``<runtime_root>/runs``: a handle that
 points elsewhere is ignored in favour of the ``svc-<vt_run_id>`` scan. Source
 artifacts are read with a 64 MiB head cap and a 200k-row cap so an oversized
-CSV or markdown cannot exhaust memory; the only truncation flag is the existing
-2 MiB payload-shrink path.
+CSV or markdown cannot exhaust memory; hitting either cap sets ``truncated``,
+and the 2 MiB payload shrinker reports its own trimming through the same flag.
 """
 
 from __future__ import annotations
@@ -69,6 +69,9 @@ def export_run(vt_run_id: str, *, runtime_root: Path | None = None) -> dict[str,
     if metrics is None:
         metrics = _first_csv_row(run_dir, "metrics.csv")
     strategy = _strategy_name(root, row.strategy_id)
+    equity_curve, equity_truncated = _csv_records(run_dir, "equity.csv")
+    trades, trades_truncated = _csv_records(run_dir, "trades.csv")
+    report_markdown, report_truncated = _read_report_markdown(run_dir)
     payload: dict[str, Any] = {
         "vt_run_id": row.vt_run_id,
         "strategy_id": row.strategy_id,
@@ -79,10 +82,10 @@ def export_run(vt_run_id: str, *, runtime_root: Path | None = None) -> dict[str,
         "title": _run_title(card, strategy, row.vt_run_id),
         "strategy": strategy,
         "metrics": _json_safe(metrics),
-        "equity_curve": _csv_records(run_dir, "equity.csv"),
-        "trades": _csv_records(run_dir, "trades.csv"),
-        "report_markdown": _read_report_markdown(run_dir),
-        "truncated": False,
+        "equity_curve": equity_curve,
+        "trades": trades,
+        "report_markdown": report_markdown,
+        "truncated": equity_truncated or trades_truncated or report_truncated,
     }
     return _cap_run_payload(payload)
 
@@ -146,10 +149,11 @@ def _artifact_path(run_dir: Path | None, *parts: str) -> Path | None:
     return None
 
 
-def _read_capped_bytes(path: Path) -> bytes:
-    """Read at most :data:`_MAX_SOURCE_FILE_BYTES` from *path*."""
+def _read_capped_bytes(path: Path) -> tuple[bytes, bool]:
+    """Read at most :data:`_MAX_SOURCE_FILE_BYTES`; the flag reports a cap hit."""
     with path.open("rb") as handle:
-        return handle.read(_MAX_SOURCE_FILE_BYTES)
+        raw = handle.read(_MAX_SOURCE_FILE_BYTES + 1)
+    return raw[:_MAX_SOURCE_FILE_BYTES], len(raw) > _MAX_SOURCE_FILE_BYTES
 
 
 def _read_run_card(run_dir: Path | None) -> dict[str, Any]:
@@ -158,32 +162,33 @@ def _read_run_card(run_dir: Path | None) -> dict[str, Any]:
     if path is None:
         return {}
     try:
-        payload = json.loads(_read_capped_bytes(path).decode("utf-8"))
+        raw, _truncated = _read_capped_bytes(path)
+        payload = json.loads(raw.decode("utf-8"))
     except (OSError, UnicodeDecodeError, ValueError):
         return {}
     return payload if isinstance(payload, dict) else {}
 
 
-def _read_report_markdown(run_dir: Path | None) -> str | None:
-    """Return up to 64 MiB of ``run_card.md`` text, or ``None`` when absent."""
+def _read_report_markdown(run_dir: Path | None) -> tuple[str | None, bool]:
+    """Return up to 64 MiB of ``run_card.md`` and whether the cap was hit."""
     path = _artifact_path(run_dir, "run_card.md")
     if path is None:
-        return None
+        return None, False
     try:
-        raw = _read_capped_bytes(path)
+        raw, truncated = _read_capped_bytes(path)
     except OSError:
-        return None
+        return None, False
     try:
-        return raw.decode("utf-8")
+        return raw.decode("utf-8"), truncated
     except UnicodeDecodeError:
-        if len(raw) < _MAX_SOURCE_FILE_BYTES:
-            return None
-        return raw.decode("utf-8", errors="ignore")
+        if not truncated:
+            return None, False
+        return raw.decode("utf-8", errors="ignore"), True
 
 
 def _first_csv_row(run_dir: Path | None, filename: str) -> dict[str, Any]:
     """Return the first row of ``artifacts/<filename>`` with numeric coercion."""
-    records = _csv_records(run_dir, filename, limit=1)
+    records, _truncated = _csv_records(run_dir, filename, limit=1)
     return records[0] if records else {}
 
 
@@ -192,19 +197,23 @@ def _csv_records(
     filename: str,
     *,
     limit: int | None = None,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], bool]:
     """Read ``artifacts/<filename>`` as rows of JSON-safe, coerced cells.
 
-    At most 64 MiB of the file and 200k rows are consumed; the caller's payload
-    shrinker is the only layer that reports truncation.
+    At most 64 MiB of the file and 200k rows are consumed. Either cap sets the
+    returned flag; a byte-capped read drops the final partial line so a cut
+    number is never reported as a row.
     """
     path = _artifact_path(run_dir, "artifacts", filename)
     if path is None:
-        return []
+        return [], False
     try:
-        if path.stat().st_size > _MAX_SOURCE_FILE_BYTES:
-            with path.open("rb") as raw_handle:
-                text = raw_handle.read(_MAX_SOURCE_FILE_BYTES).decode("utf-8", errors="ignore")
+        truncated = path.stat().st_size > _MAX_SOURCE_FILE_BYTES
+        if truncated:
+            raw, _capped = _read_capped_bytes(path)
+            text = raw.decode("utf-8", errors="ignore")
+            last_newline = text.rfind("\n")
+            text = text[: last_newline + 1] if last_newline >= 0 else ""
             source: Any = io.StringIO(text)
         else:
             source = path.open("r", encoding="utf-8", newline="")
@@ -214,11 +223,12 @@ def _csv_records(
                 if limit is not None and index >= limit:
                     break
                 if index >= _MAX_CSV_ROWS:
+                    truncated = True
                     break
                 rows.append({str(key): _coerce_cell(value) for key, value in record.items()})
     except (OSError, csv.Error, UnicodeDecodeError):
-        return []
-    return rows
+        return [], False
+    return rows, truncated
 
 
 def _coerce_cell(value: Any) -> Any:
@@ -280,7 +290,6 @@ def _cap_run_payload(payload: dict[str, Any]) -> dict[str, Any]:
     drops them once only two rows remain, halves the markdown, and finally
     removes metric keys in sorted order.
     """
-    payload["truncated"] = False
     if _serialised_size(payload) <= MAX_RUN_PAYLOAD_BYTES:
         return payload
 

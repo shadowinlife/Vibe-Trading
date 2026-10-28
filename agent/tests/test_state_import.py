@@ -163,7 +163,7 @@ def test_round_trip_imports_ids_versions_bytes_and_database_rows(tmp_path: Path)
     assert result.layout_version == LAYOUT_VERSION
     assert result.strategies == 1
     assert result.versions == 1
-    assert result.reopened is True
+    assert result.reopened is False
     assert result.content_sha256
     assert _tree_bytes(target) == _tree_bytes(source)
 
@@ -333,7 +333,48 @@ def test_import_is_authoritative_so_an_empty_blob_removes_old_state(tmp_path: Pa
     assert list((target / "strategies").iterdir()) == []
     assert not (target / "strategies" / old_id).exists()
     assert not (target / "strategy_store.db").exists()
-    assert _shared.read_state_generation(target) == empty_blob.content_sha256
+    assert _shared.read_state_generation(target).startswith(f"{empty_blob.content_sha256}:")
+
+
+def test_reimporting_the_same_blob_rotates_the_generation_marker(tmp_path: Path) -> None:
+    _source, blob, _strategy_id, _version = _seeded_export(tmp_path)
+    target = tmp_path / "target"
+
+    first = import_full(blob, LAYOUT_VERSION, runtime_root=target, db_paths=_db_paths(target))
+    first_marker = _shared.read_state_generation(target)
+    second = import_full(blob, LAYOUT_VERSION, runtime_root=target, db_paths=_db_paths(target))
+    second_marker = _shared.read_state_generation(target)
+
+    assert first.content_sha256 == second.content_sha256
+    assert first_marker.startswith(f"{first.content_sha256}:")
+    assert second_marker.startswith(f"{second.content_sha256}:")
+    assert first_marker != second_marker
+
+
+def test_import_reports_no_reopen_when_no_store_was_open(tmp_path: Path) -> None:
+    _source, blob, _strategy_id, _version = _seeded_export(tmp_path)
+    target = tmp_path / "target"
+    _shared.reopen_store()
+
+    result = import_full(blob, LAYOUT_VERSION, runtime_root=target, db_paths=_db_paths(target))
+
+    assert result.reopened is False
+
+
+def test_import_reports_a_reopened_live_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _source, blob, _strategy_id, _version = _seeded_export(tmp_path)
+    target = tmp_path / "target"
+    live = SqliteStrategyStore(tmp_path / "live.db")
+    monkeypatch.setattr(_shared, "_store", live)
+    monkeypatch.setattr(_shared, "_bound_store", live)
+    monkeypatch.setattr(_shared, "_store_generation", "before-import")
+
+    result = import_full(blob, LAYOUT_VERSION, runtime_root=target, db_paths=_db_paths(target))
+
+    assert result.reopened is True
+    assert _shared._store is None
 
 
 def test_a_held_import_lock_answers_import_in_progress(

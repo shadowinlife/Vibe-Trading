@@ -70,10 +70,11 @@ def read_state_generation(runtime_root: Path | None = None) -> str:
 def write_state_generation(value: str, runtime_root: Path | None = None) -> None:
     """Atomically replace the ``state-generation`` marker.
 
-    The caller supplies the imported snapshot's content hash.  This helper
-    never logs the value and never accepts a service token by design; the
-    marker lives under the runtime root and is read by every process holding a
-    store handle.
+    The caller supplies an opaque generation value: the imported snapshot's
+    content hash plus a per-import nonce, so importing the same blob twice still
+    rotates the marker.  This helper never logs the value and never accepts a
+    service token by design; the marker lives under the runtime root and is read
+    by every process holding a store handle.
 
     Args:
         value: New marker text.

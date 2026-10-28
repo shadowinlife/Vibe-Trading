@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import os
 import sqlite3
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -73,8 +74,10 @@ def import_locked(
         try:
             _take_backup(root, databases, backup, record)
             _install_state(root, databases, staging, manifest, record)
-            _shared.write_state_generation(manifest.content_sha256, runtime_root=root)
-            _shared.reopen_store()
+            _shared.write_state_generation(
+                f"{manifest.content_sha256}:{uuid.uuid4().hex}", runtime_root=root
+            )
+            reopened = _shared.reopen_store()
             strategies, versions = _self_check(root, databases, manifest)
         except BaseException as exc:
             try:
@@ -99,7 +102,7 @@ def import_locked(
             content_sha256=manifest.content_sha256,
             strategies=strategies,
             versions=versions,
-            reopened=True,
+            reopened=reopened,
         )
     finally:
         _remove_tree(staging)

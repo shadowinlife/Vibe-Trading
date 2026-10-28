@@ -289,9 +289,13 @@ def _read_verify_and_stage(
         destination.write_bytes(data)
         staged.append((entry.relpath, destination, digest, len(data)))
 
-    current = [path.relative_to(root).as_posix() for path in _walk_regular_files(root / _STRATEGY_DIRNAME)]
-    if current != [entry.relpath for entry in entries]:
-        raise ExportUnstable("strategies tree gained or lost a file during export")
+    current: list[tuple[str, int, int]] = []
+    for path in _walk_regular_files(root / _STRATEGY_DIRNAME):
+        info = path.lstat()
+        current.append((path.relative_to(root).as_posix(), info.st_size, info.st_mtime_ns))
+    expected = [(entry.relpath, entry.size, entry.mtime_ns) for entry in entries]
+    if current != expected:
+        raise ExportUnstable("strategies tree changed during export")
     return staged
 
 
