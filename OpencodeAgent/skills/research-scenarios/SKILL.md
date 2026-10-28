@@ -43,6 +43,8 @@ triggers:
 7. Step 6：**主动问询是否需要生成 HTML 交互报告**（加载 `html-report` Skill）。
 8. Step 7：Skills 发现：询问是否需要了解当前可用的所有分析 Skills。
 
+> 输出结尾附「产物结尾契约」四行 closing block（见文末）。
+
 ## 场景 B：量化回测
 1. Step 0：执行通用前置检查，重点看历史回测。
 2. Step 1：必须询问是否使用 Vibe-Trading 的全套因子回测策略；说明增量能力包括 `alpha-zoo`、`technical-basic`、`ml-strategy`、`factor-research`、`multi-factor`、`backtest-diagnose`、`pine-script`、`vnpy-export`。
@@ -53,6 +55,8 @@ triggers:
 7. Step 6：若回测推导出后续买入/卖出位，询问是否让 crontab 在次日/交易时间用实时数据监控触发。
 8. Step 7：若结果可跟踪，询问是否周期性自动执行并提醒。
 
+> 输出结尾附「产物结尾契约」四行 closing block（见文末）。
+
 ## 场景 B2：Shadow Account（交割单诊断）
 1. Step 0：用户上传交割单 CSV/Excel 文件。
 2. Step 1：加载 `trade-journal` Skill，调用 `vibe-trading_analyze_trade_journal` 解析交易行为。
@@ -60,6 +64,8 @@ triggers:
 4. Step 3：调用 `vibe-trading_run_shadow_backtest` 跨市场回测验证。
 5. Step 4：调用 `vibe-trading_render_shadow_report` 生成 8-section PDF/HTML 报告。
 6. Step 5：引导用户进入场景 B（对 Shadow 策略做深度回测）或场景 D（周期执行）。
+
+> 输出结尾附「产物结尾契约」四行 closing block（见文末）。
 
 ## 场景 C：开放性问题（"明天买什么"/"最近有什么机会"）
 识别为开放型 / 待澄清型 → 加载 `intake` skill 执行漏斗与槽位澄清；本场景不再重复协议。
@@ -180,6 +186,8 @@ triggers:
 - 必须给出仓位建议和止损规则
 - 优先使用 `ch_*` 语义层（ClickHouse），本地不足时再用 VT 网络源
 
+> 输出结尾附「产物结尾契约」四行 closing block（见文末）。
+
 ## 场景 F：宏观/事件驱动问题（"俄乌战争对市场影响"/"厄尔尼诺的影响"）
 1. 识别为「问题处理协议 · 宏观型」，执行 **Step-Back 协议**：
    - Step 1：抽象传导渠道（地缘 → 能源/农产品/避险/供应链/军工；气候 → 作物产量/种植结构/水利/保险）。
@@ -195,3 +203,21 @@ triggers:
 3. 方法论声明（强制）：短窗口事件研究可靠；长周期影响仅作情景分析（MacKinlay 1997; Kothari & Warner 2007）。文献结论标注为文献结论，不作为预测。
 4. 输出遵守「防幻觉与诚实拒答纪律」：不可解部分用拒答模板；所有数字带 data-as-of。
 5. 完成后用 `report-generate` 保存，并主动问询是否生成 HTML（Markdown 转 HTML）。
+
+> 输出结尾附「产物结尾契约」四行 closing block（见文末）。
+
+## 产物结尾契约（closing block）
+
+凡产出具名产物的回答（个股体检 / 策略回测 / 交割单诊断 / 选股清单 / 事件影响 / HTML 报告），正文结尾必须附下列四行；纯解释性回答（如"什么是因子"）不附。
+
+```
+**我假设了什么：** 本次实际生效的默认值，逐项列出
+**换一个会怎样：** 换掉其中一个关键假设后，结论如何变化
+**下一步能做什么：** ≤3 条具体可执行的后续
+**仅供研究，不构成投资建议；数据截止 T-1。**
+```
+
+- 第一行只写真正生效的假设；未采用的候选值不写。
+- 第三行 ≤3 条，每条对应一个可执行的工具或场景动作，不写"继续观察"这类空话。
+- 第四行是合规红线：`仅供研究`、`不构成投资建议`、`数据截止 T-1` 三要素必须同句出现，不得改写成"投资有风险"。
+- closing block 是产物的结尾，不是产物的替代；出现率由评测门槛约束（`tests/evals/intake/checks.py`），不依赖运行时硬追加。
