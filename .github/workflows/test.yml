@@ -80,6 +80,9 @@ jobs:
 
       # Separate from `test` so a repository-wide gate failure cannot mask the
       # Python test verdict (mymain tracks AGENTS.md, which this gate rejects).
+      - name: Repository safety gates
+        run: bash tools/ci_grep_gates.sh
+
   test:
     name: test / Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
@@ -126,9 +129,6 @@ jobs:
           python -c "import statsmodels; print('statsmodels', statsmodels.__version__)"
           python -c "import arch; print('arch', arch.__version__)"
           python -c "import langchain_anthropic; print('langchain-anthropic', langchain_anthropic.__version__)"
-
-      - name: Repository safety gates
-        run: bash tools/ci_grep_gates.sh
 
       - name: Test repository safety gates
         run: pytest tools/test_ci_env_var_gate.py tools/test_ci_private_files_gate.py -q
