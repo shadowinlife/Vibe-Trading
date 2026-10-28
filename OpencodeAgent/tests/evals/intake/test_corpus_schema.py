@@ -9,8 +9,10 @@ Everything here is offline: no network, no docker, stdlib + pytest only.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -20,9 +22,15 @@ import pytest
 INTAKE_DIR = Path(__file__).resolve().parent
 CORPUS_PATH = INTAKE_DIR / "corpus.jsonl"
 CORPUS40_PATH = INTAKE_DIR / "corpus40.jsonl"
+CORPUS40_V2_PATH = INTAKE_DIR / "corpus40_v2.jsonl"
 EXPECTED_PATH = INTAKE_DIR / "expected.json"
 SCHEMA_PATH = INTAKE_DIR / "events.schema.json"
 RUN_PY = INTAKE_DIR / "run.py"
+
+# Frozen Wave 0/Wave 1 evidence: `git show 32f5e595~1:OpencodeAgent/tests/evals/intake/corpus40.jsonl`.
+# 32f5e595 corrected c19/c22, so this pre-correction hash pins the corpus the
+# published reports were generated from.
+CORPUS40_V1_SHA256 = "69bb6f256d5e2afa7a521015b40d22101e47ceec7f84a4acfacac4cdbd410630"
 
 EXPECT_VALUES = {"direct_answer", "execute_with_defaults", "clarify_private", "refuse"}
 PRODUCT_VALUES = {
@@ -263,6 +271,40 @@ def test_custom_corpus_accepts_40_and_rejects_short(tmp_path):
     assert any("at least 10 items" in error for error in errors), errors
 
 
+def test_corpus40_v1_is_frozen_before_the_label_correction():
+    assert hashlib.sha256(CORPUS40_PATH.read_bytes()).hexdigest() == CORPUS40_V1_SHA256
+    items = run.load_corpus(CORPUS40_PATH)
+    assert len(items) == 40
+    assert len({item["id"] for item in items}) == 40
+    labels = {item["id"]: item["expect"] for item in items}
+    assert labels["c19"] == labels["c22"] == "execute_with_defaults"
+
+
+def test_corpus40_v2_relabels_only_c19_and_c22():
+    v1 = {item["id"]: item for item in run.load_corpus(CORPUS40_PATH)}
+    v2_items = run.load_corpus(CORPUS40_V2_PATH)
+    v2 = {item["id"]: item for item in v2_items}
+    assert len(v2_items) == 40
+    assert len(v2) == 40
+    assert set(v1) == set(v2) == {f"c{number:02d}" for number in range(1, 41)}
+    assert [item["id"] for item in v2_items] == [item["id"] for item in run.load_corpus(CORPUS40_PATH)]
+    for corpus_id in v1:
+        assert v2[corpus_id]["prompt"] == v1[corpus_id]["prompt"], corpus_id
+    assert {corpus_id for corpus_id in v1 if v1[corpus_id] != v2[corpus_id]} == {"c19", "c22"}
+    for corpus_id in ("c19", "c22"):
+        assert v1[corpus_id]["expect"] == "execute_with_defaults"
+        assert v2[corpus_id]["expect"] == "clarify_private"
+        assert v2[corpus_id]["labels_version"] == "v2"
+        assert "私有槽位" in v2[corpus_id]["rationale"]
+    assert run.validate_corpus(v2_items) == []
+
+
+def test_generator_reproduces_both_label_versions():
+    generator = _load_module("intake_gen_corpus40", INTAKE_DIR / "gen_corpus40.py")
+    assert generator.render_corpus("v1").encode("utf-8") == CORPUS40_PATH.read_bytes()
+    assert generator.render_corpus("v2").encode("utf-8") == CORPUS40_V2_PATH.read_bytes()
+
+
 def test_frozen_rules_apply_only_to_default_path(tmp_path):
     lines = CORPUS40_PATH.read_text(encoding="utf-8").splitlines()[:11]
     eleven_path = tmp_path / "eleven.jsonl"
@@ -293,3 +335,10 @@ def test_frozen_rubric_matches_exporter():
     exporter = _load_module("intake_first_message_exporter", INTAKE_DIR / "export_first_messages.py")
     assert analyze.LABEL_KEYWORDS == exporter.LABEL_KEYWORDS
     assert tuple(analyze.PRODUCT_LABELS) == tuple(exporter.PRODUCT_LABELS)
+
+
+def test_private_product_items_without_supplied_data_are_clarify_private():
+    supplied = re.compile(r"\d{6}|成本|交割单|持仓|CSV|Excel|文件", re.IGNORECASE)
+    for item in run.load_corpus(CORPUS40_V2_PATH):
+        if item["expected_product"] in {"组合体检", "交易复盘"} and not supplied.search(item["prompt"]):
+            assert item["expect"] == "clarify_private", item["id"]

@@ -1,10 +1,26 @@
-"""Deterministically build the 40-item Wave 0 intake corpus.
+"""Deterministically build the 40-item intake corpus, in two label versions.
 
 WHY: the frozen ten items anchor the baseline contract; the other thirty add
 coverage of the four routing classes and the eight product labels without
 hand-writing prompts. Each generated prompt is a template rendered from a slot
 vocabulary with a fixed seed, so the output is reproducible byte for byte and
 ``head -10`` stays identical to ``corpus.jsonl``.
+
+Two label versions exist because Wave 0 and Wave 1 evidence was produced
+before the c19/c22 private-product labels were corrected:
+
+- ``v1`` is frozen historical evidence, byte-identical to
+  ``git show 32f5e595~1:OpencodeAgent/tests/evals/intake/corpus40.jsonl``.
+  ``corpus40.jsonl`` must keep that exact content.
+- ``v2`` carries the corrected ``c19``/``c22`` labels, their rationales and
+  a ``labels_version: "v2"`` marker on those two records. It is written to
+  ``corpus40_v2.jsonl`` and is used only by the bounded probe and the A/B
+  corpus. Every other line is byte-identical to v1.
+
+Prompts and ids are identical across the two files; only the two labels,
+their rationales and the marker differ. ``FAMILIES`` keeps the corrected
+labels so ``gen_corpus_ab.py`` (which imports it for its generated slice)
+stays stable; v1 is reconstructed through ``V1_EXPECT_OVERRIDES``.
 """
 from __future__ import annotations
 
@@ -18,10 +34,15 @@ from typing import Any
 BASE_DIR = Path(__file__).resolve().parent
 FROZEN_PATH = BASE_DIR / "corpus.jsonl"
 OUTPUT_PATH = BASE_DIR / "corpus40.jsonl"
+V2_OUTPUT_PATH = BASE_DIR / "corpus40_v2.jsonl"
 SEED = 20261027
 SOURCE = "extended_generated"
 GENERATOR = f"corpus40 v1 seed={SEED}"
 FROZEN_COUNT = 10
+LABELS_VERSIONS = ("v1", "v2")
+# Family positions retain the pre-32f5e595 label in v1 (private-product
+# families 3=组合体检 and 5=交易复盘 generated an execute label in Wave 0).
+V1_EXPECT_OVERRIDES = {3: "execute_with_defaults", 5: "execute_with_defaults"}
 
 TICKERS = ("600519", "000858", "300750", "601318", "600036", "000333")
 MARKETS = ("A股", "沪深300", "中证500", "创业板", "科创板", "港股", "美股")
@@ -58,7 +79,8 @@ FAMILIES: tuple[tuple[str, str, bool, int, tuple[str, ...], dict[str, tuple[str,
         {"style": STYLES, "market": MARKETS, "horizon": HORIZONS, "indicator": INDICATORS},
     ),
     (
-        "execute_with_defaults", "组合体检", False, 1,
+        # Private holdings: label corrected after Wave 1 observed the mislabel.
+        "clarify_private", "组合体检", False, 1,
         ("看看我的账户组合{horizon}表现怎么样",),
         {"horizon": HORIZONS},
     ),
@@ -68,7 +90,8 @@ FAMILIES: tuple[tuple[str, str, bool, int, tuple[str, ...], dict[str, tuple[str,
         {"event": EVENTS, "market": MARKETS, "sector": SECTORS},
     ),
     (
-        "execute_with_defaults", "交易复盘", False, 1,
+        # Private trade history: label corrected after Wave 1 observed the mislabel.
+        "clarify_private", "交易复盘", False, 1,
         ("帮我复盘一下{horizon}的交易记录，看看盈亏",),
         {"horizon": HORIZONS},
     ),
@@ -110,50 +133,61 @@ def _render(rng: random.Random, template: str, slots: dict[str, tuple[str, ...]]
     return template.format(**{name: values[name] for name in values if "{" + name + "}" in template})
 
 
-def generate_items() -> list[dict[str, Any]]:
+def generate_items(labels: str = "v1") -> list[dict[str, Any]]:
+    if labels not in LABELS_VERSIONS:
+        raise SystemExit(f"labels must be one of {LABELS_VERSIONS}, got {labels!r}")
     rng = random.Random(SEED)
     generated: list[dict[str, Any]] = []
-    for expect, product, open_ended, count, templates, slots in FAMILIES:
+    for family_index, (family_expect, product, open_ended, count, templates, slots) in enumerate(FAMILIES):
+        expect = V1_EXPECT_OVERRIDES.get(family_index, family_expect) if labels == "v1" else family_expect
         for index in range(count):
             prompt = _render(rng, templates[index % len(templates)], slots)
-            generated.append(
-                {
-                    "id": f"c{FROZEN_COUNT + len(generated) + 1:02d}",
-                    "prompt": prompt,
-                    "expect": expect,
-                    "negative": expect == "direct_answer",
-                    "open_ended": open_ended,
-                    "expected_product": product,
-                    "rationale": RATIONALE[expect].format(product=product if product != "none" else "无产物"),
-                    "source": SOURCE,
-                    "generator": GENERATOR,
-                }
-            )
+            item = {
+                "id": f"c{FROZEN_COUNT + len(generated) + 1:02d}",
+                "prompt": prompt,
+                "expect": expect,
+                "negative": expect == "direct_answer",
+                "open_ended": open_ended,
+                "expected_product": product,
+                "rationale": RATIONALE[expect].format(product=product if product != "none" else "无产物"),
+                "source": SOURCE,
+                "generator": GENERATOR,
+            }
+            if labels == "v2" and family_index in V1_EXPECT_OVERRIDES:
+                item["labels_version"] = labels
+            generated.append(item)
     return generated
 
 
-def render_corpus() -> str:
+def render_corpus(labels: str = "v1") -> str:
     frozen_lines = FROZEN_PATH.read_bytes().splitlines(keepends=True)
     if len(frozen_lines) != FROZEN_COUNT:
         raise SystemExit(f"{FROZEN_PATH} must hold exactly {FROZEN_COUNT} lines, found {len(frozen_lines)}")
-    generated = [json.dumps(item, ensure_ascii=False) + "\n" for item in generate_items()]
+    generated = [json.dumps(item, ensure_ascii=False) + "\n" for item in generate_items(labels)]
     return b"".join(frozen_lines + [line.encode("utf-8") for line in generated]).decode("utf-8")
+
+
+def output_path(labels: str) -> Path:
+    return OUTPUT_PATH if labels == "v1" else V2_OUTPUT_PATH
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--check", action="store_true", help="verify corpus40.jsonl matches regeneration")
+    parser.add_argument("--labels", choices=LABELS_VERSIONS, default="v1", help="label version to render (default: v1)")
+    parser.add_argument("--out", type=Path, help="output path (default: corpus40.jsonl for v1, corpus40_v2.jsonl for v2)")
+    parser.add_argument("--check", action="store_true", help="verify the output file matches regeneration")
     args = parser.parse_args(argv)
-    rendered = render_corpus()
+    target = args.out or output_path(args.labels)
+    rendered = render_corpus(args.labels)
     if args.check:
-        current = OUTPUT_PATH.read_text(encoding="utf-8") if OUTPUT_PATH.exists() else ""
+        current = target.read_text(encoding="utf-8") if target.exists() else ""
         if current != rendered:
-            print(f"{OUTPUT_PATH} is stale; rerun gen_corpus40.py", file=sys.stderr)
+            print(f"{target} is stale; rerun gen_corpus40.py --labels {args.labels}", file=sys.stderr)
             return 1
-        print(f"{OUTPUT_PATH}: {len(rendered.splitlines())} items, regeneration matches")
+        print(f"{target}: {len(rendered.splitlines())} items, labels={args.labels}, regeneration matches")
         return 0
-    OUTPUT_PATH.write_text(rendered, encoding="utf-8")
-    print(f"wrote {OUTPUT_PATH}: {len(rendered.splitlines())} items")
+    target.write_text(rendered, encoding="utf-8")
+    print(f"wrote {target}: {len(rendered.splitlines())} items, labels={args.labels}")
     return 0
 
 

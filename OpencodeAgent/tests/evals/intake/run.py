@@ -157,6 +157,9 @@ def recover_stream(base: str, session_id: str, username: str, password: str, fet
         payload = fetch(root + path.replace("{sessionID}", session_id), username, password)
     except Exception:
         return dict(EMPTY_STREAM)
+    return _stream_from_messages(payload)
+
+def _stream_from_messages(payload: Any) -> dict[str, Any]:
     calls, texts, tokens = [], [], None
     for message in payload if isinstance(payload, list) else [payload]:
         info = message.get("info") if isinstance(message, dict) else {}
@@ -171,6 +174,36 @@ def recover_stream(base: str, session_id: str, username: str, password: str, fet
                 texts.append(obj["text"])
         tokens = _merge_usage(tokens, info.get("tokens") or info.get("usage"))
     return {"calls": calls, "text": "\n".join(texts), "tokens": tokens}
+
+def _session_busy(payload: Any) -> bool:
+    messages = payload if isinstance(payload, list) else [payload]
+    assistants = [m for m in messages if isinstance(m, dict) and (m.get("info") or {}).get("role") == "assistant"]
+    if not assistants:
+        return True
+    last = assistants[-1]
+    if not (last.get("info") or {}).get("time", {}).get("completed"):
+        return True
+    return any(
+        part.get("type") == "tool" and (part.get("state") or {}).get("status") in ("pending", "running")
+        for part in last.get("parts") or []
+    )
+
+def recover_after_timeout(base: str, session_id: str, username: str, password: str, budget: float = 120.0) -> dict[str, Any]:
+    root = base.rstrip("/")
+    deadline = time.monotonic() + budget
+    stream = dict(EMPTY_STREAM)
+    while True:
+        try:
+            payload = _http_json(f"{root}/session/{session_id}/message", username, password)
+        except Exception:
+            payload = None
+        if payload is not None:
+            stream = _stream_from_messages(payload)
+            if not _session_busy(payload) and (stream["calls"] or stream["text"]):
+                return stream
+        if time.monotonic() >= deadline:
+            return stream
+        time.sleep(5)
 
 def _is_question(name: str) -> bool:
     lowered = name.lower()
@@ -307,12 +340,21 @@ def _run_one(args: argparse.Namespace, item: dict[str, Any]) -> list[dict[str, A
         proc = subprocess.run(command, capture_output=True, text=True, timeout=args.timeout)
     except subprocess.TimeoutExpired as exc:
         tail = exc.stderr.decode("utf-8", "replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+        raw = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
         if args.container:
             # Killing docker exec does not kill the in-container CLI; do it explicitly
             # so a timed-out item cannot accumulate a zombie process and memory.
             subprocess.run(["docker", "exec", args.container, "pkill", "-f", f"opencode run .*--title {item['id']}"], capture_output=True, timeout=30)
-        _write_text(args, item, EMPTY_STREAM, run_id=run_id, wall_s=time.monotonic() - started, recovered=False)
-        return [build_run_error(run_id, item, wall_s=time.monotonic() - started, reason=f"timeout after {args.timeout}s", stderr_tail=tail)]
+        session_id = stream_session_id(raw)
+        if not args.disable_recovery and session_id:
+            stream = recover_after_timeout(args.recovery_url or args.attach, session_id, args.username, args.password)
+            if stream["calls"] or stream["text"]:
+                wall_s = time.monotonic() - started
+                _write_text(args, item, stream, run_id=run_id, wall_s=wall_s, recovered=True)
+                return build_events(run_id, item, stream, wall_s=wall_s, prefix=RECOVERY_PREFIX + "timeout_recovered;")
+        wall_s = time.monotonic() - started
+        _write_text(args, item, EMPTY_STREAM, run_id=run_id, wall_s=wall_s, recovered=False)
+        return [build_run_error(run_id, item, wall_s=wall_s, reason=f"timeout after {args.timeout}s", stderr_tail=tail)]
     except OSError as exc:
         _write_text(args, item, EMPTY_STREAM, run_id=run_id, wall_s=time.monotonic() - started, recovered=False)
         return [build_run_error(run_id, item, wall_s=time.monotonic() - started, reason=f"exec failed: {exc}")]
