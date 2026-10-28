@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Recompute the slot decision-value verdict from matrix, spec and transcripts.
 
-``judge_spec.json`` is the pre-registered rule. This module is its only
-executable form: it canonicalises tool-call arguments, derives a run
-signature, adjudicates every cell and slot, and (with ``--write``) emits
-``verdict.md`` and the per-slot aggregates in ``results.json``.
+``judge_spec.json`` v2 is the pre-registered rule: a run signature is the first
+three distinct non-empty tool calls, and a run that observed at least one call
+before the early stop is usable. This module is the rule's only executable
+form. It canonicalises arguments, derives signatures, adjudicates every cell
+and slot, and (with ``--write``) emits ``verdict.md`` and the per-slot
+aggregates in ``results.json``.
 
 ``--check`` recomputes everything and refuses any drift, including a
 judge_spec.json digest that no longer matches the digest recorded before the
-first run. Stdlib only, by design.
+first v2 run. Stdlib only, by design.
 """
 
 from __future__ import annotations
@@ -29,13 +31,16 @@ SPEC_PATH = BASE_DIR / "judge_spec.json"
 TRANSCRIPTS_DIR = BASE_DIR / "transcripts"
 RESULTS_PATH = BASE_DIR / "results.json"
 VERDICT_PATH = BASE_DIR / "verdict.md"
+V1_RESULTS_PATH = BASE_DIR / "v1_evidence" / "results.json"
 
 REPEATS = 3
+MAX_CALLS = 3
 CELLS_PER_SLOT = 4
 DEFAULT_THRESHOLD = 4
 PRIVATE_SLOTS = ("成本价", "仓位规模")
 ENUMISH = re.compile(r"^[A-Za-z0-9_.:+/-]{1,32}$")
-STATUSES = ("ok", "run_error", "incomplete")
+USABLE_STATUSES = ("ok", "ok_partial")
+STATUSES = ("ok", "ok_partial", "run_error", "incomplete")
 
 
 def _json(value: Any) -> str:
@@ -72,15 +77,21 @@ def canonical_args(value: Any) -> Any:
 
 
 def signature_of(calls: list[dict[str, Any]]) -> list[str]:
+    """Ordered, deduplicated first ``MAX_CALLS`` calls with non-empty args."""
     reps: list[str] = []
     for call in calls:
         if not isinstance(call, dict):
             continue
-        args = call.get("args")
-        name = call.get("name")
-        if isinstance(name, str) and isinstance(args, dict) and args:
-            reps.append(f"{name}::{_json(canonical_args(args))}")
-    return sorted(reps)
+        args, name = call.get("args"), call.get("name")
+        if not isinstance(name, str) or not isinstance(args, dict) or not args:
+            continue
+        rep = f"{name}::{_json(canonical_args(args))}"
+        if rep in reps:
+            continue
+        reps.append(rep)
+        if len(reps) == MAX_CALLS:
+            break
+    return reps
 
 
 def signature_hash(signature: list[str]) -> str:
@@ -110,12 +121,14 @@ def load_runs(matrix: dict[str, Any]) -> dict[str, list[dict[str, Any] | None]]:
                 raise SystemExit(f"{path}: invalid status {status!r}")
             if record.get("cell") != cell["id"] or record.get("repeat") != repeat:
                 raise SystemExit(f"{path}: cell/repeat identity mismatch")
-            if status == "ok":
+            if status in USABLE_STATUSES:
                 computed = signature_of(record.get("calls") or [])
                 if record.get("signature") != computed:
                     raise SystemExit(f"{path}: stored signature is not reproducible")
                 if record.get("signature_hash") != signature_hash(computed):
                     raise SystemExit(f"{path}: stored signature_hash mismatch")
+                if record.get("k_calls") != len(computed):
+                    raise SystemExit(f"{path}: k_calls does not match the observed signature")
             elif record.get("signature") is not None:
                 raise SystemExit(f"{path}: {status} repeat must not carry a signature")
             entries.append(record)
@@ -124,7 +137,7 @@ def load_runs(matrix: dict[str, Any]) -> dict[str, list[dict[str, Any] | None]]:
 
 
 def _sig(record: dict[str, Any] | None) -> list[str] | None:
-    if not record or record.get("status") != "ok":
+    if not record or record.get("status") not in USABLE_STATUSES:
         return None
     return record["signature"]
 
@@ -144,6 +157,7 @@ def adjudicate_cell(cell: dict[str, Any], repeats: list[dict[str, Any] | None]) 
         "slot": cell["slot"],
         "value": cell["value"],
         "repeat_statuses": [record["status"] if record else "missing" for record in repeats],
+        "k_calls": [record.get("k_calls") if record else None for record in repeats],
         "usable_repeats": len(usable),
         "distinct_signatures": len(counts),
         "majority_signature": majority,
@@ -260,9 +274,11 @@ def build_cells(matrix: dict[str, Any], runs: dict[str, list[dict[str, Any] | No
                         "status": "incomplete",
                         "signature": None,
                         "signature_hash": None,
+                        "k_calls": 0,
                         "wall_s": None,
                         "tokens": None,
                         "recovered": False,
+                        "killed_by_early_stop": False,
                         "reason": "not_started",
                         "transcript": f"transcripts/{cell['id']}/{repeat}.json",
                     }
@@ -275,9 +291,12 @@ def build_cells(matrix: dict[str, Any], runs: dict[str, list[dict[str, Any] | No
                     "status",
                     "signature",
                     "signature_hash",
+                    "k_calls",
                     "wall_s",
                     "tokens",
                     "recovered",
+                    "killed_by_early_stop",
+                    "lane",
                     "transcript",
                 )
             }
@@ -299,34 +318,66 @@ def build_cells(matrix: dict[str, Any], runs: dict[str, list[dict[str, Any] | No
 
 
 def run_stats(matrix: dict[str, Any], runs: dict[str, list[dict[str, Any] | None]]) -> dict[str, Any]:
-    statuses = [record["status"] for cell in matrix["cells"] for record in runs[cell["id"]] if record]
-    walls = [
-        record["wall_s"]
-        for cell in matrix["cells"]
-        for record in runs[cell["id"]]
-        if record and record["status"] == "ok" and isinstance(record.get("wall_s"), (int, float))
-    ]
+    records = [record for cell in matrix["cells"] for record in runs[cell["id"]] if record]
+    statuses = [record["status"] for record in records]
+    usable = [record for record in records if record["status"] in USABLE_STATUSES]
+    walls = [record["wall_s"] for record in usable if isinstance(record.get("wall_s"), (int, float))]
+    k_distribution = {"0": 0, "1": 0, "2": 0, "3": 0}
+    for record in records:
+        if record["status"] in USABLE_STATUSES:
+            k = record.get("k_calls")
+            if k is None:
+                k = len(record.get("signature") or [])
+            key = str(k)
+            k_distribution[key] = k_distribution.get(key, 0) + 1
+        elif record["status"] == "run_error":
+            k_distribution["0"] += 1
     return {
         "total": len(matrix["cells"]) * REPEATS,
         "ok": statuses.count("ok"),
+        "ok_partial": statuses.count("ok_partial"),
         "run_error": statuses.count("run_error"),
         "incomplete": statuses.count("incomplete"),
-        "timeouts": sum(
-            1
-            for cell in matrix["cells"]
-            for record in runs[cell["id"]]
-            if record and "timeout after" in (record.get("error") or "")
-        ),
-        "recovered": sum(
-            1 for cell in matrix["cells"] for record in runs[cell["id"]] if record and record.get("recovered")
-        ),
+        "early_stop_count": sum(1 for record in usable if record.get("killed_by_early_stop")),
+        "timeout_count": sum(1 for record in records if "timeout after" in (record.get("error") or "")),
+        "recovered": sum(1 for record in records if record.get("recovered")),
+        "k_distribution": k_distribution,
         "mean_wall_s": round(statistics.fmean(walls), 3) if walls else None,
         "median_wall_s": round(statistics.median(walls), 3) if walls else None,
     }
 
 
+def v1_evidence_summary() -> dict[str, Any]:
+    if not V1_RESULTS_PATH.exists():
+        return {"available": False}
+    data = load_json(V1_RESULTS_PATH)
+    meta = data.get("meta") or {}
+    cells = data.get("cells") or {}
+    with_majority = 0
+    for cell in cells.values():
+        counts: dict[str, int] = {}
+        for record in cell.get("repeats") or []:
+            if record.get("status") == "ok" and record.get("signature") is not None:
+                key = "|".join(record["signature"])
+                counts[key] = counts.get(key, 0) + 1
+        with_majority += int(any(count >= 2 for count in counts.values()))
+    return {
+        "available": True,
+        "spec_version": 1,
+        "runs": meta.get("runs_total"),
+        "ok": meta.get("runs_ok"),
+        "run_error": meta.get("runs_run_error"),
+        "incomplete": meta.get("runs_incomplete"),
+        "per_run_timeout_s": meta.get("per_run_timeout_s"),
+        "mean_wall_s": meta.get("mean_wall_s"),
+        "cells_with_majority": with_majority,
+        "note": "v1 is void: 69/72 runs hit the 240s per-run timeout; the 3 isolated signatures formed 0 cell-level majorities. Full v1 transcripts remain in commit 8d25e5d8.",
+    }
+
+
 def check_meta(results: dict[str, Any], matrix: dict[str, Any], stats: dict[str, Any]) -> None:
     meta = results.get("meta") or {}
+    spec = load_json(SPEC_PATH)
     if meta.get("judge_spec_sha256") != file_sha256(SPEC_PATH):
         raise SystemExit(
             "judge_spec.json digest differs from the digest recorded before the run: spec changed, run is void"
@@ -335,11 +386,16 @@ def check_meta(results: dict[str, Any], matrix: dict[str, Any], stats: dict[str,
         raise SystemExit("matrix.json digest differs from the digest recorded before the run")
     if meta.get("repeats_per_cell") != REPEATS:
         raise SystemExit("results.json repeats_per_cell does not match judge_spec.json")
+    if meta.get("per_run_timeout_s") != spec["observation"]["per_run_timeout_s"]:
+        raise SystemExit("results.json per_run_timeout_s does not match judge_spec.json")
     expected = {
         "runs_total": stats["total"],
         "runs_ok": stats["ok"],
+        "runs_ok_partial": stats["ok_partial"],
         "runs_run_error": stats["run_error"],
         "runs_incomplete": stats["incomplete"],
+        "early_stop_count": stats["early_stop_count"],
+        "timeout_count": stats["timeout_count"],
         "recovery_count": stats["recovered"],
         "mean_wall_s": stats["mean_wall_s"],
         "median_wall_s": stats["median_wall_s"],
@@ -370,14 +426,42 @@ def render_verdict(
 ) -> str:
     meta = results.get("meta") or {}
     cleanup = meta.get("cleanup") or {}
+    v1 = v1_evidence_summary()
     fired = adjudication["kill_criterion"]["fired"]
+    lanes = ", ".join(cleanup.get("lanes") or [])
     lines = [
-        "# Slot decision-value verdict",
+        "# Slot decision-value verdict (v2, bounded observation)",
         "",
-        "Pre-registered scripted experiment. The decision rule lives in `judge_spec.json`",
+        "Pre-registered scripted experiment. The decision rule lives in `judge_spec.json` v2",
         f"(sha256 `{spec_digest}`); every number below is emitted by `judge.py --write` from",
         "`matrix.json` + `transcripts/`, and `judge.py --check` recomputes all of it with zero",
         "tolerance. No human or LLM judgement enters a verdict.",
+        "",
+        "## Observation design (pre-registered)",
+        "",
+        "A signature is the **first 3 distinct tool calls with non-empty args**, in order of",
+        "first appearance, canonicalised with the v1 argument rules. The driver reads the CLI",
+        "JSON stream line by line and kills the CLI process group as soon as the 3rd call is",
+        "observed; it also kills at the 300s per-run timeout. A run that observed at least one",
+        "call before the stop is `ok_partial` and usable; a run with zero calls is `run_error`.",
+        "Later execution calls are outside the observation window by design: parameter",
+        "compilation happens in the first calls.",
+        "",
+        "## v1 evidence: what the first attempt proved and why it was void",
+        "",
+        "| item | v1 |",
+        "|------|----|",
+        f"| runs recorded | {_fmt(v1.get('runs'))} |",
+        f"| ok signatures | {_fmt(v1.get('ok'))} |",
+        f"| run_error / timeouts | {_fmt(v1.get('run_error'))} |",
+        f"| cells with a majority signature | {_fmt(v1.get('cells_with_majority'))} |",
+        f"| per-run timeout (s) | {_fmt(v1.get('per_run_timeout_s'))} |",
+        "| verdict | void: all six slots INCONCLUSIVE |",
+        "",
+        "v1 is void because the observation window was unbounded: 69/72 runs hit the 240s",
+        "timeout, and the 3 isolated signatures never formed a cell-level majority. The v2",
+        "change is an observation-window change, not a threshold change; the slot rule and",
+        "kill criterion are identical and were frozen before the first v2 run.",
         "",
         "## Execution",
         "",
@@ -386,15 +470,18 @@ def render_verdict(
         f"| cells | {len(matrix['cells'])} |",
         f"| repeats per cell | {REPEATS} |",
         f"| runs recorded | {stats['total']} |",
-        f"| runs ok | {stats['ok']} |",
-        f"| runs run_error | {stats['run_error']} |",
-        f"| runs incomplete | {stats['incomplete']} |",
-        f"| runs that hit the per-run timeout | {stats['timeouts']} |",
+        f"| ok (natural completion) | {stats['ok']} |",
+        f"| ok_partial (early stop or timeout with >=1 call) | {stats['ok_partial']} |",
+        f"| run_error (0 calls) | {stats['run_error']} |",
+        f"| incomplete (budget) | {stats['incomplete']} |",
+        f"| killed by the 3-call early stop | {stats['early_stop_count']} |",
+        f"| hit the per-run timeout | {stats['timeout_count']} |",
         f"| recovered via session API | {stats['recovered']} |",
-        f"| mean wall per ok run (s) | {_fmt(stats['mean_wall_s'])} |",
-        f"| median wall per ok run (s) | {_fmt(stats['median_wall_s'])} |",
+        f"| k-call distribution (0/1/2/3) | {stats['k_distribution']['0']}/{stats['k_distribution']['1']}/{stats['k_distribution']['2']}/{stats['k_distribution']['3']} |",
+        f"| mean wall per usable run (s) | {_fmt(stats['mean_wall_s'])} |",
+        f"| median wall per usable run (s) | {_fmt(stats['median_wall_s'])} |",
         f"| image | {_fmt(meta.get('image'))} |",
-        f"| container | {_fmt(meta.get('container'))} |",
+        f"| containers | {_fmt(meta.get('containers'))} |",
         f"| per-run timeout (s) | {_fmt(meta.get('per_run_timeout_s'))} |",
         f"| batch wall budget (s) | {_fmt(meta.get('batch_wall_budget_s'))} |",
         f"| run window (UTC) | {_fmt(meta.get('started_at'))} -> {_fmt(meta.get('finished_at'))} |",
@@ -420,13 +507,13 @@ def render_verdict(
             "",
             f"Reason: {slot['reason']}.",
             "",
-            "| value | cell | repeat statuses | usable | distinct sigs | majority hash | stable |",
-            "|-------|------|-----------------|--------|---------------|---------------|--------|",
+            "| value | cell | repeat statuses | k calls | usable | distinct sigs | majority hash | stable |",
+            "|-------|------|-----------------|---------|--------|---------------|---------------|--------|",
         ]
         for cell in slot["cells"]:
             lines.append(
                 f"| {cell['value']} | {cell['cell']} | {_fmt(cell['repeat_statuses'])} | "
-                f"{cell['usable_repeats']} | {cell['distinct_signatures']} | "
+                f"{_fmt(cell['k_calls'])} | {cell['usable_repeats']} | {cell['distinct_signatures']} | "
                 f"{_fmt(cell['majority_signature_hash'])} | {str(cell['stable']).lower()} |"
             )
         lines += [
@@ -452,18 +539,32 @@ def render_verdict(
         "Counterfactual, fixed by the pre-registration: if at least 4 of 6 slots had been",
         "default-worthy, the question table would shrink to private slots only: 成本价, 仓位规模.",
         "",
-        "",
     ]
     if all(adjudication["slots"][key]["verdict"] == "INCONCLUSIVE" for key in matrix["slot_order"]):
+        inconclusive_total = sum(
+            1 for key in matrix["slot_order"] for cell in adjudication["slots"][key]["cells"] if not cell["stable"]
+        )
+        min_per_slot = min(
+            sum(1 for cell in adjudication["slots"][key]["cells"] if not cell["stable"]) for key in matrix["slot_order"]
+        )
+        max_distinct = max(
+            cell["distinct_signatures"] for key in matrix["slot_order"] for cell in adjudication["slots"][key]["cells"]
+        )
         lines += [
             "## Diagnosis",
             "",
-            f"{stats['ok']} of {stats['total']} runs produced a signature; {stats['timeouts']} hit the",
-            f"pre-registered {meta.get('per_run_timeout_s')}s per-run budget. Under the pre-registered",
-            "majority rule a cell needs two usable repeats that agree; no cell reached that bar.",
-            "Every slot is therefore INCONCLUSIVE: the experiment does not show that any slot value",
-            "changes the tool-call signature, and it is not evidence for defaulting any slot. The",
-            "limiting factor is the per-run time budget, not an observed absence of effect.",
+            f"{stats['ok'] + stats['ok_partial']} of {stats['total']} runs yielded a usable signature; "
+            f"{stats['early_stop_count']} stopped at the 3-call threshold and {stats['timeout_count']} "
+            "hit the per-run timeout. Under the pre-registered majority rule a cell needs two usable",
+            "repeats that agree; no cell reached that bar. Every slot is therefore INCONCLUSIVE: the",
+            "experiment does not show that any slot value changes the first compiled calls, and it is",
+            "not evidence for defaulting any slot.",
+            "",
+            f"Acceptance check: {inconclusive_total} of {len(matrix['cells'])} cells are INCONCLUSIVE; "
+            f"the smallest per-slot count is {min_per_slot}, so the >=2 INCONCLUSIVE cells per slot",
+            f"condition is met. Every cell shows {max_distinct} distinct usable signatures; the cause is",
+            "run-to-run variation in the first three calls, not missing observations. Required N: rerun",
+            "until each cell has at least two usable repeats sharing a signature.",
             "",
         ]
     lines += [
@@ -489,31 +590,32 @@ def render_verdict(
         "",
         "| check | result |",
         "|-------|--------|",
-        f"| compose project down | {cleanup.get('compose_down')} |",
+        f"| compose projects down | {cleanup.get('compose_down')} |",
         f"| lane temp dir removed | {cleanup.get('lane_dir_removed')} |",
-        f"| intake-slot container absent | {cleanup.get('container_absent')} |",
+        f"| containers absent | {cleanup.get('containers_absent', cleanup.get('container_absent'))} |",
+        f"| lanes | {_fmt(lanes)} |",
         f"| checked at (UTC) | {_fmt(cleanup.get('checked_at'))} |",
         f"| `docker ps -a` intake-slot rows | {_fmt(cleanup.get('container_rows'))} |",
         "",
         "## Caveats",
         "",
-        "- Empty signature (`[]`) means the run produced no tool call with non-empty arguments;",
-        "  it is a usable signature under the pre-registered rule, not a failed run.",
-        "- The container has no ClickHouse credentials, so `ch_*` tools fail fast. This is an",
-        "  environment limitation recorded once; it is not counted as a model failure.",
+        "- A signature of length 1 or 2 means the run stopped before the 3rd call; it is usable",
+        "  under the pre-registered rule, not a failed run.",
         "- A `run_error` is retained, never replaced by an extra repeat. A cell with fewer than",
         "  two usable repeats is INCONCLUSIVE.",
-        "- Runs share one persistent `/workspace`; a run that finds artifacts written by an earlier",
-        "  run can complete by validating them. That is measured behavior, not a controlled variable.",
-        f"- Runs executed with {meta.get('workers')} concurrent workers in one shared `/workspace`.",
+        "- Each lane runs one session at a time and clears scratch artifacts and agent memory",
+        "  before every run, so a run cannot compile against another run's workspace.",
+        "- Runs executed on 2 lanes with 1 worker per lane.",
         "",
         "<!-- judge:begin -->",
         "```json",
         json.dumps(
             {
+                "spec_version": 2,
                 "spec_sha256": spec_digest,
                 "matrix_sha256": file_sha256(MATRIX_PATH),
                 "runs": stats,
+                "v1_evidence": v1,
                 "slots": {
                     key: {
                         "name": adjudication["slots"][key]["name"],
@@ -579,7 +681,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         for key in matrix["slot_order"]:
             print(
-                f"[verdict] {adjudication['slots'][key]['name']}: " f"{adjudication['slots'][key]['verdict']}",
+                f"[verdict] {adjudication['slots'][key]['name']}: {adjudication['slots'][key]['verdict']}",
                 file=sys.stderr,
             )
         print(f"[verdict] kill criterion fired: {adjudication['kill_criterion']['fired']}", file=sys.stderr)
@@ -599,7 +701,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     print(
         f"[check] ok: {len(updated['cells'])} cells, {stats['total']} runs, "
-        f"{stats['ok']} ok / {stats['run_error']} run_error / {stats['incomplete']} incomplete",
+        f"{stats['ok']} ok / {stats['ok_partial']} ok_partial / {stats['run_error']} run_error / "
+        f"{stats['incomplete']} incomplete",
         file=sys.stderr,
     )
     for key in matrix["slot_order"]:

@@ -120,3 +120,10 @@ _Auto-scaffolded by /ulw-execute. Append new entries below - never overwrite._
 - **Single-source files**: 轮次规则唯一存在于 `skills/intake/SKILL.md`（`tests/test_agents_md.py` 扫 AGENTS.md + `skills/**/SKILL.md` 断言唯一命中）；行数预算唯一常量 `tests/test_config_render.py:AGENTS_MD_MAX_LINES = 350`，由 test_agents_md 直接 import。场景 C（`research-scenarios`）改为一行指针，intake 正文不含「场景 C」，消除互指。
 - **Second-round exception (intentional semantic change)**: 默认 1 轮 ≤3 问；仅当用户明确答「不知道 / 不确定」时追加 1 轮且只问该槽位；第三次提问仍禁止。旧 AGENTS.md 原文禁止任何第二轮，故这是有意的语义变更，不是等价搬移。
 - **Pending**: 验收项⑥（40 条语料四层分率重跑，点估计不降且 CI 不含显著恶化）**未执行** —— 机器被 todo 3 兄弟 lane 占用；todo 6 仅完成结构面验证（58 passed），`intake_loaded` 期望 >0 待下个 checkpoint 确认，不得声称已行为验证。
+
+## 2026-10-28 — todo 3 v2: bounded-observation rerun
+- **Bounded observation**: signature = first 3 distinct non-empty tool calls (ordered, canonicalised); `subprocess.Popen` stdout read line-by-line; kill the CLI process group at the 3rd call or 300s; `ok_partial` is usable; two lanes (`intake-slot-a` :4097, `intake-slot-b` :4099), one worker each.
+- **Wall**: 72/72 runs usable (0 ok / 72 ok_partial / 0 run_error / 0 incomplete); mean 14.556s, median 9.213s; whole batch ~11 min.
+- **Early stop vs natural**: 71/72 stopped at the 3-call threshold; 1/72 hit the 300s timeout with k=1 (`risk-0` r0); no natural completions.
+- **Verdict**: all six slots INCONCLUSIVE; 24/24 cells show 3 distinct usable signatures, 0 cells with a majority; kill criterion not fired (0/6); todo 12 must not default any public slot. The cause is run-to-run variation in the first calls, not missing observations (v2 acceptance condition met).
+- **v1 evidence**: void (69/72 hit 240s, 3 isolated signatures, 0 cell-level majorities), preserved in `v1_evidence/`; v2 commit `test(opencode-agent): rerun slot value experiment with bounded observation`.
