@@ -104,3 +104,12 @@ _Auto-scaffolded by /ulw-execute. Append new entries below - never overwrite._
 | c38 | refuse | execute_with_defaults | 31.678 | false |
 | c39 | refuse | execute_with_defaults | 21.237 | false |
 | c40 | refuse | execute_with_defaults | 21.368 | false |
+
+## 2026-10-28 — todo 3: slot decision-value experiment (Wave 0)
+
+- **Lane recipe**: `docker compose -p intake-slot -f OpencodeAgent/docker-compose.yml -f "$TMPDIR/lane-slot.yml" up -d`; the override uses `!override` for `ports` (4097:4096) and `volumes` (cron-state / cron-logs / vt-memory under `$TMPDIR/lane-slot`), with `deploy.resources.limits` at 3G / 1.2 CPU. Readiness `GET /config?directory=/workspace` returned 200 in 98s on `opencode-serve:v3.10.0-mymain` (amd64 under QEMU).
+- **Recovery/abort split**: the CLI attach URL is `http://localhost:4096` inside the container, but recovery and abort from the host must use `http://127.0.0.1:4097` (`--recover-base`). `GET /doc` exposes `/session/{id}/message` and `POST /session/{id}/abort`.
+- **Timeout handling**: 69 of 72 sessions hit the 240s per-run cap. Killing the CLI does not stop the server-side session; every timeout must call `/session/{id}/abort`, otherwise orphan agent loops keep running (observed sessions continuing ~500s). A janitor reaped stray `/opt/venv/bin/python` tool processes older than 300s.
+- **Wall**: 72 runs recorded, 3 ok / 69 run_error / 0 incomplete; ok runs were 161.4s, 166.4s, 195.2s (mean 174.326s). The three ok runs completed by validating artifacts left by earlier runs in the shared `/workspace`; no cell reached two usable repeats. Recovery count 0 (no short-answer race).
+- **Verdict headline**: all six slots INCONCLUSIVE; kill criterion not fired (0/6 default-worthy). The 240s per-run budget is the binding constraint, not an observed absence of slot effect. Todo 12 must not take a default set from this run; a re-run with a larger per-run budget (baseline used 1800s) is required.
+- **Harness**: `run_slots.py` reuses `../run.py`'s `parse_stream` / `recover_stream`; `judge.py --write` emits every verdict table row and `--check` recomputes with zero tolerance; the `judge_spec.json` digest is recorded in `results.json` before the first run.

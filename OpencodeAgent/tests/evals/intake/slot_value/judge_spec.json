@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "experiment": "slot-decision-value",
+  "status": "frozen_before_first_run",
+  "frozen_at": "2026-10-28",
+  "purpose": "Decide, without human or LLM judgement, whether a novice-intake slot's value changes the compiled artifact. A slot whose value does not change the artifact is defaulted, not asked.",
+  "inputs": {
+    "matrix": "matrix.json",
+    "transcripts": "transcripts/<cell>/<repeat>.json",
+    "repeats_per_cell": 3
+  },
+  "signature": {
+    "definition": "A run signature is the sorted list of `tool_name::canonical(args)` strings for every tool call whose args object is non-empty after JSON parsing. Calls with an empty args object are excluded. A run with no qualifying call has the empty signature.",
+    "empty_signature": "[]",
+    "canonical_args": {
+      "dict": "Canonicalise every value, then emit keys sorted by Unicode code point.",
+      "list": "If every element is a scalar (string, number, boolean, null), sort the canonical JSON text of the elements and canonicalise in that order; otherwise preserve order and canonicalise each element.",
+      "string": "Strip leading/trailing whitespace. If the result matches ^[A-Za-z0-9_.:+/-]{1,32}$ (an enum-ish token), lowercase it; otherwise preserve case. Empty-after-strip is preserved as an empty string.",
+      "number": "Round to 4 decimal places using Python round(); emit as a JSON number so trailing zeros disappear. NaN/Infinity become the strings \"nan\"/\"inf\"/\"-inf\".",
+      "bool_null": "Preserved as JSON true/false/null.",
+      "serialization": "json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':'))"
+    },
+    "call_repr": "<tool_name>::<canonical_args_json>",
+    "signature_serialization": "'|'.join(sorted(call_reprs)) with no trailing separator",
+    "signature_hash": "sha256(signature_serialization.encode('utf-8')).hexdigest()[:16]"
+  },
+  "run_policy": {
+    "repeats_per_cell": 3,
+    "per_run_timeout_s": 240,
+    "batch_wall_budget_s": 10800,
+    "status_ok": "The CLI exited 0 with at least one parseable assistant text or tool part, or the session-API recovery produced at least one parseable assistant text or tool part.",
+    "status_run_error": "Nonzero exit, timeout, exec failure, or no parseable assistant content after the recovery attempt. The stderr tail (<=500 chars) is retained in the transcript.",
+    "status_incomplete": "The repeat was never started because the batch wall budget was exhausted. Recorded as incomplete(budget); no signature exists.",
+    "usable_repeat": "status == ok. An empty signature is a usable signature.",
+    "cell_with_too_few_repeats": "A cell with fewer than 2 usable repeats is INCONCLUSIVE.",
+    "retry_policy": "A recorded ok repeat is never re-run. A run_error is retained as-is; it is not replaced by an extra repeat. Resume only fills repeats that were never started."
+  },
+  "cell_rule": {
+    "majority_signature": "The signature shared by >=2 of the 3 repeats. With 3 repeats at most one signature can qualify.",
+    "stable": "A cell is stable iff it has a majority signature and is not INCONCLUSIVE.",
+    "inconclusive_if": "Fewer than 2 usable repeats, or no signature appears in >=2 repeats (3 distinct signatures)."
+  },
+  "pair_rule": {
+    "comparison": "For a pair of values (a, b), compare repeat index i = 0,1,2 only where both repeats have status ok.",
+    "comparable_requirement": "At least 2 comparable repeat indices are required for the pair to be evaluable.",
+    "differs": "The pair differs iff at least 2 comparable repeat indices have different signatures (sig_a[i] != sig_b[i]). A pair with fewer than 2 comparable indices is not evaluable and cannot contribute a difference."
+  },
+  "slot_rule": {
+    "precedence": [
+      "INCONCLUSIVE if >=2 of the slot's 4 cells are INCONCLUSIVE.",
+      "default-worthy if all 4 cell majority signatures are identical. A cell with no majority signature cannot satisfy this; the first rule covers the >=2 case.",
+      "question-worthy if >=2 distinct majority signatures exist across the slot's 4 values AND at least one value pair differs in >=2 of 3 repeats. A cell without a majority signature contributes no signature but does not by itself block this rule unless the first rule fires.",
+      "INCONCLUSIVE otherwise."
+    ],
+    "reported_evidence": [
+      "distinct majority signatures per value",
+      "cell stability counts (stable cells / 4)",
+      "per-pair difference counts (comparable repeats) for every value pair",
+      "usable repeat count per cell"
+    ]
+  },
+  "kill_criterion": {
+    "condition": "The count of default-worthy slots is >= 4 of 6.",
+    "consequence": "The question-slot table shrinks to private slots only: 成本价 and 仓位规模. The six tested slots (市场, 期限, 风险, 风格, 候选池, 持仓) are defaulted, not asked.",
+    "not_fired_consequence": "The question table keeps the question-worthy public slots plus the private slots 成本价 and 仓位规模; default-worthy public slots are defaulted; INCONCLUSIVE slots are not silently promoted to either verdict."
+  },
+  "output_contract": {
+    "verdict": "verdict.md",
+    "machine_block": "<!-- judge:begin --> ... <!-- judge:end --> containing the JSON per-slot verdicts, stability evidence and kill-criterion outcome",
+    "tables": "Every table row inside verdict.md is emitted by `python judge.py --write`; no hand-copied numbers.",
+    "check": "`python judge.py --check` recomputes every verdict from matrix.json + transcripts/ and exits nonzero on any drift (zero tolerance), including the results.json aggregates and the judge_spec.json digest recorded at run time."
+  },
+  "pre_registration": {
+    "digest_rule": "sha256 over the UTF-8 bytes of judge_spec.json exactly as committed. The runner records this digest in results.json meta.judge_spec_sha256 before the first run; judge.py recomputes it and refuses to judge on mismatch.",
+    "threshold_change_policy": "Thresholds may not be loosened after seeing results. Any edit to this file voids the run and requires redoing all 72 sessions."
+  }
+}
