@@ -43,6 +43,12 @@ triggers:
 7. Step 6：**主动问询是否需要生成 HTML 交互报告**（加载 `html-report` Skill）。
 8. Step 7：Skills 发现：询问是否需要了解当前可用的所有分析 Skills。
 
+> 输出结尾逐字复制以下四行，禁止改写日期；数据截止一律写 T-1：
+> **我假设了什么：** 本次实际生效的默认值，逐项列出
+> **换一个会怎样：** 换掉其中一个关键假设后，结论如何变化
+> **下一步能做什么：** ≤3 条具体可执行的后续
+> **仅供研究，不构成投资建议；数据截止 T-1。**
+
 ## 场景 B：量化回测
 1. Step 0：执行通用前置检查，重点看历史回测。
 2. Step 1：必须询问是否使用 Vibe-Trading 的全套因子回测策略；说明增量能力包括 `alpha-zoo`、`technical-basic`、`ml-strategy`、`factor-research`、`multi-factor`、`backtest-diagnose`、`pine-script`、`vnpy-export`。
@@ -53,6 +59,12 @@ triggers:
 7. Step 6：若回测推导出后续买入/卖出位，询问是否让 crontab 在次日/交易时间用实时数据监控触发。
 8. Step 7：若结果可跟踪，询问是否周期性自动执行并提醒。
 
+> 输出结尾逐字复制以下四行，禁止改写日期；数据截止一律写 T-1：
+> **我假设了什么：** 本次实际生效的默认值，逐项列出
+> **换一个会怎样：** 换掉其中一个关键假设后，结论如何变化
+> **下一步能做什么：** ≤3 条具体可执行的后续
+> **仅供研究，不构成投资建议；数据截止 T-1。**
+
 ## 场景 B2：Shadow Account（交割单诊断）
 1. Step 0：用户上传交割单 CSV/Excel 文件。
 2. Step 1：加载 `trade-journal` Skill，调用 `vibe-trading_analyze_trade_journal` 解析交易行为。
@@ -61,13 +73,14 @@ triggers:
 5. Step 4：调用 `vibe-trading_render_shadow_report` 生成 8-section PDF/HTML 报告。
 6. Step 5：引导用户进入场景 B（对 Shadow 策略做深度回测）或场景 D（周期执行）。
 
+> 输出结尾逐字复制以下四行，禁止改写日期；数据截止一律写 T-1：
+> **我假设了什么：** 本次实际生效的默认值，逐项列出
+> **换一个会怎样：** 换掉其中一个关键假设后，结论如何变化
+> **下一步能做什么：** ≤3 条具体可执行的后续
+> **仅供研究，不构成投资建议；数据截止 T-1。**
+
 ## 场景 C：开放性问题（"明天买什么"/"最近有什么机会"）
-1. 识别为「问题处理协议 · 开放型」，执行 **Least-to-Most 收敛漏斗**：市场 → 工具类型 → 期限 → 风险预算 → 风格 → 候选池规模。
-2. **一轮、≤3 问、编号列表、选择题 + 后果描述 + 逃生门**；绝不发起第二轮。
-3. 漏斗答案编译为工具参数（风险预算 → 最大回撤约束；风格 → 筛选因子；候选池规模 → Top N）。
-4. 一轮后仍模糊 → 按最合理解释 + 明示假设执行，邀请纠正。
-5. 收敛后路由：选股需求 → 场景 E；单一标的/配置 → 场景 A/B。
-6. 可映射能力：`sector-rotation`、`multi-factor`、`asset-allocation`、`risk-analysis`、`fundamental-filter`。
+识别为开放型 / 待澄清型 → 加载 `intake` skill 执行漏斗与槽位澄清；本场景不再重复协议。
 
 ## 场景 D：策略周期执行
 1. 对满意的分析/回测策略，询问是否周期性自动执行并提醒。
@@ -91,7 +104,7 @@ triggers:
 - 确认选股范围（全 A 股 / 特定板块 / 特定市值 / 特定风格）
 - 确认选股策略（见下方策略模板）
 - 确认输出数量（Top 5 / Top 10 / Top 20）
-- 若用户意图模糊，按「问题处理协议 · 开放型」执行一轮漏斗澄清（带选项）
+- 若用户意图模糊，加载 `intake` skill 执行漏斗澄清（带选项）
 
 ### Step 1: 叙事识别（并行执行）
 - `get_sector_info(mode="ranking")` → 板块涨幅排名
@@ -185,6 +198,12 @@ triggers:
 - 必须给出仓位建议和止损规则
 - 优先使用 `ch_*` 语义层（ClickHouse），本地不足时再用 VT 网络源
 
+> 输出结尾逐字复制以下四行，禁止改写日期；数据截止一律写 T-1：
+> **我假设了什么：** 本次实际生效的默认值，逐项列出
+> **换一个会怎样：** 换掉其中一个关键假设后，结论如何变化
+> **下一步能做什么：** ≤3 条具体可执行的后续
+> **仅供研究，不构成投资建议；数据截止 T-1。**
+
 ## 场景 F：宏观/事件驱动问题（"俄乌战争对市场影响"/"厄尔尼诺的影响"）
 1. 识别为「问题处理协议 · 宏观型」，执行 **Step-Back 协议**：
    - Step 1：抽象传导渠道（地缘 → 能源/农产品/避险/供应链/军工；气候 → 作物产量/种植结构/水利/保险）。
@@ -200,3 +219,59 @@ triggers:
 3. 方法论声明（强制）：短窗口事件研究可靠；长周期影响仅作情景分析（MacKinlay 1997; Kothari & Warner 2007）。文献结论标注为文献结论，不作为预测。
 4. 输出遵守「防幻觉与诚实拒答纪律」：不可解部分用拒答模板；所有数字带 data-as-of。
 5. 完成后用 `report-generate` 保存，并主动问询是否生成 HTML（Markdown 转 HTML）。
+
+> 输出结尾逐字复制以下四行，禁止改写日期；数据截止一律写 T-1：
+> **我假设了什么：** 本次实际生效的默认值，逐项列出
+> **换一个会怎样：** 换掉其中一个关键假设后，结论如何变化
+> **下一步能做什么：** ≤3 条具体可执行的后续
+> **仅供研究，不构成投资建议；数据截止 T-1。**
+
+## 产物结尾契约（closing block）
+
+凡产出具名产物的回答（个股体检 / 策略回测 / 交割单诊断 / 选股清单 / 事件影响 / HTML 报告），正文结尾必须附下列四行；纯解释性回答（如"什么是因子"）不附。
+
+```
+**我假设了什么：** 本次实际生效的默认值，逐项列出
+**换一个会怎样：** 换掉其中一个关键假设后，结论如何变化
+**下一步能做什么：** ≤3 条具体可执行的后续
+**仅供研究，不构成投资建议；数据截止 T-1。**
+```
+
+- 第一行只写真正生效的假设；未采用的候选值不写。
+- 第三行 ≤3 条，每条对应一个可执行的工具或场景动作，不写"继续观察"这类空话。
+- 第四行是合规红线：`仅供研究`、`不构成投资建议`、`数据截止 T-1` 三要素必须同句出现，不得改写成"投资有风险"。
+- closing block 是产物的结尾，不是产物的替代；出现率由评测门槛约束（`tests/evals/intake/checks.py`），不依赖运行时硬追加。
+
+## 附录：能力索引（按需查阅）
+
+能力索引是常驻上下文里最贵的纯参考表，已从 `AGENTS.md` 迁出至此按需加载；常驻面只保留「产物索引」菜单。
+
+| 能力 | Skill/工具 | 触发词 |
+|---|---|---|
+| **ClickHouse 语义层（交互首选）** | **`ch_list_tables` / `ch_describe_table` / `ch_query`（VT 内置）** | **取数、查表、SQL、ClickHouse、口径** |
+| ClickHouse 重查询 | `data-warehouse`（query_warehouse，降级通道） | 大结果集、复杂聚合、超 500 行 |
+| 估值速查 | `ch_query`（stk_factor_pro 估值列 + COMMENT 口径） | PE、PB、市值、估值速查 |
+| 因子研究 | `factor-research` (VT) | IC/IR、因子分析、截面分析 |
+| 多因子选股 | `multi-factor` (VT) | 多因子、截面排名、组合构建 |
+| 策略生成与回测 | `strategy-generate` (VT) + `vibe-trading_backtest` | 回测、backtest、策略、Walk-Forward |
+| 回测诊断 | `backtest-diagnose` (VT) | 回测失败、诊断、策略优化 |
+| Alpha Zoo | `alpha-zoo` (VT) | alpha bench、因子库、alpha101、gtja191 |
+| 基本面筛选 | `fundamental-filter` (VT) | 选股、PE/PB/ROE 筛选 |
+| 估值模型 | `valuation-model` (VT) | 估值、DCF、PE-Band、DDM |
+| 财务三表深读 | `financial-statement` (VT) | 财报解读、三表勾稽、盈利质量、七看八问 |
+| 投资视角框架 | `investor-lenses` (VT) | 巴菲特/芒格视角、深度价值、反向验证 |
+| 标准报告 | `report-generate` (VT) | 生成报告、保存分析、分析报告 |
+| **HTML 交互报告** | **`html-report`** | **HTML 报告、交互图表、ECharts、可视化展示** |
+| 周期执行 | `periodic-execution`（cron_jobs/manage.py） | 定时运行、cron、自动提醒 |
+| 逃顶预警 | `escape-top-microstructure` + `scripts/microstructure/` | 顶部预警、拥挤度、两融背离 |
+| 宏观/地缘/商品 | `macro-analysis` / `geopolitical-risk` / `commodity-analysis` (VT) | 宏观、战争、制裁、厄尔尼诺、油价、金价 |
+| SWARM 团队 | `vibe-trading_run_swarm`（30 预设） | investment_committee、quant_strategy_desk、risk_committee、sector_rotation_team |
+| 跨市场数据 | `vibe-trading_get_market_data` | clickhouse、tencent、akshare、yfinance、tushare、okx、auto |
+| 回测产物读取 | `vibe-trading_read_run_artifact` | equity/trades/metrics/positions/ohlcv:&lt;CODE&gt;/run_card/progress 的分页·降采样结构化读取；读 run 产物 CSV 时**优先于** `read_file`（省 token、不截断） |
+| Finance Skills | `vibe-trading_list_skills/load_skill`（91 个） | factor、strategy、risk、technical |
+| **选股策略** | **fundamental-filter + multi-factor + 场景 E** | **选股、筛选、选美、资金流选股、多因子选股** |
+| 技术分析 | `technical-basic` / `candlestick` / `ichimoku` / `elliott-wave` / `harmonic` / `smc` / `chanlun` (VT) | 技术面、K线形态、缠论 |
+| 风险管理 | `risk-analysis` (VT) | VaR、CVaR、最大回撤、压力测试 |
+| 金融数学库 | `quantlib_call` (VT) | 事件研究、BS 定价、GARCH、归因、显著性 |
+| **OMO 任务规划** | **oh-my-openagent（Prometheus 分解 + 并行子代理）** | **复杂任务、多步骤、并行执行** |
+| **VT 记忆能力** | **memory-lifecycle（MemoryGuard 自动触发 + 5 个 memory_* 工具）** | **记忆、反思、跨会话、经验积累、自动触发** |

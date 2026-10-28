@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-trading.local/opencode-agent/intake/brief.schema.json",
+  "title": "Intake brief",
+  "description": "Machine-checkable result of skills/intake/SKILL.md: slots resolved to values, the compiled tool plan, the declared assumptions and the closing block. Tool names must exist verbatim in the runtime MCP tools/list snapshot (tests/evals/intake/fixtures/tool_list.json); brief_validation.py interprets this file without third-party dependencies.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["intake_version", "request_class", "slots", "tool_plan", "assumptions", "closing_block"],
+  "properties": {
+    "intake_version": {"const": "1.0"},
+    "request_class": {
+      "description": "execute_with_defaults: public slots defaulted and executed; clarify_private: private slots asked once, then executed; direct_answer: text-only answer, no slots; refuse: clarification budget exhausted.",
+      "enum": ["execute_with_defaults", "clarify_private", "direct_answer", "refuse"]
+    },
+    "slots": {
+      "type": "object",
+      "description": "Public slots (market/horizon/risk/style/universe/position/output) carry declared defaults; private slots (cost_basis/position_size) are the only ask-worthy ones.",
+      "propertyNames": {
+        "enum": ["market", "horizon", "risk", "style", "universe", "position", "output", "cost_basis", "position_size"]
+      },
+      "additionalProperties": {"$ref": "#/$defs/slot"}
+    },
+    "tool_plan": {"type": "array", "items": {"$ref": "#/$defs/tool_call"}},
+    "assumptions": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "closing_block": {"$ref": "#/$defs/closing_block"}
+  },
+  "allOf": [
+    {
+      "description": "A defaulted slot must be declared, not hidden: any slot with source=default requires at least one assumption.",
+      "if": {
+        "properties": {
+          "slots": {
+            "anyOf": [
+              {"required": ["market"], "properties": {"market": {"properties": {"source": {"const": "default"}}}}},
+              {"required": ["horizon"], "properties": {"horizon": {"properties": {"source": {"const": "default"}}}}},
+              {"required": ["risk"], "properties": {"risk": {"properties": {"source": {"const": "default"}}}}},
+              {"required": ["style"], "properties": {"style": {"properties": {"source": {"const": "default"}}}}},
+              {"required": ["universe"], "properties": {"universe": {"properties": {"source": {"const": "default"}}}}},
+              {"required": ["position"], "properties": {"position": {"properties": {"source": {"const": "default"}}}}},
+              {"required": ["output"], "properties": {"output": {"properties": {"source": {"const": "default"}}}}},
+              {"required": ["cost_basis"], "properties": {"cost_basis": {"properties": {"source": {"const": "default"}}}}},
+              {"required": ["position_size"], "properties": {"position_size": {"properties": {"source": {"const": "default"}}}}}
+            ]
+          }
+        }
+      },
+      "then": {"properties": {"assumptions": {"minItems": 1}}}
+    }
+  ],
+  "examples": [
+    {
+      "intake_version": "1.0",
+      "request_class": "execute_with_defaults",
+      "slots": {
+        "market": {"value": "A股", "source": "default", "reason": "本部署数据源只覆盖 A 股"},
+        "horizon": {"value": "1-3 个月", "source": "default", "reason": "新手以季度为决策周期"},
+        "risk": {"value": "最大回撤 10%", "source": "default", "reason": "稳健档，与 20% 强制暂停线留缓冲"},
+        "style": {"value": "均衡", "source": "default", "reason": "默认不对单一因子下注"},
+        "universe": {"value": "Top 10", "source": "default", "reason": "产物菜单下沿"},
+        "position": {"value": "空仓", "source": "default", "reason": "未声明持仓时不虚构成本与仓位"},
+        "output": {"value": "结论 + 清单", "source": "default", "reason": "可执行的下一步"}
+      },
+      "tool_plan": [
+        {"tool": "screen_market", "args": {"market": "a", "sort_by": "change_pct", "top_n": 10}},
+        {"tool": "get_market_data", "args": {"codes": ["600519.SH"], "start_date": "2026-07-28", "end_date": "2026-10-28", "source": "auto"}},
+        {"tool": "factor_analysis", "args": {"factor_csv": "tmp/factor.csv", "return_csv": "tmp/returns.csv", "output_dir": "tmp/factor-out", "n_groups": 5}},
+        {"tool": "quantlib_call", "args": {"action": "call", "module": "risk", "function": "max_drawdown_analysis"}},
+        {"tool": "load_skill", "args": {"name": "risk-analysis"}},
+        {"tool": "backtest", "args": {"run_dir": "tmp/run", "config": {"source": "auto", "start_date": "2026-07-28", "end_date": "2026-10-28", "initial_cash": 1000000}}}
+      ],
+      "assumptions": ["六个公共槽位按默认值执行：A 股 / 1-3 个月 / 回撤 10% / 均衡 / Top 10 / 空仓。"],
+      "closing_block": {
+        "assumptions": "我假设了什么：A 股、近 3 个月、稳健档（回撤 ≤10%）、均衡、Top 10、空仓。",
+        "alternative": "换一个会怎样：改为 Top 20 会扩大候选池，但个股研究深度下降。",
+        "next_steps": "下一步能做什么：① 对 Top 3 做个股体检；② 复核回撤约束；③ 登记周度监控。",
+        "disclaimer": "仅供研究，不构成投资建议；数据截止 T-1。"
+      }
+    },
+    {
+      "intake_version": "1.0",
+      "request_class": "clarify_private",
+      "slots": {
+        "market": {"value": "A股", "source": "default", "reason": "本部署数据源只覆盖 A 股"},
+        "horizon": {"value": "1-3 个月", "source": "default", "reason": "新手以季度为决策周期"},
+        "risk": {"value": "最大回撤 10%", "source": "default", "reason": "稳健档"},
+        "style": {"value": "均衡", "source": "default", "reason": "默认不对单一因子下注"},
+        "universe": {"value": "Top 10", "source": "default", "reason": "产物菜单下沿"},
+        "position": {"value": "已有仓位", "source": "user", "reason": "用户声明持有一只科创 ETF"},
+        "output": {"value": "结论 + 清单", "source": "default", "reason": "可执行的下一步"},
+        "cost_basis": {"value": "1.240", "source": "user", "reason": "私有信息，用户回答建仓成本价"},
+        "position_size": {"value": "总仓位 10%", "source": "user", "reason": "私有信息，用户回答仓位规模"}
+      },
+      "tool_plan": [
+        {"tool": "trading_positions", "args": {}},
+        {"tool": "get_market_data", "args": {"codes": ["588000.SH"], "start_date": "2026-07-28", "end_date": "2026-10-28", "source": "auto"}}
+      ],
+      "assumptions": ["公共槽位按默认值执行；成本价与仓位规模来自用户回答。"],
+      "closing_block": {
+        "assumptions": "我假设了什么：A 股、近 3 个月、稳健档（回撤 ≤10%）、均衡、Top 10。",
+        "alternative": "换一个会怎样：按成本价而非现价计算回撤，结论会不同。",
+        "next_steps": "下一步能做什么：① 复核持仓集中度；② 设定止损位。",
+        "disclaimer": "仅供研究，不构成投资建议；数据截止 T-1。"
+      }
+    },
+    {
+      "intake_version": "1.0",
+      "request_class": "direct_answer",
+      "slots": {},
+      "tool_plan": [],
+      "assumptions": [],
+      "closing_block": {}
+    }
+  ],
+  "$defs": {
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "source", "reason"],
+      "properties": {
+        "value": {"description": "Resolved slot value, as compiled into the tool plan."},
+        "source": {"enum": ["default", "user", "tool"]},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "tool_call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "args"],
+      "properties": {
+        "tool": {
+          "description": "Verbatim name from the tools/list snapshot; the enum is exactly the compile table in skills/intake/SKILL.md.",
+          "enum": ["backtest", "factor_analysis", "get_market_data", "load_skill", "quantlib_call", "screen_market", "trading_positions"]
+        },
+        "args": {"type": "object"}
+      }
+    },
+    "closing_block": {
+      "type": "object",
+      "description": "The four lines from the 执行承诺 section. `{}` is allowed only for a text-only direct_answer, which must not carry the block.",
+      "additionalProperties": false,
+      "properties": {
+        "assumptions": {"type": "string", "minLength": 1},
+        "alternative": {"type": "string", "minLength": 1},
+        "next_steps": {"type": "string", "minLength": 1},
+        "disclaimer": {"type": "string", "minLength": 1}
+      },
+      "anyOf": [
+        {"required": ["assumptions", "alternative", "next_steps", "disclaimer"]},
+        {"maxProperties": 0}
+      ]
+    },
+    "tool_specs": {
+      "$comment": "Data block, not applied to instances: brief_validation.py reads it to check each tool_plan argument name and enum value. Dotted argument paths resolve through nested `properties` (e.g. backtest config.start_date).",
+      "backtest": {
+        "required": ["run_dir"],
+        "args": {
+          "run_dir": {"type": "string", "minLength": 1},
+          "config": {
+            "type": "object",
+            "properties": {
+              "source": {"enum": ["auto", "clickhouse", "tushare", "akshare", "tencent", "baostock", "yfinance", "yahoo", "okx", "ccxt"]},
+              "start_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+              "end_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+              "interval": {"enum": ["1D", "1W", "1M"]},
+              "initial_cash": {"type": "number", "exclusiveMinimum": 0}
+            }
+          }
+        }
+      },
+      "factor_analysis": {
+        "required": ["factor_csv", "return_csv", "output_dir"],
+        "args": {
+          "factor_csv": {"type": "string", "minLength": 1},
+          "return_csv": {"type": "string", "minLength": 1},
+          "output_dir": {"type": "string", "minLength": 1},
+          "n_groups": {"type": "integer", "minimum": 2}
+        }
+      },
+      "get_market_data": {
+        "required": ["codes", "start_date", "end_date"],
+        "args": {
+          "codes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "start_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+          "end_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+          "source": {"enum": ["auto", "clickhouse", "tushare", "akshare", "tencent", "baostock", "yfinance", "yahoo", "okx", "ccxt"]},
+          "interval": {"enum": ["1D", "1W", "1M"]},
+          "max_rows": {"type": "integer", "minimum": 0}
+        }
+      },
+      "load_skill": {
+        "required": ["name"],
+        "args": {
+          "name": {"type": "string", "minLength": 1},
+          "section": {"type": "string", "minLength": 1},
+          "offset": {"type": "integer", "minimum": 0}
+        }
+      },
+      "quantlib_call": {
+        "required": ["action"],
+        "args": {
+          "action": {"enum": ["list", "describe", "call"]},
+          "module": {"type": "string", "minLength": 1},
+          "function": {"type": "string", "minLength": 1},
+          "kwargs": {"type": "object"}
+        }
+      },
+      "screen_market": {
+        "required": ["market"],
+        "args": {
+          "market": {"enum": ["a", "us", "hk"]},
+          "sort_by": {"enum": ["change_pct", "volume", "amount", "turnover"]},
+          "top_n": {"type": "integer", "minimum": 1, "maximum": 200}
+        }
+      },
+      "trading_positions": {
+        "required": [],
+        "args": {
+          "connection": {"type": "string", "minLength": 1},
+          "connection_id": {"type": "string", "minLength": 1},
+          "account": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

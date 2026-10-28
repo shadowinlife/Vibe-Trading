@@ -4,7 +4,7 @@ description: mymain 分支从 2026-07 记忆工作起步到当前的完整时间
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-10-25
+updated: 2026-10-27
 tags: [history, timeline, changelog, mymain]
 related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 ---
@@ -16,6 +16,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 
 | 日期 | 事件 | 证据 |
 |---|---|---|
+| 2026-10-27 | **一次性 merge 对齐上游 `3cbb167e`（+119 commit）**：`backup/mymain-20261027` 回退点 → `git merge --no-ff origin/main`，27 个路径重叠但真冲突仅 2 处（`build_registry` 的 `tool_allowlist` × `cancel_event`、`_run_attempt` 的 `tool_allowlist=` × `cancel_event=`，双参数保留）；合并 commit `78b1e9fd`。上游新增 MCP 工具/skills/loaders 均为 0，F1–F5/F7/F9 均未被取代。计数校正（F9 后实测）：MCP **89/94**、agent tools **121**、sources **30**、skills **91**。验证：memory 353/3、CH 144/11、schema 53/1+exit 0、pin 122、env 0、routing 184、F9 策略 813、backtest/run_card 121、render 31；全量 **21142 passed / 36 failed / 168 skipped**（36 = 17 上游/环境既有 + 19 本地 D5 既有，零回归）；2 个本地测试桩补 `cancel_event` kwarg 后全绿 | [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-10-27 条 |
 | 2026-10-25 | **F9 合入本地 mymain + P1 基线建立**：合并提交 `81df3a992`（PR #2，源分支 `feat/strategy-library-scheduling`）；清理已合并的 F9 源分支/worktree，新建 `feat/strategy-run-entry` worktree（基于 mymain）；该分支用于策略运行服务入口（P1），未回上游 HKUDS | [../features/f9-strategy-library-scheduling.md](../features/f9-strategy-library-scheduling.md)；[../features/README.md](../features/README.md) |
 | 2026-10-22 | **merge + rebase 对齐上游 `11cff3f3`（+150 commit，v0.1.18）**：按用户裁决废弃本地 paper-trade 线（上游 #1939 已合入、#1961 OPEN），删除两个本地 paper-trade commit；merge 目标树 14 冲突文件 + 从 origin/main 重放 23 个本地 commit，最终树逐字节一致（另加 2 个收尾 commit）。计数：MCP **86/91**、agent tools **117**、sources **30**、skills **91**、engines 11、alphas 478、quantlib 309/25、brokers 19。验证：memory 375/2、CH 144/11、schema 54、pin 122、env 0、routing 193、FE-1+wrapper 72、render 30。同步清理 10 个已合并/废弃分支与 3 个 worktree，恢复包 `.git/backup/branches-pre-cleanup-20261022.bundle` | [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-10-22 条 |
 | 2026-10-17 | **rebase 对齐上游 `596fcf3d`（上游历史重写 + 296 commit）**：origin/main 遭 force-push，旧基线 `b1f6ce71` 不再可达，同批 PR 以不同 SHA 重制；双轨对齐（tmp merge 目标树 + `rebase --onto` 重放 18 个本地 commit），最终树与 merge 树逐字节一致（唯一例外：上游重写时删除的 `docs/sessions/2026-10-08_analysis_reliability.md` 随上游丢弃）；「上游 main 为祖先」不变量修复。计数：MCP **85/90**、agent tools **116**、sources **30**、engines 11（SKILL 口径）、skills 91。首轮 rebase 曾发生冲突标记混入 F5 commit 事故，abort 重做并加逐步强制校验。验证全绿：memory 375/2、CH 137/11、pin 122、render 30、FE-1+wrapper 98；新登记上游 mootdx 测试隔离缺陷（DIVERGENCE §2.4）。镜像 `opencode-serve:v3.7.0-mymain` + smoke-v370.sh | [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-10-17 条 |
