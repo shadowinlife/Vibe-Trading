@@ -143,3 +143,6 @@ _Auto-scaffolded by /ulw-execute. Append new entries below - never overwrite._
 - **todo 9 appendix**: `OpencodeAgent/skills/research-scenarios/SKILL.md` 末尾新增 `## 附录：能力索引（按需查阅）`（第 225 行起；文件 223 → 257 行），表格行数 27，与冻结常量 `CAPABILITY_INDEX_DATA_ROWS = 27` 一致。
 - **todo 9 AGENTS.md**: 343 → 328 行（≤350），`# 能力索引` 原位替换为 `# 产物索引（8 个具名产物）`（5 列 × 8 行）+ 兜底行；`pytest tests/test_agents_md.py tests/test_config_render.py` 81 passed。
 - **todo 9 pending**: 40 条语料 harness behavioral regression（todo 6 同判据）**未运行**，由另一 lane 负责；本 todo 只做结构面验证，不得声称已行为验证。
+- Delivery image: `opencode-serve:v3.11.0-onboarding-20261028-6e635820` (Id `sha256:7b6c5d1b2609…`, local-only, no repo digest) built from commit `6e635820`; baseline `v3.10.0-mymain` kept.
+- Build gotcha: `DOCKER_BUILDKIT=0` is mandatory — BuildKit tries to pull the local-only `opencode-serve-base:latest` and dies with `pull access denied`; the legacy builder uses the local base cache.
+- Smoke `tests/smoke-v311.sh` took ~5 min wall clock, 1 LLM session; `GET /config?directory=/workspace` first 200 at ~15 s, then `RUNTIME_COMMANDS_OK`, `CHECKUP_REPLY_OK`, `SMOKE_OK`.

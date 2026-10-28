@@ -49,6 +49,14 @@ for name in checkup screen backtest review; do
 done
 echo "COMMAND_FILES_OK"
 
+# Onboarding content shipped by Wave 1: the intake skill, the trimmed
+# AGENTS.md (plan cap <=350; this delivery pins 328), and the question-tool
+# permission on the primary agents.
+test -f /workspace/.opencode/skills/intake/SKILL.md || { echo "FAIL: /workspace/.opencode/skills/intake/SKILL.md missing"; exit 1; }
+actual_lines=$(wc -l < /workspace/AGENTS.md)
+test "$actual_lines" -eq 328 || { echo "FAIL: /workspace/AGENTS.md is $actual_lines lines, expected 328"; exit 1; }
+echo "WORKSPACE_CONTENT_OK: AGENTS.md=328 lines, skills/intake/SKILL.md present"
+
 /opt/venv/bin/python3 /workspace/.opencode/render_config.py \
     --template /workspace/.opencode/opencode.json.tmpl \
     --manifest /workspace/.opencode/vibe-trading-tools.json \
@@ -60,7 +68,10 @@ import json
 config = json.load(open("/tmp/opencode.json"))
 assert config["mcp"]["vibe-trading"]["type"] == "local"
 assert config["model"] and config["plugin"]
-print("RENDER_OK")
+assert config["agent"]["build"]["permission"]["question"] == "allow"
+assert config["agent"]["plan"]["permission"]["question"] == "allow"
+assert "question" not in config["agent"]["explore"].get("permission", {})
+print("RENDER_OK: agent.build/plan permission.question=allow")
 PYEOF
 '
 echo "=== Stage 1 PASS ==="
