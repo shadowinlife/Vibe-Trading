@@ -4,20 +4,20 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F9
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-10-27
+updated: 2026-10-29
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
 
 # mymain 分支差异说明
 
-> 维护者：shadowinlife ｜ 基线：HKUDS/Vibe-Trading `main` @ `3cbb167e`（2026-10-27 对齐；自 `11cff3f3` 前进 119 commit。本轮为增量 merge，上游历史未被重写。历史沿革：2026-10-17 上游曾 force-push 重写历史，旧基线 `b1f6ce71` 不再是 origin/main 祖先，见 §5 2026-10-17 条）
+> 维护者：shadowinlife ｜ 基线：HKUDS/Vibe-Trading `main` @ `bff6e762`（2026-10-29 对齐；自 `3cbb167e` 前进 22 commit。本轮为增量 merge，上游历史未被重写。历史沿革：2026-10-17 上游曾 force-push 重写历史，旧基线 `b1f6ce71` 不再是 origin/main 祖先，见 §5 2026-10-17 条）
 
 ## 1. 分支定位
 
 `mymain` 是 shadowinlife 个人维护的**锁定演进分支**，承载记忆系统 T4 迭代、本地 ClickHouse A 股数据源与纯 opencode+omo+VT MCP harness（F7），功能上领先于社区 `main`。**2026-09-27 路线裁决**：本分支定位为纯粹的 opencode + omo + VT MCP 集成路线——12 领域子代理层与 nano-search-mcp 经验证不够有效已回退，F8 引擎桥与多租户基础设施（前端兼容路线）整体移出至 `mymain-engine-bridge` 分支独立演进，两线零兼容/零相互索引；**2026-10-10 该线废弃封存**（opencode 作为桥接 agents 的方式被证明不可行，见 §5）。本分支作为个人生产/验证环境的稳定基线，所有改动最终以社区 PR 形式回流上游；PR 合入后相应条目从本文档移除，全部合入后本分支回归纯跟踪分支。
 
-相对 `origin/main`（基线 `3cbb167e`）的差异总量：**706 个文件、+139423/−250 行**（含 `mymain-wiki/` 知识库及其 harness-evolution 归档、分支级 AGENTS.md 扩展、ClickHouse 语义层 Phase 0–2、F9 策略库/调度与 `OpencodeAgent/` harness 层；2026-09-27 回退后不再含 F8 引擎桥与多租户基础设施）。功能历史组织为 **37 个本地 commit**（另含 2 个 merge commit，共 39 个；F1→F4 memory、F5 ClickHouse+语义层、scheduled_research wrapper、FE-1 本地增量、F7 OpencodeAgent、F9 策略库/调度、wiki docs、OpencodeAgent 版本/交付跟进、本地 gitignore/AGENTS 约定——F1-F4 与 wrapper 可独立作为社区 PR 候选，F5/F7/F9/wiki 个人部署独有）。2026-10-22 对齐起，paper-trade 本地线已废弃（见 §2.2），后续直接采用上游实现。
+相对 `origin/main`（基线 `bff6e762`）的差异总量：**1050 个文件、+177081/−342 行**（`git diff --shortstat origin/main...HEAD`；含 `mymain-wiki/` 知识库及其 harness-evolution 归档、分支级 AGENTS.md 扩展、ClickHouse 语义层 Phase 0–2、F9 策略库/调度与 `OpencodeAgent/` harness 层；2026-09-27 回退后不再含 F8 引擎桥与多租户基础设施）。功能历史组织为 **93 个非 merge commit**（另含 12 个 merge commit，共 105 个；F1→F4 memory、F5 ClickHouse+语义层、scheduled_research wrapper、FE-1 本地增量、F7 OpencodeAgent、F9 策略库/调度、wiki docs、OpencodeAgent 版本/交付跟进、onboarding artifact-first 迁移与 F-wave 证据、本地 gitignore/AGENTS 约定——F1-F4 与 wrapper 可独立作为社区 PR 候选，F5/F7/F9/wiki 个人部署独有）。2026-10-22 对齐起，paper-trade 本地线已废弃（见 §2.2），后续直接采用上游实现。
 
 ## 2. 核心功能差异
 
@@ -497,3 +497,13 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - **文档同步**：DIVERGENCE（基线/差异总量/核查结论/计数/§3/§4.3）、`history/timeline.md`、`mymain-wiki/AGENTS.md`、`OpencodeAgent/AGENTS.md` 与 `DEPLOY-GUIDE.md` 计数；镜像未重建——`IMAGE-MANUAL.md` 保留 v3.8.x 交付时的 85/90 事实，下次重建再更新。
 - **推送**：`git push fork mymain`（普通推送，非 force-push；`release/mymain` tag 不移动——本轮无镜像交付，不构成发布）。
 - **推送事故（AK 扫描钩子，环境缺陷）**：全局 `core.hooksPath=/Users/mgong/.aliyunAKScanHook/hooks`（akscanner 4.4.6-alpha.1）对 GitHub 外部仓走 `Processing hash for external repo` 分支——它试图为**尚未推送到远端**的 commit 生成 patch，必然 `object not found`；主 worktree 与 linked worktree 均复现（`AKSCANNER_DEBUG=1` 已确认）。补偿控制：推送前做等价人工密钥扫描——全树高信号正则（AK/SK、GitHub/OpenAI/Slack token、PEM 私钥）仅命中测试假 token 与文档示例；tracked `.env` 仅两份 `.env.example`；三个本地 commit 的 patch 复核无凭据。随后 `git push --no-verify` 成功（`81df3a99..3aa2dea92`），远端 SHA 与本地一致。下轮若钩子仍失效，沿用同一「人工扫描 + no-verify」补偿流程，或等 akscanner 修复外部仓路径。
+
+### 2026-10-29 merge 对齐（基线 `bff6e762`，22 commit）——PR #6/#7 合入 + onboarding 证据轮
+
+- **上游增量**：自 `3cbb167e` 前进 **22 commit**（`bff6e762`）：paper-trade bar-agnostic 订单生命周期状态机（#2066 / #1938 phase 1）、Futu 美股代码映射（#2076）、shadow-account 结果缓存与入场条件（#2075）、grounding 期间估值/千分位/期限标签、portfolio IBKR+Futu 网关端点与 Robinhood MCP 账户选择（#1428）、financial-rigor 非有限/布尔输入拒绝、Qlib ROC/CORD 语义、agent 两轮结构化收尾、README 10-28 新闻。
+- **方式**：`backup/mymain-20261029` @ `7f8fbe50` 回退点 → 从 `origin/main` 新建 worktree `mymain-iteration-20261029` / 分支 `feat/mymain-iteration-20261029` → `git merge fork/mymain`（`e2d02bc7`，含 PR #6 `ddac38be` 与 PR #7 `80cf57fa`）→ merge commit `9af8062c`，**零冲突**（exit 0，0 unmerged）。历史未重写，无需 force-push。
+- **PR 合入**：#6（root AGENTS.md §8.4 保护分支/worktree/tag 纪律，+19）与 #7（onboarding artifact-first 交付，47 files +5064/−33）经复核后均 MERGED。tag `v3.11.3-onboarding-fwave-20261029` 保留在 `fe8259b5`（不可变；PR 最终 head 为 `80cf57fa`，差异仅为补交两个 lane 分片的 `test(...)` 提交）。
+- **复核结论**：PR #7 无 AI trailer、无凭据；15 个提交中仅 merge commit `fe8259b5` 无 `Signed-off-by`（合并提交豁免）；干净检出 `pytest 184` + `analyze_probe.py --check` 通过。私有 IP `172.24.165.51` 仅出现在 evidence 报告，与既有 §3.3 口径一致，非新增泄漏。PR #6 单文件 +19、DCO 完整、命令可执行。
+- **计数（运行时实测）**：MCP **OFF=94 / ON=99**（上游基数 82 + 3 ch_* + 1 scheduled_research + 8 策略调度工具），agent tools **121**，skills 91、sources 30、engines 11、alphas 478；与 §2.1/§3.2/§4.3 现行口径一致。
+- **验证基线（legonanobot / macOS arm64 / Python 3.12）**：routing **184**、memory **353/3**、ClickHouse **144/11**、CH schema **53/1 + comments gate exit 0**、README/manifest **122**、env gate **exit 0**（4 WARN 均上游 `llm.py`）——与 2026-10-27 基线逐项持平，**零回归**。
+- **未完成（下一步）**：§4.1 第 3 步的 **carve 尚未执行**——当前迭代分支是 merge 形态，需从 `origin/main` 按 feature 切出独立 commit、并与 merge 树逐字节比对后再替换 `mymain`。
