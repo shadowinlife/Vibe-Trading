@@ -227,3 +227,98 @@ class TestAgentsMdRouter:
             "## 5. 轮次预算（硬性）",
         ):
             assert heading not in body, heading
+
+
+PRODUCT_INDEX_HEADING = "# 产物索引"
+CAPABILITY_INDEX_HEADING = "# 能力索引"
+CAPABILITY_TABLE_HEADER = "| 能力 | Skill/工具 | 触发词 |"
+APPENDIX_HEADING = "## 附录：能力索引（按需查阅）"
+PRODUCT_COLUMNS = ("产物", "用户说法", "输入", "产出", "不能做")
+PRODUCT_ROWS = (
+    "个股体检",
+    "选股清单",
+    "策略回测",
+    "组合体检",
+    "事件/宏观影响",
+    "交易复盘",
+    "定时监控",
+    "报告",
+)
+FALLBACK_LINE = "未命中产物 → 加载 research-scenarios 附录查能力索引。"
+
+# Pre-migration count, measured before the move: AGENTS.md:191-220 held
+# heading + header + separator + 27 data rows. Frozen because the source
+# block no longer exists to recount; the appendix must match within ±2.
+CAPABILITY_INDEX_DATA_ROWS = 27
+
+
+def _table_rows(text: str, heading_prefix: str) -> list[list[str]]:
+    lines = text.splitlines()
+    start = next(
+        (index for index, line in enumerate(lines) if line.startswith(heading_prefix)),
+        None,
+    )
+    if start is None:
+        raise AssertionError(f"heading not found: {heading_prefix}")
+    rows: list[list[str]] = []
+    in_table = False
+    for line in lines[start + 1 :]:
+        if line.startswith("|"):
+            in_table = True
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if all(set(cell) <= {"-", ":", " "} for cell in cells):
+                continue
+            rows.append(cells)
+        elif in_table or line.startswith("# "):
+            break
+    return rows
+
+
+class TestProductIndex:
+    def test_capability_index_moved_out(self):
+        body = _read(AGENTS_MD_PATH)
+        assert PRODUCT_INDEX_HEADING in body
+        assert CAPABILITY_INDEX_HEADING not in body
+        assert CAPABILITY_TABLE_HEADER not in body
+
+    def test_product_table_has_eight_rows_and_five_columns(self):
+        rows = _table_rows(_read(AGENTS_MD_PATH), PRODUCT_INDEX_HEADING)
+        assert rows, "product index table not found"
+        assert tuple(rows[0]) == PRODUCT_COLUMNS
+        data_rows = rows[1:]
+        assert len(data_rows) == 8, data_rows
+        names = [row[0].strip("*") for row in data_rows]
+        assert names == list(PRODUCT_ROWS)
+        for name in PRODUCT_ROWS:
+            assert names.count(name) == 1, name
+
+    def test_every_product_row_keeps_all_five_columns(self):
+        data_rows = _table_rows(_read(AGENTS_MD_PATH), PRODUCT_INDEX_HEADING)[1:]
+        assert len(data_rows) == 8
+        for row in data_rows:
+            assert len(row) == 5, row
+
+    def test_fallback_line_follows_the_table(self):
+        lines = _read(AGENTS_MD_PATH).splitlines()
+        assert FALLBACK_LINE in lines
+        fallback_index = lines.index(FALLBACK_LINE)
+        assert fallback_index > 0
+        assert lines[fallback_index - 1].startswith("|"), (
+            "the fallback line must immediately follow the product table"
+        )
+
+    def test_appendix_carries_the_migrated_table(self):
+        text = _read(SCENARIOS_SKILL_PATH)
+        assert APPENDIX_HEADING in text
+        rows = _table_rows(text, APPENDIX_HEADING)
+        assert rows, "capability appendix table not found"
+        assert tuple(rows[0]) == ("能力", "Skill/工具", "触发词")
+        data_rows = rows[1:]
+        assert abs(len(data_rows) - CAPABILITY_INDEX_DATA_ROWS) <= 2, (
+            f"appendix has {len(data_rows)} capability rows; pre-migration "
+            f"AGENTS.md had {CAPABILITY_INDEX_DATA_ROWS} (±2)"
+        )
+        assert "vibe-trading_read_run_artifact" in text
+        assert "91 个" in text
+        assert "memory-lifecycle" in text
+        assert "vibe-trading_read_run_artifact" not in _read(AGENTS_MD_PATH)

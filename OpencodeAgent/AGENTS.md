@@ -75,7 +75,7 @@ ClickHouse 数据由外部同步进程维护，本容器内不包含同步逻辑
 | **宏观型** | 宏观事件/地缘政治/自然现象，传导链长、超出市场数据可直接回答的范围（"俄乌战争对后续市场影响"） | Step-Back 协议 |
 
 - 开放型 / 待澄清型 → 先加载 intake skill（skills/intake/SKILL.md）再执行；明确可执行 / 宏观型 不加载。
-- 明确可执行 → ACT by default，按「能力索引」直接路由；有合理默认值时一句话声明假设，能用工具解决的歧义绝不问用户。
+- 明确可执行 → ACT by default，按「产物索引」直接路由；有合理默认值时一句话声明假设，能用工具解决的歧义绝不问用户。
 - 宏观型 → Step-Back 协议，完整步骤见 `research-scenarios` 场景 F。
 
 # 防幻觉与诚实拒答纪律（CRITICAL）
@@ -188,36 +188,21 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
 
 **强制规则**：识别出请求所属场景后（场景定义与 Skill 组合见上方「组合能力」表），**必须先加载 `research-scenarios` 技能，再按其中对应场景的步骤执行**；不得凭记忆复现步骤，不得跳过通用前置检查。
 
-# 能力索引
-| 能力 | Skill/工具 | 触发词 |
-|---|---|---|
-| **ClickHouse 语义层（交互首选）** | **`ch_list_tables` / `ch_describe_table` / `ch_query`（VT 内置）** | **取数、查表、SQL、ClickHouse、口径** |
-| ClickHouse 重查询 | `data-warehouse`（query_warehouse，降级通道） | 大结果集、复杂聚合、超 500 行 |
-| 估值速查 | `ch_query`（stk_factor_pro 估值列 + COMMENT 口径） | PE、PB、市值、估值速查 |
-| 因子研究 | `factor-research` (VT) | IC/IR、因子分析、截面分析 |
-| 多因子选股 | `multi-factor` (VT) | 多因子、截面排名、组合构建 |
-| 策略生成与回测 | `strategy-generate` (VT) + `vibe-trading_backtest` | 回测、backtest、策略、Walk-Forward |
-| 回测诊断 | `backtest-diagnose` (VT) | 回测失败、诊断、策略优化 |
-| Alpha Zoo | `alpha-zoo` (VT) | alpha bench、因子库、alpha101、gtja191 |
-| 基本面筛选 | `fundamental-filter` (VT) | 选股、PE/PB/ROE 筛选 |
-| 估值模型 | `valuation-model` (VT) | 估值、DCF、PE-Band、DDM |
-| 财务三表深读 | `financial-statement` (VT) | 财报解读、三表勾稽、盈利质量、七看八问 |
-| 投资视角框架 | `investor-lenses` (VT) | 巴菲特/芒格视角、深度价值、反向验证 |
-| 标准报告 | `report-generate` (VT) | 生成报告、保存分析、分析报告 |
-| **HTML 交互报告** | **`html-report`** | **HTML 报告、交互图表、ECharts、可视化展示** |
-| 周期执行 | `periodic-execution`（cron_jobs/manage.py） | 定时运行、cron、自动提醒 |
-| 逃顶预警 | `escape-top-microstructure` + `scripts/microstructure/` | 顶部预警、拥挤度、两融背离 |
-| 宏观/地缘/商品 | `macro-analysis` / `geopolitical-risk` / `commodity-analysis` (VT) | 宏观、战争、制裁、厄尔尼诺、油价、金价 |
-| SWARM 团队 | `vibe-trading_run_swarm`（30 预设） | investment_committee、quant_strategy_desk、risk_committee、sector_rotation_team |
-| 跨市场数据 | `vibe-trading_get_market_data` | clickhouse、tencent、akshare、yfinance、tushare、okx、auto |
-| 回测产物读取 | `vibe-trading_read_run_artifact` | equity/trades/metrics/positions/ohlcv:&lt;CODE&gt;/run_card/progress 的分页·降采样结构化读取；读 run 产物 CSV 时**优先于** `read_file`（省 token、不截断） |
-| Finance Skills | `vibe-trading_list_skills/load_skill`（91 个） | factor、strategy、risk、technical |
-| **选股策略** | **fundamental-filter + multi-factor + 场景 E** | **选股、筛选、选美、资金流选股、多因子选股** |
-| 技术分析 | `technical-basic` / `candlestick` / `ichimoku` / `elliott-wave` / `harmonic` / `smc` / `chanlun` (VT) | 技术面、K线形态、缠论 |
-| 风险管理 | `risk-analysis` (VT) | VaR、CVaR、最大回撤、压力测试 |
-| 金融数学库 | `quantlib_call` (VT) | 事件研究、BS 定价、GARCH、归因、显著性 |
-| **OMO 任务规划** | **oh-my-openagent（Prometheus 分解 + 并行子代理）** | **复杂任务、多步骤、并行执行** |
-| **VT 记忆能力** | **memory-lifecycle（MemoryGuard 自动触发 + 5 个 memory_* 工具）** | **记忆、反思、跨会话、经验积累、自动触发** |
+# 产物索引（8 个具名产物）
+
+面向新手的产物菜单：按「用户说法」命中的产物执行；完整能力索引（Skill/工具/触发词）已迁至 `research-scenarios` Skill 附录「能力索引（按需查阅）」，按需加载。
+
+| 产物 | 用户说法 | 输入 | 产出 | 不能做 |
+|---|---|---|---|---|
+| **个股体检** | "帮我看看 600519" | 标的、期限、风险 | 基本面+估值+资金+技术+结论 | 不预测具体价格 |
+| **选股清单** | "最近买什么" | 市场、风格、风险、数量 | 10–20 只候选 + 理由 + 风险 | 不构成投资建议 |
+| **策略回测** | "帮我回测一个策略" | 市场、因子/信号、区间、成本 | 净值、Sharpe、回撤、归因、run card | 不做实盘 |
+| **组合体检** | "我的持仓怎么样" | 持仓、成本、风险 | 暴露、集中度、回撤、再平衡建议 | 不读取未授权账户 |
+| **事件/宏观影响** | "俄乌战争影响" | 事件、市场、窗口 | 历史 CAR、行业暴露、情景 | 不预测地缘政治 |
+| **交易复盘** | "分析我的交割单" | 文件、市场、时间范围 | 行为诊断、shadow account、改进 | 不保证收益 |
+| **定时监控** | "每天帮我盯" | 标的、条件、频率、通知 | 定时任务 + 通知 | 不自动下单 |
+| **报告** | "生成报告" | 已有分析、模板、输出格式 | HTML/PDF | 不编造数据 |
+未命中产物 → 加载 research-scenarios 附录查能力索引。
 
 # OMO 任务规划与子代理并行
 
