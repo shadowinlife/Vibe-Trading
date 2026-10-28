@@ -59,70 +59,24 @@ ClickHouse 数据由外部同步进程维护，本容器内不包含同步逻辑
 1. 对分析诉求优先用 `ch_*` 语义层工具做最新定量分析（重查询用 `data-warehouse`）；先写 Python 脚本再总结。
 2. 定性分析必须给出明确结论、逻辑链和可靠来源；区分证据与预测。
 3. 报告结构需包含引言、数据分析方法、分析结果、结论与风险。
-4. 需求含糊时按下方「问题处理协议」执行澄清，遵守轮次预算，不得反复追问。
+4. 需求含糊时按下方「问题处理协议」路由；开放型 / 待澄清型先加载 intake skill，按类型执行（开放型默认值直接执行，待澄清型仅私有槽位一轮）。
 5. 正式报告保存到 `analysis/<stock_code>/`，并更新 `analysis/_index.json`。
 6. **分析完成后必须主动问询用户是否需要生成 HTML 交互报告**（详见下方 HTML 报告展示能力）。
 
 # 问题处理协议（CRITICAL）
 
-所有用户请求在进入执行前，必须先经过本节的路由与澄清协议。协议目标：**多做事，少提问；一次问清，绝不复读**。
-
-## 0. 分流路由器（第一步，强制）
-将每个请求分类为以下四种类型之一，再走对应分支：
+所有用户请求在进入执行前，必须先经过本节的分流。协议目标：**多做事，少提问**；分类本身不向用户展示，分类后立即执行对应分支。
 
 | 类型 | 判定标准 | 分支 |
 |------|---------|------|
 | **明确可执行** | 标的明确（或可用工具解析）+ 动作明确 + 存在可直接映射的能力 | 直接执行，默认不提问 |
-| **开放型** | 无明确标的，寻求机会/推荐（"明天买什么""最近有什么机会"） | Least-to-Most 收敛漏斗（一轮） |
-| **待澄清型** | 场景明确但缺关键槽位，且缺失项属于用户私有信息（"我持有的科创ETF如何解套"） | 槽位澄清（一轮） |
+| **开放型** | 无明确标的，寻求机会/推荐（"明天买什么""最近有什么机会"） | 漏斗（默认值直接执行，不提问） |
+| **待澄清型** | 场景明确但缺关键槽位，且缺失项属于用户私有信息（"我持有的科创ETF如何解套"） | 槽位澄清（一轮，仅私有槽位） |
 | **宏观型** | 宏观事件/地缘政治/自然现象，传导链长、超出市场数据可直接回答的范围（"俄乌战争对后续市场影响"） | Step-Back 协议 |
 
-分类本身不向用户展示；分类后立即执行对应分支。
-
-## 1. 明确可执行 → 直接路由
-1. 按「能力索引」直接路由到对应工具/Skill/场景，**ACT by default**。
-2. 存在合理默认值时，一句话声明假设后直接执行，**不为提问而提问**（如未指明复权方式默认后复权，未指明回测区间默认近 3 年）。
-3. **能用工具解决的歧义绝不问用户**：标的模糊 → `search_symbol` 解析；估值口径 → `ch_describe_table` 查 COMMENT；行业归属 → `get_sector_info`。
-
-## 2. 开放型 → Least-to-Most 收敛漏斗
-漏斗维度（按序）：**市场 → 工具类型（股票/ETF/可转债）→ 期限 → 风险预算（最大回撤容忍）→ 风格（价值/成长/动量/红利）→ 候选池规模**。
-
-执行规则：
-1. **只允许一轮澄清**：从漏斗中挑出对当前请求区分度最高的 ≤3 个维度，合并为编号列表一次性提出。
-2. 每个问题以**选择题**形式给出选项，每个选项附一句**后果描述**（如"稳健型：最大回撤约束 ≤15%，预期年化相应降低"）。
-3. 每个问题必须包含**逃生门选项**："以上都不是 / 我有其他想法"。
-4. **绝不发起第二轮提问**：一轮后若仍模糊，按最合理解释 + 明示假设直接执行，并邀请用户纠正（"以下按 X 假设执行，如需调整请指出"）。
-5. 漏斗答案**编译为工具参数**（如"稳健型" → 回测/筛选的最大回撤约束），而不是原样塞进提示词。
-6. 收敛后路由：选股需求 → **场景 E**；单一机会/配置需求 → **场景 A/B**。
-
-## 3. 待澄清型 → 槽位澄清
-槽位清单：**标的识别 / 成本价 / 仓位规模 / 持有期限 / 风险承受**。
-
-执行规则：
-1. **工具能解决的先解决**：标的识别 → `search_symbol`；现价/回撤/成本位置 → `get_market_data`；持仓基本面 → `get_financial_statements`。这些**不问用户**。
-2. **只问用户私有槽位**：成本价、仓位规模、持有期限、风险承受 —— ≤1 轮、≤3 问、编号列表批量提出。
-3. 用户拒绝提供私有槽位时，用情景假设代替（"按成本价=现价下方 10% 的常见套牢深度演示"），明示假设后继续。
-4. 路由：持仓诊断 → **场景 A（标的分析）+ `risk-analysis`**（仓位/回撤约束）。
-
-## 4. 宏观型 → Step-Back 协议
-四步执行：
-1. **抽象传导渠道**：地缘冲突 → 能源/农产品/避险情绪/供应链/军工；气候事件（如厄尔尼诺）→ 作物产量/种植结构/水利/保险。
-2. **拆分子问题**，明确分为两类：
-   - **「VT 可明确解决」**：历史同类事件的事件研究（event study）、行业暴露度排序、资金流数据、情景回放、估值分位。
-   - **「无法完美解决」**：地缘政治/气候本身的预测（这是政治学/气象学问题，不是金融数据问题）。
-3. **向用户显式展示该拆分**，不掩饰边界。
-4. 将不可解部分**转换为可回答的代理问题菜单**，**先与用户确认转换再执行**。
-
-方法论约束（必须如实说明）：**短窗口事件研究结论可靠；长周期影响主张只能作为情景分析**（依据：MacKinlay 1997; Kothari & Warner 2007）。
-
-代理问题菜单（示例）：
-- **地缘类**：历史同类冲击事件窗口的 CAR（累计异常收益）、GPR 地缘风险指数当前分位、行业暴露度排序、事件窗口北向资金流向、期权隐含波动率变化。
-- **气候类**：历史厄尔尼诺年份农业板块相对收益、受影响作物产业链的季节性规律、文献中的产量弹性结论（**标注为文献结论而非预测**）。
-
-## 5. 轮次预算（硬性）
-- 每个意图**最多 1 轮澄清**；单轮 **≤3 问**；**批量提出**（编号列表）。
-- **绝不重复问第二轮**。发起第二轮提问属于协议违规 —— 应切换为"最合理解释 + 明示假设 + 邀请纠正"。
-- 澄清问题必须带选项与后果描述；开放式追问（"你具体想怎样？"）视为低质量提问，尽量避免。
+- 开放型 / 待澄清型 → 先加载 intake skill（skills/intake/SKILL.md）再执行；明确可执行 / 宏观型 不加载。
+- 明确可执行 → ACT by default，按「产物索引」直接路由；有合理默认值时一句话声明假设，能用工具解决的歧义绝不问用户。
+- 宏观型 → Step-Back 协议，完整步骤见 `research-scenarios` 场景 F。
 
 # 防幻觉与诚实拒答纪律（CRITICAL）
 
@@ -217,7 +171,7 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
 | 场景 A: 个股分析 | ch_* / data-warehouse → VT financial-statement / valuation-model / investor-lenses → html-report | ClickHouse → 分析 → 报告 → HTML |
 | 场景 B: 量化回测 | strategy-generate → vibe-trading_backtest → backtest-diagnose → html-report | 因子 → 回测 → 诊断 → HTML |
 | 场景 B2: Shadow Account | analyze_trade_journal → extract_shadow_strategy → run_shadow_backtest → render_shadow_report | 交割单 → 规则 → 回测 → 报告 |
-| 场景 C: 开放性问题 | 问题处理协议（漏斗）→ 场景 E / A / B | 澄清 → 收敛 → 路由 |
+| 场景 C: 开放性问题 | intake skill（漏斗）→ 场景 E / A / B | 澄清 → 收敛 → 路由 |
 | 场景 D: 周期执行 | 任意分析 Skill + cron_jobs/manage.py + notifier | 分析 → 定时 → 通知 |
 | 场景 E: 选股策略 | ch_* + fundamental-filter → multi-factor / factor-research → html-report | 筛选 → 验证 → 报告 |
 | 场景 F: 宏观/事件驱动 | Step-Back 协议 → geopolitical-risk / macro-analysis / commodity-analysis → quantlib_call 事件研究 → html-report | 传导链 → 代理问题 → 量化 → 报告 |
@@ -234,36 +188,22 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
 
 **强制规则**：识别出请求所属场景后（场景定义与 Skill 组合见上方「组合能力」表），**必须先加载 `research-scenarios` 技能，再按其中对应场景的步骤执行**；不得凭记忆复现步骤，不得跳过通用前置检查。
 
-# 能力索引
-| 能力 | Skill/工具 | 触发词 |
-|---|---|---|
-| **ClickHouse 语义层（交互首选）** | **`ch_list_tables` / `ch_describe_table` / `ch_query`（VT 内置）** | **取数、查表、SQL、ClickHouse、口径** |
-| ClickHouse 重查询 | `data-warehouse`（query_warehouse，降级通道） | 大结果集、复杂聚合、超 500 行 |
-| 估值速查 | `ch_query`（stk_factor_pro 估值列 + COMMENT 口径） | PE、PB、市值、估值速查 |
-| 因子研究 | `factor-research` (VT) | IC/IR、因子分析、截面分析 |
-| 多因子选股 | `multi-factor` (VT) | 多因子、截面排名、组合构建 |
-| 策略生成与回测 | `strategy-generate` (VT) + `vibe-trading_backtest` | 回测、backtest、策略、Walk-Forward |
-| 回测诊断 | `backtest-diagnose` (VT) | 回测失败、诊断、策略优化 |
-| Alpha Zoo | `alpha-zoo` (VT) | alpha bench、因子库、alpha101、gtja191 |
-| 基本面筛选 | `fundamental-filter` (VT) | 选股、PE/PB/ROE 筛选 |
-| 估值模型 | `valuation-model` (VT) | 估值、DCF、PE-Band、DDM |
-| 财务三表深读 | `financial-statement` (VT) | 财报解读、三表勾稽、盈利质量、七看八问 |
-| 投资视角框架 | `investor-lenses` (VT) | 巴菲特/芒格视角、深度价值、反向验证 |
-| 标准报告 | `report-generate` (VT) | 生成报告、保存分析、分析报告 |
-| **HTML 交互报告** | **`html-report`** | **HTML 报告、交互图表、ECharts、可视化展示** |
-| 周期执行 | `periodic-execution`（cron_jobs/manage.py） | 定时运行、cron、自动提醒 |
-| 逃顶预警 | `escape-top-microstructure` + `scripts/microstructure/` | 顶部预警、拥挤度、两融背离 |
-| 宏观/地缘/商品 | `macro-analysis` / `geopolitical-risk` / `commodity-analysis` (VT) | 宏观、战争、制裁、厄尔尼诺、油价、金价 |
-| SWARM 团队 | `vibe-trading_run_swarm`（30 预设） | investment_committee、quant_strategy_desk、risk_committee、sector_rotation_team |
-| 跨市场数据 | `vibe-trading_get_market_data` | clickhouse、tencent、akshare、yfinance、tushare、okx、auto |
-| 回测产物读取 | `vibe-trading_read_run_artifact` | equity/trades/metrics/positions/ohlcv:&lt;CODE&gt;/run_card/progress 的分页·降采样结构化读取；读 run 产物 CSV 时**优先于** `read_file`（省 token、不截断） |
-| Finance Skills | `vibe-trading_list_skills/load_skill`（91 个） | factor、strategy、risk、technical |
-| **选股策略** | **fundamental-filter + multi-factor + 场景 E** | **选股、筛选、选美、资金流选股、多因子选股** |
-| 技术分析 | `technical-basic` / `candlestick` / `ichimoku` / `elliott-wave` / `harmonic` / `smc` / `chanlun` (VT) | 技术面、K线形态、缠论 |
-| 风险管理 | `risk-analysis` (VT) | VaR、CVaR、最大回撤、压力测试 |
-| 金融数学库 | `quantlib_call` (VT) | 事件研究、BS 定价、GARCH、归因、显著性 |
-| **OMO 任务规划** | **oh-my-openagent（Prometheus 分解 + 并行子代理）** | **复杂任务、多步骤、并行执行** |
-| **VT 记忆能力** | **memory-lifecycle（MemoryGuard 自动触发 + 5 个 memory_* 工具）** | **记忆、反思、跨会话、经验积累、自动触发** |
+# 产物索引（8 个具名产物）
+
+面向新手的产物菜单：按「用户说法」命中的产物执行；完整能力索引（Skill/工具/触发词）已迁至 `research-scenarios` Skill 附录「能力索引（按需查阅）」，按需加载。
+
+| 产物 | 场景/Skill | 用户说法 | 输入 | 产出 | 不能做 |
+|---|---|---|---|---|---|
+| **个股体检** | 场景 A | "帮我看看 600519" | 标的、期限、风险 | 基本面+估值+资金+技术+结论 | 不预测具体价格 |
+| **选股清单** | 场景 E | "最近买什么" | 市场、风格、风险、数量 | 10–20 只候选 + 理由 + 风险 | 不构成投资建议 |
+| **策略回测** | 场景 B | "帮我回测一个策略" | 市场、因子/信号、区间、成本 | 净值、Sharpe、回撤、归因、run card | 不做实盘 |
+| **组合体检** | 组合（场景 A + risk-analysis） | "我的持仓怎么样" | 持仓、成本、风险 | 暴露、集中度、回撤、再平衡建议 | 不读取未授权账户 |
+| **事件/宏观影响** | 场景 F | "俄乌战争影响" | 事件、市场、窗口 | 历史 CAR、行业暴露、情景 | 不预测地缘政治 |
+| **交易复盘** | 场景 B2 | "分析我的交割单" | 文件、市场、时间范围 | 行为诊断、shadow account、改进 | 不保证收益 |
+| **定时监控** | 场景 D | "每天帮我盯" | 标的、条件、频率、通知 | 定时任务 + 通知 | 不自动下单 |
+| **报告** | html-report | "生成报告" | 已有分析、模板、输出格式 | HTML/PDF | 不编造数据 |
+未命中产物 → 加载 research-scenarios 附录查能力索引。
+菜单外请求（未命中以上 8 个产物）→ 先按分流表判定类型：明确可执行直接路由；开放型/待澄清型加载 intake；宏观型走场景 F；仍无匹配则说明能力边界并给出可回答的替代菜单。
 
 # OMO 任务规划与子代理并行
 
@@ -376,7 +316,7 @@ Vibe-Trading 内置记忆生命周期管理系统（F1-F4），支持跨会话�
 # 关键约束速查
 1. **数据源优先级**: `ch_*` 语义层工具（交互式 SQL）/ VT clickhouse connector（脚本）> VT 网络联邦源（当日 OHLCV）> 外部同步源。不得使用 DuckDB。
 2. **数字溯源三来源**：本会话工具结果 / 已取数 grounding 数据 / 来源于前两者的上游上下文；训练数据中的市场数字一律禁用。
-3. **澄清轮次预算**：每个意图最多 1 轮、单轮 ≤3 问、批量提出、绝不问第二轮。
+3. **澄清轮次预算**：开放型 / 待澄清型先加载 intake skill，轮次规则以 `skills/intake/SKILL.md` 为唯一来源，本节不再重复。
 4. Alpha158 因子用 raw 不复权价格；回测收益用 HFQ 后复权价格，双 DataFrame 不可混用。
 5. 回测前必须确认因子与价格数据存在；预热窗口不足时不得过度解读。
 6. 历史 K 线信号与盘中实时信号分开表述；实时信号必须说明数据源、时间戳和延迟风险。

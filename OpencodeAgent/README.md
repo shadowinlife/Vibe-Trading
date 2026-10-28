@@ -12,8 +12,8 @@ Docker build project for `opencode-serve` — OpenCode Web Server with Vibe-Trad
 This project packages the OpenCode Web Server research environment into a reproducible Docker image. It extends the base `opencode-serve` image with:
 
 - **OpenCode CLI** (pinned in `Dockerfile.base`, currently 1.19.3) + **OMO (oh-my-openagent) plugin** (pinned via `OMO_VERSION`, currently 5.1.35, pre-baked into the plugin cache)
-- **5 OpenCode skills**: data-warehouse (ClickHouse heavy queries), html-report (ECharts), periodic-execution (cron), escape-top-microstructure (top-detection signals), research-scenarios (scenario playbooks A–F, loaded on demand)
-- **Full AGENTS.md** with behavior instructions for 6 scenarios (A through F), a 4-class question-handling protocol and anti-hallucination discipline
+- **6 OpenCode skills**: data-warehouse (ClickHouse heavy queries), escape-top-microstructure (top-detection signals), html-report (ECharts), intake (clarification routing, slot defaults and parameter compile table, loaded on demand), periodic-execution (cron), research-scenarios (scenario playbooks A-F, loaded on demand)
+- **Full AGENTS.md** (329 lines, always loaded): an 8-artifact product index, behavior instructions for 6 scenarios (A through F), a 4-class request router and anti-hallucination discipline; the clarification protocol now lives in the `intake` skill, not in this file
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
 - **Cron job infrastructure** with CLI management and DingTalk/email notification
 
@@ -59,6 +59,11 @@ OpencodeAgent/
 ├── AGENTS.md                   # Agent behavior instructions
 │
 ├── config/                     # OpenCode configuration
+│   ├── command/                # Slash commands discovered at /workspace/.opencode/command/ at runtime
+│   │   ├── checkup.md          # /checkup: 个股体检 (scenario A)
+│   │   ├── screen.md           # /screen: 选股清单 (scenario E)
+│   │   ├── backtest.md         # /backtest: 策略回测 (scenario B)
+│   │   └── review.md           # /review: 交易复盘 (scenario B2)
 │   ├── opencode.json.tmpl      # Jinja2 template (rendered at runtime with ClickHouse creds)
 │   ├── render_config.py        # Config renderer: template + tool governance manifest → opencode.json
 │   ├── oh-my-openagent.json    # All agents: deepseek-v4.1-flash-1017; high/max reasoning tiers
@@ -66,9 +71,10 @@ OpencodeAgent/
 │   ├── package.json            # OpenCode plugin dependencies
 │   └── vibe-trading-tools.json # Tool governance manifest (disabled VT tools → permission denies)
 │
-├── skills/                     # OpenCode skills (5)
+├── skills/                     # OpenCode skills (6)
 │   ├── data-warehouse/         # ClickHouse query interface (query_warehouse, list_tables)
 │   ├── html-report/            # Interactive HTML reports with ECharts (7+1 templates)
+│   ├── intake/                 # Clarification routing, slot defaults and parameter compile table
 │   ├── periodic-execution/     # Cron job management (manage.py, notifier)
 │   ├── escape-top-microstructure/ # A-share top-detection signals
 │   └── research-scenarios/     # Scenario playbooks A–F (on-demand, offloaded from AGENTS.md)
@@ -107,6 +113,15 @@ Manages periodic strategy execution via `cron_jobs/manage.py`. Supports register
 ### 4. `escape-top-microstructure` — A-share Top-Detection Signals
 
 Market-top warning framework over `workspace/scripts/microstructure/`: ~15 signal families, 7-gate validation, RED/YELLOW/GREEN ensemble verdicts via `escape_top_cli --preset strong|balanced|early|extended`. Only `margin_divergence` and `volatility_atr_expansion` are currently VALIDATED; every signal must be reported with its validation classification.
+
+### Slash Commands
+
+The four commands live in `config/command/`, are copied to `/workspace/.opencode/command/` at build time, and are discovered from that path at runtime, so no model-side registration is needed:
+
+- `/checkup`: 个股体检 (scenario A), takes a ticker or company name.
+- `/screen`: 选股清单 (scenario E), takes a style or screening condition.
+- `/backtest`: 策略回测 (scenario B), takes a strategy or signal description.
+- `/review`: 交易复盘 (scenario B2), takes a trade-journal file path.
 
 ## Scripts Reference
 

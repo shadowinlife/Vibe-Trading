@@ -1,0 +1,1 @@
+v1 is void: 69/72 runs hit the 240s per-run timeout; the 3 isolated signatures formed 0 cell-level majority signatures, so every slot was INCONCLUSIVE. Full v1 transcripts remain in commit `8d25e5d8`.

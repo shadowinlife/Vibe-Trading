@@ -20,6 +20,7 @@ import pytest
 from backtest import progress as progress_mod
 from backtest import runner
 from backtest.progress import PROGRESS_FILENAME, write_progress
+from tests.module_os_helpers import patch_module_os
 
 
 def test_write_progress_payload_shape(tmp_path: Path) -> None:
@@ -56,7 +57,7 @@ def test_write_progress_swallows_unwritable_target(
     def _deny_replace(*args, **kwargs):
         raise OSError(30, "Read-only file system")
 
-    monkeypatch.setattr(progress_mod.os, "replace", _deny_replace)
+    patch_module_os(monkeypatch, progress_mod, replace=_deny_replace)
     write_progress(tmp_path, "done", 100)
 
     assert (tmp_path / PROGRESS_FILENAME).read_text(encoding="utf-8") == "sentinel"
@@ -221,7 +222,7 @@ def test_progress_write_failure_does_not_break_runner(
     def _deny_replace(*args, **kwargs):
         raise OSError(28, "No space left on device")
 
-    monkeypatch.setattr(progress_mod.os, "replace", _deny_replace)
+    patch_module_os(monkeypatch, progress_mod, replace=_deny_replace)
 
     runner.main(run_dir)
 
