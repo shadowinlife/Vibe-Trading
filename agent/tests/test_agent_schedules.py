@@ -498,6 +498,7 @@ def test_missing_configuration_fails_closed_without_local_writes(
         (403, {"detail": "denied"}, "unauthorized"),
         (404, {"detail": "gone"}, "not_found"),
         (409, {"error": "schedule_limit_reached"}, "schedule_limit_reached"),
+        (409, {"detail": "schedule_limit_reached"}, "schedule_limit_reached"),
         (409, {"error": "conflict"}, "invalid_request"),
         (422, {"detail": "cadence rejected"}, "invalid_request"),
         (500, {"detail": "boom"}, "rm_unreachable"),
@@ -656,6 +657,34 @@ def test_drift_is_reported_and_retarget_re_pins_the_same_schedule(
     assert settled["pinned_version"] == second_version
 
 
+def test_list_passes_through_the_rm_last_run(
+    harness: _Harness, ready_code_strategy: tuple[str, str]
+) -> None:
+    strategy_id, _version = ready_code_strategy
+    created = schedule_tools.schedule_strategy(
+        strategy_id=strategy_id,
+        kind="cron",
+        cron_spec="0 9 * * *",
+        name="Morning run",
+    )
+    schedule_id = created["schedule_id"]
+    last_run = {
+        "status": "missed",
+        "scheduled_for": "2026-10-27T01:00:00Z",
+        "started_at": None,
+        "finished_at": None,
+        "error": "scheduler was down",
+    }
+    harness.rm.rows[schedule_id]["last_run"] = last_run
+
+    listed = schedule_tools.list_strategy_schedules()["schedules"][0]
+    assert listed["last_run"] == last_run
+
+    harness.rm.rows[schedule_id].pop("last_run")
+    without = schedule_tools.list_strategy_schedules()["schedules"][0]
+    assert without["last_run"] is None
+
+
 # ---------------------------------------------------------------------------
 # B9: the legacy job store is counted read-only
 # ---------------------------------------------------------------------------
@@ -676,8 +705,22 @@ def test_legacy_jobs_are_counted_and_never_modified(harness: _Harness, runtime_r
 
     corrupt = schedule_tools.list_strategy_schedules()
 
-    assert corrupt["legacy_jobs_ignored"] == 0
+    assert corrupt["legacy_jobs_ignored"] == 1
     assert _legacy_state(runtime_root) == corrupt_before
+
+
+def test_a_legacy_directory_without_the_store_file_is_still_reported(
+    harness: _Harness, runtime_root: Path
+) -> None:
+    legacy_dir = runtime_root / "scheduled_research"
+    legacy_dir.mkdir(parents=True)
+    (legacy_dir / "leftover-job.json").write_text("{}", encoding="utf-8")
+    before = _legacy_state(runtime_root)
+
+    listed = schedule_tools.list_strategy_schedules()
+
+    assert listed["legacy_jobs_ignored"] == 1
+    assert _legacy_state(runtime_root) == before
 
 
 # ---------------------------------------------------------------------------

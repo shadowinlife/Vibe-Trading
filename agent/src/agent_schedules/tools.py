@@ -222,15 +222,25 @@ def _legacy_job_count() -> int:
 
     Read-only on purpose: the scheduled-research store quarantines a corrupt
     file when instantiated, and that would mutate a directory this feature is
-    required to leave untouched. A missing or unparseable file reads as zero.
+    required to leave untouched. A missing or unparseable store falls back to
+    the directory entry count so a non-empty legacy directory is never reported
+    as zero.
     """
     path = get_runtime_root() / "scheduled_research" / _STORE_FILENAME
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return 0
+        return _legacy_directory_entries(path.parent)
     jobs = payload.get("jobs") if isinstance(payload, dict) else None
     return len(jobs) if isinstance(jobs, list) else 0
+
+
+def _legacy_directory_entries(directory: Path) -> int:
+    """Return the number of entries in the legacy directory, never raising."""
+    try:
+        return sum(1 for _ in directory.iterdir())
+    except OSError:
+        return 0
 
 
 def _current_version(artifact: Artifact | None) -> str | None:
@@ -318,8 +328,9 @@ def list_strategy_schedules() -> dict[str, Any]:
     """List RM schedules with local version-drift annotations.
 
     Each RM row is returned unchanged plus ``current_version`` (the local
-    library's version, ``None`` when the strategy is absent here) and
-    ``drift`` (``pinned_version != current_version`` when both are known).
+    library's version, ``None`` when the strategy is absent here), ``drift``
+    (``pinned_version != current_version`` when both are known) and ``last_run``
+    (RM's latest run summary, or ``None`` when RM does not return one).
     ``legacy_jobs_ignored`` counts jobs in the deprecated in-box store so the
     assistant can tell the user a schedule predating the control plane never
     fired; that file is only read, never modified.
@@ -342,6 +353,7 @@ def list_strategy_schedules() -> dict[str, Any]:
         entry["drift"] = (
             pinned != current if pinned is not None and current is not None else None
         )
+        entry["last_run"] = entry.get("last_run")
         schedules.append(entry)
     return {
         "ok": True,

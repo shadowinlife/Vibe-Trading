@@ -353,7 +353,9 @@ class AgentScheduleClient:
                 raise SchedulingUnavailable("scheduling_unavailable")
             raise RmUnreachable("rm_unreachable")
         if 400 <= status < 500:
-            if status == 409 and "schedule_limit_reached" in _marker_text(parsed, ("error", "code")):
+            if status == 409 and "schedule_limit_reached" in _marker_text(
+                parsed, ("error", "code", "detail")
+            ):
                 raise ScheduleLimitReached("schedule_limit_reached")
             raise InvalidRequest(
                 "invalid_request", _bound_detail(_detail_text(parsed, text), self.token)
