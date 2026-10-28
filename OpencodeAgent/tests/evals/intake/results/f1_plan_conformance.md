@@ -1,6 +1,7 @@
 # F1 计划符合性审计 — novice-onboarding-gprime
 
 - 审计日期：2026-10-28
+- 复审：2026-10-29（文末「Re-audit 2026-10-28」，HEAD `ec22686e`，`d6bbbd6c~1..HEAD` 49 commits）
 - 审计范围：`.omo/plans/novice-onboarding-gprime.md` 的 todo 1–15、commit 粒度、DCO、AI trailer
 - 分支：`mymain`
 - 审计区间：`d6bbbd6c~1..HEAD`（45 个 commit）。任务书给的是 `4fcdad7e~1..HEAD`；该区间少算了一个 commit，把 todo 4 的 `d6bbbd6c` 排除在外。见 §6 G7。
@@ -22,23 +23,25 @@
 | 2 | `results/baseline.jsonl`、`baseline_report.md`、`baseline_meta.json`、`fixtures/ask_first_protocol_snapshot.md`、`recompute.py`、`test_protocol_snapshot.py` | `baseline_meta.json`：`n_items=10`、`n_terminal=10`、`n_run_error=0`；`pytest tests/evals/intake/test_protocol_snapshot.py` → **6 passed**；快照 digest 冻结在 `abcaf262` | `aa3c2683`, `ce66b2b5` | 否（2：主提交 + 短会话恢复修正） | met |
 | 3 | `slot_value/{matrix.json,results.json,verdict.md,judge_spec.json,judge.py,run_slots.py}`、`slot_value/v1_evidence/` | `judge.py --check`：**24 cells / 72 runs**，0 稳定 cell，6/6 槽位 `INCONCLUSIVE`，`kill criterion fired: False`（default-worthy 0/6，阈值 4/6） | `8d25e5d8`（v1）, `b0807c4c`（v2 重跑） | 否（2：v1 void + v2 重跑） | met（实验按预注册规则给出 INCONCLUSIVE；但**没有得到任何槽位裁决**，见 §6 G10） |
 | 4 | `export_first_messages.py`、`results/request_labels.json`、`test_export_privacy.py` | `pytest tests/evals/intake/test_export_privacy.py` → **6 passed**；`request_labels.json` 只有 726 条的聚合计数/长度桶/注释，无原文；intake 目录 PII/secret 扫描无命中 | `d6bbbd6c` | 是 | met |
-| 5 | `wave0_verdict.md`、`results/intake_load_rate.json`、`results/request_distribution.json`、`analyze_wave0.py`、`corpus40.jsonl`、`classifier_rubric.md` | `wave0_verdict.md`：菜单门 **PASS**（`都不是` 3/26 = 11.5%，Wilson 上界 29.0% ≤ 35%）；intake 触发 **0/40**，条件工作① deferred；分类器一致率 40/40 = 1.00。**但** `analyze_wave0.py --check` 现在 **FAIL（drift）**：发布值是 n=14/0-14，重算是 n=16/0-16（见 §6 B5） | `48371c41` | 是 | met（裁决仍成立；发布数字已过期，属证据完整性问题） |
-| 6 | `OpencodeAgent/skills/intake/SKILL.md`、`OpencodeAgent/AGENTS.md`、`skills/research-scenarios/SKILL.md`、`tests/test_agents_md.py` | `pytest tests/test_agents_md.py` → **37 passed**；`AGENTS.md` **329 行** ≤ 350；场景 C 为 ≤3 行单向指针；**40 条复跑 FAIL**（`wave1_report.md` attempt 2：route 3/10 vs 6/10，params 0/10 vs 9/10）；只有 **11 条 bounded probe PASS**（`wave1_frozen10_report.md`，10 个配对 id） | `b5d5a8cc`, `e0fc0cb6`, `2b615dae` | 否（3：主提交 + 40 条复跑 + instrument 修正） | **gap**：Acceptance #6 明确要求 40 条语料重跑；实际 40 条门 fail，11 条探针不能替代（见 §2、§6 B1） |
+| 5 | `wave0_verdict.md`、`results/intake_load_rate.json`、`results/request_distribution.json`、`analyze_wave0.py`、`corpus40.jsonl`、`classifier_rubric.md` | `wave0_verdict.md`：菜单门 **PASS**（`都不是` 3/26 = 11.5%，Wilson 上界 29.0% ≤ 35%）；intake 触发 **0/40**，条件工作① deferred；分类器一致率 40/40 = 1.00。**初审时** `analyze_wave0.py --check` **FAIL（drift）**：发布值是 n=14/0-14，重算是 n=16/0-16（见 §6 B5）。**复审已修复**：v1 语料冻结回 `32f5e595~1`，六条 `--check` 全绿（见 R0） | `48371c41` | 是 | met（裁决仍成立；漂移已在复审前修复，属证据完整性问题） |
+| 6 | `OpencodeAgent/skills/intake/SKILL.md`、`OpencodeAgent/AGENTS.md`、`skills/research-scenarios/SKILL.md`、`tests/test_agents_md.py` | `pytest tests/test_agents_md.py` → **37 passed**；`AGENTS.md` **329 行** ≤ 350；场景 C 为 ≤3 行单向指针；**40 条复跑 FAIL**（`wave1_report.md` attempt 2：route 3/10 vs 6/10，params 0/10 vs 9/10）；只有 **11 条 bounded probe PASS**（`wave1_frozen10_report.md`，10 个配对 id） | `b5d5a8cc`, `e0fc0cb6`, `2b615dae` | 否（3：主提交 + 40 条复跑 + instrument 修正） | **gap（计划现记 `[~]`，与 artifact 一致）**：Acceptance #6 要求 40 条语料重跑；40 条门仍 fail，11 条探针不能替代；但计划第 125 行已改 `[~]` 并逐项记录该 gap，checkbox 不再声称达标（见 R1） |
 | 7 | `config/command/{checkup,screen,backtest,review}.md`、`Dockerfile:110`、`tests/smoke-v311.sh`、`results/image_delivery.md` | `pytest tests/test_config_render.py` → **49 passed**（命令文件存在性 + frontmatter schema）；`image_delivery.md` §5：`RUNTIME_COMMANDS_OK`（四个命令在 `GET /command?directory=/workspace` 列表中）、`CHECKUP_REPLY_OK`、`SMOKE_OK` | `ddbdd706` | 是 | met |
-| 8 | `skills/research-scenarios/SKILL.md`、`skills/intake/SKILL.md`、`tests/evals/intake/checks.py`、`plugin_feasibility.md`、`tests/test_closing_block.py`、`results/wave1_frozen10_report.md` | `pytest tests/test_closing_block.py` → **18 passed**（结构契约）；字段证据：契约分母 **4/6 = 66.7%**（Wilson [30.0%, 90.3%]）、有产物分母 **4/5 = 80.0%**，均 < 90%；`c02` 600s 超时无产物，`c27` 把 `数据截止 T-1` 改写成具体日期 | `5ce2ca34`, `32f5e595`, `2eb53a82` | 否（3：契约 + bounded probe + 计分修正） | **gap**（计划已记 `[~]`，gap 诚实） |
-| 9 | `AGENTS.md` 产物索引、`skills/research-scenarios/SKILL.md` 附录「能力索引（按需查阅）」、`tests/test_agents_md.py` | `pytest tests/test_agents_md.py` → **37 passed**：8 行产物索引、无能力索引表、附录 27 行 ±2、`AGENTS.md` 329 行；但 harness 无回归沿用 todo 6 判据 → 40 条门 fail，仅 11 条探针 pass | `6e635820`, `e0fc0cb6`, `2b615dae` | 否（3：主提交 + 复跑 + 修正） | **gap**（同 todo 6 的 40 条 Acceptance，见 §6 B2） |
+| 8 | `skills/research-scenarios/SKILL.md`、`skills/intake/SKILL.md`、`tests/evals/intake/checks.py`、`plugin_feasibility.md`、`tests/test_closing_block.py`、`results/wave1_frozen10_report.md` | `pytest tests/test_closing_block.py` → **18 passed**（结构契约）；字段证据：契约分母 **4/6 = 66.7%**（Wilson [30.0%, 90.3%]）、有产物分母 **4/5 = 80.0%**，均 < 90%；`c02` 600s 超时无产物，`c27` 把 `数据截止 T-1` 改写成具体日期 | `5ce2ca34`, `32f5e595`, `2eb53a82` | 否（3：契约 + bounded probe + 计分修正） | **gap（`[~]`，与 artifact 一致）**：4/6 = 66.7%、4/5 = 80%，阈值 90%，未达标；计划第 141 行 `[~]` 已记该 gap、`c02`/`c27` 细节与 `2eb53a82`，并登记 F-wave 硬追加插件（见 R1） |
+| 9 | `AGENTS.md` 产物索引、`skills/research-scenarios/SKILL.md` 附录「能力索引（按需查阅）」、`tests/test_agents_md.py` | `pytest tests/test_agents_md.py` → **37 passed**：8 行产物索引、无能力索引表、附录 27 行 ±2、`AGENTS.md` 329 行；但 harness 无回归沿用 todo 6 判据 → 40 条门 fail，仅 11 条探针 pass | `6e635820`, `e0fc0cb6`, `2b615dae` | 否（3：主提交 + 复跑 + 修正） | **gap（计划现记 `[~]`，与 artifact 一致）**：同 todo 6 的 40 条 Acceptance；计划第 150 行已改 `[~]`，结构断言（37 passed）不变（见 R1） |
 | 10 | `config/opencode.json.tmpl`、`.env.example:49`、`tests/test_config_render.py`、`results/question_tool_probe.md` | `pytest tests/test_config_render.py` → **49 passed**：每个用户可选 primary agent 的 `permission.question == "allow"`，subagent 从不 allow；`.env.example` 含 `OPENCODE_ENABLE_QUESTION_TOOL=`；headless `opencode run` 的 `question` deny 已由 `question_tool_probe.md` 实测并记录 | `2452260c` | 是 | met（模板面达标；运行时 question 在 headless 不可用，属计划允许的记录限制） |
 | 11 | `results/image_delivery.md`、`results/image_build.log`、`tests/smoke-v311.sh` | 镜像 tag `opencode-serve:v3.11.0-onboarding-20261028-6e635820`；Image `Id sha256:7b6c5d1b…`；`image_build.log` 648 行；`SMOKE_OK`；**无 `RepoDigest`**（本地构建、从未 push），交付文档明确写「不要编造 digest」 | `967968cd` | 是 | met（偏差：没有 repo digest；用 Image Id 作内容身份并已记录，见 §6 G2） |
 | 12 | `skills/intake/SKILL.md`、`tests/evals/intake/brief.schema.json`、`tests/test_intake_brief.py`、`brief_validation.py`、`fixtures/tool_list.json` | `pytest tests/test_intake_brief.py` → **13 passed**；槽位默认值表（六公共槽位 INCONCLUSIVE → 默认化，仅成本价/仓位规模提问）+ 选项→工具参数编译表；编译表工具名逐行在 `tool_list.json` 快照中存在 | `7d606d3e` | 是 | met |
 | 13 | `AGENTS.md` 产物索引（场景/Skill 列 + 菜单外兜底行）、`tests/test_agents_md.py` | `pytest tests/test_agents_md.py` → **37 passed**：8 行映射逐格断言、兜底行存在、`AGENTS.md` ≤350 | `f3d39b40` | 是 | met |
-| 14 | `tests/evals/intake/ab/{corpus_ab.jsonl,run_ab.py,ab_analysis.py,ab_report.md,judge_spec.json}`、`tests/test_ab_assets.py` | `pytest tests/test_ab_assets.py` → **7 passed**；`ab_analysis.py --check` **OK**；`ab_report.md`：n_pairs=**10**、eligible=**7**、p=**1.0**、verdict=**INCONCLUSIVE**（n_min=30，需 55 pairs） | `6ec79a9a` | 是 | **gap**：Acceptance 要求配对样本 ≥30；实际 10 对（7 对可用），且没有升级记录（见 §6 B3） |
+| 14 | `tests/evals/intake/ab/{corpus_ab.jsonl,run_ab.py,ab_analysis.py,ab_report.md,judge_spec.json}`、`tests/test_ab_assets.py` | `pytest tests/test_ab_assets.py` → **7 passed**；`ab_analysis.py --check` **OK**；`ab_report.md`：n_pairs=**10**、eligible=**7**、p=**1.0**、verdict=**INCONCLUSIVE**（n_min=30，需 55 pairs） | `6ec79a9a` | 是 | **gap（`[x]` 仍过报，blocking）**：Acceptance 要求配对样本 ≥30；实际 n_pairs=**10**、eligible=**7**、p=**1.0**、verdict=**INCONCLUSIVE**、required N=**55**。计划 QA-failure 要求「INCONCLUSIVE **并升级**」，仓库内无升级记录，且计划自身把「升级」与「todo 完成」互斥（todo 2 第 91 行）。`[x]` 仍与 artifact 不一致（见 R3） |
 | 15 | `OpencodeAgent/README.md`、`mymain-wiki/agent-ux/2026-10-27-novice-onboarding-guidance.md`、`tests/test_readme_inventory.py` | `pytest tests/test_readme_inventory.py` → **8 passed**；README 6 skills / 4 commands；报告第 11 行有「已立项」；`git show --numstat ee620577 -- <report>` = **777 0**（0 deletions）；但 §13.5 仍写 `wave1_report.md` 尚未提交（实际已提交），见 §6 G6 | `ee620577` | 是 | met（README/链接/追加段达标；报告 §13.5 过期，计划 checkbox 仍为 `[ ]`） |
 
 ### 判定口径说明
 
+> 复审更新（2026-10-29，见文末「Re-audit 2026-10-28」）：第 6、8、9、14 行的 verdict 已按当前 checkbox 状态改写；其余 11 行保持初审结论，本次未重跑。
+
 - `met` = 交付物存在，Acceptance 的关键断言有可执行证据；括注的偏差不改变该 todo 的交付。
 - `gap` = 交付物存在，但计划写明的 Acceptance 没有被满足，或只能靠一个计划未授权的替代测量成立。
-- todo 8 是唯一在计划里显式标 `[~]` 的行；todo 6/9/14 是 `[x]` 但 Acceptance 未满足，这正是本次审计要暴露的差异。
+- 初审时 todo 8 是唯一显式标 `[~]` 的行；todo 6/9/14 是 `[x]` 但 Acceptance 未满足，这正是初审要暴露的差异。复审时 6/8/9 已改为 `[~]`，14 仍为 `[x]`。
 
 ## 2. Wave 1 真实数字（计划要求 vs 实际测量）
 
@@ -251,7 +254,7 @@ git log --format='%H %(trailers:key=Signed-off-by,valueonly)' d6bbbd6c~1..HEAD
 
 ### G12. 既有 `scp` 文档/脚本（超出本次 diff，仓库级风险）
 
-- 根 `AGENTS.md` §9 禁止 `scp`；但 `OpencodeAgent/skills/html-report/docs/nginx-reports-setup.md` 和 `OpencodeAgent/skills/html-report/scripts/reports/deploy_report.py` 仍含 `scp`，且本计划的 45 个 commit 没有触碰它们（该文件最后一次变更是 `b83e0c4c`）。
+- 根 `AGENTS.md` §9 禁止 `scp`；但 `OpencodeAgent/skills/html-report/docs/nginx-reports-setup.md` 和 `OpencodeAgent/skills/html-report/scripts/reports/deploy_report.py` 仍含 `scp`，且本计划区间（初审 45、复审 49 个 commit）没有触碰它们（该文件最后一次变更是 `b83e0c4c`）。
 - 这是先于本计划的既有违规，不是 F1 的 plan-conformance blocker；但若按根规则执行，应在后续独立清理，不应借本次审计修改。
 
 ## 7. F1 的边界
@@ -264,7 +267,7 @@ git log --format='%H %(trailers:key=Signed-off-by,valueonly)' d6bbbd6c~1..HEAD
 
 F1 的 `met` 只表示“该 todo 的交付物和 Acceptance 证据在仓库里能对上”，不表示行为效果达标。尤其是 todo 3/5/6/8/9/14 的 `met`/`gap` 与 F3 的 40 条行为门是两套判断；F1 已经把 todo 6/9 的 40 条门 fail 单独列出，F3 不应把它当作已通过。
 
-## 8. 总体裁决
+## 8. 总体裁决（初审，已被文末「Re-audit 2026-10-28」取代）
 
 **VERDICT: REJECT**
 
@@ -280,3 +283,151 @@ Blocking findings：
 非阻塞但需记录的偏差：todo 8 的 `[~]` 诚实（4/6=66.7%，4/5=80%，<90%）；todo 11 无 repo digest（本地镜像，已记录 Image Id）；todo 10 的 question 在 headless 被 deny（已记录限制）；todo 3 六槽全 INCONCLUSIVE（预注册规则允许，但无槽位裁决）；todo 15 报告 §13.5 过期；任务书审计区间漏掉 `d6bbbd6c`；`bb27b8d4` 外部 commit 触碰 `AGENTS.md` 工具数行；既有 html-report 文档仍含 `scp`。
 
 DCO 与 AI trailer 本身干净：39/39 非 merge commit 有 `Signed-off-by`，0 个 AI trailer；3 个 merge 无 DCO，按任务口径 `n/a (merge)`。**REJECT 的原因是 Acceptance/门禁/证据完整性，不是 DCO。**
+
+> 本初审的 REJECT 结论与上述 6 条 blocking findings 已被文末「Re-audit 2026-10-28」逐条重判；保留原文以保持审计可追溯。
+
+## Re-audit 2026-10-28
+
+> 标题按复审轮次日期（2026-10-28）；实际执行为 2026-10-29（UTC+8）。复审中途 HEAD 从 `2b4d57c0` 前进到 `ec22686e`（F2 的 smoke 修复落地），本节数字以收尾时重读的 `git log` 为准。
+
+- 复审区间：`d6bbbd6c~1..HEAD`，被审 HEAD **`ec22686e`**，**49 个 commit**（43 非 merge + 6 merge）。初审为 45 个；新增 4 个：`8c4feddf`、`0093e625`、`2b4d57c0`、`ec22686e`。本报告自身的 commit 不在被审集合内。
+- 只读：本次复审只写本报告；未改代码、测试、skill、config 或 plan；未启动容器、未调用 LLM。
+- DCO：43/43 非 merge commit 有 `Signed-off-by`；6 个 merge 中 3 有 / 3 无，按任务口径 `n/a (merge)`。AI trailer 全区间 **0**。
+- 复审对象：初审的 6 条 blocking findings + §1 表内 todo 6/8/9/14 的 checkbox 状态。
+
+### R0. 证据可复算性（原 B5）— RESOLVED
+
+`cd OpencodeAgent`，`legonanobot` env，六条命令全部 rc=0：
+
+| 命令 | 输出 |
+|---|---|
+| `python tests/evals/intake/analyze_wave0.py --check` | `[ok] intake_load_rate.json, request_distribution.json and wave0_verdict.md match recomputation` |
+| `python tests/evals/intake/analyze_wave1.py --check` | `--check OK (.../results/wave1_report.md)` |
+| `python tests/evals/intake/analyze_probe.py --check` | `--check OK (.../results/wave1_frozen10_report.md)` |
+| `python tests/evals/intake/ab/ab_analysis.py --check` | `pairs=10 eligible=7 ... p=1.0 verdict=INCONCLUSIVE`；`ab_report.md: up to date` |
+| `python tests/evals/intake/gen_corpus40.py --check` | `40 items, labels=v1, regeneration matches` |
+| `python tests/evals/intake/gen_corpus40.py --labels v2 --check` | `40 items, labels=v2, regeneration matches` |
+
+语料冻结核验（v1 必须与 `32f5e595~1` 逐字节相同）：
+
+```text
+$ shasum -a 256 OpencodeAgent/tests/evals/intake/corpus40.jsonl
+69bb6f256d5e2afa7a521015b40d22101e47ceec7f84a4acfacac4cdbd410630  ...
+$ git show 32f5e595~1:OpencodeAgent/tests/evals/intake/corpus40.jsonl | shasum -a 256
+69bb6f256d5e2afa7a521015b40d22101e47ceec7f84a4acfacac4cdbd410630  -
+$ git diff --quiet 32f5e595~1:OpencodeAgent/tests/evals/intake/corpus40.jsonl \
+      OpencodeAgent/tests/evals/intake/corpus40.jsonl && echo BYTE_IDENTICAL
+BYTE_IDENTICAL
+```
+
+- `pytest tests/evals/intake/test_corpus_schema.py -q` → **22 passed**，含钉住上述 sha256 的 `test_corpus40_v1_is_frozen_before_the_label_correction` 与「v2 只改 c19/c22」断言。
+- `results/corpus_version_note.md` 明确列出「哪份证据读哪份语料」：wave0/wave1 读 v1，probe/AB 读 v2。历史报告未被改写。
+- 判定：**resolved**。初审「发布数字与当前输入不一致」不再成立——当前输入（v1）就是发布数字所用的输入；修正后的标签在 v2 中，只被新证据消费。
+
+### R1. 初审 6 条 blocking 的逐条重判
+
+| # | 初审 finding | 复审状态 | 证据 |
+|---|---|---|---|
+| 1 | Todo 6 的 40 条 Acceptance 未满足 | **resolved（表示层）** | 计划第 125 行改为 `[~]`，写出三次 attempt 的失败原因与 11 条探针四层数字；数字与 `wave1_frozen10_report.md` §6 逐项一致（route 7/10 vs 6/10、intake 8/10 vs 5/10、question 8/10 vs 8/10、params 8/10 vs 6/10）。40 条门未达标的事实保留，未用探针冒充 |
+| 2 | Todo 9 同判据未满足 | **resolved（表示层）** | 计划第 150 行改为 `[~]`，写明「同 todo 6，40 条非回归门未完成」；`pytest tests/test_agents_md.py` 37 passed 不变 |
+| 3 | Todo 14 配对样本 10 < 30 且无升级 | **STILL BLOCKING** | 见 R3 |
+| 4 | Wave 1 出口门被跳过 | **resolved（记录层）** | 计划「执行记录」第 2 条记录三次 attempt 与探针替代，并据此把 6/9 改 `[~]`。历史违规不可撤销；计划不再声称门通过，后果由 6/9 的 `[~]` 与 F3 承接。该条是计划级顺序门，不属 F1 的 per-todo 交付物口径，不另立 blocker |
+| 5 | 证据漂移 | **resolved** | R0 |
+| 6 | 预算 150 → ≥283 | **resolved（裁决 + 记录）** | 计划「执行记录」第 1 条：操作者裁决 Q1=A，上限 150 → ~320；按 artifact 重算实际 280（R4），≤ 放宽后的上限。计划第 63 行的「超限即停并报告」被满足：停了、报告了、操作者追加了预算 |
+
+三个点名要的决定：
+
+- **todo 14（n=10<30）是否 blocker？** 是，但原因不是「INCONCLUSIVE」。INCONCLUSIVE 是计划 Acceptance 明列的三种合法裁决句之一；blocker 是计划把 n<30 定义为 **QA failure**，处置是「INCONCLUSIVE **并升级**」，而仓库里没有升级记录。见 R3。
+- **Wave 1 门被跳过，文档 + 诚实 `[~]` 是否可接受？** 是。F1 能要求的是「不冒充通过」，现在做到了；门本身没通过无法用文档修好，已如实交给 6/9 的 `[~]` 与 F3。
+- **预算超限是否因操作者裁决解除？** 是。Q1=A 把上限改到 ~320，实际 280 ≤ 320；走的是计划预设的「停下 → 报告 → 操作者裁决」路径。
+
+### R2. 四个 checkbox 与 artifact 的一致性
+
+| todo | 初审状态 | 复审状态 | 与 artifact 一致？ |
+|---|---|---|---|
+| 6 | `[x]`（与 40 条 fail 矛盾） | `[~]` + gap 文本 | **一致** |
+| 8 | `[~]` + gap 文本 | `[~]` + gap 文本 + commit + F-wave 项 | **一致** |
+| 9 | `[x]`（与 40 条 fail 矛盾） | `[~]` + gap 文本 | **一致** |
+| 14 | `[x]`（与 n=10、INCONCLUSIVE 矛盾） | `[x]`（未改） | **不一致** |
+
+三条 `[~]` 都写了具体数字、失败原因和证据文件，未出现「已达标」字样；与初审把 todo 8 的 `[~]` 判为「诚实」的口径保持连续。
+
+### R3. Todo 14 仍是唯一 blocker
+
+事实：
+
+- 计划第 196 行仍 `- [x] 14.`，没有 gap 说明。
+- `ab/ab_report.md` 首行：`Verdict: INCONCLUSIVE — n_pairs=10 < n_min=30. No direction is claimed`；§6 给出 required N=55 与两臂重跑命令；`ab_analysis.py --check` 复算 `pairs=10 eligible=7 p=1.0 verdict=INCONCLUSIVE`。
+- 计划第 199 行 Acceptance 三项：①`配对样本 ≥30`（**未满足**：10）；②`报告含 p 值与效应方向`（p=1.0 有；报告明确不声称方向，因为 n<30 规则禁止 → **只成立一半**）；③裁决句明确（**满足**：INCONCLUSIVE + 原因）。
+- 计划第 200 行：`样本不足 30 → INCONCLUSIVE 并升级，不得硬下结论`。
+
+判定：INCONCLUSIVE 这一半做到了，缺的是「并升级」。计划自己定义了「升级」的语义：
+
+- 第 91 行（todo 2 的 QA failure）：`记录阻断原因，本 todo 不算完成，升级给用户`——在本计划里，升级与 todo 完成互斥。
+- 第 116 行（todo 5）：`样本 <40 时直接标 INCONCLUSIVE 并给出所需 N`——没有「升级」，那才是终态；todo 5 的 `[x]` 正因此成立。
+- todo 14 比 todo 5 多出的正是「升级」二字，而它没有落地：计划执行记录只有 Q1=A（预算）一条操作者裁决；notepad 只有 pilot 数字，没有升级决定；没有新 todo 承接。
+
+同向支持（非独立 blocker）：计划写的交付物路径是 `tests/evals/intake/ab_report.md`，实际是 `tests/evals/intake/ab/ab_report.md`；计划写的 commit 是 `test(opencode-agent): paired A/B verdict on ask-first vs artifact-first`，实际是 `... add ask-first vs artifact-first A/B apparatus with pilot verdict`。「apparatus + pilot」与现状一致，「verdict」不一致。
+
+结论：`[x]` 仍然过报（三项 Acceptance：一项成立、一项半成立、一项未成立）。关闭只需一行计划改动（F1 无权改 plan），二选一：
+
+```text
+- [~] 14. ask-first vs artifact-first 配对 A/B 裁决 — 未达标：n_pairs=10 < 30，INCONCLUSIVE，required N=55；升级未落（待操作者裁决是否追加约 80 会话重跑），ab/ab_report.md §6 有待执行的复跑命令
+```
+
+或补一条操作者裁决，把「INCONCLUSIVE 作为已升级的终态」写进执行记录（与 Q1=A 同形）。任一落地后 checkbox 才与 artifact 一致。
+
+### R4. 预算重算（辅助核验）
+
+按 artifact 可复算的会话数：
+
+| 项 | 会话 | 证据 |
+|---|---|---|
+| baseline | 17 | `baseline_meta.json` `sessions=10` + `budget.note` 的 7 次 repair |
+| Wave 0 触发率 | 40 | `wave0_corpus40.jsonl` 40 个唯一 `run_id` |
+| slot v1 | 72 | `v1_evidence/results.json` `runs_total=72` |
+| slot v2 | 72 | `results.json` `runs_total=72` |
+| Wave 1 attempt 1 | 40 | `wave1_corpus40_attempt1.jsonl` 40 个唯一 `run_id` |
+| Wave 1 attempt 2 | 25 | `wave1_corpus40_attempt2_harness_timeout.jsonl` 25 个唯一 `run_id` |
+| 有界探针 | 11 | `wave1_probe.jsonl` 11 个唯一 `run_id` |
+| two-turn | 1 | `two_turn_probe.md` |
+| 命令 smoke | 2 | `image_delivery.md`、`question_tool_probe.md` |
+| A/B | 0 | pilot 复用已提交 JSONL |
+| **合计** | **280** | |
+
+执行记录写「约 285」（与 artifact 重算差 1.8%），但括号分项有三处与 artifact 不符：`槽位 v2 74`（实测 72）、`Wave 1 attempt 1 61`（实测 40）、`基线 20`（实测 17），其分项自身相加只有 271。记录 headline 285 / artifact 280 / 分项 271 三个口径都 >150 且 ≤ 放宽后的 ~320，结论不变。建议把分项改成 17/40/72/72/40/25/11/1/2。**记录精度问题，非 blocker。**
+
+### R5. F2 交叉发现（不计入 F1）
+
+- F2 报告（`2b4d57c0`，`results/f2_code_quality.md`）的唯一 blocker 是 `tests/smoke-v311.sh:57` 把 `AGENTS.md` 钉在 328 行，而 HEAD 是 329。
+- 复审期间 `ec22686e` 落地：`smoke-v311.sh` 现在断言 `-le 350`（计划 cap）与 `-ge 300`（sanity floor）（`sed -n '64,65p'`），`AGENTS.md` 329 行；`bash -n` OK。方向与 F2 建议一致。
+- 因此 F2 报告在 `2b4d57c0` 时点成立、在 `ec22686e` 后过期；这是 F2 自己的收口问题，F1 只记录状态，不改判 F2。
+
+### R6. 新增 commit 的分类与 DCO
+
+| sha | subject | 归属 | DCO | AI trailer |
+|---|---|---|---|---|
+| `8c4feddf` | fix(opencode-agent): version the eval corpus to stop wave-0/1 evidence drift | plan（todo 5/8 证据完整性修复，非功能增量） | yes | none |
+| `0093e625` | docs(opencode-agent): add F1 plan conformance audit | audit 文档（不属任何 todo） | yes | none |
+| `2b4d57c0` | docs(opencode-agent): add F2 code quality review | audit 文档（不属任何 todo） | yes | none |
+| `ec22686e` | fix(opencode-agent): assert the AGENTS.md line cap instead of a pinned count | plan（todo 7 的 review fix：smoke 断言是 todo 7 的 Acceptance 工具） | yes | none |
+
+- 计数：**49 = 24 plan + 2 audit + 23 external**（初审 45 = 22 plan + 23 external、无 audit 文档；新增 4 = 2 plan + 2 audit）。
+- commit 粒度结论不变：「每个 todo 一个 commit」在本计划从未字面成立（初审 §5）；新增的 `8c4feddf`/`ec22686e` 属同一类 review/evidence fix，`0093e625`/`2b4d57c0` 是审计产物，不应计入 todo。这是既有的、已记录的偏差，不是本轮新增的 gate 问题。
+
+### R7. 复审仍记录的非阻塞项
+
+1. **todo 15 checkbox 仍 `[ ]`**（初审 G6 未变）：交付物已入库且 `test_readme_inventory.py` 8 passed，状态滞后。
+2. **计划不在 git track**（`.gitignore:210` 忽略 `.omo/`）：checkbox 修正无法用 commit 复核，本次只能读工作树；「计划文本的变更史」不可审计。属复审口径限制，非 blocker。
+3. **执行记录第 2 条把 attempt 2 写成「排除出行为裁决」**，而 `wave1_report.md` §2 仍称其为 `fixed instrument — final gate` 并发布 `fail`（`params_compiled` 0/25；配对 9/10 vs 0/10，p=0.0039）。两种口径都指向「40 条门未达标」，不改变 `[~]`；但记录不应声称报告已排除该 attempt。
+4. **执行记录的分项数字三处过期**（R4）：headline 不受影响。
+5. **`wave1_frozen10_report.md` 正文仍写 `corpus40.jsonl`**：冻结的历史陈述，`corpus_version_note.md` 已标明操作文件是 v2，`--check` 绿。
+6. **§1 其余 11 行未重跑**：本次只核验 6 条 finding 与 4 个 checkbox 相关证据；全量 pytest 由 F2 承担（184 passed）。
+
+### R8. 复审裁决
+
+- 6 条初审 blocking：**5 条 resolved**（todo 6、todo 9、Wave 1 门、证据漂移、预算），**1 条 still blocking**（todo 14）。
+- DCO 与 AI trailer 仍然干净：43/43 非 merge 有 `Signed-off-by`，0 个 AI trailer；3 个 merge 无 DCO 按任务口径 `n/a (merge)`。
+- 剩下的问题不是证据造假，而是一个 checkbox 仍把「pilot + INCONCLUSIVE」写成「完成」；证据漂移、`[~]` 诚实性与预算授权都已收口。
+
+VERDICT: REJECT
