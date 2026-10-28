@@ -93,7 +93,9 @@ jobs:
     # hang, fills the budget, and runner speed varies by minutes (the same
     # tree's 3.14 leg took 5m14s one run and 8m32s the other), so the limit
     # leaves room for that instead of being trimmed to the last good run.
-    timeout-minutes: 20
+    # mymain runs a larger suite (21k+ tests, ~36 minutes locally); 20 minutes
+    # cancelled both legs at 99% on 2026-10-28, so the ceiling is 60.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
