@@ -58,7 +58,8 @@ FAMILIES: tuple[tuple[str, str, bool, int, tuple[str, ...], dict[str, tuple[str,
         {"style": STYLES, "market": MARKETS, "horizon": HORIZONS, "indicator": INDICATORS},
     ),
     (
-        "execute_with_defaults", "组合体检", False, 1,
+        # Private holdings: label corrected after Wave 1 observed the mislabel.
+        "clarify_private", "组合体检", False, 1,
         ("看看我的账户组合{horizon}表现怎么样",),
         {"horizon": HORIZONS},
     ),
@@ -68,7 +69,8 @@ FAMILIES: tuple[tuple[str, str, bool, int, tuple[str, ...], dict[str, tuple[str,
         {"event": EVENTS, "market": MARKETS, "sector": SECTORS},
     ),
     (
-        "execute_with_defaults", "交易复盘", False, 1,
+        # Private trade history: label corrected after Wave 1 observed the mislabel.
+        "clarify_private", "交易复盘", False, 1,
         ("帮我复盘一下{horizon}的交易记录，看看盈亏",),
         {"horizon": HORIZONS},
     ),

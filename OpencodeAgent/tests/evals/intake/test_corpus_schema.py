@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -293,3 +294,10 @@ def test_frozen_rubric_matches_exporter():
     exporter = _load_module("intake_first_message_exporter", INTAKE_DIR / "export_first_messages.py")
     assert analyze.LABEL_KEYWORDS == exporter.LABEL_KEYWORDS
     assert tuple(analyze.PRODUCT_LABELS) == tuple(exporter.PRODUCT_LABELS)
+
+
+def test_private_product_items_without_supplied_data_are_clarify_private():
+    supplied = re.compile(r"\d{6}|成本|交割单|持仓|CSV|Excel|文件", re.IGNORECASE)
+    for item in run.load_corpus(CORPUS40_PATH):
+        if item["expected_product"] in {"组合体检", "交易复盘"} and not supplied.search(item["prompt"]):
+            assert item["expect"] == "clarify_private", item["id"]
