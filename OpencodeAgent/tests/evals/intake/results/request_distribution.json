@@ -1,0 +1,400 @@
+{
+  "all_corpus": {
+    "definition": "every corpus item, including direct_answer/refuse items whose expected_product is none",
+    "dou_bushi_k": 15,
+    "n": 40,
+    "rate": 0.375,
+    "wilson95": {
+      "high": 0.529675609,
+      "k": 15,
+      "low": 0.242229792,
+      "method": "wilson score interval (95%, z=1.959964)",
+      "n": 40,
+      "rate": 0.375
+    }
+  },
+  "artifact_eligible": {
+    "definition": "items whose expected_product is one of the eight products; the menu gate population",
+    "distribution": {
+      "个股体检": 5,
+      "事件/宏观影响": 3,
+      "交易复盘": 1,
+      "定时监控": 2,
+      "报告": 1,
+      "策略回测": 3,
+      "组合体检": 4,
+      "选股清单": 4
+    },
+    "dou_bushi_k": 3,
+    "dou_bushi_rate": 0.115384615,
+    "gate": "pass",
+    "misses": [
+      "c01",
+      "c02",
+      "c06"
+    ],
+    "n": 26,
+    "threshold": 0.35,
+    "wilson95": {
+      "high": 0.289759032,
+      "k": 3,
+      "low": 0.040032446,
+      "method": "wilson score interval (95%, z=1.959964)",
+      "n": 26,
+      "rate": 0.115384615
+    }
+  },
+  "classifier": {
+    "agreement": 1.0,
+    "implementation": "frozen copy of export_first_messages.classify",
+    "per_item": [
+      {
+        "expected_product": "个股体检",
+        "id": "c01",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "选股清单",
+        "id": "c02",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "选股清单",
+        "id": "c03",
+        "label": "选股清单",
+        "run_a": "选股清单",
+        "run_b": "选股清单"
+      },
+      {
+        "expected_product": "策略回测",
+        "id": "c04",
+        "label": "策略回测",
+        "run_a": "策略回测",
+        "run_b": "策略回测"
+      },
+      {
+        "expected_product": "组合体检",
+        "id": "c05",
+        "label": "组合体检",
+        "run_a": "组合体检",
+        "run_b": "组合体检"
+      },
+      {
+        "expected_product": "个股体检",
+        "id": "c06",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "事件/宏观影响",
+        "id": "c07",
+        "label": "事件/宏观影响",
+        "run_a": "事件/宏观影响",
+        "run_b": "事件/宏观影响"
+      },
+      {
+        "expected_product": "none",
+        "id": "c08",
+        "label": "策略回测",
+        "run_a": "策略回测",
+        "run_b": "策略回测"
+      },
+      {
+        "expected_product": "none",
+        "id": "c09",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c10",
+        "label": "组合体检",
+        "run_a": "组合体检",
+        "run_b": "组合体检"
+      },
+      {
+        "expected_product": "个股体检",
+        "id": "c11",
+        "label": "个股体检",
+        "run_a": "个股体检",
+        "run_b": "个股体检"
+      },
+      {
+        "expected_product": "个股体检",
+        "id": "c12",
+        "label": "个股体检",
+        "run_a": "个股体检",
+        "run_b": "个股体检"
+      },
+      {
+        "expected_product": "个股体检",
+        "id": "c13",
+        "label": "个股体检",
+        "run_a": "个股体检",
+        "run_b": "个股体检"
+      },
+      {
+        "expected_product": "选股清单",
+        "id": "c14",
+        "label": "选股清单",
+        "run_a": "选股清单",
+        "run_b": "选股清单"
+      },
+      {
+        "expected_product": "选股清单",
+        "id": "c15",
+        "label": "选股清单",
+        "run_a": "选股清单",
+        "run_b": "选股清单"
+      },
+      {
+        "expected_product": "选股清单",
+        "id": "c16",
+        "label": "选股清单",
+        "run_a": "选股清单",
+        "run_b": "选股清单"
+      },
+      {
+        "expected_product": "策略回测",
+        "id": "c17",
+        "label": "策略回测",
+        "run_a": "策略回测",
+        "run_b": "策略回测"
+      },
+      {
+        "expected_product": "策略回测",
+        "id": "c18",
+        "label": "策略回测",
+        "run_a": "策略回测",
+        "run_b": "策略回测"
+      },
+      {
+        "expected_product": "组合体检",
+        "id": "c19",
+        "label": "组合体检",
+        "run_a": "组合体检",
+        "run_b": "组合体检"
+      },
+      {
+        "expected_product": "事件/宏观影响",
+        "id": "c20",
+        "label": "事件/宏观影响",
+        "run_a": "事件/宏观影响",
+        "run_b": "事件/宏观影响"
+      },
+      {
+        "expected_product": "事件/宏观影响",
+        "id": "c21",
+        "label": "事件/宏观影响",
+        "run_a": "事件/宏观影响",
+        "run_b": "事件/宏观影响"
+      },
+      {
+        "expected_product": "交易复盘",
+        "id": "c22",
+        "label": "交易复盘",
+        "run_a": "交易复盘",
+        "run_b": "交易复盘"
+      },
+      {
+        "expected_product": "定时监控",
+        "id": "c23",
+        "label": "定时监控",
+        "run_a": "定时监控",
+        "run_b": "定时监控"
+      },
+      {
+        "expected_product": "定时监控",
+        "id": "c24",
+        "label": "定时监控",
+        "run_a": "定时监控",
+        "run_b": "定时监控"
+      },
+      {
+        "expected_product": "报告",
+        "id": "c25",
+        "label": "报告",
+        "run_a": "报告",
+        "run_b": "报告"
+      },
+      {
+        "expected_product": "个股体检",
+        "id": "c26",
+        "label": "个股体检",
+        "run_a": "个股体检",
+        "run_b": "个股体检"
+      },
+      {
+        "expected_product": "个股体检",
+        "id": "c27",
+        "label": "个股体检",
+        "run_a": "个股体检",
+        "run_b": "个股体检"
+      },
+      {
+        "expected_product": "组合体检",
+        "id": "c28",
+        "label": "组合体检",
+        "run_a": "组合体检",
+        "run_b": "组合体检"
+      },
+      {
+        "expected_product": "组合体检",
+        "id": "c29",
+        "label": "组合体检",
+        "run_a": "组合体检",
+        "run_b": "组合体检"
+      },
+      {
+        "expected_product": "none",
+        "id": "c30",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c31",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c32",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c33",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c34",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c35",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c36",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c37",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c38",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c39",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      },
+      {
+        "expected_product": "none",
+        "id": "c40",
+        "label": "都不是",
+        "run_a": "都不是",
+        "run_b": "都不是"
+      }
+    ],
+    "rubric": "classifier_rubric.md",
+    "run_a_order": "corpus order",
+    "run_b_order": "sorted by sha256(id + NUL + prompt)",
+    "threshold": 0.8
+  },
+  "corpus": "corpus40.jsonl",
+  "corpus_sha256": "69bb6f256d5e2afa7a521015b40d22101e47ceec7f84a4acfacac4cdbd410630",
+  "distribution": {
+    "个股体检": 5,
+    "事件/宏观影响": 3,
+    "交易复盘": 1,
+    "定时监控": 2,
+    "报告": 1,
+    "策略回测": 4,
+    "组合体检": 5,
+    "选股清单": 4,
+    "都不是": 15
+  },
+  "labels": [
+    "个股体检",
+    "选股清单",
+    "策略回测",
+    "组合体检",
+    "事件/宏观影响",
+    "交易复盘",
+    "定时监控",
+    "报告",
+    "都不是"
+  ],
+  "n": 40,
+  "real_sample_cross_check": {
+    "caveat": "Developer-harness machine, root sessions only, not a novice-user sample and not representative of the deployment population. It is reported as an order-of-magnitude cross-check and cannot decide the menu.",
+    "dou_bushi_k": 586,
+    "dou_bushi_rate": 0.807162534,
+    "label_distribution": {
+      "个股体检": 8,
+      "事件/宏观影响": 3,
+      "交易复盘": 2,
+      "定时监控": 39,
+      "报告": 16,
+      "策略回测": 58,
+      "组合体检": 4,
+      "选股清单": 10,
+      "都不是": 586
+    },
+    "n_total": 726,
+    "source": "results/request_labels.json",
+    "wilson95": {
+      "high": 0.834214096,
+      "k": 586,
+      "low": 0.776877525,
+      "method": "wilson score interval (95%, z=1.959964)",
+      "n": 726,
+      "rate": 0.807162534
+    }
+  },
+  "schema_version": 1,
+  "shares": {
+    "个股体检": 0.125,
+    "事件/宏观影响": 0.075,
+    "交易复盘": 0.025,
+    "定时监控": 0.05,
+    "报告": 0.025,
+    "策略回测": 0.1,
+    "组合体检": 0.125,
+    "选股清单": 0.1,
+    "都不是": 0.375
+  }
+}

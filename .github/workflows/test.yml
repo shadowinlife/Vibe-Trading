@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, mymain]
   pull_request:
-    branches: [main]
+    branches: [main, mymain]
   # Manual trigger. On 2026-08-06 twelve commits landed on main without a
   # single push-event run being created, and there was then no way to get a
   # verdict on main short of pushing an empty commit.
@@ -67,6 +67,22 @@ jobs:
           python -m pip install --dry-run --ignore-installed --require-hashes -r requirements-lock.txt
           python -m pip install --dry-run --ignore-installed --require-hashes -r requirements-channels-lock.txt
 
+  safety-gates:
+    name: safety-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      # Separate from `test` so a repository-wide gate failure cannot mask the
+      # Python test verdict (mymain tracks AGENTS.md, which this gate rejects).
+      - name: Repository safety gates
+        run: bash tools/ci_grep_gates.sh
+
   test:
     name: test / Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
@@ -77,7 +93,9 @@ jobs:
     # hang, fills the budget, and runner speed varies by minutes (the same
     # tree's 3.14 leg took 5m14s one run and 8m32s the other), so the limit
     # leaves room for that instead of being trimmed to the last good run.
-    timeout-minutes: 20
+    # mymain runs a larger suite (21k+ tests, ~36 minutes locally); 20 minutes
+    # cancelled both legs at 99% on 2026-10-28, so the ceiling is 60.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -114,11 +132,11 @@ jobs:
           python -c "import arch; print('arch', arch.__version__)"
           python -c "import langchain_anthropic; print('langchain-anthropic', langchain_anthropic.__version__)"
 
-      - name: Repository safety gates
-        run: bash tools/ci_grep_gates.sh
-
       - name: Test repository safety gates
         run: pytest tools/test_ci_env_var_gate.py tools/test_ci_private_files_gate.py -q
+
+      - name: Test ClickHouse schema gates
+        run: pytest tools/test_ci_clickhouse_comments_gate.py tools/test_clickhouse_export_ddl.py -q
 
       - name: Syntax check
         run: |

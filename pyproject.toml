@@ -48,6 +48,8 @@ dependencies = [
     "yfinance>=0.2.30",
     "akshare>=1.12.0",
     "ccxt>=4.5.71",
+    "clickhouse-connect>=1.0.0",
+    "sqlglot>=30.0.0",
     "aiohttp>=3.14.3",
     "cryptography>=50.0.0",
     "fastapi>=0.104.0",
@@ -99,7 +101,7 @@ vibe-trading-mcp = "mcp_server:main"
 
 [tool.setuptools]
 package-dir = {"" = "agent"}
-py-modules = ["api_server", "mcp_server"]
+py-modules = ["api_server", "mcp_server", "strategy_run_server"]
 
 [tool.setuptools.packages.find]
 where = ["agent"]
@@ -298,6 +300,7 @@ markers = [
     "unit: Unit tests (fast, no network)",
     "integration: Integration tests (may need network)",
     "slow: Paper-trade performance-budget gates; run at the delivery gate",
+    "bench: Latency benchmarks (skipped by default; run with -m bench)",
 ]
 
 [tool.ruff]

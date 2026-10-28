@@ -1,0 +1,332 @@
+{
+  "schema": "b_batch_verdict/1",
+  "verdict": "within noise band — uninterpretable, recorded as no effect",
+  "config": {
+    "tag": "b_batch",
+    "models": [
+      "qwen3.8-max",
+      "kimi-k3"
+    ],
+    "artifacts_dir": "/Users/mgong/LegoNanoBot/Vibe-Trading/mymain-wiki/harness-evolution/evals/artifacts",
+    "margin": 0.05,
+    "noise_band": 0.125,
+    "absent_ids": [
+      "D01-007",
+      "D11-001",
+      "D11-002",
+      "D16-001",
+      "D16-002",
+      "D16-003",
+      "D16-004",
+      "D16-005",
+      "D16-006",
+      "D16-007",
+      "D16-008",
+      "D18-001",
+      "D18-002",
+      "D18-003",
+      "D18-005"
+    ],
+    "absent_ids_not_found": [],
+    "primary_caliber": "strict top-1 (lenient is sensitivity-only, C4)",
+    "ci_construction": "exact Clopper-Pearson binomial CI on the discordant-direction proportion, transformed to the delta scale"
+  },
+  "criteria": {
+    "C1": {
+      "criterion": "pooled strict non-inferiority, primary efficacy set",
+      "threshold": "exact 95% CI lower bound > -0.05",
+      "role": "primary gate",
+      "pass": true,
+      "has_data": true,
+      "stats": {
+        "n_pairs": 286,
+        "baseline_rate": 0.9300699300699301,
+        "post_rate": 0.9405594405594405,
+        "delta": 0.01048951048951049,
+        "n_improved": 10,
+        "n_regressed": 7,
+        "delta_ci": [
+          -0.020299289390944924,
+          0.0375144870606497
+        ],
+        "mcnemar_p": 0.629058837890625
+      }
+    },
+    "C2": {
+      "criterion": "noise-band interpretation rule",
+      "role": "primary interpretation rule",
+      "noise_band": 0.125,
+      "pooled_abs_delta": 0.01048951048951049,
+      "within_band": true
+    },
+    "C3": {
+      "criterion": "per-model strict non-inferiority",
+      "role": "report only — no gate authority",
+      "per_model": {
+        "qwen3.8-max": {
+          "pass": false,
+          "stats": {
+            "n_pairs": 143,
+            "baseline_rate": 0.9230769230769231,
+            "post_rate": 0.9090909090909091,
+            "delta": -0.013986013986013986,
+            "n_improved": 5,
+            "n_regressed": 7,
+            "delta_ci": [
+              -0.05846396143075222,
+              0.03748201079461161
+            ],
+            "mcnemar_p": 0.7744140625
+          }
+        },
+        "kimi-k3": {
+          "pass": true,
+          "stats": {
+            "n_pairs": 143,
+            "baseline_rate": 0.9370629370629371,
+            "post_rate": 0.972027972027972,
+            "delta": 0.03496503496503497,
+            "n_improved": 5,
+            "n_regressed": 0,
+            "delta_ci": [
+              -0.0015261363709777234,
+              0.03496503496503497
+            ],
+            "mcnemar_p": 0.0625
+          }
+        }
+      }
+    },
+    "C4": {
+      "criterion": "lenient sensitivity",
+      "role": "report only — can never flip C1 (structural)",
+      "available": true,
+      "pooled": {
+        "n_pairs": 286,
+        "baseline_rate": 0.9370629370629371,
+        "post_rate": 0.9405594405594405,
+        "delta": 0.0034965034965034965,
+        "n_improved": 8,
+        "n_regressed": 7,
+        "delta_ci": [
+          -0.024559998537336012,
+          0.030139853546924975
+        ],
+        "mcnemar_p": 1.0
+      },
+      "flips_c1": false
+    },
+    "C5": {
+      "criterion": "absent-behavior probe (descriptive, no accuracy claim)",
+      "role": "auxiliary",
+      "pass": true,
+      "probe": {
+        "n_queries": 30,
+        "query_ids": [
+          "qwen3.8-max:D01-007",
+          "qwen3.8-max:D11-001",
+          "qwen3.8-max:D11-002",
+          "qwen3.8-max:D16-001",
+          "qwen3.8-max:D16-002",
+          "qwen3.8-max:D16-003",
+          "qwen3.8-max:D16-004",
+          "qwen3.8-max:D16-005",
+          "qwen3.8-max:D16-006",
+          "qwen3.8-max:D16-007",
+          "qwen3.8-max:D16-008",
+          "qwen3.8-max:D18-001",
+          "qwen3.8-max:D18-002",
+          "qwen3.8-max:D18-003",
+          "qwen3.8-max:D18-005",
+          "kimi-k3:D01-007",
+          "kimi-k3:D11-001",
+          "kimi-k3:D11-002",
+          "kimi-k3:D16-001",
+          "kimi-k3:D16-002",
+          "kimi-k3:D16-003",
+          "kimi-k3:D16-004",
+          "kimi-k3:D16-005",
+          "kimi-k3:D16-006",
+          "kimi-k3:D16-007",
+          "kimi-k3:D16-008",
+          "kimi-k3:D18-001",
+          "kimi-k3:D18-002",
+          "kimi-k3:D18-003",
+          "kimi-k3:D18-005"
+        ],
+        "post_first_distribution": {
+          "tool:list_skills": 8,
+          "skill:qveris": 7,
+          "tool:get_market_data": 4,
+          "skill:fundamental-filter": 2,
+          "tool:web_search": 2,
+          "tool:read_url": 2,
+          "tool:analyze_trade_journal": 2,
+          "tool:read_file": 1,
+          "tool:load_skill": 1,
+          "skill:data-routing": 1
+        },
+        "removed_capability_pick_events": 0,
+        "rows": [
+          {
+            "query_id": "qwen3.8-max:D01-007",
+            "expected_id": "tool:iwencai_search",
+            "post_first": "skill:fundamental-filter"
+          },
+          {
+            "query_id": "qwen3.8-max:D11-001",
+            "expected_id": "tool:get_macro_series",
+            "post_first": "tool:web_search"
+          },
+          {
+            "query_id": "qwen3.8-max:D11-002",
+            "expected_id": "tool:get_macro_series",
+            "post_first": "tool:read_url"
+          },
+          {
+            "query_id": "qwen3.8-max:D16-001",
+            "expected_id": "tool:trading_connections",
+            "post_first": "tool:list_skills"
+          },
+          {
+            "query_id": "qwen3.8-max:D16-002",
+            "expected_id": "tool:trading_select_connection",
+            "post_first": "tool:list_skills"
+          },
+          {
+            "query_id": "qwen3.8-max:D16-003",
+            "expected_id": "tool:trading_check",
+            "post_first": "tool:list_skills"
+          },
+          {
+            "query_id": "qwen3.8-max:D16-004",
+            "expected_id": "tool:trading_positions",
+            "post_first": "tool:read_file"
+          },
+          {
+            "query_id": "qwen3.8-max:D16-005",
+            "expected_id": "tool:trading_account",
+            "post_first": "tool:list_skills"
+          },
+          {
+            "query_id": "qwen3.8-max:D16-006",
+            "expected_id": "tool:trading_orders",
+            "post_first": "tool:list_skills"
+          },
+          {
+            "query_id": "qwen3.8-max:D16-007",
+            "expected_id": "tool:trading_quote",
+            "post_first": "tool:get_market_data"
+          },
+          {
+            "query_id": "qwen3.8-max:D16-008",
+            "expected_id": "tool:trading_history",
+            "post_first": "tool:get_market_data"
+          },
+          {
+            "query_id": "qwen3.8-max:D18-001",
+            "expected_id": "tool:qveris_search",
+            "post_first": "skill:qveris"
+          },
+          {
+            "query_id": "qwen3.8-max:D18-002",
+            "expected_id": "tool:qveris_inspect",
+            "post_first": "tool:load_skill"
+          },
+          {
+            "query_id": "qwen3.8-max:D18-003",
+            "expected_id": "tool:qveris_execute",
+            "post_first": "skill:qveris"
+          },
+          {
+            "query_id": "qwen3.8-max:D18-005",
+            "expected_id": "tool:qveris_execute",
+            "post_first": "skill:qveris"
+          },
+          {
+            "query_id": "kimi-k3:D01-007",
+            "expected_id": "tool:iwencai_search",
+            "post_first": "skill:fundamental-filter"
+          },
+          {
+            "query_id": "kimi-k3:D11-001",
+            "expected_id": "tool:get_macro_series",
+            "post_first": "tool:web_search"
+          },
+          {
+            "query_id": "kimi-k3:D11-002",
+            "expected_id": "tool:get_macro_series",
+            "post_first": "tool:read_url"
+          },
+          {
+            "query_id": "kimi-k3:D16-001",
+            "expected_id": "tool:trading_connections",
+            "post_first": "tool:list_skills"
+          },
+          {
+            "query_id": "kimi-k3:D16-002",
+            "expected_id": "tool:trading_select_connection",
+            "post_first": "skill:data-routing"
+          },
+          {
+            "query_id": "kimi-k3:D16-003",
+            "expected_id": "tool:trading_check",
+            "post_first": "tool:list_skills"
+          },
+          {
+            "query_id": "kimi-k3:D16-004",
+            "expected_id": "tool:trading_positions",
+            "post_first": "tool:analyze_trade_journal"
+          },
+          {
+            "query_id": "kimi-k3:D16-005",
+            "expected_id": "tool:trading_account",
+            "post_first": "tool:analyze_trade_journal"
+          },
+          {
+            "query_id": "kimi-k3:D16-006",
+            "expected_id": "tool:trading_orders",
+            "post_first": "tool:list_skills"
+          },
+          {
+            "query_id": "kimi-k3:D16-007",
+            "expected_id": "tool:trading_quote",
+            "post_first": "tool:get_market_data"
+          },
+          {
+            "query_id": "kimi-k3:D16-008",
+            "expected_id": "tool:trading_history",
+            "post_first": "tool:get_market_data"
+          },
+          {
+            "query_id": "kimi-k3:D18-001",
+            "expected_id": "tool:qveris_search",
+            "post_first": "skill:qveris"
+          },
+          {
+            "query_id": "kimi-k3:D18-002",
+            "expected_id": "tool:qveris_inspect",
+            "post_first": "skill:qveris"
+          },
+          {
+            "query_id": "kimi-k3:D18-003",
+            "expected_id": "tool:qveris_execute",
+            "post_first": "skill:qveris"
+          },
+          {
+            "query_id": "kimi-k3:D18-005",
+            "expected_id": "tool:qveris_execute",
+            "post_first": "skill:qveris"
+          }
+        ]
+      }
+    }
+  },
+  "primary_efficacy": {
+    "n_pairs_pooled": 286,
+    "per_model_n_pairs": {
+      "qwen3.8-max": 143,
+      "kimi-k3": 143
+    }
+  }
+}

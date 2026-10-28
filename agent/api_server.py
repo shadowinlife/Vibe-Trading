@@ -9,6 +9,7 @@ infrastructure lives in ``src.api.{security,models,helpers,state}``.
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
@@ -123,6 +124,10 @@ from src.api.scheduled_routes import (  # noqa: F401, E402
     _stop_scheduled_research_executor,
     _stop_scheduled_research_on_shutdown,
 )
+from src.api.strategy_run_lifecycle import (  # noqa: F401, E402
+    start_strategy_run_service,
+    stop_strategy_run_service,
+)
 
 
 async def _run_startup_preflight() -> None:
@@ -148,13 +153,26 @@ async def _run_startup_preflight() -> None:
         await _start_channel_runtime()
 
 
+async def _start_strategy_run_service() -> None:
+    """Start the opt-in RM entry service on the full API surface."""
+    if _VT_STRATEGY_RUN_ENABLED:
+        await start_strategy_run_service()
+
+
+async def _stop_strategy_run_service() -> None:
+    """Stop the opt-in entry service; safe when it never started."""
+    await stop_strategy_run_service()
+
+
 @asynccontextmanager
 async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Run API startup and guaranteed reverse-order shutdown."""
     try:
         await _run_startup_preflight()
+        await _start_strategy_run_service()
         yield
     finally:
+        await _stop_strategy_run_service()
         await _stop_scheduled_research_on_shutdown()
 
 
@@ -223,6 +241,29 @@ from src.api.pixel_office_routes import register_pixel_office_routes  # noqa: E4
 register_pixel_office_routes(app, require_local_or_auth, require_settings_write_auth)
 from src.api.strategy_adaptation_routes import register_strategy_adaptation_routes  # noqa: E402
 register_strategy_adaptation_routes(app, require_settings_write_auth)
+from src.api.strategy_library_routes import register_strategy_library_routes  # noqa: E402
+register_strategy_library_routes(app)
+
+# F9 strategy-schedule REST surface, default OFF: the in-box entry
+# (``agent/strategy_run_server.py``) must never expose a second scheduling
+# source, since time-based triggering belongs to the RM control plane alone.
+# Opt in only for VT's own dev API.
+_VT_STRATEGY_SCHEDULE_ROUTES_ENABLED = os.environ.get(  # noqa: env-gate — default-off operator switch
+    "VT_STRATEGY_SCHEDULE_ROUTES_ENABLED", ""
+).lower() in {"1", "true", "yes", "on"}
+if _VT_STRATEGY_SCHEDULE_ROUTES_ENABLED:
+    from src.api.strategy_schedule_routes import register_strategy_schedule_routes  # noqa: E402
+    register_strategy_schedule_routes(app)
+
+# RM service entry, default OFF: the dedicated in-box entry
+# (``agent/strategy_run_server.py``) is the production mount point, so the
+# full API surface stays free of these routes unless an operator opts in.
+_VT_STRATEGY_RUN_ENABLED = os.environ.get(  # noqa: env-gate — default-off operator switch
+    "VT_STRATEGY_RUN_ENABLED", ""
+).lower() in {"1", "true", "yes", "on"}
+if _VT_STRATEGY_RUN_ENABLED:
+    from src.api.strategy_run_routes import register_strategy_run_routes  # noqa: E402
+    register_strategy_run_routes(app)
 
 # --- Uploads ---
 from src.api.uploads_routes import register_uploads_routes  # noqa: E402

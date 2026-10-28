@@ -1,0 +1,1252 @@
+# Vibe-Trading tool/skill selection eval — versioned query set (v1).
+#
+# Schema per entry:
+#   id: <DOMAIN>-<NNN>            (e.g. D01-003)
+#   query: natural user phrasing, mixed Chinese/English
+#   expected: {kind: tool|skill, name: <exact name in corpus_snapshot.yaml>}
+#   domain: D01..D19              (AUDIT §1 taxonomy)
+#   negatives: plausible-but-wrong capability names (mandatory when
+#              arbitration_ref is set)
+#   arbitration_ref: K#/G#/Q# when the entry encodes an AUDIT arbitration
+#              scenario (§3 K1-K25, §4 G1-G10, §5 Q1-Q19); omitted otherwise.
+#
+# RECONCILIATION NOTE (grep: sec-edgar): the skill `sec-edgar` was renamed to
+# `sec-edgar-fetch` (AUDIT Q2/K5, TASK-A2). Entries D02-005/D02-006/D02-007
+# were reconciled to the new name when the post-change corpus was rebuilt;
+# the frozen baseline corpus (pre-rename) is preserved in git history.
+#
+# The baseline measures the CURRENT (unmodified) descriptions honestly —
+# misses are expected and valuable, not something to engineer away.
+
+version: 1
+entries:
+  # ── D01 行情数据与标的解析 ──────────────────────────────────────────
+  - id: D01-001
+    query: 帮我取贵州茅台近一年的日线行情数据
+    expected:
+      kind: tool
+      name: get_market_data
+    domain: D01
+    negatives: [tushare, akshare, trading_history]
+    arbitration_ref: K1
+  - id: D01-002
+    query: Fetch daily OHLCV bars for AAPL for the last year
+    expected:
+      kind: tool
+      name: get_market_data
+    domain: D01
+    negatives: [yfinance, trading_history]
+    arbitration_ref: K1
+  - id: D01-003
+    query: 今天A股涨得最多的股票是哪些，给我排个行
+    expected:
+      kind: tool
+      name: screen_market
+    domain: D01
+    negatives: [iwencai_search, fundamental-filter]
+    arbitration_ref: Q6
+  - id: D01-004
+    query: 腾讯控股的股票代码是什么
+    expected:
+      kind: tool
+      name: search_symbol
+    domain: D01
+  - id: D01-005
+    query: What is the ticker symbol for NVIDIA?
+    expected:
+      kind: tool
+      name: search_symbol
+    domain: D01
+  - id: D01-006
+    query: 看一下BTC-USDT的盘口深度，一万U买入的冲击成本多大
+    expected:
+      kind: tool
+      name: orderbook_depth
+    domain: D01
+    negatives: [get_market_data]
+  - id: D01-007
+    query: 市盈率低于15的银行股有哪些，用问财查一下
+    expected:
+      kind: tool
+      name: iwencai_search
+    domain: D01
+    negatives: [screen_market, fundamental-filter]
+    arbitration_ref: K13
+  - id: D01-008
+    query: akshare被限流了，脚本里直连通达信取A股日线
+    expected:
+      kind: skill
+      name: mootdx
+    domain: D01
+    negatives: [get_market_data, akshare]
+    arbitration_ref: G1
+  - id: D01-009
+    query: I'm scripting against OKX REST directly for spot candles and funding
+    expected:
+      kind: skill
+      name: okx-market
+    domain: D01
+    negatives: [get_market_data, ccxt]
+    arbitration_ref: G1
+
+  # ── D02 基本面与财报 ────────────────────────────────────────────────
+  - id: D02-001
+    query: 拉一下茅台最近几年的利润表和关键财务指标
+    expected:
+      kind: tool
+      name: get_financial_statements
+    domain: D02
+    negatives: [financial-statement]
+    arbitration_ref: K6
+  - id: D02-002
+    query: Get me AAPL's income statement and key per-period indicators
+    expected:
+      kind: tool
+      name: get_financial_statements
+    domain: D02
+    negatives: [get_sec_filings, get_fundamentals]
+    arbitration_ref: K6
+  - id: D02-003
+    query: 帮我做茅台财报的三表勾稽和盈利质量分析
+    expected:
+      kind: skill
+      name: financial-statement
+    domain: D02
+    negatives: [get_financial_statements]
+    arbitration_ref: K6
+  - id: D02-004
+    query: I need PIT-safe daily panels of US fundamentals, ROE and net income, filed-date aligned with no look-ahead
+    expected:
+      kind: tool
+      name: get_fundamentals
+    domain: D02
+    negatives: [get_sec_filings, get_financial_statements]
+    arbitration_ref: K5
+  - id: D02-005
+    query: 查AAPL最近提交的10-K文件，再拉Revenue的XBRL序列
+    expected:
+      kind: tool
+      name: get_sec_filings
+    domain: D02
+    negatives: [get_fundamentals, sec-edgar-fetch]
+    arbitration_ref: K5
+  - id: D02-006
+    query: How do I resolve a ticker's CIK and pull companyfacts from EDGAR in my own script?
+    expected:
+      kind: skill
+      name: sec-edgar-fetch
+    domain: D02
+    negatives: [edgar-sec-filings, get_sec_filings]
+    arbitration_ref: Q2
+  - id: D02-007
+    query: 从10-K的风险因素和管理层讨论里提取投资信号
+    expected:
+      kind: skill
+      name: edgar-sec-filings
+    domain: D02
+    negatives: [sec-edgar-fetch, get_sec_filings]
+    arbitration_ref: Q2
+  - id: D02-008
+    query: What did Berkshire Hathaway buy and sell last quarter? Check the 13F
+    expected:
+      kind: tool
+      name: get_institutional_holdings
+    domain: D02
+    negatives: [get_stock_profile]
+  - id: D02-009
+    query: AAPL的分析师目标价和机构持仓情况
+    expected:
+      kind: tool
+      name: get_stock_profile
+    domain: D02
+    negatives: [get_institutional_holdings]
+  - id: D02-010
+    query: Screen A-shares for PE below 20 and ROE above 15 percent
+    expected:
+      kind: skill
+      name: fundamental-filter
+    domain: D02
+    negatives: [screen_market, iwencai_search]
+    arbitration_ref: K13
+
+  # ── D03 新闻与研报 ──────────────────────────────────────────────────
+  - id: D03-001
+    query: 茅台最近有什么新闻和快讯
+    expected:
+      kind: tool
+      name: get_stock_news
+    domain: D03
+    negatives: [social-media-intelligence, web_search]
+    arbitration_ref: K17
+  - id: D03-002
+    query: Latest news headlines on NVDA
+    expected:
+      kind: tool
+      name: get_stock_news
+    domain: D03
+    negatives: [web_search, social-media-intelligence]
+    arbitration_ref: K17
+  - id: D03-003
+    query: 券商对茅台未来三年的EPS一致预期是多少
+    expected:
+      kind: tool
+      name: get_research_reports
+    domain: D03
+    negatives: [research_papers]
+    arbitration_ref: K4
+  - id: D03-004
+    query: Find academic papers on cross-sectional momentum factors
+    expected:
+      kind: tool
+      name: research_papers
+    domain: D03
+    negatives: [get_research_reports]
+    arbitration_ref: Q18
+  - id: D03-005
+    query: 今天全球市场有什么财经大新闻
+    expected:
+      kind: tool
+      name: get_stock_news
+    domain: D03
+    negatives: [web_search]
+    arbitration_ref: K17
+
+  # ── D04 资金流与市场微观结构 ────────────────────────────────────────
+  - id: D04-001
+    query: 看一下茅台最近的主力资金净流入
+    expected:
+      kind: tool
+      name: get_fund_flow
+    domain: D04
+  - id: D04-002
+    query: 北向资金今天净买入多少
+    expected:
+      kind: tool
+      name: get_northbound_flow
+    domain: D04
+    negatives: [hk-connect-flow]
+  - id: D04-003
+    query: 茅台的融资余额最近怎么变化
+    expected:
+      kind: tool
+      name: get_margin_trading
+    domain: D04
+  - id: D04-004
+    query: 今天龙虎榜上有哪些股票，买卖席位是谁
+    expected:
+      kind: tool
+      name: get_dragon_tiger
+    domain: D04
+  - id: D04-005
+    query: Any recent block trades on Moutai, with premium or discount and the broker seats?
+    expected:
+      kind: tool
+      name: get_block_trades
+    domain: D04
+  - id: D04-006
+    query: 未来90天有哪些限售股解禁
+    expected:
+      kind: tool
+      name: get_lockup_expiry
+    domain: D04
+  - id: D04-007
+    query: 茅台股东户数季度变化，筹码在集中吗
+    expected:
+      kind: tool
+      name: get_shareholder_count
+    domain: D04
+  - id: D04-008
+    query: How should I interpret northbound flow as a signal, including sector allocation?
+    expected:
+      kind: skill
+      name: hk-connect-flow
+    domain: D04
+    negatives: [get_northbound_flow]
+  - id: D04-009
+    query: 美股ETF的资金流和行业轮动广度怎么看
+    expected:
+      kind: skill
+      name: us-etf-flow
+    domain: D04
+    negatives: [etf_holdings, etf-analysis]
+    arbitration_ref: K15
+
+  # ── D05 技术分析 ────────────────────────────────────────────────────
+  - id: D05-001
+    query: 算一下AAPL的RSI和MACD指标值
+    expected:
+      kind: tool
+      name: technical_indicators
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: K2
+  - id: D05-002
+    query: Compute the 200-day SMA and Bollinger Bands for SPY
+    expected:
+      kind: tool
+      name: technical_indicators
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: Q17
+  - id: D05-003
+    query: 给我茅台的通用技术面买卖信号
+    expected:
+      kind: skill
+      name: technical-basic
+    domain: D05
+    negatives: [technical_indicators]
+    arbitration_ref: K2
+  - id: D05-004
+    query: 用缠论分析平安银行的中枢和买卖点
+    expected:
+      kind: skill
+      name: chanlun
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: D05-005
+    query: Run an Elliott Wave count — is the five-wave impulse done?
+    expected:
+      kind: skill
+      name: elliott-wave
+    domain: D05
+    negatives: [technical-basic, pattern_recognition]
+    arbitration_ref: G2
+  - id: D05-006
+    query: 帮我识别这段行情的头肩顶和三角形形态
+    expected:
+      kind: tool
+      name: pattern_recognition
+    domain: D05
+    negatives: [candlestick, elliott-wave]
+    arbitration_ref: K25
+  - id: D05-007
+    query: I trade ICT smart money concepts — find order blocks, FVG and BOS
+    expected:
+      kind: skill
+      name: smc
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: D05-008
+    query: 用一目均衡表看现在该买还是卖
+    expected:
+      kind: skill
+      name: ichimoku
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: D05-009
+    query: 最近K线上有没有早晨之星这类形态
+    expected:
+      kind: skill
+      name: candlestick
+    domain: D05
+    negatives: [pattern_recognition]
+    arbitration_ref: G2
+  - id: D05-010
+    query: Mean-reversion strategy based on historical volatility percentile
+    expected:
+      kind: skill
+      name: volatility
+    domain: D05
+    negatives: [technical_indicators]
+    arbitration_ref: Q16
+  - id: D05-011
+    query: 谐波形态Gartley的点位测算
+    expected:
+      kind: skill
+      name: harmonic
+    domain: D05
+    negatives: [pattern_recognition]
+    arbitration_ref: G2
+
+  # ── D06 量化因子与策略发现 ──────────────────────────────────────────
+  - id: D06-001
+    query: 你们有哪些预置的量化因子库
+    expected:
+      kind: tool
+      name: alpha_zoo
+    domain: D06
+    negatives: [list_strategies, alpha-zoo]
+    arbitration_ref: K7
+  - id: D06-002
+    query: Which strategies have computed evidence for bear markets?
+    expected:
+      kind: tool
+      name: query_strategies
+    domain: D06
+    negatives: [list_strategies, alpha_zoo]
+    arbitration_ref: K7
+  - id: D06-003
+    query: 浏览一下策略目录和各自的证据状态
+    expected:
+      kind: tool
+      name: list_strategies
+    domain: D06
+    negatives: [query_strategies, alpha_zoo]
+    arbitration_ref: K7
+  - id: D06-004
+    query: Bench the GTJA191 alpha zoo on CSI300 — IC and IR
+    expected:
+      kind: tool
+      name: alpha_bench
+    domain: D06
+    negatives: [alpha_zoo, factor_analysis]
+    arbitration_ref: G8
+  - id: D06-005
+    query: 我自己算好了因子CSV，做IC检验和分位分层回测
+    expected:
+      kind: tool
+      name: factor_analysis
+    domain: D06
+    negatives: [alpha_bench]
+    arbitration_ref: G8
+  - id: D06-006
+    query: 这个策略在各市场状态下的回测证据给我看看
+    expected:
+      kind: tool
+      name: get_strategy_evidence
+    domain: D06
+    negatives: [query_strategies]
+    arbitration_ref: G8
+  - id: D06-007
+    query: Walk me through browsing and picking alphas from the zoo
+    expected:
+      kind: skill
+      name: alpha-zoo
+    domain: D06
+    negatives: [alpha_zoo]
+    arbitration_ref: K7
+  - id: D06-008
+    query: 多因子截面打分选A股，构建TopN组合
+    expected:
+      kind: skill
+      name: multi-factor
+    domain: D06
+    negatives: [factor-research]
+  - id: D06-009
+    query: Turn this academic paper into a validated factor with decay monitoring
+    expected:
+      kind: skill
+      name: strategy-dev-manager
+    domain: D06
+    negatives: [strategy-discovery, factor-research]
+    arbitration_ref: Q19
+  - id: D06-010
+    query: Walk-forward machine learning prediction strategy with sklearn
+    expected:
+      kind: skill
+      name: ml-strategy
+    domain: D06
+
+  # ── D07 回测与策略工程 ──────────────────────────────────────────────
+  - id: D07-001
+    query: 回测这个双均线策略，2023到2024年
+    expected:
+      kind: tool
+      name: backtest
+    domain: D07
+    negatives: [strategy-generate]
+  - id: D07-002
+    query: Run the backtest for my RSI strategy config
+    expected:
+      kind: tool
+      name: backtest
+    domain: D07
+    negatives: [strategy-generate]
+  - id: D07-003
+    query: 帮我写一个动量策略并回测评估
+    expected:
+      kind: skill
+      name: strategy-generate
+    domain: D07
+    negatives: [backtest]
+  - id: D07-004
+    query: 回测表现太差了，帮我诊断根因
+    expected:
+      kind: skill
+      name: backtest-diagnose
+    domain: D07
+    negatives: [backtest]
+  - id: D07-005
+    query: Model slippage and market impact for my backtest fills
+    expected:
+      kind: skill
+      name: execution-model
+    domain: D07
+  - id: D07-006
+    query: 把回测策略导出成TradingView的Pine脚本
+    expected:
+      kind: skill
+      name: pine-script
+    domain: D07
+    negatives: [vnpy-export]
+  - id: D07-007
+    query: Export my backtest strategy to a runnable vnpy CtaTemplate class
+    expected:
+      kind: skill
+      name: vnpy-export
+    domain: D07
+    negatives: [pine-script]
+  - id: D07-008
+    query: A股加加密货币的混合组合，signal_engine怎么写
+    expected:
+      kind: skill
+      name: cross-market-strategy
+    domain: D07
+  - id: D07-009
+    query: Write config.json into my backtest run directory
+    expected:
+      kind: tool
+      name: write_file
+    domain: D07
+    negatives: [read_file]
+    arbitration_ref: K22
+  - id: D07-010
+    query: 读一下回测工作区里的signal_engine.py
+    expected:
+      kind: tool
+      name: read_file
+    domain: D07
+    negatives: [write_file]
+    arbitration_ref: Q3
+
+  # ── D08 期权与衍生品 ────────────────────────────────────────────────
+  - id: D08-001
+    query: 这个AAPL的call期权用BS模型值多少钱，Greeks是多少
+    expected:
+      kind: tool
+      name: analyze_options
+    domain: D08
+    negatives: [analyze_options_payoff, options-strategy]
+    arbitration_ref: K14
+  - id: D08-002
+    query: Price my iron condor — expiry payoff, breakevens and spot-IV scenarios
+    expected:
+      kind: tool
+      name: analyze_options_payoff
+    domain: D08
+    negatives: [analyze_options, options-payoff]
+    arbitration_ref: K14
+  - id: D08-003
+    query: 拉一下AAPL的期权链，隐含波动率和持仓量
+    expected:
+      kind: tool
+      name: get_options_chain
+    domain: D08
+    negatives: [analyze_options]
+    arbitration_ref: Q18
+  - id: D08-004
+    query: 期权策略方法论入门，从定价到多腿回测
+    expected:
+      kind: skill
+      name: options-strategy
+    domain: D08
+    negatives: [analyze_options, options-payoff]
+    arbitration_ref: G3
+  - id: D08-005
+    query: Draw the payoff diagram for my multi-leg strategy with breakevens
+    expected:
+      kind: skill
+      name: options-payoff
+    domain: D08
+    negatives: [analyze_options_payoff, options-strategy]
+    arbitration_ref: G3
+  - id: D08-006
+    query: 波动率面SABR建模和日历价差套利
+    expected:
+      kind: skill
+      name: options-advanced
+    domain: D08
+    negatives: [options-strategy]
+    arbitration_ref: G3
+  - id: D08-007
+    query: Perpetual funding-rate arbitrage between exchanges, carry construction
+    expected:
+      kind: skill
+      name: perp-funding-basis
+    domain: D08
+    negatives: [crypto-derivatives]
+    arbitration_ref: K11
+  - id: D08-008
+    query: 加密衍生品整体框架，期限结构和波动率微笑
+    expected:
+      kind: skill
+      name: crypto-derivatives
+    domain: D08
+    negatives: [perp-funding-basis]
+    arbitration_ref: K11
+
+  # ── D09 风险、统计与组合 ────────────────────────────────────────────
+  - id: D09-001
+    query: 算一下这个组合的历史VaR和CVaR
+    expected:
+      kind: tool
+      name: quantlib_call
+    domain: D09
+    negatives: [risk-analysis]
+    arbitration_ref: K16
+  - id: D09-002
+    query: Compute the deflated Sharpe ratio of my backtest
+    expected:
+      kind: tool
+      name: quantlib_call
+    domain: D09
+    negatives: [risk-analysis, quant-statistics]
+    arbitration_ref: Q4
+  - id: D09-003
+    query: 基金有申购赎回现金流，真实收益率怎么算
+    expected:
+      kind: tool
+      name: cashflow_performance
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+  - id: D09-004
+    query: 系统性讲讲VaR、压力测试和蒙特卡洛怎么做
+    expected:
+      kind: skill
+      name: risk-analysis
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: K16
+  - id: D09-005
+    query: Run an ADF unit-root test and an Engle-Granger cointegration test
+    expected:
+      kind: skill
+      name: quant-statistics
+    domain: D09
+    negatives: [correlation-analysis, pair-trading]
+    arbitration_ref: G4
+  - id: D09-006
+    query: 两只股票的相关性结构、半衰期和Kalman对冲比率
+    expected:
+      kind: skill
+      name: correlation-analysis
+    domain: D09
+    negatives: [pair-trading, quant-statistics]
+    arbitration_ref: Q5
+  - id: D09-007
+    query: Build a pairs trading strategy on two cointegrated instruments
+    expected:
+      kind: skill
+      name: pair-trading
+    domain: D09
+    negatives: [correlation-analysis, quant-statistics]
+    arbitration_ref: G4
+  - id: D09-008
+    query: 做资产配置，用风险预算或者全天候框架
+    expected:
+      kind: skill
+      name: asset-allocation
+    domain: D09
+  - id: D09-009
+    query: 组合业绩归因，Brinson行业和选股分解
+    expected:
+      kind: skill
+      name: performance-attribution
+    domain: D09
+  - id: D09-010
+    query: Detect correlation regime shifts and attribute the crisis mover
+    expected:
+      kind: skill
+      name: correlation-regime
+    domain: D09
+    negatives: [correlation-analysis]
+    arbitration_ref: K8
+
+  # ── D10 估值与公司深度研究 ──────────────────────────────────────────
+  - id: D10-001
+    query: 用DCF给这家公司估值，加敏感性分析
+    expected:
+      kind: skill
+      name: valuation-model
+    domain: D10
+  - id: D10-002
+    query: Look at this company through the deep-value and quality lenses
+    expected:
+      kind: skill
+      name: investor-lenses
+    domain: D10
+  - id: D10-003
+    query: 评估一下这家公司管理层靠不靠谱
+    expected:
+      kind: skill
+      name: management-deep-dive
+    domain: D10
+  - id: D10-004
+    query: Value SpaceX — it's private, so give me a fair-value range with confidence labels
+    expected:
+      kind: skill
+      name: private-company-research
+    domain: D10
+  - id: D10-005
+    query: 我刚买了这只股票，帮我写投资论点和红线
+    expected:
+      kind: skill
+      name: thesis-tracker
+    domain: D10
+  - id: D10-006
+    query: Find the hidden beneficiaries of the AI infrastructure supply chain
+    expected:
+      kind: skill
+      name: bottleneck-hunter
+    domain: D10
+  - id: D10-007
+    query: Write this analysis up as a professional research report
+    expected:
+      kind: skill
+      name: report-generate
+    domain: D10
+
+  # ── D11 宏观、行业与监管 ────────────────────────────────────────────
+  - id: D11-001
+    query: 美国最近的CPI和失业率走势
+    expected:
+      kind: tool
+      name: get_macro_series
+    domain: D11
+  - id: D11-002
+    query: Fetch the federal funds rate and 10-year Treasury yield from FRED
+    expected:
+      kind: tool
+      name: get_macro_series
+    domain: D11
+  - id: D11-003
+    query: 宁德时代属于哪些行业和概念板块
+    expected:
+      kind: tool
+      name: get_sector_info
+    domain: D11
+    negatives: [sector-rotation]
+    arbitration_ref: K19
+  - id: D11-004
+    query: 现在处于什么宏观周期阶段，央行政策怎么解读
+    expected:
+      kind: skill
+      name: macro-analysis
+    domain: D11
+    negatives: [global-macro]
+    arbitration_ref: K9
+  - id: D11-005
+    query: Global macro framework — FX forecasting and capital flows
+    expected:
+      kind: skill
+      name: global-macro
+    domain: D11
+    negatives: [macro-analysis]
+    arbitration_ref: K9
+  - id: D11-006
+    query: 地缘战争风险怎么交易，有什么前兆信号
+    expected:
+      kind: skill
+      name: geopolitical-risk
+    domain: D11
+    negatives: [global-macro, prediction_market]
+    arbitration_ref: G5
+  - id: D11-007
+    query: Copper outlook — supply, demand, inventories and term structure
+    expected:
+      kind: skill
+      name: commodity-analysis
+    domain: D11
+    negatives: [global-macro]
+    arbitration_ref: G5
+  - id: D11-008
+    query: 现在该轮动到哪个申万行业
+    expected:
+      kind: skill
+      name: sector-rotation
+    domain: D11
+    negatives: [get_sector_info]
+    arbitration_ref: K19
+
+  # ── D12 事件驱动与特殊情境 ──────────────────────────────────────────
+  - id: D12-001
+    query: 美联储下次降息的市场隐含概率是多少
+    expected:
+      kind: tool
+      name: prediction_market
+    domain: D12
+    negatives: [macro-analysis, geopolitical-risk]
+    arbitration_ref: K20
+  - id: D12-002
+    query: What's the market-implied probability of a US recession on Polymarket?
+    expected:
+      kind: tool
+      name: prediction_market
+    domain: D12
+    negatives: [macro-analysis]
+    arbitration_ref: Q15
+  - id: D12-003
+    query: 这个并购案的套利价差有多大
+    expected:
+      kind: skill
+      name: corporate-events
+    domain: D12
+    negatives: [ashare-pre-st-filter]
+    arbitration_ref: G6
+  - id: D12-004
+    query: 这家公司明年会不会被ST
+    expected:
+      kind: skill
+      name: ashare-pre-st-filter
+    domain: D12
+    negatives: [corporate-events]
+    arbitration_ref: G6
+  - id: D12-005
+    query: Track the ADR versus H-share premium for arbitrage signals
+    expected:
+      kind: skill
+      name: adr-hshare
+    domain: D12
+    negatives: [corporate-events]
+    arbitration_ref: G6
+  - id: D12-006
+    query: A股业绩预告超预期怎么提前捕捉
+    expected:
+      kind: skill
+      name: earnings-forecast
+    domain: D12
+    negatives: [earnings-revision]
+    arbitration_ref: K10
+  - id: D12-007
+    query: US earnings estimate revisions and guidance analysis
+    expected:
+      kind: skill
+      name: earnings-revision
+    domain: D12
+    negatives: [earnings-forecast]
+    arbitration_ref: K10
+  - id: D12-008
+    query: Build an event-driven strategy scoring news and announcements
+    expected:
+      kind: skill
+      name: event-driven
+    domain: D12
+    negatives: [prediction_market]
+    arbitration_ref: G6
+
+  # ── D13 情绪与另类数据 ──────────────────────────────────────────────
+  - id: D13-001
+    query: 给这条新闻文本打个情绪分，看多还是看空
+    expected:
+      kind: tool
+      name: sentiment
+    domain: D13
+    negatives: [sentiment-analysis]
+    arbitration_ref: Q1
+  - id: D13-002
+    query: What's the crypto Fear and Greed index right now?
+    expected:
+      kind: tool
+      name: sentiment
+    domain: D13
+    negatives: [sentiment-analysis]
+    arbitration_ref: Q1
+  - id: D13-003
+    query: A股市场情绪面分析，看两融和北向信号
+    expected:
+      kind: skill
+      name: sentiment-analysis
+    domain: D13
+    negatives: [sentiment]
+    arbitration_ref: K3
+  - id: D13-004
+    query: Extract financial signals from Twitter and Reddit posts
+    expected:
+      kind: skill
+      name: social-media-intelligence
+    domain: D13
+    negatives: [get_stock_news]
+    arbitration_ref: K17
+  - id: D13-005
+    query: BTC链上数据怎么样，巨鲸和MVRV
+    expected:
+      kind: skill
+      name: onchain-analysis
+    domain: D13
+    negatives: [stablecoin-flow]
+    arbitration_ref: G7
+  - id: D13-006
+    query: USDT的铸造销毁和交易所稳定币储备
+    expected:
+      kind: skill
+      name: stablecoin-flow
+    domain: D13
+    negatives: [onchain-analysis]
+    arbitration_ref: G7
+  - id: D13-007
+    query: Compare DeFi lending, LP and staking yields for sustainability
+    expected:
+      kind: skill
+      name: defi-yield
+    domain: D13
+    negatives: [onchain-analysis]
+    arbitration_ref: G7
+  - id: D13-008
+    query: 清算热力图上哪里是猎止损区
+    expected:
+      kind: skill
+      name: liquidation-heatmap
+    domain: D13
+    negatives: [onchain-analysis]
+    arbitration_ref: G7
+  - id: D13-009
+    query: Token unlock schedule and the sell pressure it implies
+    expected:
+      kind: skill
+      name: token-unlock-treasury
+    domain: D13
+    negatives: [onchain-analysis]
+    arbitration_ref: G7
+
+  # ── D14 基金、ETF 与固收 ────────────────────────────────────────────
+  - id: D14-001
+    query: 510300沪深300ETF的持仓里有什么
+    expected:
+      kind: tool
+      name: etf_holdings
+    domain: D14
+    negatives: [etf-analysis, us-etf-flow]
+    arbitration_ref: K15
+  - id: D14-002
+    query: Look up semiconductor ETFs and tell me their sizes
+    expected:
+      kind: tool
+      name: etf_holdings
+    domain: D14
+    negatives: [etf-analysis]
+    arbitration_ref: K15
+  - id: D14-003
+    query: 帮我筛选基金，看夏普比率和风格漂移
+    expected:
+      kind: skill
+      name: fund-analysis
+    domain: D14
+  - id: D14-004
+    query: 对比几只ETF的费率、跟踪误差和流动性
+    expected:
+      kind: skill
+      name: etf-analysis
+    domain: D14
+    negatives: [etf_holdings]
+    arbitration_ref: K15
+  - id: D14-005
+    query: Credit bond research — ratings, spreads and default risk
+    expected:
+      kind: skill
+      name: credit-analysis
+    domain: D14
+  - id: D14-006
+    query: 可转债双低策略和下修博弈怎么分析
+    expected:
+      kind: skill
+      name: convertible-bond
+    domain: D14
+  - id: D14-007
+    query: Is this dividend sustainable? Check for yield traps
+    expected:
+      kind: skill
+      name: dividend-analysis
+    domain: D14
+
+  # ── D15 用户行为与影子账户 ──────────────────────────────────────────
+  - id: D15-001
+    query: 分析我的交割单，看看交易行为有什么偏差
+    expected:
+      kind: tool
+      name: analyze_trade_journal
+    domain: D15
+    negatives: [trade-journal]
+    arbitration_ref: G9
+  - id: D15-002
+    query: Parse my broker export and profile my trading behavior
+    expected:
+      kind: tool
+      name: analyze_trade_journal
+    domain: D15
+    negatives: [shadow-account]
+    arbitration_ref: G9
+  - id: D15-003
+    query: 从我赚钱的交易里提炼影子策略规则
+    expected:
+      kind: tool
+      name: extract_shadow_strategy
+    domain: D15
+    negatives: [analyze_trade_journal]
+    arbitration_ref: G9
+  - id: D15-004
+    query: 影子策略跨市场回测，和我实际交易做归因对比
+    expected:
+      kind: tool
+      name: run_shadow_backtest
+    domain: D15
+    negatives: [extract_shadow_strategy]
+    arbitration_ref: G9
+  - id: D15-005
+    query: Render the shadow account report with all eight sections
+    expected:
+      kind: tool
+      name: render_shadow_report
+    domain: D15
+    negatives: [run_shadow_backtest]
+    arbitration_ref: G9
+  - id: D15-006
+    query: 今天有哪些标的符合我影子账户的入场节奏
+    expected:
+      kind: tool
+      name: scan_shadow_signals
+    domain: D15
+    negatives: [run_shadow_backtest]
+    arbitration_ref: G9
+  - id: D15-007
+    query: 影子账户整个流程是怎么走的
+    expected:
+      kind: skill
+      name: shadow-account
+    domain: D15
+    negatives: [analyze_trade_journal]
+    arbitration_ref: G9
+
+  # ── D16 券商连接（只读） ────────────────────────────────────────────
+  - id: D16-001
+    query: 我配置了哪些券商连接器
+    expected:
+      kind: tool
+      name: trading_connections
+    domain: D16
+    negatives: [trading_check]
+    arbitration_ref: Q10
+  - id: D16-002
+    query: 把IBKR纸面账户设为默认连接器
+    expected:
+      kind: tool
+      name: trading_select_connection
+    domain: D16
+    negatives: [trading_connections]
+    arbitration_ref: Q10
+  - id: D16-003
+    query: Check whether my broker connector profile is configured and reachable
+    expected:
+      kind: tool
+      name: trading_check
+    domain: D16
+    negatives: [trading_connections]
+    arbitration_ref: Q10
+  - id: D16-004
+    query: 看看我券商账户里的持仓
+    expected:
+      kind: tool
+      name: trading_positions
+    domain: D16
+    negatives: [get_market_data, trading_account]
+    arbitration_ref: K21
+  - id: D16-005
+    query: Read my account data from the selected broker connection
+    expected:
+      kind: tool
+      name: trading_account
+    domain: D16
+    negatives: [trading_positions]
+    arbitration_ref: Q10
+  - id: D16-006
+    query: 我账户里现在有哪些挂单
+    expected:
+      kind: tool
+      name: trading_orders
+    domain: D16
+    negatives: [trading_positions]
+    arbitration_ref: Q10
+  - id: D16-007
+    query: Give me a quote snapshot from my connected broker
+    expected:
+      kind: tool
+      name: trading_quote
+    domain: D16
+    negatives: [get_market_data]
+    arbitration_ref: K21
+  - id: D16-008
+    query: 用连接器取AAPL的历史K线
+    expected:
+      kind: tool
+      name: trading_history
+    domain: D16
+    negatives: [get_market_data]
+    arbitration_ref: K21
+
+  # ── D17 研究编排与治理 ──────────────────────────────────────────────
+  - id: D17-001
+    query: 开始一个研究目标，设定预算和验收准则
+    expected:
+      kind: tool
+      name: start_research_goal
+    domain: D17
+    negatives: [research-goal]
+  - id: D17-002
+    query: Show me the current research goal snapshot
+    expected:
+      kind: tool
+      name: get_research_goal
+    domain: D17
+  - id: D17-003
+    query: 给当前研究目标追加一条可溯源证据
+    expected:
+      kind: tool
+      name: add_goal_evidence
+    domain: D17
+  - id: D17-004
+    query: 跑一个投委会多智能体团队分析茅台
+    expected:
+      kind: tool
+      name: run_swarm
+    domain: D17
+    negatives: [list_swarm_presets]
+    arbitration_ref: K12
+  - id: D17-005
+    query: What multi-agent team presets are available?
+    expected:
+      kind: tool
+      name: list_swarm_presets
+    domain: D17
+    negatives: [run_swarm]
+    arbitration_ref: K12
+  - id: D17-006
+    query: 上次那个失败的swarm run帮我重试
+    expected:
+      kind: tool
+      name: retry_run
+    domain: D17
+    negatives: [reap_stale_runs]
+  - id: D17-007
+    query: Poll my swarm run progress without blocking
+    expected:
+      kind: tool
+      name: get_swarm_status
+    domain: D17
+    negatives: [get_run_result]
+  - id: D17-008
+    query: 列出所有可用的金融技能
+    expected:
+      kind: tool
+      name: list_skills
+    domain: D17
+    negatives: [load_skill]
+    arbitration_ref: Q7
+  - id: D17-009
+    query: Load the full documentation of the risk-analysis skill
+    expected:
+      kind: tool
+      name: load_skill
+    domain: D17
+    negatives: [list_skills]
+    arbitration_ref: Q7
+  - id: D17-010
+    query: 做数据任务之前，该选哪个数据源
+    expected:
+      kind: skill
+      name: data-routing
+    domain: D17
+    negatives: [get_market_data, tushare]
+    arbitration_ref: K1
+  - id: D17-011
+    query: How does the goal-driven research workflow work?
+    expected:
+      kind: skill
+      name: research-goal
+    domain: D17
+    negatives: [start_research_goal]
+    arbitration_ref: K18
+
+  # ── D18 付费数据市场 ────────────────────────────────────────────────
+  - id: D18-001
+    query: 免费源没有这个数据，去付费市场搜一下有没有
+    expected:
+      kind: tool
+      name: qveris_search
+    domain: D18
+    negatives: [qveris_execute]
+    arbitration_ref: Q12
+  - id: D18-002
+    query: Inspect the parameter schema before paying for a QVeris call
+    expected:
+      kind: tool
+      name: qveris_inspect
+    domain: D18
+    negatives: [qveris_execute]
+    arbitration_ref: Q12
+  - id: D18-003
+    query: 执行这个QVeris付费能力
+    expected:
+      kind: tool
+      name: qveris_execute
+    domain: D18
+    negatives: [qveris_search]
+    arbitration_ref: Q12
+  - id: D18-004
+    query: When should I upgrade from free sources to the paid marketplace?
+    expected:
+      kind: skill
+      name: qveris
+    domain: D18
+    negatives: [qveris_search]
+    arbitration_ref: Q12
+  - id: D18-005
+    query: 用QVeris执行刚检视过的那个付费能力，注意会话预算
+    expected:
+      kind: tool
+      name: qveris_execute
+    domain: D18
+    negatives: [qveris_inspect]
+    arbitration_ref: Q12
+
+  # ── D19 网络与文档读取（VT 侧） ────────────────────────────────────
+  - id: D19-001
+    query: 搜一下美联储最新的政策声明
+    expected:
+      kind: tool
+      name: web_search
+    domain: D19
+    negatives: [read_url]
+    arbitration_ref: Q8
+  - id: D19-002
+    query: Read this web page and turn it into clean markdown
+    expected:
+      kind: tool
+      name: read_url
+    domain: D19
+    negatives: [web_search, web-reader]
+    arbitration_ref: K23
+  - id: D19-003
+    query: 读一下这份扫描版PDF研报
+    expected:
+      kind: tool
+      name: read_document
+    domain: D19
+    negatives: [doc-reader]
+    arbitration_ref: K24
+  - id: D19-004
+    query: Extract text from this PDF, it has scanned pages
+    expected:
+      kind: tool
+      name: read_document
+    domain: D19
+    negatives: [doc-reader]
+    arbitration_ref: K24
+  - id: D19-005
+    query: 网页文章怎么转成Markdown来读
+    expected:
+      kind: skill
+      name: web-reader
+    domain: D19
+    negatives: [read_url]
+    arbitration_ref: K23
+  - id: D19-006
+    query: Which tool reads documents and how do I use it?
+    expected:
+      kind: skill
+      name: doc-reader
+    domain: D19
+    negatives: [read_document]
+    arbitration_ref: K24

@@ -27,6 +27,7 @@ from src.strategy_store.models import (
     DecaySnapshot,
     ModelTier,
     ValidationStatus,
+    validate_artifact_readiness,
     validate_validation_status_transition,
 )
 
@@ -64,6 +65,19 @@ _GOVERNANCE_COLUMNS: dict[str, str] = {
     "validation_date": "TEXT",
 }
 
+# Strategy-library columns: execution kind, declarative spec, scheduling
+# readiness and the verdict pair. Defaults make rows written before this
+# migration read back as non-demo code strategies in the draft state.
+_STRATEGY_LIBRARY_COLUMNS: dict[str, str] = {
+    "kind": "TEXT DEFAULT 'code'",
+    "spec": "TEXT",
+    "spec_sha256": "TEXT",
+    "readiness": "TEXT DEFAULT 'draft'",
+    "evaluator_verdict": "TEXT",
+    "previous_verdict": "TEXT",
+    "demo": "INTEGER DEFAULT 0",
+}
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -92,6 +106,19 @@ def _json_loads(value: str | None, default: object) -> object:
         return json.loads(value)
     except (json.JSONDecodeError, TypeError):
         return default
+
+
+class _Keep:
+    """Sentinel type meaning "leave this gate column unchanged"."""
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "_KEEP"
+
+
+#: Default for every gate-writer column: omitted columns stay untouched.
+_KEEP = _Keep()
 
 
 def _default_db_path() -> Path:
@@ -142,15 +169,55 @@ class SqliteStrategyStore:
         self.db_path = (
             Path(db_path) if db_path is not None else _default_db_path()
         )
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA foreign_keys=ON")
-        self._conn.execute("PRAGMA busy_timeout=5000")
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA synchronous=NORMAL")
         self._lock = threading.RLock()
+        self._closed = False
+        self._conn = self._open_connection()
         self._init_db()
+
+    # -- Connection lifecycle -----------------------------------------------
+
+    def _open_connection(self) -> sqlite3.Connection:
+        """Open the SQLite connection with this store's standard PRAGMAs."""
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.execute("PRAGMA busy_timeout=5000")
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        return conn
+
+    def close(self) -> None:
+        """Close the underlying connection.  Idempotent.
+
+        A closed store keeps its ``db_path``; call ``reopen()`` to use it
+        again.  Until then every query raises ``sqlite3.ProgrammingError``.
+        """
+        with self._lock:
+            if self._closed:
+                return
+            self._conn.close()
+            self._closed = True
+
+    def reopen(self) -> SqliteStrategyStore:
+        """Reconnect a closed store and re-run the schema bootstrap.
+
+        Returns:
+            ``self``.  An already-open store is returned unchanged; the
+            database path, schema and PRAGMAs are never altered.
+        """
+        with self._lock:
+            if not self._closed:
+                return self
+            conn = self._open_connection()
+            try:
+                self._conn = conn
+                self._init_db()
+            except BaseException:
+                conn.close()
+                raise
+            self._closed = False
+            return self
 
     # -- Schema bootstrap ---------------------------------------------------
 
@@ -264,7 +331,11 @@ class SqliteStrategyStore:
         existing_columns = {
             row["name"] for row in self._conn.execute("PRAGMA table_info(artifacts)")
         }
-        extra = {**_GOVERNANCE_COLUMNS, **_ADAPTATION_COLUMNS}
+        extra = {
+            **_GOVERNANCE_COLUMNS,
+            **_ADAPTATION_COLUMNS,
+            **_STRATEGY_LIBRARY_COLUMNS,
+        }
         for column, ddl in extra.items():
             if column not in existing_columns:
                 self._conn.execute(f"ALTER TABLE artifacts ADD COLUMN {column} {ddl}")
@@ -327,6 +398,13 @@ class SqliteStrategyStore:
                 else ValidationStatus.UNVALIDATED
             ),
             validation_date=row["validation_date"],
+            kind=row["kind"] or "code",
+            spec=_json_loads(row["spec"], None),
+            spec_sha256=row["spec_sha256"],
+            readiness=row["readiness"] or "draft",
+            evaluator_verdict=_json_loads(row["evaluator_verdict"], None),
+            previous_verdict=_json_loads(row["previous_verdict"], None),
+            demo=bool(row["demo"]),
         )
 
     @staticmethod
@@ -400,9 +478,11 @@ class SqliteStrategyStore:
                         created_at, updated_at, disabled_at, disabled_reason,
                         developer, owner, validator, approver, model_version,
                         artifact_version, model_tier, intended_use, limitations,
-                        validation_status, validation_date
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        validation_status, validation_date,
+                        kind, spec, spec_sha256, readiness,
+                        evaluator_verdict, previous_verdict, demo
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         artifact_id,
@@ -439,6 +519,19 @@ class SqliteStrategyStore:
                         artifact.limitations,
                         artifact.validation_status.value,
                         artifact.validation_date,
+                        artifact.kind,
+                        _json_dumps(artifact.spec)
+                        if artifact.spec is not None
+                        else None,
+                        artifact.spec_sha256,
+                        artifact.readiness,
+                        _json_dumps(artifact.evaluator_verdict)
+                        if artifact.evaluator_verdict is not None
+                        else None,
+                        _json_dumps(artifact.previous_verdict)
+                        if artifact.previous_verdict is not None
+                        else None,
+                        int(artifact.demo),
                     ),
                 )
                 if adaptation_binding is not None:
@@ -478,6 +571,8 @@ class SqliteStrategyStore:
         type: ArtifactType | None = None,
         status: ArtifactStatus | None = None,
         universe: str | None = None,
+        kind: str | None = None,
+        readiness: str | None = None,
         limit: int = 100,
     ) -> Sequence[Artifact]:
         """List artifacts with optional filters, newest first."""
@@ -493,6 +588,12 @@ class SqliteStrategyStore:
         if universe is not None:
             clauses.append("universe = ?")
             params.append(universe)
+        if kind is not None:
+            clauses.append("kind = ?")
+            params.append(kind)
+        if readiness is not None:
+            clauses.append("readiness = ?")
+            params.append(readiness)
 
         where = ""
         if clauses:
@@ -551,7 +652,14 @@ class SqliteStrategyStore:
 
     @_synchronized
     def update_artifact(self, artifact: Artifact) -> Artifact | None:
-        """Replace an artifact record.  Returns updated artifact or ``None``."""
+        """Replace an artifact record.  Returns updated artifact or ``None``.
+
+        Gate columns (``readiness``, ``evaluator_verdict``,
+        ``previous_verdict``) are intentionally not written: they belong to
+        ``_update_gate_columns`` so a plain row update cannot silently clear
+        or forge a verdict. ``validation_status`` stays writable here for SDM
+        model governance.
+        """
         existing = self.get_artifact(artifact.id)
         if existing is None:
             return None
@@ -577,7 +685,8 @@ class SqliteStrategyStore:
                     developer = ?, owner = ?, validator = ?, approver = ?,
                     model_version = ?, artifact_version = ?, model_tier = ?,
                     intended_use = ?, limitations = ?, validation_status = ?,
-                    validation_date = ?
+                    validation_date = ?, kind = ?, spec = ?, spec_sha256 = ?,
+                    demo = ?
                 WHERE id = ?
                 """,
                 (
@@ -613,10 +722,187 @@ class SqliteStrategyStore:
                     artifact.limitations,
                     artifact.validation_status.value,
                     artifact.validation_date,
+                    artifact.kind,
+                    _json_dumps(artifact.spec) if artifact.spec is not None else None,
+                    artifact.spec_sha256,
+                    int(artifact.demo),
                     artifact.id,
                 ),
             )
         return self.get_artifact(artifact.id)
+
+    # -- Strategy library gate state ----------------------------------------
+
+    @_synchronized
+    def _update_gate_columns(
+        self,
+        strategy_id: str,
+        *,
+        readiness: str | _Keep = _KEEP,
+        evaluator_verdict: dict | None | _Keep = _KEEP,
+        previous_verdict: dict | None | _Keep = _KEEP,
+        validation_status: ValidationStatus | str | _Keep = _KEEP,
+        expected_version: str | None = None,
+        expected_spec_sha256: str | None = None,
+    ) -> int:
+        """Write only the gate columns the caller explicitly passes.
+
+        Two independent state machines share the row. ``validation_status`` is
+        SDM model-risk governance; ``readiness`` is the scheduling gate that
+        decides whether a strategy may be attached to a schedule. A passing
+        gate synchronises ``VALIDATED`` (never ``APPROVED`` — approval stays
+        with SDM) and a failing gate sets ``REJECTED``; scheduling reads only
+        ``readiness``.
+
+        Every column argument defaults to ``_KEEP``, so a caller that flips
+        one column leaves the others untouched instead of nulling them. The
+        whole write is one conditional UPDATE, so a verdict and the readiness
+        it justifies cannot land in separate statements.
+
+        Args:
+            strategy_id: Artifact id to update.
+            readiness: New scheduling readiness, or ``_KEEP``.
+            evaluator_verdict: Verdict dict stored as JSON, ``None`` to clear
+                it, or ``_KEEP``.
+            previous_verdict: Displaced verdict dict, ``None`` to clear, or
+                ``_KEEP``.
+            validation_status: SDM status to synchronise, or ``_KEEP``.
+            expected_version: When given, require ``artifact_version`` to
+                equal this value.
+            expected_spec_sha256: When given, require ``spec_sha256`` to equal
+                this value.
+
+        Returns:
+            The UPDATE rowcount: 1 when the row matched and was written, 0
+            when the id does not exist or a CAS guard failed. A stale 0 is
+            the facade's ``StaleVerdictError``; this layer only counts rows.
+
+        Raises:
+            ValueError: if *readiness* is outside the closed set, or if a
+                gate write attempts to set ``APPROVED``.
+        """
+        assignments: list[str] = []
+        params: list[object] = []
+
+        if readiness is not _KEEP:
+            validate_artifact_readiness(readiness)
+            assignments.append("readiness = ?")
+            params.append(readiness)
+        if evaluator_verdict is not _KEEP:
+            assignments.append("evaluator_verdict = ?")
+            params.append(
+                _json_dumps(evaluator_verdict) if evaluator_verdict is not None else None
+            )
+        if previous_verdict is not _KEEP:
+            assignments.append("previous_verdict = ?")
+            params.append(
+                _json_dumps(previous_verdict) if previous_verdict is not None else None
+            )
+        if validation_status is not _KEEP:
+            status = ValidationStatus(validation_status)
+            if status is ValidationStatus.APPROVED:
+                raise ValueError(
+                    "gate writes may set VALIDATED or REJECTED but never APPROVED; "
+                    "approval belongs to the SDM governance path"
+                )
+            assignments.append("validation_status = ?")
+            params.append(status.value)
+
+        assignments.append("updated_at = ?")
+        params.append(_now_iso())
+
+        where = ["id = ?"]
+        params.append(strategy_id)
+        # A `= NULL` predicate never matches in SQLite, so an absent expected
+        # value omits its guard rather than making the UPDATE impossible.
+        if expected_version is not None:
+            where.append("artifact_version = ?")
+            params.append(expected_version)
+        if expected_spec_sha256 is not None:
+            where.append("spec_sha256 = ?")
+            params.append(expected_spec_sha256)
+
+        with self._write_transaction():
+            cursor = self._conn.execute(
+                f"UPDATE artifacts SET {', '.join(assignments)} "
+                f"WHERE {' AND '.join(where)}",
+                params,
+            )
+            return cursor.rowcount
+
+    @_synchronized
+    def _update_spec_and_version(
+        self,
+        strategy_id: str,
+        *,
+        spec_json: str,
+        artifact_version: str,
+        spec_sha256: str,
+        readiness: str,
+        evaluator_verdict: dict | None,
+        previous_verdict: dict | None,
+        expected_version: str,
+        expected_spec_sha256: str,
+    ) -> int:
+        """Install a new spec version in one compare-and-swap UPDATE.
+
+        Editing a strategy must invalidate the verdict issued against the old
+        bytes in the same statement that installs the new ones: a separate
+        clearing write would leave a window where the new version is schedulable
+        on the old verdict. ``spec_sha256 IS ?`` is NULL-safe; both guards are
+        required (not optional) because this method exists only for the
+        versioned edit path, and a legacy row without comparable state is
+        handled by the facade instead.
+
+        Args:
+            strategy_id: Artifact id to update.
+            spec_json: Canonical JSON text of the new spec.
+            artifact_version: New version string to store.
+            spec_sha256: sha256 of exactly ``spec_json``.
+            readiness: New scheduling readiness.
+            evaluator_verdict: Verdict to store; an edit always clears it.
+            previous_verdict: The current verdict this edit displaces.
+            expected_version: Require this ``artifact_version``.
+            expected_spec_sha256: Require this ``spec_sha256``.
+
+        Returns:
+            The UPDATE rowcount: 1 when written, 0 when the row is missing or
+            either guard failed.
+
+        Raises:
+            ValueError: if *readiness* is outside the closed set.
+        """
+        validate_artifact_readiness(readiness)
+        with self._write_transaction():
+            cursor = self._conn.execute(
+                """
+                UPDATE artifacts
+                SET spec = ?, artifact_version = ?, spec_sha256 = ?,
+                    readiness = ?, evaluator_verdict = ?, previous_verdict = ?,
+                    validation_status = ?, updated_at = ?
+                WHERE id = ? AND artifact_version = ? AND spec_sha256 IS ?
+                """,
+                (
+                    spec_json,
+                    artifact_version,
+                    spec_sha256,
+                    readiness,
+                    _json_dumps(evaluator_verdict)
+                    if evaluator_verdict is not None
+                    else None,
+                    _json_dumps(previous_verdict)
+                    if previous_verdict is not None
+                    else None,
+                    # A new version has never been validated; the gate records
+                    # VALIDATED/REJECTED for it later.
+                    ValidationStatus.UNVALIDATED.value,
+                    _now_iso(),
+                    strategy_id,
+                    expected_version,
+                    expected_spec_sha256,
+                ),
+            )
+            return cursor.rowcount
 
     # -- Bench history ------------------------------------------------------
 

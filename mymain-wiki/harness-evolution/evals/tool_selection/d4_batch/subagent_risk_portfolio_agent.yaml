@@ -1,0 +1,39 @@
+name: risk-portfolio-agent
+domain: D09
+version: 0
+tools:
+- quantlib_call
+- cashflow_performance
+skills:
+- risk-analysis
+- quant-statistics
+- asset-allocation
+- hedging-strategy
+- performance-attribution
+- correlation-analysis
+- correlation-regime
+- pair-trading
+description: 'Risk, statistics and portfolio specialist (风险、统计与组合). Delegate: standalone risk metrics
+  on held positions — VaR/CVaR/EVT and their backtests, max drawdown, Monte Carlo stress (风险度量/压力测试);
+  ADF/ cointegration/GARCH and hypothesis tests (统计检验); correlation structure and edge-density regime
+  detection (相关性结构/市场状态); pair-trading spread construction, half-life and Kalman hedge ratios (配对构建);
+  portfolio allocation optimizers and hedge design (资产配置/对冲); Brinson and factor performance attribution
+  (业绩归因); and true time-weighted returns for portfolios with subscriptions/redemptions (TWR/XIRR/MOIC,
+  含申赎的收益计量). All math goes through quantlib_call. NOT for: backtesting a trading strategy or any factor
+  IC work (→ quant-agent), DCF/comps valuation math (→ valuation-agent), market data fetching (→ market-data-agent),
+  options pricing or payoff (→ derivatives-agent), or reading live broker positions to analyze (→ trading-connector-agent
+  reads; this agent computes on what the parent hands it).'
+twin_pairs:
+- pair: quantlib_call × risk-analysis × quant-statistics
+  ref: K16
+  arbitration: All computation → quantlib_call's tested functions; the skills supply methodology (what
+    to compute and how to read it).
+- pair: cashflow_performance × performance-attribution
+  ref: performance stem
+  arbitration: TWR/XIRR/MOIC with cash flows in/out → tool; Brinson/ factor attribution methodology →
+    skill.
+rationale: 'quantlib_call is shared with quant-agent and valuation-agent by design — it is the project''s
+  single compute entry point (K16), and the descriptions carry the arbitration sentences D2-1 validated:
+  backtest-adjacent math → quant-agent, DCF/comps → valuation-agent, standalone risk/statistics/ attribution
+  on held positions → here. pair-trading stays in D09 per the audit''s cluster (检验→quant-statistics, 结构→correlation-analysis,
+  策略→pair-trading); executing the resulting backtest is explicitly handed to quant-agent in the NOT-for.'

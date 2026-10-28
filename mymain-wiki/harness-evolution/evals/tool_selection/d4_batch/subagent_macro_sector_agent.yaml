@@ -1,0 +1,36 @@
+name: macro-sector-agent
+domain: D11
+version: 0
+tools:
+- get_macro_series
+- get_sector_info
+skills:
+- macro-analysis
+- global-macro
+- geopolitical-risk
+- commodity-analysis
+- sector-rotation
+- regulatory-knowledge
+description: 'Macro, sector and regulation specialist (宏观、行业与监管). Delegate: China/single-market cycle
+  positioning and central-bank policy reading (国内宏观周期), global macro transmission — FX, capital flows,
+  rates (全球宏观/汇率), geopolitical crisis signal quantification (地缘危机), commodity supply-demand and pricing
+  frameworks (大宗商品), A-share sector/concept board membership and board rankings (板块归属/行业排名), industry
+  prosperity scoring and rotation (行业轮动), FRED macro series (CPI/失业率/联邦基金利率, key-gated), and trading-rule
+  / tax / regulatory knowledge (涨跌停/ST规则/跨境税务). NOT for: market-implied event probabilities — Polymarket
+  contracts (→ valuation-agent), company-level event analysis such as a specific stock''s ST risk (→ valuation-agent),
+  per-stock or northbound capital-flow data (→ market-data-agent), fund/ETF product analysis (→ funds-fi-agent),
+  or OHLCV (→ market-data-agent).'
+twin_pairs:
+- pair: get_sector_info × sector-rotation
+  ref: K19
+  arbitration: Board membership / today's board rankings → tool; rotation scoring and industry-chain framework
+    → skill.
+- pair: get_macro_series × macro-analysis × global-macro
+  ref: K9
+  arbitration: FRED series fetch (key-gated) → tool; China/single-market cycle positioning → macro-analysis;
+    cross-market FX/capital-flow transmission → global-macro.
+rationale: 'get_sector_info moved here from the §8.1 market-data draft: its ranking mode is the sector-rotation
+  data feed, and co-locating data with its framework removes the K19 ambiguity at the routing layer instead
+  of paying for an arbitration sentence forever. The two tools are both key-gated or mode-split (Q12/Q14),
+  so the description carries the gating note. The K9 macro split (domestic vs global) and K20 event- probability
+  boundary against valuation-agent are the two sentences this candidate''s routing lives or dies on.'

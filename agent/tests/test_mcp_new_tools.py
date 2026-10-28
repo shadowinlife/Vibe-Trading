@@ -36,7 +36,9 @@ MIRRORED_TOOL_NAMES = (
 # profile subsequent READS use, and refresh_strategy_evidence (Phase 2, plan
 # D13: rebuilds ONLY the disposable facade-owned evidence cache from local run
 # artifacts — never Alpha Zoo/SDM sources of truth, no network, no credentials)
-# — not broker order flow.
+# — not broker order flow. The strategy-library trio writes only library rows
+# and schedule proposals; schedule_strategy never creates a job by itself and
+# its envelope never carries the human confirmation token.
 #
 # This snapshot is the regression gate: adding an MCP tool that mutates
 # anything outside this list must fail the suite loudly.
@@ -52,6 +54,9 @@ KNOWN_MUTATING_MCP_TOOLS = frozenset(
         "trading_select_connection",
         "update_research_goal_status",
         "write_file",
+        "promote_strategy",
+        "evaluate_strategy",
+        "schedule_strategy",
     }
 )
 

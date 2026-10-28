@@ -306,6 +306,19 @@ class DataConfig(_EnvBase):
     market_data_order_forex: str = Field(alias="MARKET_DATA_ORDER_FOREX", default="")
     market_data_order_index: str = Field(alias="MARKET_DATA_ORDER_INDEX", default="")
 
+    # ClickHouse (local A-share data warehouse)
+    clickhouse_host: str = Field(alias="CLICKHOUSE_HOST", default="172.24.165.51")
+    clickhouse_port: int = Field(alias="CLICKHOUSE_PORT", default=8123)
+    clickhouse_user: str = Field(alias="CLICKHOUSE_USER", default="default")
+    clickhouse_password: str = Field(alias="CLICKHOUSE_PASSWORD", default="")
+    clickhouse_database: str = Field(alias="CLICKHOUSE_DATABASE", default="ashare")
+    # Dedicated read-only ``llm_role`` credentials for the constrained
+    # ``ch_query`` exploration tool (mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md Phase 2).
+    # Empty defaults are intentional: when unset, ``ch_query`` must fail with
+    # an actionable error instead of falling back to the default user.
+    clickhouse_llm_user: str = Field(alias="CLICKHOUSE_LLM_USER", default="")
+    clickhouse_llm_password: str = Field(alias="CLICKHOUSE_LLM_PASSWORD", default="")
+
 
 # ---------------------------------------------------------------------------
 # OCR
@@ -602,6 +615,8 @@ _PRESET_FLAGS: dict[str, dict[str, bool]] = {
         "links_enabled": False,
         "compression_enabled": False,
         "fts_index_enabled": False,
+        "reflections_enabled": False,
+        "mcp_tools_enabled": False,
     },
     "on": {
         "quality_enabled": True,
@@ -611,6 +626,8 @@ _PRESET_FLAGS: dict[str, dict[str, bool]] = {
         "links_enabled": False,
         "compression_enabled": False,
         "fts_index_enabled": False,
+        "reflections_enabled": False,
+        "mcp_tools_enabled": False,
     },
     "full": {
         "quality_enabled": True,
@@ -620,6 +637,10 @@ _PRESET_FLAGS: dict[str, dict[str, bool]] = {
         "links_enabled": True,
         "compression_enabled": True,
         "fts_index_enabled": True,
+        "reflections_enabled": True,
+        # MCP tool exposure is never implied by a preset; it must be
+        # switched on explicitly via VT_MEMORY_MCP_TOOLS.
+        "mcp_tools_enabled": False,
     },
 }
 
@@ -632,6 +653,8 @@ _MEMORY_FLAG_ALIASES: dict[str, str] = {
     "links_enabled": "VT_MEMORY_LINKS",
     "compression_enabled": "VT_MEMORY_COMPRESSION",
     "fts_index_enabled": "VT_MEMORY_FTS_INDEX",
+    "reflections_enabled": "VT_MEMORY_REFLECTIONS",
+    "mcp_tools_enabled": "VT_MEMORY_MCP_TOOLS",
 }
 
 
@@ -644,6 +667,16 @@ class MemoryConfig(_EnvBase):
 
     # Preset: business-friendly one-liner
     preset: str = Field(default="off", alias="VT_MEMORY")
+
+    # Path override (not a feature flag: never touched by presets)
+    base_dir: str = Field(
+        default="",
+        alias="VT_MEMORY_BASE_DIR",
+        description=(
+            "Override the memory base directory. Empty keeps the runtime-root "
+            "default (<VIBE_TRADING_HOME or ~/.vibe-trading>/memory)."
+        ),
+    )
 
     # Tier 1 flags
     quality_enabled: EnvBool = Field(
@@ -689,6 +722,18 @@ class MemoryConfig(_EnvBase):
     consolidation_enabled: EnvBool = Field(
         default=False, alias="VT_MEMORY_CONSOLIDATION",
         description="Enable the daily memory-consolidation system job",
+    )
+
+    # T1b / T4 flags
+    reflections_enabled: EnvBool = Field(
+        default=False,
+        alias="VT_MEMORY_REFLECTIONS",
+        description="Enable reflection lessons storage and retrieval",
+    )
+    mcp_tools_enabled: EnvBool = Field(
+        default=False,
+        alias="VT_MEMORY_MCP_TOOLS",
+        description="Enable memory MCP tool registration for external callers",
     )
 
     @model_validator(mode="before")

@@ -44,6 +44,7 @@ VALID_SOURCES: set[str] = {
     "baostock",
     "tencent",
     "mootdx",
+    "clickhouse",
     "ccxt",
     "futu",
     "eastmoney",
@@ -107,6 +108,7 @@ def _ensure_registered() -> None:
             "backtest.loaders.baostock_loader",
             "backtest.loaders.tencent_loader",
             "backtest.loaders.mootdx_loader",
+            "backtest.loaders.clickhouse",
             "backtest.loaders.ccxt_loader",
             "backtest.loaders.futu",
             "backtest.loaders.eastmoney_loader",
@@ -179,6 +181,7 @@ def is_no_network_fallback_source(source: str) -> bool:
 # REST fallbacks placed deeper in the chain.
 FALLBACK_CHAINS: dict[str, list[str]] = {
     "a_share": [
+        "clickhouse",
         "tencent",
         # mootdx retired from the default chain 2026-10-08: the TDX quote
         # servers stopped answering the client protocol mootdx/tdxpy speak

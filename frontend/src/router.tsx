@@ -19,6 +19,12 @@ const Runtime = lazy(() =>
 const Scheduled = lazy(() =>
   import("@/pages/Scheduled").then((m) => ({ default: m.Scheduled })),
 );
+const StrategyLibrary = lazy(() =>
+  import("@/pages/StrategyLibrary").then((m) => ({ default: m.StrategyLibrary })),
+);
+const StrategySchedules = lazy(() =>
+  import("@/pages/StrategySchedules").then((m) => ({ default: m.StrategySchedules })),
+);
 const Reports = lazy(() =>
   import("@/pages/Reports").then((m) => ({ default: m.Reports })),
 );
@@ -65,6 +71,8 @@ export const router = createBrowserRouter([
       { path: "/pixel-office", element: wrap(PixelOffice) },
       { path: "/runtime", element: wrap(Runtime) },
       { path: "/scheduled", element: wrap(Scheduled) },
+      { path: "/strategies", element: wrap(StrategyLibrary) },
+      { path: "/strategy-schedules", element: wrap(StrategySchedules) },
       { path: "/reports", element: wrap(Reports) },
       { path: "/paper-trading", element: wrap(PaperTrading) },
       { path: "/portfolio", element: wrap(Portfolio) },

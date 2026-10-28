@@ -1,0 +1,124 @@
+version: 1
+source: queries.yaml domain filter + queries_d_expansion.yaml
+entries:
+- id: D19-001
+  query: 搜一下美联储最新的政策声明
+  expected:
+    kind: tool
+    name: web_search
+  domain: D19
+  negatives:
+  - read_url
+  arbitration_ref: Q8
+- id: D19-002
+  query: Read this web page and turn it into clean markdown
+  expected:
+    kind: tool
+    name: read_url
+  domain: D19
+  negatives:
+  - web_search
+  - web-reader
+  arbitration_ref: K23
+- id: D19-003
+  query: 读一下这份扫描版PDF研报
+  expected:
+    kind: tool
+    name: read_document
+  domain: D19
+  negatives:
+  - doc-reader
+  arbitration_ref: K24
+- id: D19-004
+  query: Extract text from this PDF, it has scanned pages
+  expected:
+    kind: tool
+    name: read_document
+  domain: D19
+  negatives:
+  - doc-reader
+  arbitration_ref: K24
+- id: D19-005
+  query: 网页文章怎么转成Markdown来读
+  expected:
+    kind: skill
+    name: web-reader
+  domain: D19
+  negatives:
+  - read_url
+  arbitration_ref: K23
+- id: D19-006
+  query: Which tool reads documents and how do I use it?
+  expected:
+    kind: skill
+    name: doc-reader
+  domain: D19
+  negatives:
+  - read_document
+  arbitration_ref: K24
+- id: D19-101
+  query: 这份扫描版PDF帮我提取里面的文字
+  expected:
+    kind: tool
+    name: read_document
+  domain: D19
+- id: D19-102
+  query: 把这个网页抓下来整理成Markdown给我
+  expected:
+    kind: tool
+    name: read_url
+  domain: D19
+- id: D19-103
+  query: 搜一下最近央行降准的相关新闻
+  expected:
+    kind: tool
+    name: web_search
+  domain: D19
+  negatives:
+  - get_stock_news
+- id: D19-104
+  query: 读一下这个Excel文件里的内容
+  expected:
+    kind: tool
+    name: read_document
+  domain: D19
+- id: D19-105
+  query: Read this DOCX proposal and extract the key terms
+  expected:
+    kind: tool
+    name: read_document
+  domain: D19
+- id: D19-106
+  query: 网页抓取老是失败，有没有能把网页转成Markdown的阅读器
+  expected:
+    kind: skill
+    name: web-reader
+  domain: D19
+  negatives:
+  - read_url
+- id: D19-107
+  query: 帮我找一下央行最新货币政策执行报告的原文
+  expected:
+    kind: tool
+    name: web_search
+  domain: D19
+- id: D19-108
+  query: 这份PPT里的图表说明文字提取出来
+  expected:
+    kind: tool
+    name: read_document
+  domain: D19
+- id: D19-109
+  query: 怎么用工具读一份带扫描页的PDF年报
+  expected:
+    kind: skill
+    name: doc-reader
+  domain: D19
+  negatives:
+  - read_document
+- id: D19-110
+  query: 把这篇财经专栏文章的网页整理成干净的文本
+  expected:
+    kind: tool
+    name: read_url
+  domain: D19

@@ -1,0 +1,439 @@
+---
+title: MYMAIN 发布记录（Release Log）
+description: mymain 分支每次对齐/发布的 changelog——上游基线、差异总量、核心迭代、验证基线。发布或追溯历史版本时读。触发词：发布、release、tag、release/mymain、对齐。
+type: reference
+status: active
+created: 2026-08-11
+updated: 2026-10-27
+tags: [branch, release, changelog]
+related: [MYMAIN_DIVERGENCE.md]
+---
+
+# MYMAIN 发布记录（Release Log）
+
+> `mymain` 是开源社区 [HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) `main` 的独立部署分支
+> （分支定位与开发约定见 `MYMAIN_DIVERGENCE.md` 与根目录 `AGENTS.md` §8）。
+>
+> 本文档是 `mymain` 的**发布 changelog**：每次对齐 / 修正后的发布都会在这里记录
+> 该版本相对上游的**核心差异**与本次发布的**核心迭代**。
+
+## Tag 约定
+
+- 发布 tag：**`release/mymain`** —— 移动 tag，始终指向 `mymain` 上最新一次发布 commit。
+- 更新流程（每次发布完成后）：
+
+  ```bash
+  git tag -f release/mymain <release-commit>
+  git push fork mymain
+  git push -f fork release/mymain
+  ```
+
+- 历史不丢失：下表逐条永久记录每次发布的 commit SHA、上游基线与核心变更；
+  移动 tag 前，先把 `git rev-parse release/mymain` 的 SHA 回填进上一条记录的
+  「发布 commit」字段，即可随时 `git diff <sha>` 追溯任意历史版本。
+
+## 发布记录（新 → 旧）
+
+---
+
+### 对齐记录 · 2026-10-27 — 基线：上游 `3cbb167e`（+119 commit；未发布、tag 未移动）
+
+- **发布 commit**：不适用——本轮只做上游对齐与推送，未移动 `release/mymain`（tag 仍为 `0104bb38`，2026-10-17 发布）
+- **上游基线**：`3cbb167e`（自 `11cff3f3` 前进 **119 commit / 72 非 merge**：paper-trade/quantlib/factors/loaders/backtest 正确性批次、memory frontmatter UTC、session/swarm/scheduled 修复、十月 23/25 新闻等）
+- **差异总量**：706 个文件、+139441/−250 行（`git diff origin/main mymain --shortstat`）
+- **对齐方式**：一次性直接 merge（`78b1e9fd`；回退点 `backup/mymain-20261027` = `72c95db7`），普通 fast-forward 推送，非 force-push；27 个路径重叠、真冲突仅 2 处（`build_registry` 与 `_run_attempt` 的 `tool_allowlist` × `cancel_event`，双参数保留）
+- **核心变更**：上游全量吸收；F1–F5/F7/F9 逐项核查未被取代（上游 clickhouse/reflections/memory_guard/strategy_library/OpencodeAgent 文件数均为 0；上游 82 个 MCP 工具与 113 个 agent tools 全部保留）；本地仅多 7 个 MCP（3 `ch_*` + 3 `strategy_*` + 1 `scheduled_research`）与 8 个 agent tools（3 `ch_*` + `get_valuation` + 4 策略工具）。**计数校正**：MCP **89/94**、agent tools **121**（旧台账 86/91、117 为 F9 合入前口径）
+- **验证基线**：memory **353/3**、ClickHouse **144/11**、schema **53/1 + exit 0**、README/manifest **122**、env gate **exit 0**、routing **184**、F9 策略 **813**、session/allowlist/swarm **148+19**、backtest/run_card **121**、render **31**、MCP 冒烟 **89/94**、memory 往返 + 回测反思冒烟 OK；**全量 21142 passed / 36 failed / 168 skipped**（36 = 17 上游/环境既有 + 19 本地 D5 既有，零回归）
+- **推送**：`fork/mymain` fast-forward（非 force-push）；无镜像交付，`release/mymain` tag 不移动
+
+---
+
+### release/mymain · 2026-10-17 — 基线：上游 `596fcf3d`（上游历史重写后 296 commit）+ 镜像 v3.7.0-mymain
+
+- **发布 commit**：`0104bb38`（`release/mymain` tag 当前所指；2026-10-17 发布记录 commit）
+- **上游基线**：`596fcf3d`（**上游 main 遭 force-push 历史重写**：旧基线 `b1f6ce71` 及其下 ~35 个旧上游 commit 不再可达，同批 PR 以不同 SHA 重制；本轮覆盖重写等价点后 **296** 个上游 commit：BrazilEquity 第 11 引擎 + b3_cotahist 源、get_fund_nav、Gildata 研究三件套、adapt_strategy、claude-cli provider、波斯语 locale、十月正确性批次 #1779-#1891 等）
+- **差异总量**：602 个文件、+113,484/−171 行（复核命令 `git diff origin/main release/mymain --shortstat`）
+- **对齐方式**：**双轨（merge 目标树 + rebase --onto 重放）**——tmp 分支 merge 一次解 28 文件冲突得目标树；`git rebase --onto origin/main b1f6ce71` 重放 18 个本地 commit；最终树与目标树逐字节一致（唯一例外：上游重写时删除的 `docs/sessions/2026-10-08_analysis_reliability.md` 随上游丢弃）；「上游 main 为祖先」不变量修复；回退点 `backup/mymain-pre-align-20261017`。过程事故一例（冲突标记混入 F5 commit → abort 重做 + 逐步强制校验），详见 DIVERGENCE §5 2026-10-17 条
+- **发布主题**：上游历史重写后的完整对齐 + 计数面刷新（MCP **85/90**、agent tools **116**、sources **30**、engines 11（SKILL 口径）、alphas 478）+ 全量套件零回归确认 + 上游 mootdx 测试隔离缺陷登记（DIVERGENCE §2.4）+ 本地既有分歧 13 项登记为债务 D5
+
+#### 验证基线（legonanobot / macOS arm64 / Python 3.12）
+
+- 聚焦套件全绿：memory **375/2**、ClickHouse **137/11**、CH schema 门禁 **54 + exit 0**、README/manifest pin **122**、env gate **exit 0**、routing 组合 **184**、FE-1+wrapper **98**、backtest/run_card **66/5**、OpencodeAgent render **30**、MCP 计数冒烟 **85/90**
+- **全量套件**：18865 passed / 30 failed / 166 skipped（28m38s）——30 失败 = 17 上游/环境既有（origin/main 纯净树复现）+ 13 本地既有分歧（backup 分支复现，债务 D5）；**本轮零回归**
+
+#### 镜像交付（v3.7.0-mymain，本地构建；推送待用户指令）
+
+`opencode-serve:v3.7.0-mymain`（linux/amd64 跨架构构建，**3.99GB**，31 层，image ID `sha256:a4daaf0f262c…`；base 沿用 `opencode-serve-base:latest` = 1.19.0 pin，未重建；VT vendor 自本轮对齐树 `git archive`）。**冒烟三段全 PASS**（脚本入库 `OpencodeAgent/tests/smoke-v370.sh`）：Stage1 = render / TIMEOUT(600000) / TOOLOUTPUT(256KB·8000行) / DENY 三组 / PLUGIN_PIN_OK(5.1.30) / OPENCODE_VERSION_OK(1.19.0) / OMO_CACHE_OK / **COUNT 90**（新上游工具 get_fund_nav・adapt_strategy 与本地 ch_query・scheduled_research 在场断言）/ AGENTS 85·90 / FUNC 合成 run 实测（FE-1 契约保持）；Stage1b = LLM 代理渲染双模式（DIRECT_OK + PROXY_OK，契约 A.7 保持）；Stage2 = 真 entrypoint **HEALTH_OK ~10s**。配套文档同步：AGENTS.md / IMAGE-MANUAL / DEPLOY-GUIDE 计数 80/85→85/90、基线 b1f6ce71→596fcf3d。**registry 交付（同日，用户指令推送）**：主仓 `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode:v3.7.0-mymain` + 副本仓 `registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode:v3.7.0-mymain`，双仓同 digest `sha256:266278dea36bdb9e38f625e3a2011812b7b2083b24ee5d1663e389667a3afc0e`，远端 manifest inspect 验证通过（31 层）。
+
+---
+
+### 镜像交付：v3.6.0-mymain · 2026-10-13 — 版本升级交付（无上游对齐，release tag 不移动）
+
+- **交付 commit**：`8b0674a4`（opencode-ai **1.18.18→1.19.0**、oh-my-openagent **5.1.0→5.1.30**；VT 基线不变，仍为 2026-10-10 对齐面 `b1f6ce71`）
+- **镜像**：`opencode-serve:v3.6.0-mymain`（linux/amd64，**3.99GB**，31 层，image ID `sha256:6dcdfc76…`）；base 重建 = `opencode-serve-base:latest`（`sha256:5bcedfea…`，2.98GB；旧 base 本地备份 tag `pre-1.19.0-backup`）
+- **升级 SOP 执行**：opencode pin = 改 Dockerfile.base 重建 base+app（base pip 层 3293s、app VT pip 层 1914s；pyjwt 2.15.1 本轮 aliyun 直装成功，v3.5.0 的部分同步事故未复现）；OMO pin = Dockerfile ARG + tmpl + tui.json + entrypoint fallback **四处逐字一致** + test_config_render pin（**30 passed**）
+- **冒烟三段全 PASS**（脚本入库 `OpencodeAgent/tests/smoke-v360.sh`，新增三项版本实证检查）：**Stage1** = render / TIMEOUT(600000) / TOOLOUTPUT(256KB·8000行) / DENY 三组 / **PLUGIN_PIN_OK(5.1.30)** / **OPENCODE_VERSION_OK(1.19.0)** / **OMO_CACHE_OK** / COUNT 85 / AGENTS 80·85 / FUNC 合成 run 实测（FE-1 契约保持）；**Stage1b** = LLM 代理渲染双模式（DIRECT_OK + PROXY_OK，契约 A.7 保持）；**Stage2** = 真 entrypoint **HEALTH_OK ~10s**（**1.19.0 启动实证接受 timeout/tool_output 配置键**，OMO 5.1.30 预烘焙缓存在位）
+- **registry 交付（2026-10-13 仓库切换 + 镜像副本）**：交付仓库统一切换至 **`registry.cn-huhehaote.aliyuncs.com/gm_1/opencode`**——旧 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com` 在内网 DNS（29.29.29.29）与公网 DNS（223.5.5.5 / 8.8.8.8）均 **NXDOMAIN**（对照域解析正常，疑似实例公网端点关闭；按 §3.3 纪律零重试后经用户裁决切仓）。app 已推送（digest `sha256:0a7591a9f87f6d80e0a170a79f8ba4c1c2f22314e5f70f484fc68be6a75d33e7`）+ base 已推送 `…/gm_1/opencode-base:latest`（digest `sha256:23d2e5c7b4760bf43565f9664a74f0536de97a11c56f837d6917cc13fcda0d67`，层跨仓挂载复用）；镜像副本 **`registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode:v3.6.0-mymain`** 同步推送（同 digest `sha256:0a7591a9…`）；三处远端 manifest inspect 验证通过。`.env` IMAGE_REGISTRY、build.sh / ecs-build.sh 示例串、DIVERGENCE §3.3 已同步切换
+- **遗留**：① OMO 预烘焙期 EBADENGINE 警告（Node 20 base vs 部分传递依赖期望 Node≥22）——仅 npm 警告、OMO 本体无 engines 约束、Stage2 启动实证通过，生产首启留意插件行为；② IMAGE-MANUAL §6.5 的 Truncate/超时语义按 1.18.18 源码核实，1.19.0 未逐行复核（启动接受性已实证）；③ `.env` 的 IMAGE_REGISTRY_USER/PASSWORD 仍为旧 spark 仓库凭据（build.sh 不消费该两项，推送走 docker login 既有会话），如需清理请人工处理
+
+---
+
+### release/mymain · 2026-10-10 — 基线：上游 `b1f6ce71`（v0.1.16 后开发段）
+
+- **发布 commit**：`release/mymain` tag 所指 commit（即本条发布记录 commit）
+- **上游基线**：`b1f6ce71`（本轮对齐覆盖 `9a27a6e7` 之后全部 **253** 个上游 commit：十三 PR 正确性批次、causal option pricing / channel refresh / market routing 修复、mootdx 退役 #1730、channel 热更新 #1737/#1738、KIS SOR / grounding / PDF 加密等）
+- **差异总量**：599 个文件、+112,924/−179 行（代码面；复核命令 `git diff origin/main release/mymain --shortstat`，含 wiki 文档）
+- **对齐方式**：**merge + carve**（上轮同款：temp 分支一次解 20 文件冲突得目标树 → 从 origin/main 逐 feature 切 **9 个干净 commit**（F1/F2/F3/F4/F5/scheduled_research/FE-1 delta/F7/wiki）→ 与目标树**逐字节一致**校验通过；回退点 `backup/mymain-pre-rebase-20261010`）
+- **发布主题**：**FE-1 R1/R2 上游合入销账调和**（#1646/#1647，2026-10-04 merged）+ **CH 北向单位契约修正**（#1484 百万 CNY）+ 上游 253 commit 全量对齐
+
+#### 核心变更
+
+1. **FE-1 上游机制优先调和（队列⑧销账）**：`backtest_summary.py` / `run_artifact_tool.py` / `backtest_tool.py` 切换上游 manifest 驱动版（含 `_contained` 路径收容、structured_metrics/validation 字段、`_serialize_result` 预算收缩）；本地仅存 R5' 增量——progress.json sidecar（writer + runner 集成）+ MCP backtest 心跳 wrapper + `progress` 别名超集（sidecar 运行中可变，与 run_card 同类走别名层而非 sha-pinned manifest）。上游 pin `"progress" not in description` 本地翻转为 `in`（带分歧标记注释）。
+2. **CH 北向单位修正（数据正确性）**：P1.4「万元」契约被上游 #1484 推翻（HKEX 官方统计**逐位**交叉验证 tushare 原生=百万元；P1.4 把换手时代值 375048.34 误读为净额 37.5 亿，实为 3750 亿成交额）。修正 `clickhouse_units` / `clickhouse_fallbacks`（输出对齐上游信封：CNY million + note + 2024-08-19 边界 turnover_* 字段）/ comments.yaml 六列 / 三个测试文件（双时代覆盖）。
+3. **mootdx 退役随上游（#1729/#1730）**：A 股链收敛为八源排列（clickhouse 领先），三处测试 fixture 同步；northbound_tool 上游 dead-feed 短路（#1481）与本地 CH-first 块共存。
+4. **继承上游**：南向工具 `get_southbound_flow`（本地分支 PR #1486 合入上游后回继承）、channel 热更新/健康面（#1737/#1738）、read_run_artifact manifest 机制、options/validation/cache 等十三 PR 正确性批次。
+
+#### 计数基线
+
+MCP **OFF=80 / ON=85**（上游基数 76 = 74 + read_run_artifact + 本窗口上游新增；+ 3 ch_* + 1 scheduled_research + 5 memory_*）、skills **91**、数据源 **29**、引擎 **10**、agent tools **113**（上游 109 + 3 ch_* + 1 get_valuation）、README **七份同步**（pin 122）。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件 | 367 passed / 2 skipped（+34 上游新增） |
+| ClickHouse 套件 | 137 passed / 11 skipped（含 #1484 新契约测试） |
+| schema 门禁 + comments gate | 54 passed + exit 0 |
+| README/manifest 计数门禁 | 122 passed |
+| env-var AST 门禁 | exit 0（4 WARN 均上游 llm.py） |
+| FE-1 + 合并面聚焦（10 文件） | 263 passed |
+| MCP 运行时计数 | OFF=80 / ON=85 |
+| 提交规范 | 单一作者 + 9/9 DCO + 零 AI trailer |
+| carve 树校验 | `git diff temp mymain-aligned` = 0 行（逐字节一致） |
+
+#### 镜像交付（v3.5.0-mymain，同日完成）
+
+`opencode-serve:v3.5.0-mymain`（linux/amd64，**4.06GB**，digest `sha256:4c801b85df3c4b1c553bc05ccb3eedf0a95c041fb8085207cd286fb893c5ea01`）已推送 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode`，远端 manifest inspect 验证通过。**构建事故一例**：首次构建 pip 层失败——aliyun 镜像对 pyjwt 2.15.1 处于部分同步状态（simple 索引带 sha256 声明 PEP 658 `.metadata` 但文件 404，pip 视为致命）→ Dockerfile 增加 tuna 回退（`49ed3b74`，ed0160dd 慢镜像加固的同类延伸）后二次构建成功（回退路径实际生效，全程 tuna 下载）。冒烟三段全 PASS（脚本入库 `OpencodeAgent/tests/smoke-v350.sh`，`c7f11ce5`）：**Stage1** = render / TIMEOUT(600000) / TOOLOUTPUT(256KB·8000行) / DENY 三组 / **COUNT 85** / AGENTS 80·85 / **FUNC 合成 run 实测**（上游 manifest 版 read_run_artifact：downsample 首末 pin + meta + 穿越拒绝 + summary 契约，amd64 运行时证明）；**Stage1b** = LLM 代理渲染双模式（DIRECT_OK + PROXY_OK，v3.4.0 契约 A.7 保持）；**Stage2** = 真 entrypoint **HEALTH_OK ~10s**（1.18.18 启动实证）。
+
+#### 遗留
+
+- 过程事故两条已记录 DIVERGENCE §5 2026-10-10 条（carve 脚本静默失败模式 + README 计数以门禁实测为准）。
+- CH 语义层南向列（ggt_ss/ggt_sz/south_money）已随同表修正为百万元标注，但暂无 CH 南向消费工具（上游 get_southbound_flow 走 Eastmoney）；如未来接 CH 南向，直接复用该契约。
+
+---
+
+### release/mymain · 2026-09-30 — 基线：上游 `9a27a6e7`（v0.1.16）
+
+- **发布 commit**：`8dd5aa97`（2026-10-10 移动 tag 前 `release/mymain` 所指。注：其间 v3.4.0-mymain 镜像交付（`afd1defb`，LLM 出口代理渲染支持 / Phase 9a / RM 仓 ADR-019）未移动 tag、未单列条目，交付细节见 OpencodeAgent 文档）
+- **上游基线**：`9a27a6e7`（v0.1.16；本轮对齐覆盖 `5e9ffd1a` 之后全部 88 个上游 commit，直接 merge，仅 2 处真冲突，见 DIVERGENCE §5 2026-09-30 对齐条）
+- **差异总量**：599 个文件、+113,971/−175 行（复核命令 `git diff origin/main release/mymain --shortstat`）
+- **对齐方式**：**直接 merge**（增量轮次，沿 2026-08-21 先例；回退点 `backup/mymain-20260930`）
+- **发布主题**：**FE-1 后端交付**（aliyun-acs-agent-service 前端需求 R1-R7 全量落地）+ 上游 v0.1.16 对齐（修正 FE 实测契约与镜像的血统错位 N4）
+
+#### 核心变更（FE-1 R1-R7 + 镜像侧加固）
+
+1. **R1/R4 — backtest 结构化 summary**：成功信封新增 `summary`（run_id/title/codes/日期区间/interval/initial_cash/**完整 metrics 对象**/≤50 点等步长 `equity_preview` 首末 pin/`artifact_paths` 含 ohlcv/warnings）；旧字段**逐字节不变**（golden 测试 pin）；`artifacts` 新增 `ohlcv` 键。新模块 `src/tools/backtest_summary.py`（best-effort，绝不为 summary 失败拖垮 run）。
+2. **R2 — `read_run_artifact` 工具（第 79 个 MCP 工具）**：`rows`（offset 分页 + `next_offset` 无损遍历）/`downsample`（等步长、首末 pin、一次喂图）/`meta` 三模式；白名单枚举 + safe_run_dir + resolve 后 containment 复查 + ohlcv CODE 校验**四层路径穿越防御**（含 symlink 逃逸测试）；~120K 字符字节预算**整记录收缩**（沿 `fit_records` 模式），永不产出破碎 JSON；错误信封 `{ok:false,error,hint}`。
+3. **R5' — 进度信号重定义三件套**：tmpl `timeout:600000`（拆 N1 60s 炸弹）+ backtest MCP **异步心跳 wrapper**（每 20s `ctx.report_progress`，opencode `resetTimeoutOnProgress` 保活；签名经安装包实证、无 token 安全 no-op）+ 引擎阶段 **`progress.json`**（原子写、best-effort、validate→signal→data_load→simulate→matching→metrics→artifacts→done/failed）。
+4. **R3 — 加法-only**：`get_market_data` 成功信封顶层 `schema_version:"1.0"` + `_provenance.<sym>.date_field`；**不改键名**（破坏性重命名方案经讨论环节否决：loader 输出层归上游所有、FE 四键兼容已实现、行业无统一标准）；错误信封逐字节透传。
+5. **R6 裁决 A**（不新增 publish_run，summary 为唯一回测卡片入口）+ **R7 文档化**（三层载荷上限 + 超时链写入 IMAGE-MANUAL §6.5，含 opencode-ai@1.18.18 版本对应）。
+6. **镜像侧加固**：tmpl `tool_output{max_bytes:262144,max_lines:8000}`（两键经 1.18.18 schema 源码实证 + render pin 测试）；`build.sh`/`ecs-build.sh` **移除 hardcode legacy registry 静默回退**（fail-fast + `.env` 定向提取 + base 派生 `${IMAGE_REGISTRY}-base`，dry-run 矩阵 5 测）；Dockerfile pip 配置 `timeout=60/retries=5`（首次构建 QEMU 下镜像源读超时失败后加固）。
+
+#### opencode 源码级新发现（pin 1.18.18；证据详见 DIVERGENCE §5 2026-09-30 对齐条附带实证）
+
+**N1** MCP callTool 默认 60s 超时（现网炸弹，本发布拆除）· **N2** progress notification 内容被 opencode 空回调丢弃（到不了前端 SSE，仅保活有用）· **N3** Truncate 对所有 MCP tool result 默认 2000 行/50KB 拦腰截断（本发布提升至 256KB/8000 行）· **N4** structuredContent 在 content 非空时被丢弃（VT 工具全部返回 JSON 字符串 = TextContent，天然免疫）。
+
+#### 计数基线
+
+MCP **OFF=79 / ON=84**（上游基数 74 + 3 ch_* + 1 scheduled_research + 5 memory_* + **1 read_run_artifact**）、skills **91**、数据源 **29**、引擎 **10**、agent tools **112**（+1 = RunArtifactTool 自动发现）、README **七份同步**（pin 122）。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| FE-1 新增单测（5 文件） | 81 passed |
+| 邻近回归（backtest/run_card/market_data/MCP/runner） | 222 passed |
+| 聚焦扫描（新测试+回归+MCP 面） | 389 passed |
+| agent loop/swarm/MCP 套件 | 223 passed |
+| memory 套件 | 333 passed / 3 skipped |
+| ClickHouse 套件 | 137 passed / 11 skipped |
+| schema 门禁 + comments gate | 53 passed / 1 skipped + exit 0 |
+| README/manifest 计数门禁 | 122 passed |
+| env-var AST 门禁 | exit 0 |
+| MCP 运行时计数 | OFF=79 / ON=84 |
+| OpencodeAgent config render | 26 passed（含新 timeout/tool_output pin） |
+| ruff（全部改动文件） | clean |
+| code-review skill 复核 | APPROVE（零阻塞） |
+| 提交规范 | 单一作者 + 8×DCO + 零 AI trailer |
+
+#### 镜像交付（同日完成）
+
+`opencode-serve:v3.3.0-mymain`（linux/amd64，4.04GB，31 层，digest `sha256:e780e299…`）已推送 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode`，远端 manifest inspect 验证通过。冒烟两段全 PASS（脚本入库 `OpencodeAgent/tests/smoke-v330.sh`）：**Stage1** = render OK / TIMEOUT(600000) / TOOLOUTPUT(256KB・8000行) / DENY 三组 / **COUNT 84 + read_run_artifact 在场** / AGENTS 79・84 / **FUNC 新工具合成 run 实测**（downsample 首末 pin + meta + 穿越拒绝 + summary 契约，amd64 运行时证明）；**Stage2** = 真 entrypoint 启动 **HEALTH_OK ~10s**（1.18.18 接受新配置键实证）。首次构建 pip 层失败（aliyun 镜像 QEMU 下读超时 @1085s）→ pip 配置加固后二次成功。
+
+#### FE 移交与遗留
+
+- FE 交付通报：aliyun-acs-agent-service `docs/iterations/fe-1-vt-backend-delivery.md`（N1-N4 事实、R5 验收口径修订、契约速查、前端行动项；该仓有用户 WIP，文件待用户提交）。
+- **E2E 必须以 v3.3.0 执行**：v3.2.0 上 >60s 回测必超时（N1），且 run_card 0.1 会触发前端 parseRunCard 降级（N4）。
+- 遗留：① flash 轻量档解析复核（v3.1/v3.2 遗留注意项仍有效）② R3 键名统一如 FE 强诉求可提上游 RFC ③ progress.json 带外消费通道（RM 直读推前端 SSE）归 FE-2 ④ R1/R2 为通用增量，列上游贡献候选（§2.3 队列待用户裁决）。
+
+---
+
+### release/mymain · 2026-09-27 — 基线：上游 `5e9ffd1a`
+
+- **发布 commit**：`8e93ea21`（2026-09-30 移动 tag 前 `release/mymain` 所指）
+- **上游基线**：`5e9ffd1a`（v0.1.15 后；本轮对齐覆盖 `f84b2977` 之后全部 371 个上游 commit。2026-09-13 restructure 与 engine-bridge 并回未曾发布，本条为覆盖它们的首次发布）
+- **差异总量**：588 个文件、+111,290/−168 行（复核命令 `git diff origin/main release/mymain --shortstat`；较上轮减少系 F8 引擎桥与多租户基础设施移出本分支）
+- **对齐方式**：**merge + carve**（临时分支一次性解 10 文件冲突 + 回退树手术后，从 `origin/main` 切出 8 个单一功能 commit：F1→F4 memory、F5 ClickHouse+语义层、scheduled_research wrapper、F7 OpencodeAgent、wiki docs；carve 树与手术树逐字节一致；回退点 `backup/mymain-pre-rebase-20260926`，仅本地，含旧明文 token，永不推送）
+- **路线裁决**：本分支定位为**纯粹 opencode + omo + VT MCP 集成**路线；前端兼容路线（F8 引擎桥/多租户）整体移出至 `mymain-engine-bridge` 分支独立演进，两线零兼容/零相互索引
+
+#### 核心变更（三项能力回退 + 安全修复 + 评审修复）
+
+1. **12 领域子代理层回退**（验证不够有效）：opencode 主循环直接集成 VT MCP 全工具面，被剥离的 13 个领域工具回归主面，治理清单回到仅 `trading_*` deny；OMO 内建子代理（explore/librarian/build/oracle）不属回退范围、保留。裁决证据链：specialist-arch iter3 终局（DIVERGENCE §5 2026-09-06 条）。
+2. **nano-search-mcp 回退**（验证不够有效）：整目录删除；通用检索由 VT `web_search`（上游 ddgs 多引擎 + cn.bing 回退）+ `read_url` 承接，A 股结构化检索（年报/公告/处罚/调研/政策）缺口立项 R2（DIVERGENCE §4.6）待未来替换引擎。
+3. **F8 引擎桥 + 多租户基础设施移出**：`agent/src/opencode_bridge/`（20 模块）、e2e/桥测试 14+2 模块、golden fixtures、state.py 工厂、api_server preflight、`OpencodeBridgeConfig`（5 env 变量）、tenant 容器栈（gateway/supervisord/router/provision）全部移出；scheduled_research MCP wrapper 作为纯 MCP 面增量保留（独立测试 8 passed，桥耦合测试随 F8 走）。
+4. **安全修复**：根 `AGENTS.md` 自 2026-08-11（`302d0518`）起携带的 tushare token 明文——已随 fork 公开历史暴露约 7 周——在新历史中消毒（改为指向 `agent/.env`）；**token 已于 2026-09-27 轮换完成**；新树/8 commit 全量 diff（116,838 行）/逐 commit 树三重扫描零命中（Oracle 复核）。
+5. **评审修复**（Oracle 对抗审查零 BLOCKING、六任务全 CLEAN；2 项 SHOULD-FIX 已修）：compose healthcheck 补 Basic Auth（设密码后不再永久 unhealthy）；删除死配置 `Dockerfile.amd64`（PyPI 安装与 entrypoint/tmpl 的 `/opt/vibe-trading` 路径矛盾，主 Dockerfile 已支持 `--platform` 跨架构）。
+6. **wiki 结构修复**：补建被 `.gitignore` 裸 `AGENTS.md` 规则吞掉的 `mymain-wiki/AGENTS.md` 路由入口（INDEX/README 自 2026-08-30 起一直引用）；f8 卡与 multitenant 台账转冻结墓碑。
+
+#### 计数基线
+
+MCP **OFF=78 / ON=83**（上游基数 74 实测不变 + 3 ch_* + 1 scheduled_research wrapper + 5 memory_*）、skills **91**（上游 90 + memory-lifecycle）、数据源 **29**（上游 28 含新 gildata + clickhouse）、引擎 **10**、agent tools **111**、README **七份**（上游新增 README_id.md，pin 测试现锚定全部七份）。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件（4 文件 + test_env_schema） | 316 passed / 3 skipped |
+| ClickHouse 套件（10 文件） | 137 passed / 11 skipped |
+| schema 门禁 + comments gate | 53 passed / 1 skipped + exit 0 |
+| README/manifest 计数门禁 | 115 passed |
+| env-var AST 门禁 | exit 0（3 WARN 来自上游 llm.py） |
+| MCP 运行时计数 | OFF=78 / ON=83 |
+| market_data/registry/source_order/settings_api | 150 passed |
+| agent_loop/backtest_tool/swarm/mcp_server 聚焦 | 436 passed |
+| OpencodeAgent config render | 24 passed |
+| scheduled_research wrapper | 8 passed |
+| black/ruff（15 个本地文件） | clean |
+| 提交规范 | 单一作者 shadowinlife + 8×DCO + 零 AI trailer |
+
+#### 遗留（用户门控）
+
+- ~~**镜像打包 + registry push**~~ **已完成（2026-09-27）**：`opencode-serve:v3.1.0-mymain`（linux/amd64，4.43GB，28 层，digest `sha256:216d0cb0…`）已推送 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode`（凭据在 `OpencodeAgent/.env`，IP 白名单内构建机直推成功）。冒烟（amd64 容器内真 entrypoint）：render OK、**VT MCP 83 tools**、deny 三组（trading_*/qveris_*/iwencai_search）、模型 qwen3.8-max + flash 轻量档（explore/quick/unspecified-low）、serve 监听 :4096。镜像血统：v2.x=子代理时代 → v3.0.0-tenant=引擎桥线 → **v3.1.0-mymain=纯 opencode 路线首个镜像**（vendor 自 mymain `92889e48`）。
+- **v3.2.0-mymain 零下载启动版已交付（2026-09-29）**：插件/models 目录构建期预烘焙 + 全链 pin（OMO 5.1.0 / opencode-ai 1.18.18）+ 遥测与目录刷新关闭 + entrypoint 后台预热 + app 层重复 opencode 安装去除。离线冷启动首次请求 **577ms**（v3.1.0 有网 3m48s / 离线挂死），镜像 **4.04GB**（-390MB）。已推送 `spark-daily-it-registry.cn-hangzhou.cr.aliyuncs.com/test/opencode`（30 层，digest `sha256:d34019a5…`）。细节与升级 SOP 见 DIVERGENCE §5 2026-09-29 条。
+
+---
+
+### release/mymain · 2026-08-30 — 基线：上游 `fb5013c2`
+
+- **发布 commit**：`dc92b16d`（原历史已随 2026-09-13 restructure 与 2026-09-27 对齐重写：该 SHA 经 `fork/backup/mymain-pre-rebase-20260831` 可达）
+- **上游基线**：`fb5013c2`（v0.1.14 后第 79 commit；本轮对齐覆盖 `80ffdda4` 之后的全部上游 commit）
+- **差异总量**：626 个文件、+118,306/−140 行（复核命令 `git diff origin/main release/mymain --shortstat`；较上轮大增系 `mymain-wiki/` 知识库归档入库）
+- **对齐方式**：**rebase**（34 个本地 commit 重放；回退点 `backup/mymain-2026-08-30`）
+
+#### 核心差异（F1–F7 不变，均未被上游取代）
+
+详见 `MYMAIN_DIVERGENCE.md` §2.1。本轮取代核查结论：上游 79 commit（UK LSE 股权支持、quantlib 微结构/Heston/copula/HRP 批次、live halt-sweep 持久化、backtest 数据窗/评估窗分离、connector onboarding 契约、stream retry 升级、前端 Studio 路由等）与本地七项能力**均无重叠**；本轮无 shadowinlife PR 合入（无分歧消除项）。分歧收敛审查：quantlib 微结构函数与 OpencodeAgent escape-top 不重叠（无重实现可去重）；上游 provenance `currency_conversion`/`quote_currency` 与本地 CH `extra_provenance` 互补共存。
+
+#### 核心迭代（本次发布完成的工作）
+
+1. **rebase 对齐**：34 个本地 commit 重放，1 处真冲突（reconciliation commit × 上游 uk_equity 测试集，解决为 clickhouse-first pin 与 uk_equity 并存）。
+2. **历史卫生**：2 个 edit 停点从源头清理上轮记录的已知瑕疵——F2 commit 移除误入树的 `.omo` 会话文件；Phase 2 commit 移除 SKILL.md / mcp_server.py 两处冲突标记文本。
+3. **计数基线不变**：MCP **OFF=77 / ON=82**、skills **91**、数据源 **26**、引擎 **10**。
+4. **文档同步**：`MYMAIN_DIVERGENCE.md` 更新至新基线（含本轮迭代笔记与分歧收敛审查）；回填上一条记录的发布 commit SHA。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件 | 309 passed / 3 skipped |
+| ClickHouse 套件（F5 + 语义层，10 文件） | 137 passed / 11 skipped |
+| ClickHouse schema 门禁 | 53 passed / 1 skipped + comments gate exit 0 |
+| README / SKILL 计数门禁（六 README 集合级校验） | 76 passed（上游新增 6 条 pin，含 quantlib badge 模块数双锚定） |
+| env-var AST 门禁 | exit 0（3 条 WARN 来自上游 llm.py） |
+| market_data / registry / source_order / settings_api | 133 passed |
+| OpencodeAgent config render | 33 passed |
+| MCP 工具计数 | OFF=77 / ON=82 |
+| 自维护链路冒烟 | memory_save/recall/status → ok；reflect 关闭=skipped、开启=ok 并落 lessons JSONL（`VT_MEMORY_BASE_DIR` 生效） |
+| 提交规范 | 单一作者 shadowinlife + DCO 签名 + 无 AI 归属行 |
+
+---
+
+### release/mymain · 2026-08-28 — 基线：上游 `80ffdda4`
+
+- **发布 commit**：`fc41c949`（2026-08-30 rebase 前 SHA；本轮对齐后该 commit 已被重写。注：08-28 发布时 tag 未随之移动，本次按发布时分支头回填）
+- **上游基线**：`80ffdda4`（v0.1.14 后第 117 commit；本轮对齐覆盖 `1907e47d` 之后的全部上游 commit）
+- **差异总量**：282 个文件、+49,714/−140 行（复核命令 `git diff origin/main release/mymain --shortstat`）
+- **对齐方式**：**rebase**（22 个本地 commit 重放；回退点 `backup/mymain-2026-08-28`）
+
+#### 核心差异（F1–F7 不变，均未被上游取代）
+
+详见 `MYMAIN_DIVERGENCE.md` §2.1。本轮取代核查结论：上游 117 commit（live 交易安全批次、`MARKET_DATA_ORDER_*` 数据源优先级覆盖、Portfolio 只读面板、Binance USD-M 对账、swarm 取消/重试等）与本地七项能力**均无重叠**；其中数据源优先级覆盖机制与 F5 **互补**——其 override 校验基于本地默认链快照，A 股 clickhouse-first 顺序自动成为被重排的基准。
+
+#### 核心迭代（本次发布完成的工作）
+
+1. **rebase 对齐**：4 处真冲突（F2/Phase 2 的六 README + SKILL.md + mcp_server.py 计数区；F5 的 SKILL.md 表述；Phase 1 的 market_data.py `_emit` 重构叠加），按「上游内容 + 本地增量」逐一解决。
+2. **merge 解法回收**：上轮 merge commit 承载的解法（clickhouse-first 测试 pin、README_es ch_* 清单、MCP 计数）经 reconciliation commit 重新落地；新增上游测试（`test_source_order_overrides.py` / `test_settings_api.py` / `test_market_data.py` 的 override 系列）适配本地链全排列约束。
+3. **计数基线**：MCP **OFF=77 / ON=82**、skills **91**、数据源 **26**（SKILL.md 口径）、引擎 **10**、agent 工具 **111**。
+4. **文档同步**：`MYMAIN_DIVERGENCE.md` 更新至新基线（含本轮迭代笔记）；回填上一条记录的发布 commit SHA。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件 | 309 passed / 3 skipped |
+| ClickHouse 套件（F5 + 语义层，10 文件） | 137 passed / 11 skipped |
+| ClickHouse schema 门禁 | 53 passed / 1 skipped + comments gate exit 0 |
+| README / SKILL 计数门禁（六 README 集合级校验） | 70 passed |
+| env-var AST 门禁 | exit 0 |
+| market_data / registry / source_order / settings_api | 132 passed |
+| OpencodeAgent config render | 24 passed |
+| MCP 工具计数 | OFF=77 / ON=82 |
+| 提交规范 | 单一作者 shadowinlife + DCO 签名 + 无 AI 归属行 |
+
+---
+
+### release/mymain · 2026-08-17（第二次）— 基线：上游 `0713336c` + OpencodeAgent（F7）
+
+- **发布 commit**：`8b89d1b3`（rebase 前 SHA；2026-08-28 对齐后该 commit 已被重写）
+- **上游基线**：`0713336c`（与上次发布相同；本次为本地 harness 层引入，无上游变更）
+- **差异总量**：266 个文件、+47,520/−105 行（复核命令 `git diff 0713336c release/mymain --shortstat`）
+
+#### 核心差异（F1–F6 基础上新增 F7，均个人部署独有、不回流）
+
+| # | 能力 | Commit | 核心内容 | 规模 |
+|---|------|--------|----------|------|
+| F7 | OpencodeAgent harness 层 | `35bb27a1` | opencode + omo + 本仓库 MCP 的独立部署 harness（Docker 镜像 `opencode-serve`）：问题处理协议（明确/开放/待澄清/宏观四类分流，Least-to-Most 漏斗 + Step-Back 拆分 + 单轮 ≤3 问轮次预算）、防幻觉与诚实拒答纪律（数字溯源三来源、弃权一等公民、五要素拒答模板）、escape-top 微观结构信号（CH 数据层 + 7 门验证）、三层选股、VT 联邦行情 scanner、cron + 钉钉通知、nano-search-mcp（12 工具） | 144 文件 +34,498 |
+
+> F7 源自独立仓库 `shadowinlife/vibetrading-opencode-instruct`（最终态
+> `ac2d92f` + `1687097`，已存档），2026-08-17 整体引入 `OpencodeAgent/` 管理。
+
+#### 核心迭代（本次发布完成的工作）
+
+1. **scripts 库迁移**：删除与 VT 重复的 backtest/（VT 回测引擎替代，22 个自研信号构建器
+   迁入 vibe_bridge/）、chanlun/（VT chanlun skill）、memory/（VT F1–F4）、experiment/；
+   microstructure（~40 文件）/ screening / realtime 数据层从 DuckDB 迁至 VT
+   clickhouse_connector 与 market_data 联邦（含 DuckDB→ClickHouse SQL 方言转换与
+   优雅降级契约）；7 门验证框架、单位换算知识等独有方法论完整保留。
+2. **AGENTS.md 重写**（605 行）：新增问题处理协议与防幻觉诚实拒答纪律两个 CRITICAL
+   章节；场景 A–F 重构（C 重写、F 新增宏观/事件驱动）；能力索引对齐 mymain。
+3. **补齐 escape-top-microstructure skill**（AGENTS.md 原已引用但缺失）。
+4. **打包适配 mymain**：工具计数 59→73/78、CLICKHOUSE_LLM_* 语义层凭据贯通、
+   vendoring 重构为 git archive（杜绝开发残留）、单仓 ECS 构建流程、tag v2.1.0-mymain。
+5. **文档登记**：`MYMAIN_DIVERGENCE.md` §2.1 F7 行 + §5 引入笔记；根 AGENTS.md §8.2
+   harness 层条目。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| OpencodeAgent scripts compileall | 通过（microstructure 零 duckdb 残留） |
+| CLI 冒烟（escape_top/concentration/margin_buy_vs_sse/joint_escape_top --help） | 全部通过 |
+| 优雅降级（CLICKHOUSE 不可达 → `{"available": false}` + exit 0） | 通过 |
+| shell 语法（build.sh / ecs-build.sh / entrypoint.sh） | 通过 |
+| 上次发布的 VT 门禁（memory 329/2、CH 137/11、计数 54、env gate、MCP 73/78） | 沿用通过（本次未改 VT 代码） |
+
+---
+
+### release/mymain · 2026-08-17 — 基线：上游 `0713336c`
+
+- **发布 commit**：`57bf9563`
+- **上游基线**：`0713336c`（v0.1.13 后第 158 commit；本次对齐覆盖 `1bf1d8b4` 之后的 144 个上游 commit）
+- **差异总量**：124 个文件、+12,981/−105 行（含本文档与 `MYMAIN_DIVERGENCE.md`、`AGENTS.md` 等分支级文档及 ClickHouse 语义层 Phase 0–2；复核命令 `git diff 0713336c release/mymain --shortstat`）
+
+#### 核心差异（相对上游基线的 6 项本地能力，均未被上游取代）
+
+| # | 能力 | Commit | 核心内容 | 规模 |
+|---|------|--------|----------|------|
+| F1 | 反思课程存储 | `c4aa2774` | JSONL append-only 反思存储（`reflections.py`）+ `VT_MEMORY_REFLECTIONS` 等特性开关 | 5 文件 +643 |
+| F2 | MCP 记忆工具 | `c0909374` | 记忆生命周期 5 个工具经 MCP 暴露（`mcp_adapter.py`）+ `memory-lifecycle` SKILL 文档 + 多语言 README 更新 | 11 文件 +870/−42 |
+| F3 | 回测自动反思钩子 | `7291d2d0` | 回测完成后自动触发 memory_save + memory_reflect（`backtest_tool.py`）+ 并发 / 延迟性能测试 | 6 文件 +413 |
+| F4 | MemoryGuard + 存储路径 | `c459eebb` | FastMCP middleware 自动触发 save/reflect（`memory_guard.py`）；`VT_MEMORY_BASE_DIR` 支持项目级存储 | 5 文件 +229/−6 |
+| F5 | ClickHouse A 股数据源 | `0fc4a455` | ClickHouse 作为 A 股主力数据源（T-1 历史 199 列 + 网络源联邦当日 OHLCV），覆盖资金流 / 龙虎榜 / 融资融券 / 北向 4 类 flow 工具 | 16 文件 +2049/−6 |
+| F6 | ClickHouse 语义层 Phase 0–2 | `0620c448`→`3305e8ff`（fork PR #1 `e4ba22df`） | 56 表 DDL 快照 + 9 表 444 列 COMMENT + 单位 registry（`clickhouse_units.py`）+ 显式 199 列消除 SELECT * + `get_valuation` + llm_role 受约束灵活性通道（`ch_list_tables` / `ch_describe_table` / `ch_query`，sqlglot AST 守卫） | 97 文件 +8421/−73 |
+
+> F1–F6 的上游取代核查结论（2026-08-17）：上游本轮新增（tickerall 数据源、Options Lab、
+> tearsheet、factor research panel、Copilot / Novita provider、桌面端加固等）与上述能力
+> **均无重叠**，全部保留；上游对 F1–F4 核心文件零触碰、MCP 面零新增工具注册。
+> 详见 `MYMAIN_DIVERGENCE.md` §2。
+
+#### 核心迭代（本次发布完成的工作）
+
+1. **上游对齐**：merge `1bf1d8b4` 之后的 144 个 commit，仅 1 处真冲突
+   （`agent/SKILL.md` 计数/表述区 2 块：两侧各自 24→25 sources——本地 clickhouse vs 上游 tickerall），
+   合并解决为 26 sources + 90 skills，保留上游 tickerall explicit-only 表述。
+2. **fork 语义层回合**：fork/mymain 上的语义层 Phase 0–2（2026-08-12 经 fork PR #1 合入，
+   本地未拉回）合并回本地，仅 1 处真冲突（`agent/src/market_data.py` provenance 块：
+   上游 #1065 的 `volume_unit` × fork 的 `entry` 变量重构），两者合并保留。
+3. **新 README 同步**：上游本轮新增第六份 README（README_es.md），同步 skills 89→90、Tool 类 10→11。
+4. **计数基线更新**：数据源 25→26（clickhouse + tickerall）；MCP 工具 70/75→73/78
+   （+3 为语义层 ch_* 工具，非上游新增）；skills 维持 90。
+5. **#1062 闭环**：A 股 volume 单位不一致经 shadowinlife PR #1065 / #1067 上游合入
+   （2026-08-11），本次对齐继承；`MYMAIN_DIVERGENCE.md` §2.4 清空、§2.2 登记。
+6. **文档同步**：`MYMAIN_DIVERGENCE.md` 全面更新至新基线；回填上一条记录的发布 commit SHA。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件 | 329 passed / 2 skipped |
+| ClickHouse 套件（F5 + 语义层，10 文件） | 137 passed / 11 skipped |
+| ClickHouse schema 门禁（3 个 tools 单测 + comments gate） | 54 passed / exit 0 |
+| README / SKILL 计数门禁 | 54 passed |
+| env-var AST 门禁（`tools/ci_env_var_gate.py`） | exit 0 |
+| MCP 工具计数 | OFF=73 / ON=78 |
+| 提交规范 | 单一作者 shadowinlife + DCO 签名 + 无 AI 归属行 |
+
+---
+
+### release/mymain · 2026-08-11 — 基线：上游 v0.1.13（`c33133f4`）
+
+- **发布 commit**：`9217c701`
+- **上游基线**：`c33133f4`（v0.1.13；本次对齐覆盖 `6c44732` 之后的 120 个上游 commit）
+- **差异总量**：39 个文件、+4,487/−53 行（含本文档与 `MYMAIN_DIVERGENCE.md`、`AGENTS.md` 等分支级文档；复核命令 `git diff c33133f4 release/mymain --shortstat`）
+
+#### 核心差异（相对上游 v0.1.13 的 5 项本地能力，均未被上游取代）
+
+| # | 能力 | Commit | 核心内容 | 规模 |
+|---|------|--------|----------|------|
+| F1 | 反思课程存储 | `c4aa2774` | JSONL append-only 反思存储（`reflections.py`）+ `VT_MEMORY_REFLECTIONS` 等特性开关 | 5 文件 +643 |
+| F2 | MCP 记忆工具 | `c0909374` | 记忆生命周期 5 个工具经 MCP 暴露（`mcp_adapter.py`）+ `memory-lifecycle` SKILL 文档 + 5 语言 README 更新 | 11 文件 +870/−42 |
+| F3 | 回测自动反思钩子 | `7291d2d0` | 回测完成后自动触发 memory_save + memory_reflect（`backtest_tool.py`）+ 并发 / 延迟性能测试 | 6 文件 +413 |
+| F4 | MemoryGuard + 存储路径 | `c459eebb` | FastMCP middleware 自动触发 save/reflect（`memory_guard.py`）；`VT_MEMORY_BASE_DIR` 支持项目级存储 | 5 文件 +229/−6 |
+| F5 | ClickHouse A 股数据源 | `0fc4a455` | ClickHouse 作为 A 股主力数据源（T-1 历史 199 列 + 网络源联邦当日 OHLCV），覆盖资金流 / 龙虎榜 / 融资融券 / 北向 4 类 flow 工具 | 16 文件 +2049/−6 |
+
+> F1–F5 的上游取代核查结论（2026-08-11）：上游本轮新增（quantlib_call、alpha zoo MCP、
+> 机构数据、加拿大市场、eToro、桌面端等）与上述能力**均无重叠**，全部保留。
+> 详见 `MYMAIN_DIVERGENCE.md` §2。
+
+#### 核心迭代（本次发布完成的工作）
+
+1. **上游对齐**：merge 上游 `6c44732` 之后的 120 个 commit（v0.1.13），仅 2 处真冲突
+   （`agent/SKILL.md` 计数区、`agent/mcp_server.py` 工具数头注释），均已解决。
+2. **历史重整**：原 11 个交错 commit 经 merge + carve 重整为 **6 个单一功能 commit**
+   （F1→F2→F3→F4→F5→docs），carve 树与 merge 树逐字节一致；每个 commit 可独立作为社区 PR 候选。
+3. **计数基线同步**：MCP 工具 62→70（`VT_MEMORY_MCP_TOOLS=1` 时 75）、skills 89→90、数据源 24→25。
+4. **文档同步**：`MYMAIN_DIVERGENCE.md` 全面重写至新基线；新增本文档作为发布追踪入口。
+
+#### 验证基线（`legonanobot` 环境，全部通过）
+
+| 门禁 | 结果 |
+|------|------|
+| memory 套件 | 321 passed / 2 skipped |
+| ClickHouse 套件 | 13 passed / 8 skipped |
+| README / SKILL 计数门禁 | 54 passed |
+| env-var AST 门禁（`tools/ci_env_var_gate.py`） | exit 0 |
+| MCP 工具计数 | OFF=70 / ON=75 |
+| 提交规范 | 单一作者 shadowinlife + DCO 签名 + 无 AI 归属行 |
+
+---
+
+## 附录：发布检查清单
+
+每次发布打 tag 前必须完成：
+
+1. [ ] merge / rebase 上游 `main` 并解决冲突
+2. [ ] 取代核查：确认本地能力未被上游取代，更新 `MYMAIN_DIVERGENCE.md`
+3. [ ] `MYMAIN_DIVERGENCE.md` §3.1 全部测试门禁通过
+4. [ ] 提交规范：单一作者 `shadowinlife` + `git commit -s` DCO + 无 AI 归属行
+5. [ ] 本文档新增一条发布记录（核心差异 + 核心迭代），并回填上一条记录的发布 commit SHA
+6. [ ] `git tag -f release/mymain <commit>` + 推送分支与 tag
