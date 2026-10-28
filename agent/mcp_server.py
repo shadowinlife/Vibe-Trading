@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 89 tools (94 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
+Surfaces 94 tools (99 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
 backtest/factor/options/pattern
 analysis, deterministic paper-trading matching (paper_trade_step), market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_southbound_flow /
@@ -1820,34 +1820,169 @@ def evaluate_strategy(strategy_id: str) -> str:
     )
 
 
+# ---------------------------------------------------------------------------
+# Agent scheduling tools (RM control plane)
+#
+# ``schedule_strategy`` keeps its name because the assistant already knows it;
+# the five companions are new. Every one of them relays intent to the RM
+# control plane: this box has no local job store and no second scheduler, and
+# the tools never fall back to writing one. When the scheduling module or its
+# configuration is unavailable the call fails closed with
+# ``scheduling_unavailable`` instead of inventing a schedule.
+# ---------------------------------------------------------------------------
+
+
+def _agent_schedules_call(name: str, /, **kwargs: Any) -> str:
+    """Call one agent-schedule action and return its JSON envelope.
+
+    Lazily imports :mod:`src.agent_schedules.tools`, so a broken or absent
+    scheduling module cannot stop the rest of the MCP server from starting.
+    ``name`` is positional-only because one action takes a ``name`` argument of
+    its own. Every failure returns the same fail-closed envelope; nothing
+    raises.
+    """
+    try:
+        tools = import_module("src.agent_schedules.tools")
+        result = getattr(tools, name)(**kwargs)
+        return json.dumps(result, ensure_ascii=False, sort_keys=True, default=str)
+    except Exception:  # noqa: BLE001 - fail closed, never a raw traceback
+        logger.warning("agent scheduling tool %s unavailable", name)
+        return json.dumps(
+            {
+                "ok": False,
+                "error": "scheduling_unavailable",
+                "detail": "scheduling is unavailable",
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+
+
 @mcp.tool
 def schedule_strategy(
     strategy_id: str,
-    schedule: str,
-    timezone: str | None = None,
-    run_timeout_s: int | None = None,
+    kind: str,
+    strategy_version: str | None = None,
+    name: str | None = None,
+    cron_spec: str | None = None,
+    interval_s: int | None = None,
+    time_of_day: str | None = None,
+    tz: str | None = None,
 ) -> str:
-    """Prepare a schedule for a ready strategy without creating it blindly.
+    """Create one strategy schedule on the RM control plane.
 
-    A code strategy is attached directly and returns its job id. A workflow
-    strategy returns a proposal that a human must confirm with a one-time
-    token; that token is never part of this response. No order is placed and
-    no broker is touched.
+    The RM control plane owns the schedule table and the due-time loop. This
+    box has no local job store and no scheduler, so nothing is written locally
+    and nothing pretends to be scheduled before RM answers 2xx. The call fails
+    closed with ``scheduling_unavailable`` when ``RM_AGENT_API_URL`` or the
+    agent token file is missing. The strategy must exist locally with
+    readiness="ready", and the pinned version must already be materialised
+    locally, so a strategy that never ran cannot be scheduled. No order is
+    placed and no broker is touched.
 
     Args:
-        strategy_id: Library id of the strategy to schedule.
-        schedule: Five-field cron expression.
-        timezone: Optional IANA timezone name.
-        run_timeout_s: Optional per-run timeout in seconds.
+        strategy_id: Library id of a ready strategy.
+        kind: Cadence shape — "cron", "interval" or "daily".
+        strategy_version: Optional version to pin; defaults to the library's
+            current version.
+        name: Optional schedule name; defaults to the strategy name.
+        cron_spec: Five-field cron expression; required for kind="cron".
+        interval_s: Positive interval in seconds; required for kind="interval".
+        time_of_day: "HH:MM" wall-clock time; required for kind="daily".
+        tz: IANA timezone; defaults to "Asia/Shanghai".
     """
-    return _strategy_library_execute(
+    return _agent_schedules_call(
         "schedule_strategy",
-        {
-            "strategy_id": strategy_id,
-            "schedule": schedule,
-            "timezone": timezone,
-            "run_timeout_s": run_timeout_s,
-        },
+        strategy_id=strategy_id,
+        kind=kind,
+        strategy_version=strategy_version,
+        name=name,
+        cron_spec=cron_spec,
+        interval_s=interval_s,
+        time_of_day=time_of_day,
+        tz=tz,
+    )
+
+
+@mcp.tool
+def list_strategy_schedules() -> str:
+    """List strategy schedules owned by the RM control plane.
+
+    Reads RM only; no local job store is consulted or written, and the
+    deprecated in-box jobs are counted read-only as ``legacy_jobs_ignored``
+    (those schedules never fired). Each row carries the local library's
+    ``current_version`` and a ``drift`` flag when the pinned version is stale.
+    Fails closed with ``scheduling_unavailable`` when ``RM_AGENT_API_URL`` or
+    the agent token file is missing. No order or broker call is made.
+    """
+    return _agent_schedules_call("list_strategy_schedules")
+
+
+@mcp.tool
+def pause_strategy_schedule(schedule_id: str) -> str:
+    """Pause one RM control-plane schedule without deleting its history.
+
+    The schedule table and its due-time loop live in RM; this box writes
+    nothing locally and fails closed with ``scheduling_unavailable`` when
+    ``RM_AGENT_API_URL`` or the agent token file is missing. No order or
+    broker call is made.
+
+    Args:
+        schedule_id: RM schedule id returned by schedule_strategy.
+    """
+    return _agent_schedules_call("pause_strategy_schedule", schedule_id=schedule_id)
+
+
+@mcp.tool
+def resume_strategy_schedule(schedule_id: str) -> str:
+    """Re-enable one paused RM control-plane schedule.
+
+    The schedule table and its due-time loop live in RM; this box writes
+    nothing locally and fails closed with ``scheduling_unavailable`` when
+    ``RM_AGENT_API_URL`` or the agent token file is missing. No order or
+    broker call is made.
+
+    Args:
+        schedule_id: RM schedule id returned by schedule_strategy.
+    """
+    return _agent_schedules_call("resume_strategy_schedule", schedule_id=schedule_id)
+
+
+@mcp.tool
+def delete_strategy_schedule(schedule_id: str) -> str:
+    """Delete one RM control-plane schedule; its run history stays with RM.
+
+    This box writes nothing locally and fails closed with
+    ``scheduling_unavailable`` when ``RM_AGENT_API_URL`` or the agent token
+    file is missing. No order or broker call is made.
+
+    Args:
+        schedule_id: RM schedule id returned by schedule_strategy.
+    """
+    return _agent_schedules_call("delete_strategy_schedule", schedule_id=schedule_id)
+
+
+@mcp.tool
+def retarget_strategy_schedule(
+    schedule_id: str, strategy_version: str | None = None
+) -> str:
+    """Re-pin one RM schedule to a version, keeping its id and run history.
+
+    The local strategy and target version are resolved first and must already
+    be materialised locally; nothing is sent to RM when that check fails. The
+    schedule table stays in RM, so this box writes nothing locally and fails
+    closed with ``scheduling_unavailable`` when ``RM_AGENT_API_URL`` or the
+    agent token file is missing. No order or broker call is made.
+
+    Args:
+        schedule_id: RM schedule id returned by schedule_strategy.
+        strategy_version: Optional version to pin; defaults to the library's
+            current version.
+    """
+    return _agent_schedules_call(
+        "retarget_strategy_schedule",
+        schedule_id=schedule_id,
+        strategy_version=strategy_version,
     )
 
 

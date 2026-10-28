@@ -84,6 +84,9 @@ os.environ["HOME"] = str(_SANDBOX_HOME)
 os.environ["USERPROFILE"] = str(_SANDBOX_HOME)
 (_SANDBOX_HOME / ".vibe-trading").mkdir(parents=True, exist_ok=True)
 
+# Opt the dev API test suite into the F9 schedule routes; production stays default-off (a subprocess test proves it).
+os.environ.setdefault("VT_STRATEGY_SCHEDULE_ROUTES_ENABLED", "1")
+
 # A developer shell that exports MARKET_DATA_ORDER_* would silently reorder
 # the default fallback chains (registry.refresh_source_order_overrides reads
 # them at import time), breaking every default-order assertion in the suite.

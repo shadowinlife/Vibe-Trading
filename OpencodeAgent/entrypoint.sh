@@ -101,6 +101,17 @@ if [ -f /usr/bin/python3 ] && [ ! -x /opt/venv/bin/python3 ]; then
     echo "[entrypoint] Fixed venv python symlinks → /usr/bin/python3"
 fi
 
+# ── RM agent token directory ──────────────────────────────────────────────────
+# RM writes ~/.config/rm/agent-token (0600) at provision time. Only the
+# directory is created here — owner-only, explicitly, so it cannot inherit an
+# ambient umask — and the entrypoint never creates or writes the token file
+# itself (no static credential ships in the image). The directory is required
+# for RM's token write, so failing to create it must fail the container.
+RM_AGENT_CONFIG_DIR="${HOME:-/home/opencode}/.config/rm"
+mkdir -p "$RM_AGENT_CONFIG_DIR"
+chmod 700 "$RM_AGENT_CONFIG_DIR"
+echo "[entrypoint] RM agent token dir ready (0700): $RM_AGENT_CONFIG_DIR"
+
 # ── Read environment variables with defaults ──────────────────────────────────
 CLICKHOUSE_HOST="${CLICKHOUSE_HOST:-}"
 CLICKHOUSE_PORT="${CLICKHOUSE_PORT:-8123}"

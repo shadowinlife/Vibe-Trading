@@ -4,21 +4,20 @@ Each tool is exercised through ``execute(**kwargs)`` — the same entry point th
 registry and the MCP wrappers use — with the library facade patched at its
 module boundary. Nothing touches a store, a runtime root or a network.
 
-The regression that matters most is the schedule one: a workflow schedule is
-committed by a human, so the agent-facing envelope must never carry the
-one-time confirmation token even if the scheduling layer hands one back.
+The regression that matters most is the schedule one: the tool must relay the
+control-plane cadence arguments to ``src.agent_schedules.tools`` and return
+that action's envelope verbatim, instead of writing the retired local job
+store or inventing a confirmation step.
 """
 
 from __future__ import annotations
 
 import json
 import sys
-import types
 from types import SimpleNamespace
 
 import pytest
 
-import src.strategy_library as library_package
 from src.tools import build_registry
 from src.tools.strategy_library_tool import (
     EvaluateStrategyTool,
@@ -63,14 +62,6 @@ def _artifact(**overrides):
     }
     values.update(overrides)
     return SimpleNamespace(**values)
-
-
-def _install_scheduling(monkeypatch: pytest.MonkeyPatch, request) -> None:
-    """Install a fake scheduling module; the real one may not exist yet."""
-    module = types.ModuleType("src.strategy_library.scheduling")
-    module.request_schedule = request
-    monkeypatch.setitem(sys.modules, "src.strategy_library.scheduling", module)
-    monkeypatch.setattr(library_package, "scheduling", module, raising=False)
 
 
 # ---------------------------------------------------------------------------
@@ -313,84 +304,85 @@ def test_evaluate_strategy_wraps_a_gate_failure(monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_schedule_strategy_proposal_never_contains_the_confirm_token(monkeypatch) -> None:
-    def request_schedule(**_kwargs):
-        return {
-            "proposal_id": "ssp_0123456789abcdef0123456789abcdef",
-            "operation": "strategy_schedule",
-            "status": "pending",
-            "strategy_id": "stg-001",
-            "strategy_version": "v1-abcdef12",
-            "confirm_token": "scp_supersecretvalue",
-            "job": {
-                "job_id": "job-1",
-                "run_policy": {"confirm_token_sha256": "deadbeef"},
-            },
-        }
+def test_schedule_strategy_parameters_describe_the_control_plane_contract() -> None:
+    parameters = ScheduleStrategyTool.parameters
 
-    _install_scheduling(monkeypatch, request_schedule)
-
-    text = ScheduleStrategyTool().execute(
-        strategy_id="stg-001", schedule="0 9 * * 1-5", timezone="Asia/Shanghai"
-    )
-    payload = _json(text)
-
-    assert payload["ok"] is True
-    assert "confirm_token" not in text, "the agent envelope must not name the token"
-    assert "scp_supersecretvalue" not in text, "the token value must not leak"
-    assert "deadbeef" not in text, "the stored token hash must not leak either"
-    data = payload["data"]
-    assert data["proposal_id"] == "ssp_0123456789abcdef0123456789abcdef"
-    assert data["requires_confirmation"] is True
-    assert data["next_step"].startswith("A human must confirm")
+    assert parameters["required"] == ["strategy_id", "kind"]
+    properties = parameters["properties"]
+    assert set(properties) == {
+        "strategy_id",
+        "kind",
+        "strategy_version",
+        "name",
+        "cron_spec",
+        "interval_s",
+        "time_of_day",
+        "tz",
+    }
+    assert "schedule" not in properties, "the retired local cadence argument must be gone"
+    assert "timezone" not in properties, "the control plane takes tz, not timezone"
+    assert "run_timeout_s" not in properties, "run timeouts belong to the retired bridge"
 
 
-def test_schedule_strategy_code_attach_reports_the_job(monkeypatch) -> None:
-    _install_scheduling(monkeypatch, lambda **_kwargs: "job-42")
+def test_schedule_strategy_forwards_the_control_plane_arguments(monkeypatch) -> None:
+    calls: list[dict] = []
+    envelope = {
+        "ok": True,
+        "schedule_id": "ss_0001",
+        "next_run_at": "2026-10-27T01:00:00Z",
+        "pinned_version": "v1-abcdef12",
+    }
+
+    def fake_schedule(**kwargs):
+        calls.append(kwargs)
+        return envelope
+
+    monkeypatch.setattr("src.agent_schedules.tools.schedule_strategy", fake_schedule)
 
     payload = _json(
         ScheduleStrategyTool().execute(
-            strategy_id="stg-001", schedule="*/15 * * * *"
+            strategy_id="stg-001",
+            kind="interval",
+            interval_s=3600,
+            name="Hourly run",
+            tz="Asia/Shanghai",
         )
     )
 
-    assert payload["ok"] is True
-    assert payload["data"]["job_id"] == "job-42"
-    assert payload["data"]["requires_confirmation"] is False
-    assert "job-42" in payload["data"]["next_step"]
+    assert payload == envelope
+    assert calls == [
+        {
+            "strategy_id": "stg-001",
+            "kind": "interval",
+            "strategy_version": None,
+            "name": "Hourly run",
+            "cron_spec": None,
+            "interval_s": 3600,
+            "time_of_day": None,
+            "tz": "Asia/Shanghai",
+        }
+    ]
 
 
-def test_schedule_strategy_without_a_scheduling_module_is_unavailable(monkeypatch) -> None:
-    monkeypatch.setitem(sys.modules, "src.strategy_library.scheduling", None)
-    monkeypatch.delattr(library_package, "scheduling", raising=False)
+def test_schedule_strategy_without_the_control_plane_module_is_unavailable(
+    monkeypatch,
+) -> None:
+    monkeypatch.setitem(sys.modules, "src.agent_schedules.tools", None)
 
     payload = _json(
-        ScheduleStrategyTool().execute(strategy_id="stg-001", schedule="0 9 * * *")
+        ScheduleStrategyTool().execute(
+            strategy_id="stg-001", kind="cron", cron_spec="0 9 * * *"
+        )
     )
 
     assert payload["ok"] is False
     assert payload["code"] == "scheduling_unavailable"
+    assert "scheduling" in payload["error"]
 
 
-def test_schedule_strategy_requires_both_identity_arguments() -> None:
+def test_schedule_strategy_requires_strategy_id_and_kind() -> None:
     tool = ScheduleStrategyTool()
 
     assert _json(tool.execute())["code"] == "invalid_argument"
     assert _json(tool.execute(strategy_id="stg-001"))["code"] == "invalid_argument"
-    assert _json(tool.execute(schedule="0 9 * * *"))["code"] == "invalid_argument"
-
-
-def test_schedule_strategy_wraps_a_domain_refusal(monkeypatch) -> None:
-    def refuse(**_kwargs):
-        raise ValueError("strategy is not ready")
-
-    _install_scheduling(monkeypatch, refuse)
-
-    payload = _json(
-        ScheduleStrategyTool().execute(strategy_id="stg-001", schedule="0 9 * * *")
-    )
-
-    assert payload["ok"] is False
-    assert payload["code"] == "ValueError"
-    assert payload["error"] == "strategy is not ready"
-    assert "Traceback" not in json.dumps(payload)
+    assert _json(tool.execute(kind="cron"))["code"] == "invalid_argument"

@@ -8,6 +8,11 @@ create the job. Proposals live in their own ``scheduled_research/
 strategy_proposals/`` directory under the ``ssp_`` id namespace, invisible to
 the legacy ``srp_`` reader. Every refusal raises :class:`ScheduleError`
 carrying the HTTP status the route layer should answer with.
+
+:func:`request_schedule` is retained for runner and model compatibility only.
+It is **not** an agent-tool entry point: the assistant path reaches the RM
+control plane through ``src.agent_schedules.tools``, and time-based triggering
+belongs to RM alone. Do not re-wire it back into an agent tool.
 """
 
 from __future__ import annotations
@@ -263,11 +268,14 @@ def request_schedule(
     store: Any = None, job_store: ScheduledResearchJobStore | None = None,
     runtime_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Return the token-free attach result for the ``schedule_strategy`` tool.
+    """Return the token-free attach result for the retired local tool bridge.
 
     A workflow strategy still needs a human to confirm the returned proposal
     through the REST commit route; an agent can never do it. ``session_id`` is
     accepted for tool-signature compatibility and intentionally unused.
+
+    Not an agent-tool entry point: the assistant path is RM-only via
+    ``src.agent_schedules.tools``, so do not re-wire this function there.
     """
     zone = timezone.strip() if isinstance(timezone, str) else timezone
     result = attach(

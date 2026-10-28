@@ -285,12 +285,17 @@ def test_service_errors_are_entry_faults(
     assert client.get("/strategy-runs/vt-0001", headers=AUTH).status_code == 503
 
 
-def test_dedicated_app_mounts_only_health_and_the_two_service_routes(
+def test_dedicated_app_mounts_only_health_service_and_state_routes(
     service: _FakeService,
 ) -> None:
     app = strategy_run_server.create_app(lambda: service)
     paths = set(app.openapi()["paths"])
-    assert paths == {"/strategy-runs", "/strategy-runs/{vt_run_id}"}
+    assert paths == {
+        "/strategy-runs",
+        "/strategy-runs/{vt_run_id}",
+        "/state/export",
+        "/state/import",
+    }
     assert not any(path.endswith("{path:path}") for path in paths)
 
 

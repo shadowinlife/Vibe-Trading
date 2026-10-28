@@ -263,8 +263,17 @@ from src.api.strategy_adaptation_routes import register_strategy_adaptation_rout
 register_strategy_adaptation_routes(app, require_settings_write_auth)
 from src.api.strategy_library_routes import register_strategy_library_routes  # noqa: E402
 register_strategy_library_routes(app)
-from src.api.strategy_schedule_routes import register_strategy_schedule_routes  # noqa: E402
-register_strategy_schedule_routes(app)
+
+# F9 strategy-schedule REST surface, default OFF: the in-box entry
+# (``agent/strategy_run_server.py``) must never expose a second scheduling
+# source, since time-based triggering belongs to the RM control plane alone.
+# Opt in only for VT's own dev API.
+_VT_STRATEGY_SCHEDULE_ROUTES_ENABLED = os.environ.get(  # noqa: env-gate — default-off operator switch
+    "VT_STRATEGY_SCHEDULE_ROUTES_ENABLED", ""
+).lower() in {"1", "true", "yes", "on"}
+if _VT_STRATEGY_SCHEDULE_ROUTES_ENABLED:
+    from src.api.strategy_schedule_routes import register_strategy_schedule_routes  # noqa: E402
+    register_strategy_schedule_routes(app)
 
 # RM service entry, default OFF: the dedicated in-box entry
 # (``agent/strategy_run_server.py``) is the production mount point, so the
