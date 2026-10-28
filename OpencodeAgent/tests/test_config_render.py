@@ -372,3 +372,77 @@ class TestResearchScenariosSkill:
     def test_playbook_sections_present(self, marker):
         body = SCENARIOS_SKILL_PATH.read_text(encoding="utf-8")
         assert marker in body, marker
+
+
+COMMAND_DIR = CONFIG_DIR / "command"
+DOCKERFILE_PATH = OPENCODE_AGENT_DIR / "Dockerfile"
+
+COMMANDS = {
+    "checkup.md": ("个股体检", "场景 A（股票/ETF 分析）"),
+    "screen.md": ("选股清单", "场景 E（选股策略）"),
+    "backtest.md": ("策略回测", "场景 B（量化回测）"),
+    "review.md": ("交易复盘", "场景 B2（Shadow Account）"),
+}
+
+DEFAULT_EXECUTION_SENTENCE = "以下按默认值执行，可在结果后调整"
+COMMAND_COPY_LINE = "COPY config/command/ /workspace/.opencode/command/"
+RENDER_COPY_LINE = "COPY config/render_config.py /workspace/.opencode/render_config.py"
+
+
+def _split_frontmatter(text: str) -> tuple[dict[str, str], str]:
+    """Parse flat ``key: value`` frontmatter without a YAML dependency."""
+    assert text.startswith("---\n"), "frontmatter must open on the first line"
+    _, frontmatter, body = text.split("---\n", 2)
+    fields: dict[str, str] = {}
+    for line in frontmatter.splitlines():
+        if not line.strip():
+            continue
+        key, separator, value = line.partition(":")
+        assert separator, f"frontmatter line is not key: value -> {line!r}"
+        fields[key.strip()] = value.strip().strip('"')
+    return fields, body
+
+
+class TestSlashCommands:
+    """Pin the command-file template contract; runtime discovery lives in smoke-v311.sh."""
+
+    def test_command_files_exist(self):
+        assert COMMAND_DIR.is_dir(), f"missing {COMMAND_DIR}"
+        assert sorted(p.name for p in COMMAND_DIR.glob("*.md")) == sorted(COMMANDS)
+
+    @pytest.mark.parametrize("filename", sorted(COMMANDS))
+    def test_frontmatter_schema(self, filename):
+        fields, _ = _split_frontmatter((COMMAND_DIR / filename).read_text(encoding="utf-8"))
+        assert fields.get("description"), filename
+        assert fields.get("argument-hint"), filename
+
+    @pytest.mark.parametrize("filename", sorted(COMMANDS))
+    def test_description_is_a_short_chinese_prompt(self, filename):
+        fields, _ = _split_frontmatter((COMMAND_DIR / filename).read_text(encoding="utf-8"))
+        description = fields["description"]
+        assert len(description) <= 80, f"{filename}: {len(description)} chars"
+        assert any("\u4e00" <= ch <= "\u9fff" for ch in description), filename
+
+    @pytest.mark.parametrize("filename,artifact,scenario", [
+        (name, *contract) for name, contract in sorted(COMMANDS.items())
+    ])
+    def test_template_names_artifact_defaults_and_scenario(self, filename, artifact, scenario):
+        _, body = _split_frontmatter((COMMAND_DIR / filename).read_text(encoding="utf-8"))
+        assert artifact in body, f"{filename} must name the {artifact} artifact"
+        assert DEFAULT_EXECUTION_SENTENCE in body, filename
+        assert "research-scenarios" in body, filename
+        assert scenario in body, f"{filename} must route to {scenario}"
+        assert "$ARGUMENTS" in body, f"{filename} must pass the user's target through"
+
+    def test_review_routes_to_shadow_account(self):
+        _, body = _split_frontmatter((COMMAND_DIR / "review.md").read_text(encoding="utf-8"))
+        assert "场景 B2" in body
+        assert "交割单" in body
+
+    def test_dockerfile_ships_the_command_directory(self):
+        lines = DOCKERFILE_PATH.read_text(encoding="utf-8").splitlines()
+        assert COMMAND_COPY_LINE in lines, "Dockerfile must COPY config/command/"
+        index = lines.index(RENDER_COPY_LINE)
+        assert lines[index + 1] == COMMAND_COPY_LINE, (
+            "the command COPY belongs immediately after render_config.py"
+        )
