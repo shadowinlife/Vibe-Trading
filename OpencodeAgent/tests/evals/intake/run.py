@@ -24,13 +24,14 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator
 
 BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+from corpus_validation import EXPECT_LABELS, validate_corpus  # noqa: E402
+
 CORPUS_PATH = BASE_DIR / "corpus.jsonl"
 EXPECTED_PATH = BASE_DIR / "expected.json"
 SCHEMA_PATH = BASE_DIR / "events.schema.json"
-
-EXPECT_LABELS = ("direct_answer", "execute_with_defaults", "clarify_private", "refuse")
-PRODUCT_LABELS = "个股体检 选股清单 策略回测 组合体检 事件/宏观影响 交易复盘 定时监控 报告 none".split()
-REQUIRED_CORPUS_FIELDS = ("id", "prompt", "expect", "negative", "open_ended", "expected_product", "rationale")
 EVENT_TYPES = ("route_class", "intake_loaded", "question_called", "params_compiled")
 RUN_ERROR = "run_error"
 RECOVERY_PREFIX = "recovered_via_session_api;"
@@ -68,48 +69,10 @@ def load_expected(path: Path = EXPECTED_PATH) -> dict[str, dict[str, Any]]:
         raise ValueError(f"{path}: expected.json must map corpus ids to objects")
     return data
 
-def validate_corpus(items: Iterable[dict[str, Any]], expected: dict[str, dict[str, Any]] | None = None) -> list[str]:
-    items = list(items)
-    errors: list[str] = []
-    if len(items) != 10:
-        errors.append(f"corpus must contain exactly 10 items, found {len(items)}")
-    seen: set[str] = set()
-    for index, item in enumerate(items, 1):
-        label = str(item.get("id") or f"line {index}")
-        errors.extend(f"{label}: missing or empty required field {key!r}" for key in REQUIRED_CORPUS_FIELDS if key not in item or item.get(key) is None or (isinstance(item.get(key), str) and not item[key].strip()))
-        item_id = item.get("id")
-        if isinstance(item_id, str) and not re.fullmatch(r"c\d{2}", item_id):
-            errors.append(f"{label}: id must match cNN")
-        if item_id in seen:
-            errors.append(f"{label}: duplicate id")
-        seen.add(item_id)
-        if item.get("expect") not in EXPECT_LABELS:
-            errors.append(f"{label}: expect must be one of {EXPECT_LABELS}")
-        if item.get("expected_product") not in PRODUCT_LABELS:
-            errors.append(f"{label}: expected_product must be one of the 9 labels")
-        errors.extend(f"{label}: {flag} must be a boolean" for flag in ("negative", "open_ended") if not isinstance(item.get(flag), bool))
-    negatives = [item for item in items if item.get("negative") is True]
-    if len(negatives) < 2:
-        errors.append(f"at least 2 negative items required, found {len(negatives)}")
-    errors.extend(f"{item.get('id', '?')}: negative item must be direct_answer/none" for item in negatives if (item.get("expect"), item.get("expected_product")) != ("direct_answer", "none"))
-    if expected is None:
-        return errors
-    item_ids = {item.get("id") for item in items}
-    if missing := sorted(item_ids - set(expected)):
-        errors.append(f"expected.json is missing ids: {missing}")
-    if extra := sorted(set(expected) - item_ids):
-        errors.append(f"expected.json has unknown ids: {extra}")
-    for item in items:
-        detail = expected.get(item.get("id")) or {}
-        for key in ("expect", "expected_product", "negative"):
-            if detail.get(key) != item.get(key):
-                errors.append(f"{item.get('id')}: expected.json disagrees on {key}")
-        if detail.get("max_user_turns") != 2:
-            errors.append(f"{item.get('id')}: max_user_turns must be 2")
-        markers = detail.get("required_markers") or []
-        if not all(isinstance(m, str) and m for m in markers):
-            errors.append(f"{item.get('id')}: required_markers must be a non-empty string list")
-    return errors
+def validate_corpus_path(path: Path, items: list[dict[str, Any]]) -> list[str]:
+    """Apply the frozen rules only to the default corpus path."""
+    frozen = path.resolve() == CORPUS_PATH.resolve()
+    return validate_corpus(items, load_expected() if frozen else None, frozen=frozen)
 
 def _walk(value: Any) -> Iterator[dict[str, Any]]:
     if isinstance(value, dict):
@@ -310,6 +273,10 @@ def _run_one(args: argparse.Namespace, item: dict[str, Any]) -> list[dict[str, A
         proc = subprocess.run(command, capture_output=True, text=True, timeout=args.timeout)
     except subprocess.TimeoutExpired as exc:
         tail = exc.stderr.decode("utf-8", "replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+        if args.container:
+            # Killing docker exec does not kill the in-container CLI; do it explicitly
+            # so a timed-out item cannot accumulate a zombie process and memory.
+            subprocess.run(["docker", "exec", args.container, "pkill", "-f", f"opencode run .*--title {item['id']}"], capture_output=True, timeout=30)
         return [build_run_error(run_id, item, wall_s=time.monotonic() - started, reason=f"timeout after {args.timeout}s", stderr_tail=tail)]
     except OSError as exc:
         return [build_run_error(run_id, item, wall_s=time.monotonic() - started, reason=f"exec failed: {exc}")]
@@ -319,7 +286,7 @@ def _run_one(args: argparse.Namespace, item: dict[str, Any]) -> list[dict[str, A
     if not args.disable_recovery and not stream["calls"] and not stream["text"]:
         session_id = stream_session_id(proc.stdout)
         if session_id:
-            stream = recover_stream(args.attach, session_id, args.username, args.password)
+            stream = recover_stream(args.recovery_url or args.attach, session_id, args.username, args.password)
             recovered = bool(stream["calls"] or stream["text"])
     if args.raw_dir:
         raw = Path(args.raw_dir)
@@ -332,8 +299,9 @@ def _run_one(args: argparse.Namespace, item: dict[str, Any]) -> list[dict[str, A
     return [build_run_error(run_id, item, wall_s=wall_s, reason=reason, stdout_tail=proc.stdout, stderr_tail=proc.stderr, tokens=stream["tokens"])]
 
 def _real_run(args: argparse.Namespace) -> int:
-    corpus = load_corpus()
-    if problems := validate_corpus(corpus, load_expected()):
+    corpus_path = Path(args.corpus)
+    corpus = load_corpus(corpus_path)
+    if problems := validate_corpus_path(corpus_path, corpus):
         print("\n".join(f"[corpus] {problem}" for problem in problems), file=sys.stderr)
         return 2
     if args.only:
@@ -361,10 +329,12 @@ def _real_run(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--dry-run", action="store_true", help="print the frozen corpus and exit")
+    parser.add_argument("--dry-run", action="store_true", help="print the corpus and exit")
+    parser.add_argument("--corpus", default=str(CORPUS_PATH), help="corpus JSONL path (default: frozen corpus)")
     parser.add_argument("--attach", default="http://localhost:4096", help="opencode server URL")
     parser.add_argument("--dir", default="/workspace", help="cwd for docker exec and --dir for opencode run")
     parser.add_argument("--container", help="run the CLI through `docker exec <container>`")
+    parser.add_argument("--recovery-url", help="host-side server URL for session recovery (default: --attach)")
     parser.add_argument("--limit", type=int, help="only drive the first N corpus items")
     parser.add_argument("--only", action="append", metavar="ID", help="only drive the given corpus id (repeatable)")
     parser.add_argument("--disable-recovery", action="store_true", help="never fetch short-run transcripts from the session API")
@@ -382,8 +352,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.dry_run:
-        items = load_corpus()
-        if problems := validate_corpus(items):
+        corpus_path = Path(args.corpus)
+        items = load_corpus(corpus_path)
+        if problems := validate_corpus_path(corpus_path, items):
             print("\n".join(f"[corpus] {problem}" for problem in problems), file=sys.stderr)
             return 2
         for item in items:

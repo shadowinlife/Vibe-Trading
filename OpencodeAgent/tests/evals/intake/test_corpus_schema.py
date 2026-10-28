@@ -19,6 +19,7 @@ import pytest
 
 INTAKE_DIR = Path(__file__).resolve().parent
 CORPUS_PATH = INTAKE_DIR / "corpus.jsonl"
+CORPUS40_PATH = INTAKE_DIR / "corpus40.jsonl"
 EXPECTED_PATH = INTAKE_DIR / "expected.json"
 SCHEMA_PATH = INTAKE_DIR / "events.schema.json"
 RUN_PY = INTAKE_DIR / "run.py"
@@ -48,12 +49,16 @@ EVENT_NAMES = ("route_class", "intake_loaded", "question_called", "params_compil
 PRIVATE_MARKERS = {"成本价", "仓位"}
 
 
-def _load_run_module():
-    spec = importlib.util.spec_from_file_location("intake_eval_run", RUN_PY)
+def _load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _load_run_module():
+    return _load_module("intake_eval_run", RUN_PY)
 
 
 run = _load_run_module()
@@ -243,3 +248,48 @@ def test_parser_supports_only_and_disable_recovery():
     args = run.build_parser().parse_args(["--only", "c08", "--only", "c09", "--disable-recovery"])
     assert args.only == ["c08", "c09"]
     assert args.disable_recovery is True
+
+
+def test_custom_corpus_accepts_40_and_rejects_short(tmp_path):
+    items = run.load_corpus(CORPUS40_PATH)
+    assert len(items) == 40
+    assert {item["id"] for item in items} == {f"c{number:02d}" for number in range(1, 41)}
+    assert run.validate_corpus(items) == []
+    assert all(item["source"] == "extended_generated" for item in items[10:])
+    assert all(item["generator"] == "corpus40 v1 seed=20261027" for item in items[10:])
+    short_path = tmp_path / "short.jsonl"
+    short_path.write_text("\n".join(CORPUS40_PATH.read_text(encoding="utf-8").splitlines()[:9]) + "\n", encoding="utf-8")
+    errors = run.validate_corpus(run.load_corpus(short_path))
+    assert any("at least 10 items" in error for error in errors), errors
+
+
+def test_frozen_rules_apply_only_to_default_path(tmp_path):
+    lines = CORPUS40_PATH.read_text(encoding="utf-8").splitlines()[:11]
+    eleven_path = tmp_path / "eleven.jsonl"
+    eleven_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    items = run.load_corpus(eleven_path)
+    assert run.validate_corpus(items) == []
+    assert any("exactly 10 items" in error for error in run.validate_corpus(items, frozen=True))
+    assert run.validate_corpus(run.load_corpus(CORPUS_PATH), frozen=True) == []
+
+
+def test_dry_run_honours_custom_corpus():
+    result = subprocess.run(
+        [sys.executable, str(RUN_PY), "--dry-run", "--corpus", str(CORPUS40_PATH)],
+        cwd=str(INTAKE_DIR),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+    lines = result.stdout.splitlines()
+    assert len(lines) == 40
+    assert lines[0].startswith("c01 | execute_with_defaults | 个股体检 | false |")
+    assert lines[-1].startswith("c40 | refuse | none | false |")
+
+
+def test_frozen_rubric_matches_exporter():
+    analyze = _load_module("intake_analyze_wave0", INTAKE_DIR / "analyze_wave0.py")
+    exporter = _load_module("intake_first_message_exporter", INTAKE_DIR / "export_first_messages.py")
+    assert analyze.LABEL_KEYWORDS == exporter.LABEL_KEYWORDS
+    assert tuple(analyze.PRODUCT_LABELS) == tuple(exporter.PRODUCT_LABELS)
