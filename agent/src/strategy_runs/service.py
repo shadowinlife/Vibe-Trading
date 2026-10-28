@@ -215,8 +215,12 @@ class StrategyRunService:
         """Read one ledger row without polling or writing anything."""
         return self._store.get(vt_run_id)
 
-    async def sweep_once(self) -> None:
-        """Poll every ``running`` row once; one broken row never stops the pass."""
+    def sweep_once(self) -> None:
+        """Poll every ``running`` row once; one broken row never stops the pass.
+
+        Synchronous on purpose: the sweeper runs in a worker thread so a slow
+        poll (SQLite, session reads) cannot stall the entry's event loop.
+        """
         now = self._now_ms()
         for row in self._store.list_running():
             try:
@@ -245,7 +249,7 @@ class StrategyRunService:
         """
         if self._task is not None and not self._task.done():
             return
-        self.recover()
+        await asyncio.to_thread(self.recover)
         self._task = asyncio.create_task(
             self._sweep_forever(), name=f"strategy-run-sweeper-{id(self):x}"
         )
@@ -354,7 +358,7 @@ class StrategyRunService:
         while True:
             await asyncio.sleep(self.sweep_interval_s)
             try:
-                await self.sweep_once()
+                await asyncio.to_thread(self.sweep_once)
             except asyncio.CancelledError:
                 raise
             except Exception:  # noqa: BLE001 — a pass must never kill the task

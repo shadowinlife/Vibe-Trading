@@ -309,6 +309,7 @@ class AgentScheduleClient:
                 timeout=self.timeout,
                 transport=self.transport,
                 follow_redirects=False,
+                trust_env=False,
             ) as client:
                 return client.request(
                     method,

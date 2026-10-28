@@ -2,7 +2,7 @@
 1. Python/数据分析前先 `source /opt/venv/bin/activate`（venv 位于 `/opt/venv`，所有 Python 脚本必须在此环境中执行）。
 2. 容器运行 opencode serve（端口 :4096），agent 工作目录为 `/workspace`。
 3. **Vibe-Trading 来源**: 镜像使用 `shadowinlife/Vibe-Trading` 的 `mymain` 分支（2026-10-27 对齐上游 main @ 3cbb167e，自 11cff3f3 前进 119 commit，非 PyPI 版本），以 editable install 方式安装于 `/opt/vibe-trading`。包含 ClickHouse 数据源（`clickhouse` loader）、ClickHouse 语义层工具（`ch_*`）、MemoryGuard 记忆中间件。
-4. **VT MCP 工具规模**: 当前 mymain 树默认 **89 个**；`VT_MEMORY_MCP_TOOLS=1` 时为 **94 个**（多出的 5 个为 `memory_save` / `memory_recall` / `memory_reinforce` / `memory_reflect` / `memory_status`；OFF 面另含 3 个策略库工具 `promote_strategy` / `evaluate_strategy` / `schedule_strategy`）。已交付的 v3.8.x 镜像早于 F9 与 2026-10-27 对齐，为 85/90；下次重建即 89/94。镜像已预置记忆工具开关。
+4. **VT MCP 工具规模**: 当前 mymain 树默认 **94 个**；`VT_MEMORY_MCP_TOOLS=1` 时为 **99 个**（多出的 5 个为 `memory_save` / `memory_recall` / `memory_reinforce` / `memory_reflect` / `memory_status`）。策略调度为六个 RM 控制面工具：`schedule_strategy` / `list_strategy_schedules` / `pause_strategy_schedule` / `resume_strategy_schedule` / `delete_strategy_schedule` / `retarget_strategy_schedule`。已交付的 v3.8.x 镜像早于 F9 与 2026-10-27 对齐，为 85/90；本镜像为 94/99。镜像已预置记忆工具开关。
 5. **VT 内置技能**: 91 个金融技能（`vibe-trading_list_skills` 查看，`vibe-trading_load_skill` 加载）；**Swarm 团队预设**: 30 个（`vibe-trading_list_swarm_presets` 查看）。
 6. **记忆存储**: `/workspace/.vt-memory/`（由 `VT_MEMORY_BASE_DIR` 指定），通过 `docker-compose.yml` 挂载 `volumes/vt-memory` 持久化，容器重启不丢失。
 7. 可复用 ClickHouse SQL 查询放 `./sql/`，视图定义文档放 `./docs/views/`。

@@ -282,6 +282,7 @@ def test_health_is_unchanged_and_the_dedicated_app_mounts_nothing_else(client: T
     health = client.get("/health")
     assert health.status_code == 200
     assert health.json()["status"] == "healthy"
+    assert health.json()["token_configured"] is True
 
     for method in ("get", "post"):
         schedules = getattr(client, method)("/strategy-schedules", headers=AUTH)

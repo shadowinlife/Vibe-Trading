@@ -209,7 +209,7 @@ def test_running_converges_to_completed_and_repeated_status_is_stable(
     runner.outcomes.append(RunOutcome(status="completed", summary="done"))
 
     vt_run_id = _submit(service, _command())
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
 
     row = service.status(vt_run_id)
     assert row is not None
@@ -221,7 +221,7 @@ def test_running_converges_to_completed_and_repeated_status_is_stable(
     assert first_read == second_read
 
     polls = len(runner.polls)
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
     assert len(runner.polls) == polls
     assert runner.polls[0].run_id == json.loads(row.handle_json or "{}")["run_id"]
 
@@ -237,7 +237,7 @@ def test_failed_outcome_persists_both_error_fields(tmp_path: Path) -> None:
     )
 
     vt_run_id = _submit(service, _command())
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
 
     row = service.status(vt_run_id)
     assert row is not None
@@ -260,7 +260,7 @@ def test_non_terminal_runner_states_collapse_to_runner_error(
         runner.outcomes.append(RunOutcome(status=status))
 
     vt_run_id = _submit(service, _command())
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
 
     row = service.status(vt_run_id)
     assert row is not None
@@ -278,7 +278,7 @@ def test_timeout_wins_before_polling_and_stops_further_polls(
 
     vt_run_id = _submit(service, _command())
     clock.advance_ms(TIMEOUT_S * 1000)
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
 
     row = service.status(vt_run_id)
     assert row is not None
@@ -287,7 +287,7 @@ def test_timeout_wins_before_polling_and_stops_further_polls(
     assert row.error and str(TIMEOUT_S) in row.error
     assert runner.polls == []
 
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
     assert runner.polls == []
 
 
@@ -326,12 +326,12 @@ def test_handle_less_run_waits_out_the_grace_then_recovers(tmp_path: Path) -> No
     service = _service(tmp_path / "runs.sqlite3", runner, clock, grace_s=120.0)
 
     clock.value = NOW + 10_000
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
     running = service.status(claim.row.vt_run_id)
     assert running is not None and running.status == "running"
 
     clock.value = NOW + 120_000
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
     recovered = service.status(claim.row.vt_run_id)
     assert recovered is not None
     assert recovered.status == "failed"
@@ -378,7 +378,7 @@ def test_code_handle_is_rehydrated_by_a_new_service_and_polled_to_terminal(
     still_running = second_service.status(vt_run_id)
     assert still_running is not None and still_running.status == "running"
 
-    asyncio.run(second_service.sweep_once())
+    second_service.sweep_once()
     terminal = second_service.status(vt_run_id)
     assert terminal is not None
     assert terminal.status == "completed"
@@ -409,7 +409,7 @@ def test_workflow_contract_violation_is_a_terminal_failure(tmp_path: Path) -> No
     )
 
     vt_run_id = _submit(service, _command())
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
 
     row = service.status(vt_run_id)
     assert row is not None
@@ -469,7 +469,7 @@ def test_sweeper_is_single_task_and_leaves_f9_store_untouched(
     runner = _FakeRunner(clock)
     service = _service(tmp_path / "runs.sqlite3", runner, clock)
     _submit(service, _command())
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
 
     async def scenario() -> None:
         await service.start()
@@ -773,7 +773,7 @@ def test_both_kinds_reach_the_runner_with_the_in_memory_job(
     assert job.strategy_version == "v1-aaaaaaaa"
     assert job.run_policy["run_timeout_s"] == TIMEOUT_S
 
-    asyncio.run(service.sweep_once())
+    service.sweep_once()
 
     assert len(runner.polls) == 1
     assert runner.polls[0].kind == kind

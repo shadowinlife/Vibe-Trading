@@ -109,8 +109,10 @@ fi
 # for RM's token write, so failing to create it must fail the container.
 RM_AGENT_CONFIG_DIR="${HOME:-/home/opencode}/.config/rm"
 mkdir -p "$RM_AGENT_CONFIG_DIR"
-chmod 700 "$RM_AGENT_CONFIG_DIR"
-echo "[entrypoint] RM agent token dir ready (0700): $RM_AGENT_CONFIG_DIR"
+if ! chmod 700 "$RM_AGENT_CONFIG_DIR" 2>/dev/null; then
+    echo "[entrypoint] WARNING: cannot chmod 700 $RM_AGENT_CONFIG_DIR (owned by another uid); continuing"
+fi
+echo "[entrypoint] RM agent token dir ready: $RM_AGENT_CONFIG_DIR"
 
 # ── Read environment variables with defaults ──────────────────────────────────
 CLICKHOUSE_HOST="${CLICKHOUSE_HOST:-}"

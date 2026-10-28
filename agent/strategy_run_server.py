@@ -33,7 +33,7 @@ from fastapi import FastAPI
 # from here — it starts the F9 scheduler, which this entry must not run.
 import api_server  # noqa: F401
 from src.api.state_routes import register_state_routes
-from src.api.strategy_run_auth import log_token_configuration
+from src.api.strategy_run_auth import log_token_configuration, token_configured
 from src.api.strategy_run_routes import (
     ServiceProvider,
     default_service_provider,
@@ -47,12 +47,13 @@ SERVICE_NAME = "strategy-run entry"
 __all__ = ["SERVICE_NAME", "create_app", "main", "serve_main"]
 
 
-def _health_payload() -> dict[str, str]:
+def _health_payload() -> dict[str, str | bool]:
     """Minimal equivalent of the main API's ``/health`` payload."""
     return {
         "status": "healthy",
         "service": SERVICE_NAME,
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "token_configured": token_configured(),
     }
 
 
@@ -139,7 +140,7 @@ def create_app(service_provider: ServiceProvider | None = None) -> FastAPI:
         return service
 
     @app.get("/health", include_in_schema=False)
-    async def health() -> dict[str, str]:
+    async def health() -> dict[str, str | bool]:
         """Unauthenticated liveness probe for the entry process."""
         return _health_payload()
 

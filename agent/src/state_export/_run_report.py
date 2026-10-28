@@ -64,7 +64,7 @@ def export_run(vt_run_id: str, *, runtime_root: Path | None = None) -> dict[str,
     if row is None:
         raise UnknownRunId(f"unknown vt_run_id {vt_run_id!r}")
     run_dir = _run_directory(root, row.vt_run_id, row.handle_json)
-    card = _read_run_card(run_dir)
+    card, card_truncated = _read_run_card(run_dir)
     metrics = card.get("metrics") if isinstance(card.get("metrics"), dict) else None
     if metrics is None:
         metrics = _first_csv_row(run_dir, "metrics.csv")
@@ -85,7 +85,9 @@ def export_run(vt_run_id: str, *, runtime_root: Path | None = None) -> dict[str,
         "equity_curve": equity_curve,
         "trades": trades,
         "report_markdown": report_markdown,
-        "truncated": equity_truncated or trades_truncated or report_truncated,
+        "truncated": (
+            equity_truncated or trades_truncated or report_truncated or card_truncated
+        ),
     }
     return _cap_run_payload(payload)
 
@@ -156,17 +158,18 @@ def _read_capped_bytes(path: Path) -> tuple[bytes, bool]:
     return raw[:_MAX_SOURCE_FILE_BYTES], len(raw) > _MAX_SOURCE_FILE_BYTES
 
 
-def _read_run_card(run_dir: Path | None) -> dict[str, Any]:
-    """Return ``run_card.json`` as a dict, or an empty dict when unreadable."""
+def _read_run_card(run_dir: Path | None) -> tuple[dict[str, Any], bool]:
+    """Return ``run_card.json`` and whether its read hit the size cap."""
     path = _artifact_path(run_dir, "run_card.json")
     if path is None:
-        return {}
+        return {}, False
+    truncated = False
     try:
-        raw, _truncated = _read_capped_bytes(path)
+        raw, truncated = _read_capped_bytes(path)
         payload = json.loads(raw.decode("utf-8"))
     except (OSError, UnicodeDecodeError, ValueError):
-        return {}
-    return payload if isinstance(payload, dict) else {}
+        return {}, truncated
+    return (payload, truncated) if isinstance(payload, dict) else ({}, truncated)
 
 
 def _read_report_markdown(run_dir: Path | None) -> tuple[str | None, bool]:

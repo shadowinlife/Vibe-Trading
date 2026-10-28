@@ -233,9 +233,15 @@ def export_state(body: StateExportRequest) -> Response:
 )
 async def import_state(request: Request) -> Response:
     """Replace the strategy library with one validated ``vt-state-v1`` blob."""
-    body = await request.body()
-    if len(body) > MAX_BLOB_BYTES:
+    declared = request.headers.get("content-length")
+    if declared is not None and declared.isdigit() and int(declared) > MAX_BLOB_BYTES:
         return _json(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, {"error": "blob_too_large"})
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > MAX_BLOB_BYTES:
+            return _json(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, {"error": "blob_too_large"})
+    body = bytes(body)
     layout = (request.headers.get(LAYOUT_HEADER) or "").strip()
     if not layout:
         return _json(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, {"error": "layout_version_unsupported"})
