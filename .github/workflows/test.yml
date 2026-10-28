@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, mymain]
   pull_request:
-    branches: [main]
+    branches: [main, mymain]
   # Manual trigger. On 2026-08-06 twelve commits landed on main without a
   # single push-event run being created, and there was then no way to get a
   # verdict on main short of pushing an empty commit.
