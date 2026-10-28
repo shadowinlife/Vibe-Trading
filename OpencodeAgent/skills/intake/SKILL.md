@@ -90,3 +90,62 @@ triggers:
 
 ## 单向指针
 本 skill 是开放型 / 待澄清型澄清规则的**唯一来源**：`research-scenarios` 的开放性问题场景只以一行指针指向本 skill；本 skill 不回指任何场景正文，也不复述其步骤。
+
+## 槽位默认值表
+
+> **裁决（来源：槽位价值实验）**：六公共槽位（市场 / 期限 / 风险 / 风格 / 候选池 / 持仓）全部 **INCONCLUSIVE**（24/24 cell 无多数签名，kill criterion 未触发）→ 无证据支持提问，按默认值执行；私有槽位不可推断，保留提问。`INCONCLUSIVE` 不构成"该问"的证据，不得据此新增澄清轮。
+
+| 槽位 | 默认值 | 一句理由 | 何时提问 |
+|------|--------|---------|---------|
+| 市场 | A股 | 本部署的数据源（ClickHouse ashare + `ch_*` 语义层）只覆盖 A 股 | 不提问（默认值） |
+| 期限 | 1-3 个月 | 新手以季度为决策周期，短窗口避免把一轮牛熊当成常态 | 不提问（默认值） |
+| 风险 | 最大回撤 10%（稳健档） | 10% 是新手可承受的亏损上限，与 20% 强制暂停线留出缓冲 | 不提问（默认值） |
+| 风格 | 均衡 | 均衡默认不对单一因子下注，避免默认值本身成为一次风格押注 | 不提问（默认值） |
+| 候选池 | Top 10 | 10 是「10–20 只候选」产物菜单的下沿，清单不至于长到无法执行 | 不提问（默认值） |
+| 持仓 | 空仓 | 未声明持仓时按新建仓处理，不虚构成本价与仓位 | 不提问（默认值） |
+| 产出 | 结论 + 清单 | 新手要的是可执行的下一步，纯解释无法执行 | 不提问（默认值） |
+| 成本价 | 未知 | 私有信息，任何数据源都取不到真实建仓价 | 提问（私有、不可推断） |
+| 仓位规模 | 未知 | 私有信息，决定风险暴露与可加仓空间 | 提问（私有、不可推断） |
+
+默认值以工具参数形式落地（见下表），并在产物开头一句话声明。
+
+## 选项 → 工具参数编译表
+
+工具名取自运行时 MCP `tools/list` 快照 `tests/evals/intake/fixtures/tool_list.json`，由 `tests/test_intake_brief.py` 逐行断言；调用面由 opencode 统一加 `vibe-trading_` 前缀，表内保留快照原名以便逐字校验。`config/vibe-trading-tools.json` 只是 disabled 清单（3 条 deny），**不是**工具注册表，不得作为来源。`backtest` 只接收 `run_dir`，其余参数经 `run_dir/config.json` 传入，故表中记作 `config.*`。
+
+| 选项 | 工具名 | 参数 | 值 |
+|------|--------|------|-----|
+| 市场=A股 | get_market_data | source | auto |
+| 市场=A股 | screen_market | market | a |
+| 期限=1-3 个月 | get_market_data | end_date | 执行日（YYYY-MM-DD） |
+| 期限=1-3 个月 | get_market_data | start_date | end_date 前推 3 个月（YYYY-MM-DD） |
+| 期限=1-3 个月 | backtest | config.start_date | 与 get_market_data 同一窗口 |
+| 期限=1-3 个月 | backtest | config.end_date | 与 get_market_data 同一窗口 |
+| 风险=最大回撤 10% | quantlib_call | module | risk |
+| 风险=最大回撤 10% | quantlib_call | function | max_drawdown_analysis |
+| 风险=最大回撤 10% | load_skill | name | risk-analysis |
+| 风格=均衡 | factor_analysis | factor_csv | 估值分位与 20 日动量等权合成的单列因子 CSV |
+| 风格=均衡 | screen_market | sort_by | change_pct |
+| 候选池=Top 10 | screen_market | top_n | 10 |
+| 持仓=空仓 | backtest | config.initial_cash | 1000000 |
+| 持仓=已有仓位 | trading_positions | connection | 省略即用当前已选连接（只读） |
+
+## brief 输出契约
+
+澄清 / 收敛的结果编译成一份 brief，schema 见 `tests/evals/intake/brief.schema.json`：
+
+```json
+{
+  "intake_version": "1.0",
+  "request_class": "execute_with_defaults | clarify_private | direct_answer | refuse",
+  "slots": {"market": {"value": "A股", "source": "default | user | tool", "reason": "…"}},
+  "tool_plan": [{"tool": "<快照内工具名>", "args": {"…": "…"}}],
+  "assumptions": ["…"],
+  "closing_block": {"assumptions": "…", "alternative": "…", "next_steps": "…", "disclaimer": "…"}
+}
+```
+
+- `slots` 九个键固定：`market` / `horizon` / `risk` / `style` / `universe` / `position` / `output` / `cost_basis` / `position_size`；`source` 三值。
+- 任一槽位 `source=default` 时 `assumptions` 至少一条：默认值必须被声明，而不是隐藏。
+- `tool_plan` 的工具名必须逐字存在于 `tool_list.json` 快照；参数名与枚举值以 schema 的 `tool_specs` 为准，越界即拒绝。
+- `closing_block` 四键即「执行承诺」第 4 条的四行，逐行渲染进产物结尾；纯解释性 `direct_answer` 用空对象 `{}`，不附 block。
