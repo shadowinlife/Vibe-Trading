@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any
 
 BASE_DIR = Path(__file__).resolve().parent
+CORPUS_PATH = BASE_DIR / "corpus40_v2.jsonl"
+CORRECTED_LABEL_IDS = ("c19", "c22")
 PROBE_PATH = BASE_DIR / "results" / "wave1_probe.jsonl"
 LANE_PATHS = (BASE_DIR / "results" / "wave1_probe_a.jsonl", BASE_DIR / "results" / "wave1_probe_b.jsonl")
 TEXT_DIR = BASE_DIR / "results" / "wave1_texts_probe"
@@ -52,6 +54,19 @@ runner = _load("probe_runner", BASE_DIR / "run.py")
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def verify_corrected_labels() -> None:
+    """The probe ran after the c19/c22 correction; v2 is the corpus that holds it."""
+    items = {item["id"]: item for item in load_jsonl(CORPUS_PATH)}
+    if len(items) != 40:
+        raise SystemExit(f"{CORPUS_PATH}: expected 40 items, found {len(items)}")
+    relabelled = {corpus_id for corpus_id, item in items.items() if item.get("labels_version") == "v2"}
+    if relabelled != set(CORRECTED_LABEL_IDS):
+        raise SystemExit(f"{CORPUS_PATH}: labels_version=v2 records are {sorted(relabelled)}")
+    for corpus_id in CORRECTED_LABEL_IDS:
+        if items[corpus_id]["expect"] != "clarify_private":
+            raise SystemExit(f"{CORPUS_PATH}: {corpus_id} must be clarify_private")
 
 
 def sha256_file(path: Path) -> str:
@@ -225,6 +240,7 @@ def behavioural_gate(agreement: dict[str, Any], n_complete: int) -> dict[str, An
 
 
 def build_metrics() -> dict[str, Any]:
+    verify_corrected_labels()
     groups = wave1.group_events(PROBE_PATH)
     verify_lanes(groups)
     baseline_groups = wave1.group_events(BASELINE_PATH)

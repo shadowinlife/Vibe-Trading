@@ -3,7 +3,7 @@
 WHY: todo 14 needs at least 30 open-type prompts. Three slices make the 35-item
 corpus, and no prompt is hand-written here:
 
-- ``frozen`` (16): copied byte-for-byte from ``corpus40.jsonl`` -- every item
+- ``frozen`` (16): copied byte-for-byte from ``corpus40_v2.jsonl`` -- every item
   marked ``open_ended: true`` (c02, c03, c07 and c14, c15, c16, c20, c21) plus
   every ``clarify_private`` item (c05, c06, c19, c22, c26, c27, c28, c29).
   Five of them are the original frozen probes; the other eleven were already
@@ -38,7 +38,7 @@ from typing import Any
 BASE_DIR = Path(__file__).resolve().parent
 INTAKE_DIR = BASE_DIR.parent
 OUTPUT_PATH = BASE_DIR / "corpus_ab.jsonl"
-CORPUS40_PATH = INTAKE_DIR / "corpus40.jsonl"
+CORPUS40_PATH = INTAKE_DIR / "corpus40_v2.jsonl"
 LABELS_PATH = INTAKE_DIR / "results" / "request_labels.json"
 
 if str(INTAKE_DIR) not in sys.path:
@@ -92,7 +92,7 @@ def frozen_items() -> list[dict[str, Any]]:
     ]
     if len(selected) != 16:
         raise SystemExit(
-            f"expected 16 frozen open-type items in corpus40.jsonl, found {len(selected)}"
+            f"expected 16 frozen open-type items in corpus40_v2.jsonl, found {len(selected)}"
         )
     return selected
 
