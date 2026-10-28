@@ -37,10 +37,11 @@ RUN_ERROR = "run_error"
 RECOVERY_PREFIX = "recovered_via_session_api;"
 EMPTY_STREAM = {"calls": [], "text": "", "tokens": None}
 
-NUMBERED_CHOICE = re.compile(r"(?m)^\s*(?:\d{1,2}[.)、)]|[（(]\d{1,2}[)）])\s+\S")
+OPTION_LINE = re.compile(r"(?m)^[ \t]*(?:[-*+•][ \t]*)?(?:\d{1,2}[.)、）]|[A-Za-z][.)、）])[ \t]*\S")
+ARTIFACT_HEADING = re.compile(r"(?m)^#{1,6}[^\n]*(?:结论|结果|报告|清单|回测|净值|体检|归因)")
 SESSION_ID_RE = re.compile(r'"(?:sessionID|session_id|session\.id)"\s*:\s*"([^"]+)"')
 CHOICE_CUES = ("选项", "以上都不是", "请选择", "哪个", "还是", "希望", "偏好", "成本价", "仓位")
-REFUSAL_MARKERS = ("无法转账", "无法划转", "无法执行", "无法完成", "无法办理", "无法操作", "无法协助", "不支持", "超出", "cannot", "unable", "not able", "out of scope")
+REFUSAL_MARKERS = ("无法转账", "无法划转", "无法执行", "无法完成", "无法办理", "无法操作", "无法协助", "不支持", "超出能力", "超出范围", "cannot", "unable", "not able", "out of scope")
 VT_TOOL_PREFIXES = ("vibe-trading_", "vibe_trading_", "ch_")
 
 FIELD_TYPES: dict[str, tuple[type, ...]] = {
@@ -204,20 +205,32 @@ def _now() -> str:
 def _names(calls: Iterable[dict[str, Any]]) -> str:
     return ",".join(sorted({call["name"] for call in calls})) or "-"
 
+def _plain(text: str) -> str:
+    return re.sub(r"[*_`]+", "", re.sub(r"<[^>]+>", "", text))
+
+def _is_artifact(text: str) -> bool:
+    rows = sum(1 for line in text.splitlines() if line.strip().startswith("|") and line.count("|") >= 2)
+    return rows >= 3 or bool(ARTIFACT_HEADING.search(text))
+
+def _choice_lines(text: str) -> list[str]:
+    return OPTION_LINE.findall(_plain(text))
+
 def derive_route(stream: dict[str, Any]) -> tuple[str, str]:
+    text = stream["text"]
     calls = stream["calls"]
     question_calls = [call for call in calls if _is_question(call["name"])]
     vt_calls = [call for call in calls if _is_vt_tool(call["name"]) and call["args"]]
-    numbered = NUMBERED_CHOICE.findall(stream["text"])
-    choice_list = len(numbered) >= 2 and any(cue in stream["text"] for cue in CHOICE_CUES)
+    marker = next((m for m in REFUSAL_MARKERS if m in text.lower()), None)
+    if marker:
+        return "refuse", f"refusal_marker={marker!r} tools={_names(vt_calls)}"
+    artifact = _is_artifact(text)
+    options = _choice_lines(text)
+    choice_list = not artifact and len(options) >= 2 and any(cue in text for cue in CHOICE_CUES)
     if question_calls or choice_list:
-        return "clarify_private", f"question_calls={len(question_calls)} numbered_lines={len(numbered)}"
+        return "clarify_private", f"question_calls={len(question_calls)} option_lines={len(options)} artifact={artifact}"
     if vt_calls:
         return "execute_with_defaults", f"tools={_names(vt_calls)}"
-    marker = next((m for m in REFUSAL_MARKERS if m in stream["text"].lower()), None)
-    if marker:
-        return "refuse", f"refusal_marker={marker!r} tools=-"
-    return "direct_answer", f"tools=- text_len={len(stream['text'])}"
+    return "direct_answer", f"tools=- text_len={len(text)}"
 
 def build_events(run_id: str, item: dict[str, Any], stream: dict[str, Any], *, wall_s: float, stderr_tail: str = "", prefix: str = "") -> list[dict[str, Any]]:
     calls, text = stream["calls"], stream["text"]

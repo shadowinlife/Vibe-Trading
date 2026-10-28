@@ -81,7 +81,7 @@
       "additionalProperties": false
     },
     "route_class": {
-      "judge_rule": "Expected class is the corpus `expect` label. Observed class is derived from the run's `opencode run --format json` stream: any `question` tool call, or a numbered choice list (at least two numbered lines plus a choice cue such as 选项/请选择/成本价/仓位/希望), in the first assistant turn => clarify_private; otherwise any data/backtest tool call (`vibe-trading_*` or `ch_*`) with non-empty arguments => execute_with_defaults; otherwise text containing an explicit capability refusal (无法转账/无法执行/不支持/超出/cannot/unable) => refuse; otherwise a text-only answer with no tool call => direct_answer.",
+      "judge_rule": "Expected class is the corpus `expect` label. Observed is derived in this order: (1) text containing an explicit capability refusal (无法转账/无法执行/不支持/超出能力/超出范围/cannot/unable) => refuse, checked first because a refusal often includes a numbered 'do it yourself' list (c10); (2) a `question` tool call, or at least two option lines matching `1.`/`1)`/`1）`/`1、`/`A.`/`A)`/`A）` after stripping markdown emphasis and HTML tags, plus a choice cue (选项/请选择/成本价/仓位/希望/偏好/哪个/还是) => clarify_private, unless the text is an artifact (>=3 markdown table rows or a heading containing 结论/结果/报告/清单/回测/净值/体检/归因), because artifacts often end with numbered follow-ups (c04); (3) any `vibe-trading_*`/`ch_*` call with non-empty arguments => execute_with_defaults; (4) otherwise a text-only answer => direct_answer. The artifact guard keeps c04's '下一步' list from reading as a clarification; c05's bold full-width questions are matched after emphasis stripping.",
       "allOf": [
         {
           "$ref": "#/$defs/base_record"

@@ -60,7 +60,7 @@ PROTOCOL_SECTIONS = (
     "## 加载机制",
 )
 
-INTAKE_MAX_LINES = 180
+INTAKE_MAX_LINES = 160
 
 
 def _read(path: Path) -> str:
