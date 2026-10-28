@@ -4,7 +4,7 @@ description: mymain 分支持久知识库的人类入口；agent 请走 AGENTS.m
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-10-27
+updated: 2026-10-28
 tags: [index]
 ---
 
@@ -18,7 +18,7 @@ tags: [index]
 | 目录 | 内容 |
 |---|---|
 | [branch/](branch/) | 分支治理：差异追踪（MYMAIN_DIVERGENCE）与发布记录（MYMAIN_README） |
-| [features/](features/) | 迭代功能卡 F1-F5、F7、F9（能力 / 开发历史 / 验证 / 上游关系）；f8 卡为冻结墓碑（引擎桥线已移出） |
+| [features/](features/) | 迭代功能卡 F1-F5、F7、F9-F12（能力 / 开发历史 / 验证 / 上游关系）；f8 卡为冻结墓碑（引擎桥线已移出） |
 | [harness-evolution/](harness-evolution/) | harness 演进研究档案（17 份文档 + 评测代码与裁决证据，归档态） |
 | [clickhouse/](clickhouse/) | ClickHouse A 股数据源与语义层研究档案 |
 | [multitenant/](multitenant/) | 多租户服务化差距台账（engine-bridge 线动机文档，2026-09-27 随该线移出，冻结墓碑） |

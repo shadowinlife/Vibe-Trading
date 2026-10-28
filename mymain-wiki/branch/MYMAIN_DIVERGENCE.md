@@ -1,6 +1,6 @@
 ---
 title: mymain 分支差异说明（DIVERGENCE）
-description: mymain 与上游 main 的权威差异台账——独有功能 F1-F9、上游贡献队列、验证门禁、维护约定、已知债务。改代码/发 PR/rebase 前必读。触发词：分支差异、上游、回流、rebase、门禁、D1-D4、engine-bridge。
+description: mymain 与上游 main 的权威差异台账——独有功能 F1-F9、F10-F12、上游贡献队列、验证门禁、维护约定、已知债务。改代码/发 PR/rebase 前必读。触发词：分支差异、上游、回流、rebase、门禁、D1-D4、engine-bridge。
 type: delta
 status: active
 created: 2026-07-27
@@ -26,15 +26,15 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | # | Feature | 能力 | 核心文件 | 开关 | 上游关系 |
 |---|---|---|---|---|---|
 | **F1** | 反思课程存储 | 按策略类型 append-only JSONL 课程库；标签/子串检索；置信度更新；`auto_reflect_from_run_dir` | `agent/src/memory/reflections.py`（新增）+ 测试 | `VT_MEMORY_REFLECTIONS`（被 `VT_MEMORY=full` 预设隐含） | 上游无对应（remember_tool / memory CLI 是不同暴露面） |
-| **F2** | MCP 记忆工具 | 五个 MCP 工具 memory_save / recall / reinforce / reflect / status；never-raise dict 包络适配层；memory-lifecycle SKILL 工作流 | `agent/src/memory/mcp_adapter.py`（新增）、`agent/mcp_server.py`（注册段）、`agent/src/skills/memory-lifecycle/SKILL.md` | `VT_MEMORY_MCP_TOOLS`（默认 OFF；当前分支 OFF=89 / ON=94 = 上游基数 82 + 3 个语义层 ch_* 工具 + 1 个 scheduled_research wrapper + 3 个策略库工具 promote/evaluate/schedule；ON 另加 5 个 memory_* 工具） | 上游无 MCP 面记忆工具（上游 MCP 面现为 82） |
+| **F2** | MCP 记忆工具 | 五个 MCP 工具 memory_save / recall / reinforce / reflect / status；never-raise dict 包络适配层；memory-lifecycle SKILL 工作流 | `agent/src/memory/mcp_adapter.py`（新增）、`agent/mcp_server.py`（注册段）、`agent/src/skills/memory-lifecycle/SKILL.md` | `VT_MEMORY_MCP_TOOLS`（默认 OFF；当前分支 OFF=94 / ON=99 = 上游基数 82 + 3 个语义层 ch_* 工具 + 1 个 scheduled_research wrapper + 3 个策略库工具 promote/evaluate/schedule + 5 个 RM 调度工具 list/pause/resume/delete/retarget；ON 另加 5 个 memory_* 工具） | 上游无 MCP 面记忆工具（上游 MCP 面现为 82） |
 | **F3** | 回测反思钩子 | `run_backtest` 成功后 fire-and-forget 提取 run_card 课程（MCP 与 in-process 入口均覆盖，非致命）；附延迟基准（bench marker，p50<200ms / p95<500ms）与 5 会话并发测试 | `agent/src/tools/backtest_tool.py`（钩子段）、`agent/tests/memory/test_latency_bench.py`、`test_concurrent_mcp.py`、`conftest.py`、`pyproject.toml` | 随 F1 联动 | 上游 post-backtest attribution 是 prompt 驱动，机制不同 |
 | **F4** | MemoryGuard + 项目目录存储 | FastMCP middleware：工具调用后自动 memory_save + memory_reflect（零 LLM）；`VT_MEMORY_BASE_DIR` 支持记忆存项目目录；默认路径跟随 `get_runtime_root()`（`VIBE_TRADING_HOME` 感知） | `agent/src/memory/memory_guard.py`（新增）、`agent/src/memory/persistent.py`（`_default_memory_base`）、`agent/src/config/env_schema.py`（`MemoryConfig.base_dir`） | middleware **无条件注册**（债务 D1） | 上游 memory 仍锚定 `~/.vibe-trading`（上游对 persistent.py 的改动——FTS5 排序衰减、FTS5 tokenizer 下限——均不同关注面，两者并存） |
 | **F5** | ClickHouse A 股数据源 + 语义层 | CH HTTP connector + OHLCV loader（DataLoaderProtocol）+ 基本面 Provider（回退 Tushare）+ 四只资金流工具 CH 优先回退；A 股 chain 与路由以 clickhouse 为首选。**语义层 Phase 0–2**（2026-08-12）：56 表 DDL 快照 + 9 表 444 列 COMMENT + 单位 registry（`clickhouse_units.py`）+ 显式 199 列（`clickhouse_columns.py`）+ `get_valuation` + llm_role 受约束灵活性通道（`ch_list_tables` / `ch_describe_table` / `ch_query`，sqlglot AST 守卫） | `agent/src/clickhouse_connector.py`、`agent/backtest/loaders/clickhouse.py`、`agent/src/tools/clickhouse_fallbacks.py`、`schema/clickhouse/`、`agent/src/tools/clickhouse_query_tool.py`、`agent/src/tools/clickhouse_explore_tools.py`、`agent/src/tools/valuation_tool.py` 等 97 文件 | `CLICKHOUSE_*`（DataConfig）；灵活性通道 `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | 个人部署独有，不回流 |
 | **F7** | OpencodeAgent harness 层 | opencode + omo + 本仓库 MCP 的独立部署 harness（Docker 镜像 `opencode-serve`）：问题处理协议（明确/开放/待澄清/宏观四类分流，Least-to-Most 收敛漏斗 + Step-Back 拆分 + 单轮 ≤3 问轮次预算）、防幻觉与诚实拒答纪律（数字溯源三来源、弃权一等公民、五要素拒答模板）、escape-top 微观结构信号（CH 数据层 + 7 门验证框架）、三层选股、VT 联邦行情 scanner、cron + 钉钉通知基础设施；**2026-09-27 起 opencode 主循环直接集成 VT MCP 全工具面**（12 领域子代理层与 nano-search-mcp 经验证不够有效已回退，通用检索由 VT `web_search` 承接、A 股结构化检索为已知缺口，见 §5 与 §4.6） | `OpencodeAgent/`（整目录，源自独立仓库 vibetrading-opencode-instruct，2026-08-17 引入） | 容器 env（`CLICKHOUSE_*` / `CLICKHOUSE_LLM_*` / `DASHSCOPE_API_KEY` 等，见 `OpencodeAgent/.env.example`） | 个人部署独有，不回流；消费 F5 语义层（ch_* 工具）与 F1–F4 记忆能力 |
 | **F8** | ~~opencode 引擎桥~~ **已移出本分支（2026-09-27）** | SessionService 接缝置换 + 多租户基础设施 = 前端兼容路线，整体移至 `mymain-engine-bridge` 分支独立演进（两线零兼容/零相互索引）；mymain 树内不再含 `agent/src/opencode_bridge/`、tenant 容器栈与相关 env。原 F8 附带产出 `scheduled_research` MCP wrapper 作为纯 MCP 面增量**保留本分支**（见队列 ⑦） | 历史代码见 `backup/mymain-pre-rebase-20260926` 与引擎桥线；本 wiki f8 卡为冻结墓碑。**2026-10-10 线废弃封存**：worktree 已移除，`mymain-engine-bridge`/`backup/engine-bridge-pre-rebase-20260918`/`wip/opencode-llm-proxy-20261010`（含渲染事故修复 WIP 封存提交 `1b9a1140`）为只读档案 | — | 分支特有，不回流；上游候选 ⑦①③ 随引擎桥线**一并废弃**（② wrapper 已留存本分支） |
-| **F9** | 策略库与调度 | 版本化策略快照 + code/workflow 双门就绪 + 复用定时研究的排程；Web 策略库与排程页 | `agent/src/strategy_library/`、`agent/src/api/strategy_library_routes.py` / `strategy_schedule_routes.py`、`frontend/src/pages/StrategyLibrary.tsx` / `StrategySchedules.tsx` | 见功能卡 | 本地 `mymain` 已合入（81df3a992）；未回上游 HKUDS |
+| **F9** | 策略库与调度 | 版本化策略快照 + code/workflow 双门就绪 + 复用定时研究的排程；Web 策略库与排程页 | `agent/src/strategy_library/`、`agent/src/api/strategy_library_routes.py` / `strategy_schedule_routes.py`、`frontend/src/pages/StrategyLibrary.tsx` / `StrategySchedules.tsx` | 见功能卡 | 本地 `mymain` 已合入（81df3a992）；P1 入口/状态/工具 2026-10-28 合入（`585845ad` / `d90d5308` / `f036c6b9`，见 F10-F12）；未回上游 HKUDS |
 
-> F9 于 2026-10-25 合入本地 `mymain`（81df3a992），新增 3 个 MCP 工具（promote/evaluate/schedule_strategy）与 4 个 agent tools（含 list_strategy_library）；本表计数已于 2026-10-27 对齐轮刷新为 MCP 89/94、agent tools 121。最新运行计数见 [timeline](../history/timeline.md) 的 2026-10-22/10-25/10-27 条。
+> F9 于 2026-10-25 合入本地 `mymain`（81df3a992），新增 3 个 MCP 工具（promote/evaluate/schedule_strategy）与 4 个 agent tools（含 list_strategy_library）；本表计数已于 2026-10-28 发布轮刷新为 MCP 94/99、agent tools 121。最新运行计数见 [timeline](../history/timeline.md) 的 2026-10-22/10-25/10-27 条。
 
 ### 2.2 已随对齐消除的历史分歧（上游已承接）
 
@@ -58,7 +58,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 
 **2026-10-22 核查结论**：上游自 `596fcf3d` 前进 **150 commit**（v0.1.18 发布、paper-trade #1939 合入、scheduler/usage 系列等），逐项核对 F1–F5/F7 均**未被上游取代**；本地 paper-trade 线按裁决废弃（上游 #1939 已合入，见 §2.2）。计数随本轮对齐更新：MCP 上游基数 **82**（本分支 OFF=**86** / ON=**91**）、agent tools 上游 **113**（本分支 **117** = +3 ch_* +1 get_valuation）、skills 91（上游 90 + memory-lifecycle）、数据源 30（上游 29 + clickhouse）。
 
-**2026-10-27 核查结论**：上游自 `11cff3f3` 前进 **119 commit（72 个非 merge）**（paper-trade/quantlib/factors/loaders/backtest 正确性批次、memory frontmatter UTC、session/swarm/scheduled 修复等），逐项核对 F1–F5/F7/F9 均**未被上游取代**；上游新增 MCP 工具 **0**、skills **0**、loaders **0**，MCP 基数维持 **82**。计数随本轮对齐校正：MCP 上游基数 **82**（本分支 OFF=**89** / ON=**94**）、agent tools 上游 **113**（本分支 **121** = +3 ch_* +1 get_valuation +4 策略库工具）、skills 91（上游 90 + memory-lifecycle）、数据源 30（上游 29 + clickhouse）。
+**2026-10-27 核查结论**：上游自 `11cff3f3` 前进 **119 commit（72 个非 merge）**（paper-trade/quantlib/factors/loaders/backtest 正确性批次、memory frontmatter UTC、session/swarm/scheduled 修复等），逐项核对 F1–F5/F7/F9 均**未被上游取代**；上游新增 MCP 工具 **0**、skills **0**、loaders **0**，MCP 基数维持 **82**。计数随本轮对齐校正：MCP 上游基数 **82**（本分支 OFF=**94** / ON=**99**，2026-10-28 加入 5 个 RM 调度工具）、agent tools 上游 **113**（本分支 **121** = +3 ch_* +1 get_valuation +4 策略库工具）、skills 91（上游 90 + memory-lifecycle）、数据源 30（上游 29 + clickhouse）。
 
 **2026-10-10 核查结论**：上游自 `9a27a6e7` 前进 **253 commit**（v0.1.16 后开发段至 `b1f6ce71`：十三 PR 正确性批次、options/causal 定价修复、channel 热更新与 URL userinfo 系列、mootdx 退役、KIS/grounding/PDF 加密等），逐项核对 F1–F5/F7 均**未被上游取代**——上游对 reflections/mcp_adapter/memory_guard/memory-lifecycle/clickhouse 面零触碰；FE-1 R1/R2 被上游吸收（#1646/#1647，见上表）并按「上游机制优先」完成本地调和；本地北向 CH 路径切换上游 #1484 百万 CNY 契约。计数随本轮对齐更新：MCP 上游基数 **76**（本分支 OFF=**80** / ON=**85**）、agent tools 上游 **109**（本分支 **113** = +3 ch_* +1 get_valuation）、skills 91（上游 90 + memory-lifecycle）、数据源 29（上游 28 + clickhouse）。
 
@@ -120,7 +120,7 @@ python -m pytest agent/tests/memory/test_latency_bench.py -m bench
 ### 3.2 端到端冒烟（本地）
 
 ```bash
-# MCP 工具计数门控：OFF=89 / ON=94（上游基数 82（3cbb167e 实测）+ 本分支 3 个 ch_* 语义层工具 + 1 个 scheduled_research wrapper + 3 个策略库工具 promote/evaluate/schedule_strategy；ON 另加 5 个 memory_* 工具）
+# MCP 工具计数门控：OFF=94 / ON=99（上游基数 82（3cbb167e 实测）+ 本分支 3 个 ch_* 语义层工具 + 1 个 scheduled_research wrapper + 3 个策略库工具 promote/evaluate/schedule_strategy + 5 个 RM 调度工具；ON 另加 5 个 memory_* 工具）
 cd agent
 python -c "import asyncio, mcp_server; print(len(asyncio.run(mcp_server.mcp.list_tools())))"
 VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.run(mcp_server.mcp.list_tools())))"
@@ -166,7 +166,7 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 
 ### 4.3 上游 pin 测试带来的持续义务
 
-- **README/SKILL.md 计数**（`test_readme_counts.py`、`test_distribution_skill_manifest.py`）：每增删一个 skill / loader / MCP 顶层工具，必须同步**七份** README（上游 2026-09 新增 README_id.md 印尼语版）+ `agent/SKILL.md` 计数（当前：skills=91、Tool 类=11、sources=30（上游 29 + clickhouse）、本分支 MCP 头注释 89/94、SKILL.md `Available MCP Tools (89)` 与 `Finance Skills (91)` 小节标题、README 树行 agent tools=121（上游 113 + 3 ch_* + 1 get_valuation + 4 策略库工具）与 mcp_server.py 树行=89）。注：上游 `test_readme_counts.py` 的 READMES 元组现已锚定**全部七份**（en/zh/ja/ko/ar/es/id），翻译滞后不再被容忍——本地增量（clickhouse 行、ch_*/scheduled_research/strategy 工具清单、计数）必须同步进每一份。
+- **README/SKILL.md 计数**（`test_readme_counts.py`、`test_distribution_skill_manifest.py`）：每增删一个 skill / loader / MCP 顶层工具，必须同步**七份** README（上游 2026-09 新增 README_id.md 印尼语版）+ `agent/SKILL.md` 计数（当前：skills=91、Tool 类=11、sources=30（上游 29 + clickhouse）、本分支 MCP 头注释 94/99、SKILL.md `Available MCP Tools (94)` 与 `Finance Skills (91)` 小节标题、README 树行 agent tools=121（上游 113 + 3 ch_* + 1 get_valuation + 4 策略库工具）与 mcp_server.py 树行=94）。注：上游 `test_readme_counts.py` 的 READMES 元组现已锚定**全部七份**（en/zh/ja/ko/ar/es/id），翻译滞后不再被容忍——本地增量（clickhouse 行、ch_*/scheduled_research/strategy 工具清单、计数）必须同步进每一份。
 - **命名一致性**（`test_recovered_orphan_and_new_write_agree_on_the_same_path`）：routed 条目命名保持 `<category>/<slug>.md`，不得改回带类型前缀方案。
 - **env-var AST 门禁**（`tools/ci_env_var_gate.py`）：新增环境变量必须声明进 `env_schema.py` 并经 config accessor 读取，禁止裸 `os.getenv` / `os.environ`。
 
