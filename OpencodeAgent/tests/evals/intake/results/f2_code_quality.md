@@ -190,3 +190,56 @@ Found 2 errors.
 - Nit：6 个（2 个 W292、golden 手工编辑、exporter 的 `pass`、占位符 `sk-`、公开邮箱模式）。
 
 除 blocker 外，pytest、四个重算门、两个生成器、baseline recompute、compose config 全部通过；没有硬编码真实密钥，没有真实用户 PII，没有 tracked 缓存文件。修复 blocker 的最小改动是把 `smoke-v311.sh:57` 从 `-eq 328` 改为 `-le 350`（与计划 cap 一致）或 329，并同步注释；这属于 F3 之前的必要修复，本报告不修改代码。
+
+## Re-check 2026-10-29
+
+复查对象：HEAD `7e76673a`（F2 原报告提交于 `2b4d57c0`）。本轮只复核 blocker 与后续提交，不重跑全量审计。
+
+### 修复证据
+
+`ec22686e` 把「钉死快照行数」换成「计划 cap + 下限」。当前行号（HEAD）：
+
+- `OpencodeAgent/tests/smoke-v311.sh:63` — `actual_lines=$(wc -l < /workspace/AGENTS.md)`
+- `OpencodeAgent/tests/smoke-v311.sh:64` — `test "$actual_lines" -le 350 || { echo ...; exit 1; }`，cap 与 `AGENTS_MD_MAX_LINES == 350` 一致（`tests/test_agents_md.py:101` 钉死该常量）
+- `OpencodeAgent/tests/smoke-v311.sh:65` — `test "$actual_lines" -ge 300 || { echo ...; exit 1; }`，内容丢失的 sanity floor
+- `OpencodeAgent/tests/smoke-v311.sh:66` — echo 打印实际 `$actual_lines`，不再打印常量
+
+其余三项要求逐条确认：
+
+- **四命令仍是 required subset**：`:43-48`（镜像内 command 文件）与 `:139-145`（runtime discovery）两个 `for name in checkup screen backtest review` 循环，缺任一即 `exit 1`；两处均加了「required subset, not an exact-list snapshot」注释。
+- **无 `|| true` 吞失败**：全文件共 4 处 `|| true`，全部在非断言路径 —— `:93` trap 清理、`:107` 失败时的 `docker logs`、`:152` / `:188` 错误信息 tail；所有断言分支都是 `exit 1`。
+- **不再对合法内容变更误报**：当前 HEAD `OpencodeAgent/AGENTS.md` 为 329 行，落在 `[300, 350]`，修复后 Stage 1 通过。
+- `bash -n OpencodeAgent/tests/smoke-v311.sh` → 语法通过。
+
+### 六条命令结果
+
+| # | 命令（工作目录 `OpencodeAgent/`） | 结果 |
+|---|---|---|
+| 1 | `conda run -n legonanobot python -m pytest tests/ -q` | `184 passed in 0.90s` |
+| 2 | `conda run -n legonanobot python tests/evals/intake/analyze_wave0.py --check` | `[ok] intake_load_rate.json, request_distribution.json and wave0_verdict.md match recomputation`（exit 0） |
+| 3 | `conda run -n legonanobot python tests/evals/intake/analyze_wave1.py --check` | `--check OK (.../results/wave1_report.md)` |
+| 4 | `conda run -n legonanobot python tests/evals/intake/analyze_probe.py --check` | `--check OK (.../results/wave1_frozen10_report.md)` |
+| 5 | `conda run -n legonanobot python tests/evals/intake/ab/ab_analysis.py --check` | exit 0；`pairs=10 eligible=7 control_success=7 experiment_success=6 control_manual=0 experiment_manual=1 mcnemar_p=1.0 verdict=INCONCLUSIVE`；`ab_report.md: up to date` |
+| 6 | `docker compose config -q` | 通过（`COMPOSE_OK`，exit 0） |
+
+路径更正：`ab_analysis.py` 实际位于 `tests/evals/intake/ab/ab_analysis.py`，不存在 `tests/evals/ab/` 目录；按真实路径执行通过。
+
+### 提交分类（`2b4d57c0..7e76673a`）
+
+| commit | 触及文件 | 是否引入新 blocker |
+|---|---|---|
+| `8c4feddf` | eval corpus 版本化：`corpus40.jsonl`/`corpus40_v2.jsonl`、`gen_corpus40.py`、`gen_corpus_ab.py`、`analyze_probe.py`、`test_corpus_schema.py`、`results/corpus_version_note.md`、notepad | 否。全部是测试侧生成器/分析器/数据与文档，无产品面；F2 原审计已覆盖该版本化，且其后四条 `--check` 与 pytest 全绿。 |
+| `2b4d57c0` | `results/f2_code_quality.md` | 否。纯报告。 |
+| `ec22686e` | `tests/smoke-v311.sh`（+13/−4） | 否。即本 blocker 的修复本身。 |
+| `4aab6cf4` | `results/f1_plan_conformance.md` | 否。纯报告。 |
+| `7e76673a` | `results/f1_plan_conformance.md` | 否。纯报告。 |
+
+五个提交均未触及产品代码、skills、容器配置或 Dockerfile，未引入新的硬编码密钥/路径/URL；工作树仅有 notepad 与 wiki 的未跟踪改动，不在本轮评审范围。
+
+### 裁决
+
+- Blocker：1 → **resolved**（`ec22686e`，`OpencodeAgent/tests/smoke-v311.sh:63-66`）。
+- 新增 blocker：0。
+- 原报告的 7 个 minor 与 6 个 nit 不在 blocker 口径内，状态不变，不阻塞交付。
+
+VERDICT: APPROVE
