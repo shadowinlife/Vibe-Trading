@@ -29,7 +29,7 @@ def repo(tmp_path: Path) -> Path:
     "docs/plans/design.json",
     "docs",
     "DOCS/private.md",
-    "AGENTS.md",
+    "agent/AGENTS.md",
     "agent/AGENTS.override.md",
     "CLAUDE.md",
     "frontend/CLAUDE.local.md",
@@ -48,6 +48,22 @@ def test_force_added_internal_documents_fail(repo: Path, name: str, capsys) -> N
     output = capsys.readouterr().out
     assert ascii(name) in output
     assert "private content" not in output
+
+
+def test_mymain_knowledge_base_agents_are_allowed(repo: Path) -> None:
+    for name in [
+        "AGENTS.md",
+        "OpencodeAgent/AGENTS.md",
+        "OpencodeAgent/workspace/cron_jobs/AGENTS.md",
+        "OpencodeAgent/workspace/scripts/AGENTS.md",
+        "mymain-wiki/AGENTS.md",
+    ]:
+        path = repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("published branch instructions", encoding="utf-8")
+        _git(repo, "add", "-f", "--", name)
+
+    assert main(repo) == 0
 
 
 def test_public_docs_and_ignored_local_notes_pass(repo: Path) -> None:
