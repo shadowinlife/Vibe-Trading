@@ -1,0 +1,27 @@
+定时任务的调度框架已经搭好，并且已经通过真实执行验证。现在只差推送渠道 + 一段 webhook。
+
+## 已经落地的部分
+
+| 项目 | 状态 |
+|---|---|
+| 任务注册 | `csi500_weekly`，`0 8 * * 1`（北京时间周一 08:00），下次触发 **2026-11-02 08:00**，已 enabled |
+| 周报内容 | 七节固定结构：行情 / 估值分位 / 资金与杠杆 / 市场结构 / escape-top 风险信号 / 结论 / 数据说明，强制数字溯源 + 禁止 LLM 手算 |
+| 调度引擎 | 本镜像**没有 crontab、也没有 cron daemon**（PID 1 是 entrypoint.sh），所以写了 `cron_jobs/scheduler.py`（纯标准库、支持标准 5 段 cron 表达式），已后台运行并在 `entrypoint.sh` 加了开机自启 |
+| 链路验证 | smoke 任务真实跑通：scheduler 触发 → `trigger.sh` → `opencode run` → agent 执行（tokens 185/61）→ 日志完整 → `verify-test PASSED` |
+| 顺便修的环境坑 | `cron_jobs/logs`、`cron_jobs/state` 是宿主挂进来的 root:root bind mount，agent 用户写不进去（原方案一跑就 PermissionError）。已改成"能写就用原路径，不能写自动回落 `cron_jobs/runtime/{logs,state}`" |
+| 通知助手 | 新增 `cron_jobs/notify_task.py` + `manage.py notify`，webhook 从 registry 读，不硬编码密钥 |
+
+## 两个需要你知道的现实约束
+
+1. **ClickHouse 现在连不上**（`172.24.165.51:8123` connect timeout），所以估值分位、涨跌宽度、两融这两节在数据恢复前会显示「数据缺失：原因」而不是估算值。行情、北向、行业排名走网络源，通常不受影响。
+2. **本周报告 dry-run 正在后台跑**，跑完会写到 `analysis/000905/weekly_<日期>.md`，正好可以当样本给你看格式、也顺便验证缺数据时的降级表述。下轮我汇报结果。
+
+## 需要你确认的一件事
+
+周报"发给你"的通道，选哪个？
+
+1. **钉钉群机器人**（推荐，手机秒收）— 给我 `https://oapi.dingtalk.com/robot/send?access_token=...`，我执行 `manage.py notify csi500_weekly --dingtalk "<url>"`
+2. **邮件** — 需要 SMTP 主机/端口/账号/授权码/收件地址（`.env` 里没有，得你给）
+3. **只存本地不推送** — 报告落 `analysis/000905/`，我下次进容器（或给你 HTML 报告）时再看
+
+另外确认一下时间：**周一 08:00**（开盘前看上周复盘）可以吗？还是你想改成周日晚上收、或周一 07:30？

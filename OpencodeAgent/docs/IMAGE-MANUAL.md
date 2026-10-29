@@ -1,0 +1,914 @@
+# opencode-serve 镜像使用说明书
+
+> **版本**: v3.2.0-mymain  
+> **架构**: AMD64 (Linux)  
+> **基础镜像**: Ubuntu 22.04 + Python 3.12 + Node.js 20
+
+---
+
+## 目录
+
+1. [概述](#1-概述)
+2. [架构](#2-架构)
+3. [前置条件](#3-前置条件)
+4. [快速开始](#4-快速开始)
+5. [构建镜像](#5-构建镜像)
+6. [配置](#6-配置)
+7. [部署](#7-部署)
+    - 7.4 [持久化存储（挂盘）](#74-持久化存储挂盘)
+8. [记忆生命周期](#8-记忆生命周期)
+9. [服务验证](#9-服务验证)
+10. [周期任务](#10-周期任务)
+11. [ECS 部署](#11-ecs-部署)
+12. [镜像仓库](#12-镜像仓库)
+13. [故障排查](#13-故障排查)
+14. [维护与升级](#14-维护与升级)
+
+---
+
+## 1. 概述
+
+`opencode-serve` 是一个面向 A 股量化研究的 OpenCode Web Server 容器镜像。它打包了完整的 AI 代理研究环境：
+
+- **OpenCode** Web Server（HTTP API + WebSocket），端口 4096
+- **OMO**（oh-my-openagent）并行任务分解插件
+- **Vibe-Trading**（mymain 分支，2026-09-26 对齐 v0.1.15 上游基线）— 78 个 MCP 工具的量化研究引擎（`VT_MEMORY_MCP_TOOLS=1` 时 83 个，含 5 个 `memory_*` 工具）
+- **data-warehouse** Skill — ClickHouse 数据仓库查询接口
+- **html-report** Skill — ECharts 交互式 HTML 报告生成
+- **MemoryGuard** Middleware — 自动记忆管理（Hook 触发，零 LLM 依赖）
+
+### 核心特性
+
+| 特性 | 说明 |
+|------|------|
+| 记忆自动管理 | FastMCP Middleware 拦截所有工具调用，自动 `memory_save` + `memory_reflect` |
+| 记忆持久化 | `/workspace/.vt-memory/`，docker-compose volume 挂载，容器重启不丢失 |
+| 分层镜像 | base（4.19GB，极少重建）→ app（每次部署重建） |
+| ClickHouse 集成 | 199 列 T-1 A 股历史全量数据 |
+| ClickHouse 语义层 | `ch_list_tables` / `ch_describe_table` / `ch_query`（llm_role 只读守卫，详见 6.3） |
+| 实时数据补数 | 当日 OHLCV 通过 tencent/akshare/yfinance 实时获取 |
+| 周期任务 | cron 定时执行策略，钉钉通知 |
+
+---
+
+## 2. 架构
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  opencode-serve (4096)               │
+│                                                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
+│  │ OpenCode  │  │   OMO    │  │ Vibe-Trading MCP │  │
+│  │  Server   │  │  Plugin  │  │  (78/83 tools)   │  │
+│  │           │  │          │  │  ┌─────────────┐ │  │
+│  │           │  │          │  │  │MemoryGuard  │ │  │
+│  │           │  │          │  │  │Middleware   │ │  │
+│  │           │  │          │  │  └──────┬──────┘ │  │
+│  └──────────┘  └──────────┘  └─────────┼────────┘  │
+│                                         │            │
+│  ┌──────────────────┐   ┌───────────────▼──────────┐ │
+│  │  Skills (3)       │   │  /workspace/.vt-memory/  │ │
+│  │  - data-warehouse │   │  - reflections/          │ │
+│  │  - html-report    │   │  - persistent store      │ │
+│  │  - periodic-exec  │   │  - quality scoring       │ │
+│  └──────────────────┘   └──────────────────────────┘ │
+└─────────────────────────────────────────────────────┘
+         │                    │
+         ▼                    ▼
+   ┌──────────┐       ┌──────────────┐
+   │ClickHouse│       │  DashScope    │
+   │(T-1 数据) │       │ (deepseek-v4.1-flash-1017) │
+   └──────────┘       └──────────────┘
+```
+
+### 镜像分层策略
+
+```
+┌──────────────────────────────────────────────────────┐
+│ opencode-serve:v3.8.2-mymain  (5.39GB)               │
+│ ├── OMO plugin 预烘焙缓存 (~/.cache/opencode/packages,│
+│ │   oh-my-openagent@5.1.35, ~241MB) + models.json    │
+│ ├── Vibe-Trading mymain (editable install)           │
+│ ├── 项目文件 (configs, skills, scripts)               │
+│ └── entrypoint.sh (渲染配置 + 后台预热)               │
+├──────────────────────────────────────────────────────┤
+│ opencode-serve-base:latest  (2.98GB)                 │
+│ ├── Ubuntu 22.04                                     │
+│ ├── Python 3.12 (deadsnakes PPA)                     │
+│ ├── Node.js 20                                       │
+│ ├── OpenCode CLI (pin 1.19.3)                        │
+│ ├── playwright + chromium                            │
+│ └── pip 预装包 (plotly, ta, loguru, etc.)            │
+└──────────────────────────────────────────────────────┘
+```
+
+> **v3.2.0 零下载启动**：插件与模型目录已在构建期预烘焙，容器启动与首次请求**不访问 npm / models.dev / posthog**（离线 E2E 验证通过）。app 层不再重复安装 opencode-ai（旧版 ~594MB 冗余层已移除）。
+
+---
+
+## 3. 前置条件
+
+### 必需
+
+| 项目 | 说明 |
+|------|------|
+| Docker 20.10+ | 支持 `--platform linux/amd64` |
+| DashScope API Key | 阿里云百炼，LLM 推理 |
+| ClickHouse 实例 | A 股数据仓库 |
+
+### 可选
+
+| 项目 | 说明 |
+|------|------|
+| 钉钉机器人 Webhook | 周期任务通知 |
+| 阿里云容器镜像服务 | 镜像推送/拉取 |
+| Tushare Token | 数据同步 |
+| OSS Bucket | 跨机 VT 源码传输 |
+
+---
+
+## 4. 快速开始
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/shadowinlife/vibetrading-opencode-instruct.git
+cd vibetrading-opencode-instruct
+
+# 2. 配置环境变量
+cp .env.example .env
+# 编辑 .env 填入实际值
+
+# 3. 拉取基础镜像（跳过本地构建 base）
+docker pull registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve-base:latest
+docker tag registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve-base:latest opencode-serve-base:latest
+
+# 4. 构建 app 镜像
+# 方式 A: 从本地 VT 源码
+VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
+
+# 方式 B: 从 GitHub clone
+VT_SOURCE=https://github.com/shadowinlife/Vibe-Trading.git ./build.sh --app --tag v3.2.0-mymain
+
+# 5. 启动
+docker compose up -d
+
+# 6. 访问
+curl http://localhost:4096/health
+```
+
+---
+
+## 5. 构建镜像
+
+### 5.1 build.sh 脚本
+
+```bash
+./build.sh [--base|--app] [--tag TAG] [--push] [--dry-run]
+```
+
+| 参数 | 说明 |
+|------|------|
+| `--base` | 构建基础镜像（极少使用） |
+| `--app` | 构建 app 镜像（默认） |
+| `--tag TAG` | 镜像标签，默认 `latest` |
+| `--push` | 构建后推送。目标 = `$IMAGE_REGISTRY`（完整仓库路径；解析顺序：环境变量 → `OpencodeAgent/.env` 定向提取），base 镜像默认 `${IMAGE_REGISTRY}-base`（`BASE_IMAGE_REGISTRY` 可覆盖）。**无 hardcode 兜底 registry**：目标未解析时 fail-fast 退出，杜绝静默误推到废弃仓库 |
+| `--dry-run` | 仅打印命令，不执行 |
+
+### 5.2 构建基础镜像
+
+```bash
+# 仅当基础依赖变更时执行（新增系统包/Python 包/Node 包）
+./build.sh --base --tag latest
+```
+
+基础镜像包含 Ubuntu 22.04 + Python 3.12 + Node.js 20 + OpenCode CLI + playwright + 预装 pip 包（plotly, ta, loguru 等）。构建时间约 15-20 分钟。
+
+### 5.3 构建 app 镜像
+
+```bash
+# VT_SOURCE 环境变量指定 Vibe-Trading 源码位置
+VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.2.0-mymain        # 本地目录
+VT_SOURCE=https://github.com/shadowinlife/Vibe-Trading.git ./build.sh # GitHub URL
+VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v3.2.0-mymain    # 预解压目录
+```
+
+app 镜像构建时间约 5-8 分钟（基础镜像已缓存）。
+
+### 5.4 跨平台构建
+
+```bash
+# 在 ARM64 (Apple Silicon) 上构建 AMD64 镜像
+DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
+```
+
+---
+
+## 6. 配置
+
+### 6.1 环境变量 (.env)
+
+| 变量 | 必需 | 默认值 | 说明 |
+|------|------|--------|------|
+| `DASHSCOPE_API_KEY` | ✅（仅直连模式） | — | DashScope API Key。代理模式下不需要（真实 key 不进沙箱，由 RM 上游注入；生产池自 2026-10-09 起已移除该变量） |
+| `LLM_BASE_URL` | ❌ | 空 | v3.4.0-mymain 起（Phase 9a）：RM 内嵌 LLM 代理地址。非空时 `render_config.py` 渲染 `provider.alibaba-cn.options.{baseURL,apiKey,headers.x-sandbox-id=HOSTNAME}` 指向代理；空 = 直连模式（仅渲染 `provider.models`，不渲染 `provider.options`） |
+| `LLM_API_KEY` | ❌ | 空 | 沙箱→RM 代理的调用凭证（渲染 gate 仅看 `LLM_BASE_URL` 非空；生产恒两者同设——缺本键时 apiKey 渲染为空串，请求将被代理 401 拒绝） |
+| `OPENCODE_SERVER_PASSWORD` | ✅ | — | Web Server 密码 |
+| `CLICKHOUSE_HOST` | ✅ | — | ClickHouse 地址 |
+| `CLICKHOUSE_PORT` | ❌ | `8123` | ClickHouse HTTP 端口 |
+| `CLICKHOUSE_DATABASE` | ❌ | `ashare` | 数据库名 |
+| `CLICKHOUSE_USER` | ❌ | `default` | 用户名 |
+| `CLICKHOUSE_PASSWORD` | ❌ | — | 密码 |
+| `CLICKHOUSE_LLM_USER` | ❌ | — | ClickHouse `llm_role` 只读用户名，供 VT `ch_*` 语义层工具使用（见 6.3） |
+| `CLICKHOUSE_LLM_PASSWORD` | ❌ | — | `llm_role` 只读用户密码；不配置时 `ch_list_tables`/`ch_describe_table`/`ch_query` 不可用，其余 VT 工具不受影响 |
+| `DINGTALK_WEBHOOK` | ❌ | — | 钉钉机器人 Webhook |
+| `SMTP_HOST` | ❌ | — | SMTP 服务器 |
+| `SMTP_AUTH_CODE` | ❌ | — | SMTP 授权码 |
+| `LANGCHAIN_PROVIDER` | ❌ | `dashscope` | LLM 提供商 |
+| `LANGCHAIN_MODEL_NAME` | ❌ | `qwen3.8-max` | VT LangChain 内部模型名；OMO 走 opencode provider，不受此变量影响 |
+| `LANGCHAIN_TEMPERATURE` | ❌ | `0.3` | 生成温度 |
+| `TUSHARE_TOKEN` | ❌ | — | Tushare Pro Token |
+
+### 6.2 记忆配置
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `VT_MEMORY` | `full` | 记忆模式：`full` 启用全部 |
+| `VT_MEMORY_MCP_TOOLS` | `1` | 启用 MCP 记忆工具 |
+| `VT_MEMORY_BASE_DIR` | `/workspace/.vt-memory` | 记忆存储路径 |
+
+这些变量在 Dockerfile 中预设，通常无需手动修改。
+
+**启动行为变量（v3.2.0+ 镜像 ENV 预设，零下载启动）**：
+
+| 变量 | 镜像默认 | 说明 |
+|------|--------|------|
+| `OMO_VERSION` | `5.1.35` | 预烘焙插件版本（构建 ARG 提升为 ENV）；升级需 Dockerfile ARG / opencode.json.tmpl / tui.json / entrypoint fallback **四处逐字一致**后重建。5.1.40 在 opencode 1.19.3 上首次 `/config` 会挂起，已回退到与本地一致的 5.1.35 |
+| `OMO_DISABLE_POSTHOG` | `1` | 禁用 OMO PostHog 遥测（含每日 daily-active 打点） |
+| `OMO_SEND_ANONYMOUS_TELEMETRY` | `0` | 禁用 OMO 匿名遥测 |
+| `OPENCODE_DISABLE_MODELS_FETCH` | `1` | 禁用 models 目录后台刷新（目录已构建期固化于 `~/.cache/opencode/models.json`）；在线环境想恢复刷新，运行时覆盖为空值即可 |
+| `OPENCODE_DISABLE_AUTOUPDATE` | `1` | 禁用 opencode 自更新检查 |
+| `SKIP_VT_VERIFY` | `0` | 置 `1` 跳过 entrypoint 的 VT MCP 运行时校验（构建期已门禁，可省 ~1.5-3s 启动时间） |
+
+> **启动时序（v3.2.0+）**：entrypoint 渲染配置 → 校验插件缓存存在 → （可选）VT verify → 启动 `opencode serve` → **后台预热请求**触发首次 bootstrap（纯本地初始化，无任何下载）。注意：opencode 在 bootstrap 完成前会挂起入站 HTTP 请求（固有行为），生产侧应以 healthcheck 状态为准再接流量；预热完成后首次业务请求实测 <1s。
+
+### 6.3 VT MCP 工具特性（v0.1.16 基线 + FE-1 增强）
+
+本镜像的 Vibe-Trading 基线为 **mymain @ 上游 `596fcf3d` 对齐（2026-10-17，上游历史重写后自 b1f6ce71 等价点前进 296 commit，v0.1.16 后开发段；新增 get_fund_nav / Gildata 研究三件套 / adapt_strategy 等上游工具）**，MCP Server 默认暴露 **85 个工具**；`VT_MEMORY_MCP_TOOLS=1`（本镜像默认开启）时额外注册 5 个 `memory_*` 工具，共 **90 个**。配套资产：**91 个内置 skills**、**30 个 swarm 多智能体预设**。
+
+相对 v3.2.0-mymain（v0.1.13 基线），新增以下能力：
+
+| 能力 | 说明 |
+|------|------|
+| backtest 结构化 summary（FE-1 R1/R4） | `backtest` 成功信封新增 `summary` 字段：run_id / title / codes / 日期区间 / interval / initial_cash / **完整 metrics 对象**（非 stdout 字符串）/ ≤50 点等步长 `equity_preview`（首末点必含）/ `artifact_paths`（含按标的的 ohlcv 路径）/ warnings；顶层 `artifacts` 同步新增 `ohlcv` 键。旧字段逐字节不变，前端无需再二次解析 stdout，且不受 stdout 2000 字符截断影响 |
+| `read_run_artifact` 工具（FE-1 R2） | 大 CSV 产物的分块结构化读取：`rows`（offset 分页，跟随 `next_offset` 无损遍历）/ `downsample`（等步长降采样、首末 pin，一次调用喂图）/ `meta`（形状探测）；白名单枚举（equity/trades/metrics/positions/target_positions/ohlcv:&lt;CODE&gt;/run_card/progress）+ 防路径穿越 + ~120K 字符字节预算（整记录收缩，绝不产出破碎 JSON） |
+| 回测进度信号（FE-1 R5'） | 引擎子进程按阶段写 `<run_dir>/progress.json`（validate→signal→data_load→simulate→matching→metrics→artifacts→done/failed；原子写、best-effort、绝不改变回测行为），经 `read_run_artifact(artifact="progress")` 轮询。MCP 层 backtest 每 20s 发 progress 心跳——opencode 丢弃其内容但据此重置调用超时（见 6.5） |
+| `get_market_data` 契约自描述（FE-1 R3） | 成功信封顶层新增 `schema_version: "1.0"`；`_provenance` 每 symbol 新增 `date_field`（该标的 bar 实际使用的日期键名，如 `trade_date`）。加法-only，不改任何既有键名；错误信封逐字节透传 |
+| 上游 v0.1.16 对齐（88 commits） | run_card schema **1.0**（hash-only tool traces + verified evidence）、回测超时保留日志（超时信封含 stdout/stderr）、`read_file` 报告可读范围与目录列举、免费行情源失败处理加固（全 symbol 未解析 → `status:error` 信封）、`.US` 后缀仅问美股、grounding 修正批次、loader health canary |
+
+#### `ch_*` 语义层安全模型
+
+`ch_query` 是受多重守卫的"灵活性通道"，安全约束在 VT 侧强制执行：
+
+- **凭据隔离**：只使用专用 `llm_role` 只读账号（`CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD`）连接，绝不使用 `default` 用户
+- **SQL AST 守卫**：SQL 必须经 sqlglot 解析为**单条普通 SELECT**；任何 DDL/DML（INSERT/UPDATE/DELETE/DROP/ALTER/CREATE/TRUNCATE）、SYSTEM/SET/USE/KILL 类语句、GLOBAL IN/JOIN、SETTINGS 子句、INTO 目标、ashare 白名单之外的表一律拒绝
+- **结果限额**：最外层 SELECT 强制注入/钳制 `LIMIT 500`，结果体积上限约 50KB（超出显式截断并提示），服务端查询超时 30 秒
+- **审计日志**：每次调用追加一条 JSON 记录到 `~/.vibe-trading/logs/ch_query_audit.jsonl`
+
+> ⚠️ `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` 未配置时，这 3 个 `ch_*` 工具返回 `missing_llm_role_credentials` 错误而不可用，但**其余所有 VT 工具正常工作**（数据仓库查询仍可通过 `data-warehouse` Skill 走 `CLICKHOUSE_USER`）。
+
+### 6.4 VT 工具禁用策略（vibe-trading-tools.json）
+
+`config/vibe-trading-tools.json` 是**工具治理清单**：容器启动时由 `config/render_config.py` 将其 `disabled` 列表编译为 opencode `permission` deny 项（键格式 `vibe-trading_<工具名或 glob>`），**被 deny 的工具不进入模型可见工具列表**——既降低每轮工具 schema 的上下文税，也收窄攻击面。清单本身是声明式单一事实源，改清单 + 重启容器即生效。
+
+当前策略：`trading_*` —— 禁用全部 8 个只读交易连接器工具（`trading_account` / `trading_check` / `trading_connections` / `trading_history` / `trading_orders` / `trading_positions` / `trading_quote` / `trading_select_connection`）。本容器为纯研究部署、不配置任何 broker connector，这些工具只产生 schema 成本而无能力收益。
+
+恢复方式：从 `disabled` 移除对应条目后重启容器。
+
+> 历史说明：历史版本曾列出 `trading_place_order` / `trading_cancel_order` / `trading_modify_order` / `trading_place_bracket` 四个禁用项——但 mymain 的 MCP 面**从未暴露**任何下单/撤单工具（它们仅存在于 agent + CLI 侧），这些条目属于对不存在工具的无效禁用，已在 v2.1.0-mymain 移除。另：v2.1.0 期间清单曾被 COPY 进镜像但无消费者（opencode 不读该文件名），2026-08-21 起经 `render_config.py` 真正生效。
+
+### 6.5 工具载荷与超时上限（FE-1 R7 契约文档）
+
+前端 / Agent 消费 VT MCP 工具结果时存在三层独立的载荷上限（opencode 版本对应：本镜像 pin `opencode-ai@1.19.3`；下表 Truncate/超时行为经 1.18.18 源码核实，1.19.0 经 v3.6.0 冒烟 Stage2 实证启动接受同一配置键，1.19.3 沿用同一配置键，跨版本语义未逐行复核）：
+
+| 层 | 上限 | 超限行为 | 配置位置 |
+|---|---|---|---|
+| ① VT `read_file` 工具 | **50,000 字符** | 前缀截断，尾部追加 `... (truncated)` 标记（不报错、不写盘） | 代码常量 `agent/src/tools/read_file_tool.py` `_OUTPUT_LIMIT` |
+| ② opencode Truncate（**所有** MCP 工具结果统一过此层） | opencode 默认 2,000 行 / 50KB；**本镜像提升为 8,000 行 / 256KB** | 全文写盘到 opencode truncation 目录，模型与前端 SSE 只收到前缀预览 + `metadata.truncated/outputPath`——**JSON 会被拦腰截断**，因此 VT 侧大载荷工具自带更低的③层预算 | `opencode.json` 顶层 `tool_output.{max_lines,max_bytes}`（本镜像 tmpl 已配置并有单测 pin） |
+| ③ VT `read_run_artifact` 工具 | **~120,000 字符/页**（`_BYTE_BUDGET`） | 整记录收缩：`rows` 模式缩小 `returned_rows` 并给出诚实的 `truncated`/`next_offset`；`downsample` 模式减少采样点并重算 `stride`——**永不产出破碎 JSON**，尾部永不静默丢失 | 代码常量 `agent/src/tools/run_artifact_tool.py` |
+
+MCP 调用超时（与载荷正交，经 1.18.18 源码核实；1.19.0 启动接受性经冒烟实证，1.19.3 沿用）：
+
+| 项 | 值 | 说明 |
+|---|---|---|
+| opencode MCP callTool 默认超时 | **60s**（TS SDK `DEFAULT_REQUEST_TIMEOUT_MSEC=60_000`） | 未配置时分钟级回测必然超时——这是 v3.2.0 及以前镜像的潜在缺陷 |
+| **本镜像 per-server 配置** | `timeout: 600000`（10 分钟） | `opencode.json` → `mcp.vibe-trading.timeout`（连接超时同用此值；有单测 pin） |
+| 心跳重置 | backtest 工具每 **20s** 发一条 MCP progress notification | opencode `resetTimeoutOnProgress: true`——每条通知重置超时窗口（双保险）。⚠️ 通知**内容**被 opencode 空回调丢弃，不会到达前端 SSE；前端进度请经 `read_run_artifact(artifact="progress")` 轮询 `progress.json` |
+| VT 引擎内部超时 | 默认 **300s**（`Runner` timeout，环境变量可配） | 内部超时先于 MCP 超时到达：工具返回含 stdout/stderr 的超时错误信封（上游 18988fbe），而非 MCP 层断连 |
+
+---
+
+## 7. 部署
+
+### 7.1 docker-compose（推荐）
+
+```yaml
+# docker-compose.yml
+services:
+  opencode-web:
+    image: opencode-serve:v3.2.0-mymain
+    container_name: opencode-web
+    restart: unless-stopped
+    ports:
+      - "4096:4096"
+    env_file:
+      - .env
+    volumes:
+      - ./volumes/cron-state:/workspace/cron_jobs/state
+      - ./volumes/cron-logs:/workspace/cron_jobs/logs
+      - ./volumes/vt-memory:/workspace/.vt-memory
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: '0.8'
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+```
+
+```bash
+# 启动
+docker compose up -d
+
+# 查看日志
+docker compose logs -f
+
+# 停止
+docker compose down
+```
+
+### 7.2 docker run
+
+```bash
+docker run -d \
+  --name opencode-web \
+  -p 4096:4096 \
+  --env-file .env \
+  -v ./volumes/cron-state:/workspace/cron_jobs/state \
+  -v ./volumes/cron-logs:/workspace/cron_jobs/logs \
+  -v ./volumes/vt-memory:/workspace/.vt-memory \
+  --memory 6g \
+  --cpus 0.8 \
+  --restart unless-stopped \
+  opencode-serve:v3.2.0-mymain
+```
+
+### 7.3 从 Registry 部署
+
+```bash
+# 拉取镜像
+docker pull registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
+
+# 标记本地
+docker tag registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain opencode-serve:v3.2.0-mymain
+
+# 启动
+docker compose up -d
+```
+
+### 7.4 持久化存储（挂盘）⚠️ 关键
+
+容器本身是无状态的——删除容器即丢失所有内部数据。以下三类数据**必须**通过 volume 挂载到宿主机持久化：
+
+| 容器内路径 | 宿主机路径 | 数据内容 | 丢失后果 |
+|-----------|-----------|---------|---------|
+| `/workspace/.vt-memory/` | `./volumes/vt-memory` | 记忆库（persistent、reflections、archive） | 所有跨会话经验、策略反思、回测教训全部丢失 |
+| `/workspace/cron_jobs/state/` | `./volumes/cron-state` | 周期任务状态（registry.json、任务锁） | 任务注册信息丢失，需重新注册 |
+| `/workspace/cron_jobs/logs/` | `./volumes/cron-logs` | 周期任务执行日志 | 历史执行记录丢失，无法审计 |
+
+#### 挂盘检查清单
+
+```bash
+# 1. 确认宿主机目录存在
+ls -la volumes/vt-memory volumes/cron-state volumes/cron-logs
+
+# 2. 启动后确认容器内挂载生效
+docker exec opencode-web df -h | grep workspace
+# 预期输出：宿主机磁盘而非 overlay
+
+# 3. 确认记忆目录可写
+docker exec opencode-web touch /workspace/.vt-memory/.write-test && \
+  docker exec opencode-web rm /workspace/.vt-memory/.write-test && \
+  echo "OK: vt-memory writable"
+
+# 4. 确认宿主机能看到写入数据
+docker exec opencode-web ls /workspace/.vt-memory/
+ls volumes/vt-memory/
+# 两边内容应一致
+```
+
+#### 未挂盘的后果
+
+如果**不挂载**以上 volume：
+
+- **记忆数据**：容器重启后丢失所有历史记忆，AI 每次都是"零经验"开始
+- **周期任务**：`registry.json` 丢失，所有定时策略停止执行
+- **执行日志**：无法回溯历史执行记录，问题排查困难
+
+#### 可选挂载（按需）
+
+| 容器内路径 | 用途 | 建议场景 |
+|-----------|------|---------|
+| `/workspace/analysis/` | 分析报告（Markdown/JSON） | 需要持久化保存分析结果 |
+| `/workspace/reports/` | HTML 交互报告 | 需要 nginx 对外服务 |
+| `/workspace/runs/` | 回测运行目录（config + artifacts） | 需要保留回测记录 |
+| `/workspace/tmp/` | 临时文件 | 调试排查 |
+
+挂载方式（在 `docker-compose.yml` 或 `docker run -v` 中添加）：
+
+```yaml
+volumes:
+  - ./volumes/vt-memory:/workspace/.vt-memory
+  - ./volumes/cron-state:/workspace/cron_jobs/state
+  - ./volumes/cron-logs:/workspace/cron_jobs/logs
+  # 可选
+  - ./volumes/analysis:/workspace/analysis
+  - ./volumes/reports:/workspace/reports
+```
+
+---
+
+## 8. 记忆生命周期
+
+### 8.1 自动触发机制（MemoryGuard Middleware）
+
+MemoryGuard 是 mymain 分支的核心特性，在 FastMCP 层面拦截所有 Vibe-Trading 工具调用，自动执行记忆管理，**完全不依赖 LLM 提示词**。
+
+| 阶段 | 触发条件 | 动作 |
+|------|---------|------|
+| 每次工具调用 | 所有 78 个 VT MCP 工具（73 基础 + 5 个 `memory_*`） | `memory_save`（工具名、参数、结果、耗时） |
+| 回测/因子分析/交易日志后 | `backtest`、`factor_analysis` 等 | `memory_reflect`（sharpe、max_drawdown 等指标） |
+| 容器启动时 | entrypoint 阶段 | `memory_status` 验证 |
+
+### 8.2 记忆存储
+
+```
+/workspace/.vt-memory/
+├── persistent/          # 持久化记忆（JSON）
+├── reflections/         # 反思课程（JSONL append-only）
+├── archive/             # 归档区（低质量记忆）
+└── index.json           # 记忆索引
+```
+
+### 8.3 记忆管理特性
+
+- **质量评分**：基于来源可靠性、验证次数、时间衰减
+- **艾宾浩斯遗忘曲线**：长时间未使用自动降权
+- **归档 GC**：低质量记忆移入归档区，不注入主上下文
+- **跨会话持久化**：volume 挂载保证容器重启不丢失
+
+### 8.4 验证记忆是否正常工作
+
+```bash
+# 进入容器
+docker exec -it opencode-web bash
+
+# 检查记忆目录
+ls -la /workspace/.vt-memory/
+
+# 检查 entrypoint 日志
+docker logs opencode-web 2>&1 | grep "VT_MEMORY"
+
+# 预期输出：
+# [entrypoint] VT_MEMORY=full, VT_MEMORY_MCP_TOOLS=1 → memory tools enabled
+# [entrypoint] VT_MEMORY_BASE_DIR=/workspace/.vt-memory
+```
+
+---
+
+## 9. 服务验证
+
+### 9.1 启动日志检查
+
+```bash
+docker logs opencode-web 2>&1 | grep "\[entrypoint\]"
+```
+
+预期输出：
+```
+[entrypoint] Fixed venv python symlinks → /usr/bin/python3
+[entrypoint] opencode.json rendered from template → /home/opencode/.opencode/opencode.json
+[entrypoint] Plugin cache symlinked
+[entrypoint] ClickHouse OK — warming schema cache
+[entrypoint] VT MCP server OK — 78 tools registered
+[entrypoint] VT_MEMORY=full, VT_MEMORY_MCP_TOOLS=1 → memory tools enabled
+```
+
+> 工具数由 entrypoint 动态统计：默认 73 个，`VT_MEMORY_MCP_TOOLS=1`（本镜像默认）时额外注册 5 个 `memory_*` 工具，共 78 个。
+
+### 9.2 健康检查
+
+```bash
+curl http://localhost:4096/health
+# 预期: 200 OK
+
+curl -u "opencode:${OPENCODE_SERVER_PASSWORD}" http://localhost:4096/api/v1/status
+# 预期: JSON 状态信息
+```
+
+### 9.3 ClickHouse 连通性
+
+```bash
+docker exec opencode-web python3 -c "
+from clickhouse_driver import Client
+c = Client(host='${CLICKHOUSE_HOST}', port=${CLICKHOUSE_PORT:-8123}, user='${CLICKHOUSE_USER:-default}', password='${CLICKHOUSE_PASSWORD}')
+print(c.execute('SELECT 1'))
+"
+```
+
+### 9.4 VT MCP Server 验证
+
+```bash
+docker exec opencode-web /opt/venv/bin/python3 -c "
+import sys; sys.path.insert(0, '/opt/vibe-trading/agent')
+from mcp_server import mcp
+print(f'Tools: {len(mcp._tool_manager._tools)}')
+print(f'MemoryGuard: OK' if hasattr(mcp, '_middleware') else 'MemoryGuard: MISSING')
+"
+```
+
+### 9.5 启动就绪检查（镜像打包期门禁）
+
+`opencode serve` 会先绑定 `:4096`、再完成首次 `/config` bootstrap。该 bootstrap 若很慢，
+缺少 startupProbe 的 Pod 会过早 Ready，请求直接撞上 ReadTimeout。下面的脚本在**镜像**
+上量出「容器启动 → 首次认证 `GET /config` 返回 200」的墙钟，把慢镜像挡在打包阶段。
+
+```bash
+cd OpencodeAgent
+./scripts/check_startup_readiness.sh                    # 默认镜像与 60s 预算
+IMAGE=opencode-serve:v3.8.2-mymain \
+  STARTUP_BUDGET_S=300 ./scripts/check_startup_readiness.sh
+```
+
+> 2026-10-23 v3.8.2（opencode 1.19.3 + OMO 5.1.35）QEMU 离线实测：
+> listening 6.8s，首次 `/config` 200 = 164.3s；`STARTUP_BUDGET_S=300` 通过。
+> 首启 bootstrap 明显慢于 v3.8.0 的 8.0s；production startupProbe 300s 仍覆盖。
+> OMO 5.1.40 在 opencode 1.19.3 上首次 `/config` 挂起，镜像回退 5.1.35。
+
+脚本行为：
+
+| 项 | 说明 |
+|----|------|
+| 启动参数 | `--platform linux/amd64`、`--network none`（`OFFLINE=0` 可放开）、随机 dummy `OPENCODE_SERVER_PASSWORD`、`DASHSCOPE_API_KEY=dummy-not-a-real-key`、`CLICKHOUSE_HOST=` 为空 |
+| 通过条件 | 日志同时出现 `opencode server listening` 与 `[entrypoint] warmup complete`，且首次 `/config` 200 的耗时 ≤ `STARTUP_BUDGET_S`（默认 60s），并用 `docker exec curl` 复核返回 200 |
+| 失败条件 | 任一标记缺失、首次 200 超预算、容器提前退出、复核请求非 200 |
+| 清理 | `trap` 保证退出时 `docker rm -f`；`KEEP_CONTAINER=1` 可保留现场 |
+| 镜像缺失 | 默认打印 `SKIP` 并退出 0（便于无镜像的 CI）；`REQUIRE_IMAGE=1` 时视为失败 |
+| 其它变量 | `CONTAINER_NAME` 自定义容器名；`HARD_TIMEOUT_S` 等待标记的上限（默认预算 + 60s） |
+
+> 计量口径：`FIRST_200_S` 取容器日志里 `[entrypoint] warmup complete` 的时间戳，因此包含
+> entrypoint 固定的 20s settle 等待；它量的是「容器启动 → 就绪」的墙钟，不是单次 HTTP
+> 请求的耗时。跨版本对比数字时按同一口径读。
+
+失败处置：
+
+1. **`warmup complete` 缺失 / 超预算**：先看日志里是否出现
+   `background dependency install failed`。首次 `/config` 会在
+   `/home/opencode/.config/opencode` 与 `/home/opencode/.opencode` 两处安装
+   `@opencode-ai/plugin`；镜像已通过 `PREBAKE_PLUGIN_SDK=1`（默认）预烘，
+   `--build-arg PREBAKE_PLUGIN_SDK=0` 构建的镜像会重新付出这段成本。
+2. **容器提前退出**：`docker logs <container>` 查 entrypoint 报错（配置渲染、权限、端口）。
+3. **QEMU 环境**：aarch64 主机模拟 amd64 时整体启动会明显变慢（v3.8.2 实测 164.3s），
+   属预期差异；请到 native amd64 builder 复跑，或仅在本地用更大的预算做冒烟验证。
+
+---
+
+## 10. 周期任务
+
+### 10.1 管理命令
+
+```bash
+# 进入容器
+docker exec -it opencode-web bash
+source /opt/venv/bin/activate
+
+# 列出任务
+python cron_jobs/manage.py list
+
+# 注册任务
+python cron_jobs/manage.py add \
+  --name "daily-screening" \
+  --cron "0 20 * * 1-5" \
+  --prompt "执行场景 E 选股策略，筛选全 A 股 Top 10"
+
+# 暂停 / 恢复 / 删除
+python cron_jobs/manage.py pause <task_id>
+python cron_jobs/manage.py resume <task_id>
+python cron_jobs/manage.py remove <task_id>
+
+# 验证测试任务
+python cron_jobs/manage.py verify-test <task_id>
+```
+
+### 10.2 关键规则
+
+1. **每次执行必须通知**（钉钉），无论结果如何
+2. 通知正文必须包含执行日期（YYYY-MM-DD）
+3. 使用 `opencode run --attach <url>` 触发 agent 执行（不可用 `curl POST /session`）
+4. 新任务自动安排 5 分钟测试 cron，需用 `verify-test` 验证
+
+### 10.3 日志
+
+```bash
+# 查看 cron 执行日志
+ls -la volumes/cron-logs/
+docker exec opencode-web cat /workspace/cron_jobs/logs/<task_id>_<timestamp>.log
+```
+
+---
+
+## 11. ECS 部署
+
+### 11.1 一键构建脚本
+
+```bash
+# 在 ECS (AMD64) 上执行
+cd ~ && \
+wget https://raw.githubusercontent.com/shadowinlife/vibetrading-opencode-instruct/main/deploy/ecs-build.sh && \
+chmod +x ecs-build.sh && \
+./ecs-build.sh v3.2.0-mymain
+```
+
+### 11.2 手动构建
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/shadowinlife/vibetrading-opencode-instruct.git
+git clone -b mymain https://github.com/shadowinlife/Vibe-Trading.git
+
+# 2. 基础镜像（如已推送可跳过）
+cd vibetrading-opencode-instruct
+docker pull registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve-base:latest
+docker tag registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve-base:latest opencode-serve-base:latest
+
+# 3. App 镜像
+VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
+
+# 4. 推送
+docker tag opencode-serve:v3.2.0-mymain registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
+docker push registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:v3.2.0-mymain
+```
+
+### 11.3 OSS 桥接（当 GitHub clone 超时时）
+
+```bash
+# 本地打包 VT 源码
+cd ~/Vibe-Trading && \
+tar --exclude='.git' --exclude='frontend' --exclude='node_modules' \
+    --exclude='__pycache__' --exclude='*.pyc' --exclude='.venv' \
+    -czf /tmp/vt-mymain.tar.gz . && \
+ossutil cp /tmp/vt-mymain.tar.gz oss://invest-assistant-v1/build/vt-mymain.tar.gz
+
+# ECS 下载
+cd ~/vibetrading-opencode-instruct && \
+wget -O /tmp/vt-mymain.tar.gz "https://<your-oss-bucket>.<your-oss-endpoint>/build/vt-mymain.tar.gz" && \
+mkdir -p vendor/Vibe-Trading && \
+tar -xzf /tmp/vt-mymain.tar.gz -C vendor/Vibe-Trading/ && \
+VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
+```
+
+### 11.4 ECS 踩坑要点
+
+| 问题 | 解决方案 |
+|------|---------|
+| ARM64 本地不可构建 | 必须在 AMD64 ECS 上构建（Bun AVX 指令集需求） |
+| GitHub clone 超时 | 使用 OSS 桥接 |
+| PEP 668 保护 | 使用 `python3 -m venv` 创建虚拟环境 |
+| playwright 下载慢 | `PLAYWRIGHT_DOWNLOAD_HOST=npmmirror` |
+| Ubuntu 22.04 无 Python 3.12 | deadsnakes PPA |
+
+---
+
+## 12. 镜像仓库
+
+### 12.1 阿里云容器镜像服务
+
+推送目标由 `IMAGE_REGISTRY`（完整仓库路径）定义，**无 hardcode 兜底 registry**（v3.3.0 起 build.sh fail-fast，见 5.1）；地址与凭据存 `OpencodeAgent/.env`（gitignored，chmod 600，绝不入 tracked 树）。
+
+| 镜像 | 地址 |
+|------|------|
+| 基础镜像 | `${IMAGE_REGISTRY}-base:latest`（`BASE_IMAGE_REGISTRY` 可覆盖） |
+| App 镜像 | `${IMAGE_REGISTRY}:v3.3.0-mymain` |
+
+### 12.2 推送镜像
+
+```bash
+# 一次性登录目标 registry（凭据在 OpencodeAgent/.env；仓库受 IP 白名单保护，
+# 推送 denied/timeout 时不重试轰炸，转人工处理）
+docker login <registry-host>
+
+# 推荐：构建并推送（IMAGE_REGISTRY 解析顺序：环境变量 → OpencodeAgent/.env）
+./build.sh --app --tag v3.3.0-mymain --push
+
+# 手动推送（等效）
+docker tag opencode-serve:v3.3.0-mymain "${IMAGE_REGISTRY}:v3.3.0-mymain"
+docker push "${IMAGE_REGISTRY}:v3.3.0-mymain"
+```
+
+### 12.3 拉取镜像
+
+```bash
+docker pull "${IMAGE_REGISTRY}:v3.3.0-mymain"
+```
+
+---
+
+## 13. 故障排查
+
+### 13.1 容器启动失败
+
+```bash
+# 查看完整日志
+docker logs opencode-web 2>&1 | tail -50
+
+# 常见问题：
+# - "opencode.json rendered" 失败 → 检查 Jinja2 模板是否正确
+# - "VT MCP server import failed" → 检查 /opt/vibe-trading/agent/ 是否存在
+# - "ClickHouse unreachable" → 检查 CLICKHOUSE_HOST 和网络连通性
+```
+
+### 13.2 记忆未写入
+
+```bash
+# 1. 检查环境变量
+docker exec opencode-web env | grep VT_MEMORY
+
+# 2. 检查目录权限
+docker exec opencode-web ls -la /workspace/.vt-memory/
+
+# 3. 检查 middleware 注册
+docker exec opencode-web /opt/venv/bin/python3 -c "
+import sys; sys.path.insert(0, '/opt/vibe-trading/agent')
+from mcp_server import mcp
+print('Middleware:', [m.__class__.__name__ for m in mcp._middleware])
+"
+# 预期: Middleware: ['MemoryGuardMiddleware']
+```
+
+### 13.3 ClickHouse 连接失败
+
+```bash
+# 测试连通性
+docker exec opencode-web curl -s "http://${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}/ping"
+
+# 检查配置
+docker exec opencode-web cat /home/opencode/.opencode/opencode.json | python3 -m json.tool | grep -A5 CLICKHOUSE
+```
+
+### 13.4 内存不足
+
+```bash
+# 调整 docker-compose.yml 内存限制
+# deploy.resources.limits.memory: 6G → 8G
+
+# 或调整 OMO 并行度
+# config/oh-my-openagent.json 中 max_concurrent_agents
+```
+
+### 13.5 镜像拉取慢
+
+```bash
+# 配置 Docker 镜像加速器
+# /etc/docker/daemon.json
+{
+  "registry-mirrors": ["https://<your-mirror>.mirror.aliyuncs.com"]
+}
+```
+
+---
+
+## 14. 维护与升级
+
+### 14.1 升级 App 镜像
+
+```bash
+# 1. 拉取最新镜像
+docker pull registry.cn-hangzhou.aliyuncs.com/<your-registry-namespace>/opencode-serve:latest
+
+# 2. 更新 docker-compose.yml 中的 tag
+
+# 3. 重启
+docker compose down && docker compose up -d
+
+# 4. 验证
+docker compose logs -f
+```
+
+### 14.2 升级基础镜像
+
+基础镜像极少变更，仅当以下情况需重建：
+
+- 新增系统级依赖（apt 包）
+- 新增 Python 预装包
+- 新增 Node.js 全局包
+- Ubuntu 安全更新
+
+```bash
+./build.sh --base --tag latest --push
+```
+
+### 14.3 数据备份
+
+```bash
+# 备份记忆数据
+tar -czf vt-memory-backup-$(date +%Y%m%d).tar.gz volumes/vt-memory/
+
+# 备份 cron 状态
+tar -czf cron-state-backup-$(date +%Y%m%d).tar.gz volumes/cron-state/
+
+# 备份分析报告
+tar -czf analysis-backup-$(date +%Y%m%d).tar.gz volumes/analysis/  # 如挂载
+```
+
+### 14.4 清理
+
+```bash
+# 清理旧镜像
+docker image prune -a --filter "until=72h"
+
+# 清理日志
+docker exec opencode-web find /workspace/cron_jobs/logs -mtime +30 -delete
+
+# 清理 Docker 构建缓存
+docker builder prune
+```
+
+---
+
+## 附录 A：端口映射
+
+| 端口 | 服务 | 说明 |
+|------|------|------|
+| 4096 | OpenCode Web Server | HTTP API + WebSocket |
+
+## 附录 B：文件路径速查
+
+| 路径 | 说明 |
+|------|------|
+| `/opt/venv/` | Python 虚拟环境 |
+| `/opt/vibe-trading/` | Vibe-Trading 源码（editable install） |
+| `/opt/vibe-trading/agent/mcp_server.py` | VT MCP Server 入口 |
+| `/opt/vibe-trading/agent/src/memory/memory_guard.py` | MemoryGuard Middleware |
+| `/workspace/.opencode/opencode.json.tmpl` | OpenCode 配置模板 |
+| `/workspace/.opencode/skills/` | 3 个 Skill |
+| `/workspace/scripts/` | 量化分析脚本 |
+| `/workspace/cron_jobs/` | 周期任务管理 |
+| `/workspace/analysis/` | 分析报告输出 |
+| `/workspace/reports/` | HTML 报告 |
+| `/workspace/runs/` | 回测运行目录 |
+| `/workspace/tmp/` | 临时文件 |
+| `/workspace/.vt-memory/` | VT 记忆存储 |
+| `/home/opencode/.opencode/opencode.json` | 运行时配置（由 entrypoint 渲染） |
+
+## 附录 C：构建时序
+
+```
+1. Dockerfile.base (1次 / 极少)
+   ├── Ubuntu 22.04
+   ├── Python 3.12 (deadsnakes)
+   ├── Node.js 20
+   ├── OpenCode CLI (pin opencode-ai@1.19.3)
+   ├── pip 预装包
+   ├── playwright + chromium
+   └── opencode 用户
+
+2. Dockerfile (每次部署)
+   ├── FROM opencode-serve-base:latest
+   ├── Vibe-Trading mymain (editable install)
+   ├── VT MCP import 构建期门禁
+   ├── OMO plugin 预烘焙 (npm install → ~/.cache/opencode/packages/oh-my-openagent@${OMO_VERSION})
+   ├── @opencode-ai/plugin SDK 预烘焙 (~/.config/opencode 与 ~/.opencode 两处，可 PREBAKE_PLUGIN_SDK=0 关闭)
+   ├── models.json 预烘焙 (curl models.opencode.ai/api.json)
+   ├── 项目文件 (configs, skills, scripts)
+   └── entrypoint.sh
+
+3. entrypoint.sh (容器启动)
+   ├── 激活 venv
+   ├── 设置 VT_MEMORY 环境变量
+   ├── 修复 venv symlinks
+   ├── 渲染 opencode.json (Jinja2)
+   ├── 探测 ClickHouse 连通性
+   ├── 校验 OMO 插件预烘焙缓存存在
+   ├── 验证 VT MCP Server 可导入 (SKIP_VT_VERIFY=1 可跳过)
+   ├── 启动 opencode serve
+   └── 后台预热请求 (首次 bootstrap 移出用户路径)
+```
+
+---
+
+> **文档版本**: 1.2  
+> **适用镜像**: opencode-serve:v3.2.0-mymain  
+> **维护者**: Sisyphus via OpenCode  
+> **最后更新**: 2026-09-29

@@ -1,0 +1,175 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
+  "agents": {
+    "build": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "plan": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "sisyphus": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "hephaestus": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "sisyphus-junior": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "OpenCode-Builder": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "prometheus": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "metis": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "momus": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "oracle": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "atlas": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "librarian": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "high",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "explore": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "high",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "multimodal-looker": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "high",
+      "thinking": {
+        "type": "enabled"
+      }
+    }
+  },
+  "categories": {
+    "ultrabrain": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "deep": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "deep-high": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "artistry": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "unspecified-high": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "max",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "visual-engineering": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "high",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "deep-low": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "high",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "quick": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "high",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "unspecified-low": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "high",
+      "thinking": {
+        "type": "enabled"
+      }
+    },
+    "writing": {
+      "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+      "reasoningEffort": "high",
+      "thinking": {
+        "type": "enabled"
+      }
+    }
+  }
+}
