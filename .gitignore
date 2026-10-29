@@ -58,8 +58,10 @@ agent/uploads/
 /shadow_accounts/
 /shadow_reports/
 /strategies/
+/versions/
 /swarm/
 /live/
+/logs/
 /uploads/
 /generated_reports/
 /imports/
@@ -82,6 +84,7 @@ agent/uploads/
 /connections.json
 /trading-connections.json
 /portfolio.json
+/config.json
 /config.yaml
 /swarm-agent.json
 /strategy_discovery.db
@@ -130,6 +133,9 @@ data/backup/
 docs/
 !wiki/docs/
 !wiki/docs/**
+# OpencodeAgent ships its deploy guides and skill docs inside the image
+!OpencodeAgent/**/docs/
+!OpencodeAgent/**/docs/**
 docs/screenshots/agent-run.png
 docs/screenshots/boot.png
 data/minutes/
@@ -162,6 +168,15 @@ NOTES.md
 
 # Agent tool aliases (auto-generated mirror of CLAUDE.md)
 AGENTS.md
+# OpencodeAgent's AGENTS.md files are harness behavior contracts, copied into
+# the Docker image at build time — they must stay tracked
+!OpencodeAgent/**/AGENTS.md
+# mymain-wiki's AGENTS.md is the branch knowledge-base routing entry, not a
+# generated tool alias — it must stay tracked
+!mymain-wiki/AGENTS.md
+# The root AGENTS.md on this branch carries the branch conventions (§8) and is
+# deliberately tracked — not a generated tool alias
+!/AGENTS.md
 
 .DS_Store
 
@@ -185,6 +200,23 @@ agent/tests/artifacts/
 
 /pixel-office.sqlite3
 /pixel-office.sqlite3-*
+/strategy_runs.sqlite3
+/strategy_runs.sqlite3-*
 
 # Local simulated account ledgers
 /paper-trading/
+
+# Local OMO artifacts (generated, not source)
+.omo/
+.env.md
+
+# Local agent/tool state (generated, not source)
+.opencode/
+.qoder/
+.sisyphus/
+.playwright-mcp/
+
+# Local scratch data and research outputs
+research/
+tmp/
+bench_report_tier2.json
