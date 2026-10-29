@@ -47,6 +47,7 @@ from backtest.metrics import (
     period_returns,
 )
 from backtest.models import EquitySnapshot, FillRecord, Position, TradeRecord
+from backtest.progress import write_progress
 from backtest.rebalance_mask import (
     RebalanceMask,
     resolve_rebalance_dates,
@@ -973,6 +974,7 @@ class BaseEngine(ABC):
             ret_df = ret_df.iloc[warmup_end:]
 
         # 4. Bar-by-bar execution
+        write_progress(run_dir, "matching", 60.0)
         self._execute_bars(dates, data_map, close_df, target_pos, valid_codes, close_val_df=close_val_df)
         actual_pos = self._actual_positions_frame(valid_codes)
 
@@ -1034,6 +1036,7 @@ class BaseEngine(ABC):
         bench_equity = self.initial_capital * (1 + bench_ret).cumprod()
 
         # 6. Metrics
+        write_progress(run_dir, "metrics", 85.0)
         realized_turnover = calc_fill_turnover_series(self.fill_records, equity_series)
         m = calc_metrics(
             equity_series,
@@ -1163,6 +1166,7 @@ class BaseEngine(ABC):
             write_validation_json(run_dir / "artifacts" / "validation.json", v_results)
 
         # 8. Artifacts
+        write_progress(run_dir, "artifacts", 95.0)
         self._write_artifacts(
             run_dir, data_map, dates, equity_series, bench_equity, bench_ret,
             target_pos, m, valid_codes,

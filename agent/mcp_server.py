@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 82 tools: skills, research goals, strategy discovery,
+Surfaces 94 tools (99 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
 backtest/factor/options/pattern
 analysis, deterministic paper-trading matching (paper_trade_step), market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_southbound_flow /
@@ -19,7 +19,9 @@ qveris_search / qveris_inspect / qveris_execute),
 institutional-research and alternative data (get_institutional_holdings /
 etf_holdings / prediction_market / research_papers), read-only finance math and
 market analytics (quantlib_call / cashflow_performance / orderbook_depth /
-sentiment / technical_indicators / get_fundamentals), read-only
+sentiment / technical_indicators / get_fundamentals), the constrained
+ClickHouse flexibility channel (ch_list_tables / ch_describe_table / ch_query,
+guarded read-only SELECTs over the dedicated llm_role credentials), read-only
 trading-connector reads, swarm orchestration, trade-journal and shadow-account
 analysis. Every exposed tool is read-only or research-only except
 refresh_strategy_evidence, which writes ONLY the disposable facade-owned
@@ -787,12 +789,260 @@ def update_research_goal_status(
 
 
 # ---------------------------------------------------------------------------
-# Backtest tool
+# Scheduled research tools
 # ---------------------------------------------------------------------------
 
 
 @mcp.tool
-def backtest(run_dir: str) -> str:
+def scheduled_research(
+    action: str,
+    job_id: str = "",
+    draft: _lenient_dict_any_opt = None,
+    session_id: str = "",
+    ctx: Context | None = None,
+) -> str:
+    """Inspect scheduled research and prepare create/cancel proposals.
+
+    This is the only scheduled-research tool and is READ-ONLY: propose_create
+    and propose_cancel never change jobs. A human must confirm the proposal in
+    the current surface before it is committed.
+
+    A propose_* result carries ``proposal_id`` (``srp_...``) inside its first
+    bytes; surfaces relay a short preview of this output, so the id must stay
+    near the front for the confirmation card / IM confirm flow to pick it up.
+
+    Args:
+        action: One of status, list_jobs, get_job, list_playbooks,
+            propose_create, propose_cancel.
+        job_id: Job id; required for get_job and propose_cancel.
+        draft: Create draft; required for propose_create. Keys: title,
+            source (kind=prompt|playbook with prompt or playbook_slug +
+            variables), schedule (expression, optional timezone), end_at
+            (RFC3339 text or epoch milliseconds), delivery (mode=in_app|
+            origin|configured with optional target_ref).
+        session_id: Optional conversation id. Omit it unless the client tracks
+            its own sessions; this server then uses one id per process. A
+            proposal binds to this id, and the confirming surface looks it up
+            by the same id.
+    """
+    params: dict[str, Any] = {"action": action}
+    if job_id.strip():
+        params["job_id"] = job_id.strip()
+    if draft is not None:
+        params["draft"] = draft
+    params["session_id"] = _resolve_session_id(session_id, ctx)
+    return _get_registry().execute("scheduled_research", params)
+
+
+# ---------------------------------------------------------------------------
+# Memory lifecycle tools (opt-in via VT_MEMORY_MCP_TOOLS)
+# ---------------------------------------------------------------------------
+
+_memory_adapter = None
+
+
+def _get_memory_adapter():
+    """Return the shared memory MCP adapter (lazy singleton)."""
+    global _memory_adapter
+    if _memory_adapter is None:
+        from src.memory.mcp_adapter import MemoryMCPAdapter
+
+        _memory_adapter = MemoryMCPAdapter()
+    return _memory_adapter
+
+
+def _memory_envelope(result: dict[str, Any]) -> str:
+    """Convert an adapter dict envelope into the standard MCP JSON reply."""
+    if result.get("status") == "error":
+        extras = {k: v for k, v in result.items() if k not in ("status", "error")}
+        message = str(result.get("error", "unknown error"))
+        if extras:
+            message += f" ({json.dumps(extras, ensure_ascii=False)})"
+        return _json_error(message)
+    # _json_ok preserves an explicit "skipped" status from the adapter.
+    return _json_ok(**result)
+
+
+def _env_memory_tools_enabled() -> bool:
+    """Return whether memory MCP tools were enabled via the environment."""
+    from src.config.accessor import get_env_config
+
+    return get_env_config().memory.mcp_tools_enabled
+
+
+def _register_memory_tools() -> None:
+    """Register the memory lifecycle MCP tools on the shared FastMCP instance.
+
+    Called at module level only when VT_MEMORY_MCP_TOOLS is enabled, so the
+    tools are absent from tools/list for both the stdio (main()) and the
+    ASGI-import deployment paths unless the operator opts in.
+    """
+
+    @mcp.tool
+    def memory_save(
+        name: str,
+        description: str,
+        content: str,
+        memory_type: str = "project",
+    ) -> str:
+        """Save a memory entry to the persistent memory store.
+
+        Args:
+            name: Short unique title for the memory entry.
+            description: One-line summary of the entry.
+            content: Full memory body (markdown allowed).
+            memory_type: One of 'user', 'feedback', 'project', 'reference'.
+        """
+        return _memory_envelope(
+            _get_memory_adapter().memory_save(name, description, content, memory_type)
+        )
+
+    @mcp.tool
+    def memory_recall(query: str, top_k: int = 5, type_filter: str = "") -> str:
+        """Recall memory entries relevant to a query.
+
+        Returns up to top_k entries as {title, type, snippet, quality_score,
+        importance}. Recalled entries get their access statistics updated.
+
+        Args:
+            query: Free-text keywords describing what to recall.
+            top_k: Maximum number of entries to return.
+            type_filter: Optional memory type filter (e.g. 'project').
+        """
+        return _memory_envelope(
+            _get_memory_adapter().memory_recall(query, top_k, type_filter)
+        )
+
+    @mcp.tool
+    def memory_reinforce(name: str, event: str, source: str = "system") -> str:
+        """Reinforce or weaken a memory entry's quality score.
+
+        Args:
+            name: Exact memory entry title.
+            event: One of 'task_success', 'task_failure', 'user_confirm',
+                'user_reject', 'passive_decay'.
+            source: 'user' (full weight) or 'system' (discounted weight).
+        """
+        return _memory_envelope(
+            _get_memory_adapter().memory_reinforce(name, event, source)
+        )
+
+    @mcp.tool
+    def memory_reflect(
+        strategy_type: str,
+        outcome: dict | None = None,
+        original_params: dict | None = None,
+    ) -> str:
+        """Store a reflection lesson extracted from a strategy outcome.
+
+        Requires VT_MEMORY_REFLECTIONS (or VT_MEMORY=full); otherwise the
+        call is skipped with a hint.
+
+        Args:
+            strategy_type: Strategy family (e.g. 'momentum', 'dual_ma').
+            outcome: Scalar outcome metrics (e.g. sharpe, max_drawdown).
+            original_params: Parameters of the original decision.
+        """
+        return _memory_envelope(
+            _get_memory_adapter().memory_reflect(
+                strategy_type, outcome or {}, original_params or {}
+            )
+        )
+
+    @mcp.tool
+    def memory_status() -> str:
+        """Report memory store statistics.
+
+        Returns entry_count, avg_quality, avg_importance and gc_pending
+        (entries a dry-run garbage collection would act on).
+        """
+        return _memory_envelope(_get_memory_adapter().memory_status())
+
+
+if _env_memory_tools_enabled():
+    _register_memory_tools()
+
+# ---------------------------------------------------------------------------
+# Memory guard middleware (auto-save after every tool call)
+# ---------------------------------------------------------------------------
+
+_memory_guard_registered = False
+
+
+def _register_memory_guard() -> None:
+    global _memory_guard_registered
+    if _memory_guard_registered:
+        return
+    try:
+        from src.memory.memory_guard import MemoryGuardMiddleware
+
+        mcp.add_middleware(MemoryGuardMiddleware())
+        _memory_guard_registered = True
+        logger.info("memory_guard middleware registered")
+    except Exception:
+        logger.debug("memory_guard middleware skipped", exc_info=True)
+
+
+_register_memory_guard()
+
+
+# ---------------------------------------------------------------------------
+# Backtest tool
+# ---------------------------------------------------------------------------
+
+# Production backtests take minutes, while MCP clients bound a single
+# tools/call by a request timeout (the TypeScript SDK default is 60s). Clients
+# that opt into progress notifications — opencode registers an empty
+# ``onprogress`` handler with ``resetTimeoutOnProgress: true`` — reset that
+# timeout on every notification, so a heartbeat every 20s keeps a long run
+# alive with a 3x margin. The notification content is discarded by such
+# clients; only its arrival matters.
+_BACKTEST_HEARTBEAT_SECONDS = 20
+
+
+async def _backtest_impl(run_dir: str, ctx: Context | None = None) -> str:
+    """Run the blocking backtest in a worker thread with progress heartbeats.
+
+    Kept as a module-level coroutine so the heartbeat loop is testable
+    independently of the FastMCP registration layer.
+
+    Args:
+        run_dir: Path to the run directory containing config.json and code/.
+        ctx: FastMCP request context. When present, a progress notification
+            carrying the elapsed seconds is sent every
+            ``_BACKTEST_HEARTBEAT_SECONDS`` until the run finishes;
+            ``Context.report_progress`` is a verified no-op when the client
+            sent no progress token. When ``None``, the run is simply awaited.
+
+    Returns:
+        The JSON envelope produced by ``run_backtest``.
+    """
+    import asyncio
+    import time
+
+    from src.tools.backtest_tool import run_backtest
+
+    # Successful runs auto-reflect inside run_backtest (see
+    # src.memory.reflections), covering both this MCP entry path and the
+    # in-process BacktestTool path without double-appending lessons.
+    if ctx is None:
+        return await asyncio.to_thread(run_backtest, run_dir)
+
+    task = asyncio.create_task(asyncio.to_thread(run_backtest, run_dir))
+    started = time.monotonic()
+    while True:
+        done, _pending = await asyncio.wait({task}, timeout=_BACKTEST_HEARTBEAT_SECONDS)
+        if done:
+            break
+        elapsed = time.monotonic() - started
+        await ctx.report_progress(
+            elapsed, None, message=f"backtest running ({elapsed:.0f}s elapsed)"
+        )
+    return task.result()
+
+
+@mcp.tool
+async def backtest(run_dir: str, ctx: Context | None = None) -> str:
     """Run a vectorized backtest using config.json and code/signal_engine.py.
 
     The run_dir must contain:
@@ -818,9 +1068,7 @@ def backtest(run_dir: str) -> str:
     Args:
         run_dir: Path to the run directory containing config.json and code/.
     """
-    from src.tools.backtest_tool import run_backtest
-
-    return run_backtest(run_dir)
+    return await _backtest_impl(run_dir, ctx)
 
 
 # ---------------------------------------------------------------------------
@@ -1289,12 +1537,12 @@ def read_run_artifact(
 
     Artifacts: friendly aliases ``equity``, ``trades``, ``metrics``,
     ``positions``, ``target_positions`` (CSVs under ``<run_dir>/artifacts/``),
-    ``ohlcv:<CODE>`` (e.g. ``ohlcv:600519.SH``) and ``run_card`` — plus any
-    run_dir-relative ``.csv``/``.json`` path listed in the run's
-    ``run_card.json`` artifacts manifest (e.g. ``artifacts/validation.json``).
-    The manifest is the trust anchor: a relative path it does not list is
-    refused, and a manifest entry pointing outside the run directory is never
-    followed.
+    ``ohlcv:<CODE>`` (e.g. ``ohlcv:600519.SH``), ``run_card`` and
+    ``progress`` (JSON sidecars) — plus any run_dir-relative ``.csv``/``.json``
+    path listed in the run's ``run_card.json`` artifacts manifest (e.g.
+    ``artifacts/validation.json``). The manifest is the trust anchor: a
+    relative path it does not list is refused, and a manifest entry pointing
+    outside the run directory is never followed.
 
     Formats:
 
@@ -1503,6 +1751,238 @@ def refresh_strategy_evidence(manifest_path: str | None = None, runs: list | Non
     return _strategy_discovery_execute(
         "refresh_strategy_evidence",
         {"manifest_path": manifest_path, "runs": runs, "scope": scope},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Strategy library tools
+#
+# These three are WRITE tools on the agent side (``is_readonly = False``), so
+# _register_mirrored_tool refuses them by design; they are registered here
+# explicitly instead of through the read-only mirror. Their envelopes are the
+# tools' own, so no schema is re-declared.
+# ---------------------------------------------------------------------------
+
+
+def _strategy_library_execute(tool_name: str, params: dict[str, Any]) -> str:
+    """Forward a strategy-library call, never leaking a raw traceback."""
+    try:
+        return _get_registry().execute(tool_name, params)
+    except Exception:  # noqa: BLE001 - an honest error beats a raw traceback
+        logger.exception("strategy library tool %s unavailable", tool_name)
+        return json.dumps(
+            {
+                "ok": False,
+                "error": "strategy library tool unavailable; see server logs",
+                "code": "tool_unavailable",
+            },
+            ensure_ascii=False,
+        )
+
+
+@mcp.tool
+def promote_strategy(
+    spec: _lenient_dict_any,
+    run_dir: str | None = None,
+    demo: bool = False,
+) -> str:
+    """Register a strategy draft in the library.
+
+    A code strategy requires ``run_dir`` (its source backtest directory) and
+    is evaluated by the deterministic gate immediately; a workflow strategy is
+    registered as ``needs_work`` for the independent rubric review. Returns the
+    strategy id, readiness and any deterministic gaps.
+
+    Args:
+        spec: Strategy spec object (name, kind, thesis, universe, steps, ...).
+        run_dir: Source backtest run directory; required for kind=code.
+        demo: Mark the strategy as demonstration data.
+    """
+    return _strategy_library_execute(
+        "promote_strategy",
+        {"spec": spec, "run_dir": run_dir, "demo": demo},
+    )
+
+
+@mcp.tool
+def evaluate_strategy(strategy_id: str) -> str:
+    """Evaluate one strategy and persist the version-bound verdict.
+
+    Code strategies use the deterministic backtest gate; workflow strategies
+    use the independent rubric review. Returns passed, the failure reasons and
+    the resulting readiness.
+
+    Args:
+        strategy_id: Library id of the strategy to evaluate.
+    """
+    return _strategy_library_execute(
+        "evaluate_strategy", {"strategy_id": strategy_id}
+    )
+
+
+# ---------------------------------------------------------------------------
+# Agent scheduling tools (RM control plane)
+#
+# ``schedule_strategy`` keeps its name because the assistant already knows it;
+# the five companions are new. Every one of them relays intent to the RM
+# control plane: this box has no local job store and no second scheduler, and
+# the tools never fall back to writing one. When the scheduling module or its
+# configuration is unavailable the call fails closed with
+# ``scheduling_unavailable`` instead of inventing a schedule.
+# ---------------------------------------------------------------------------
+
+
+def _agent_schedules_call(name: str, /, **kwargs: Any) -> str:
+    """Call one agent-schedule action and return its JSON envelope.
+
+    Lazily imports :mod:`src.agent_schedules.tools`, so a broken or absent
+    scheduling module cannot stop the rest of the MCP server from starting.
+    ``name`` is positional-only because one action takes a ``name`` argument of
+    its own. Every failure returns the same fail-closed envelope; nothing
+    raises.
+    """
+    try:
+        tools = import_module("src.agent_schedules.tools")
+        result = getattr(tools, name)(**kwargs)
+        return json.dumps(result, ensure_ascii=False, sort_keys=True, default=str)
+    except Exception:  # noqa: BLE001 - fail closed, never a raw traceback
+        logger.warning("agent scheduling tool %s unavailable", name)
+        return json.dumps(
+            {
+                "ok": False,
+                "error": "scheduling_unavailable",
+                "detail": "scheduling is unavailable",
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+
+
+@mcp.tool
+def schedule_strategy(
+    strategy_id: str,
+    kind: str,
+    strategy_version: str | None = None,
+    name: str | None = None,
+    cron_spec: str | None = None,
+    interval_s: int | None = None,
+    time_of_day: str | None = None,
+    tz: str | None = None,
+) -> str:
+    """Create one strategy schedule on the RM control plane.
+
+    The RM control plane owns the schedule table and the due-time loop. This
+    box has no local job store and no scheduler, so nothing is written locally
+    and nothing pretends to be scheduled before RM answers 2xx. The call fails
+    closed with ``scheduling_unavailable`` when ``RM_AGENT_API_URL`` or the
+    agent token file is missing. The strategy must exist locally with
+    readiness="ready", and the pinned version must already be materialised
+    locally, so a strategy that never ran cannot be scheduled. No order is
+    placed and no broker is touched.
+
+    Args:
+        strategy_id: Library id of a ready strategy.
+        kind: Cadence shape — "cron", "interval" or "daily".
+        strategy_version: Optional version to pin; defaults to the library's
+            current version.
+        name: Optional schedule name; defaults to the strategy name.
+        cron_spec: Five-field cron expression; required for kind="cron".
+        interval_s: Positive interval in seconds; required for kind="interval".
+        time_of_day: "HH:MM" wall-clock time; required for kind="daily".
+        tz: IANA timezone; defaults to "Asia/Shanghai".
+    """
+    return _agent_schedules_call(
+        "schedule_strategy",
+        strategy_id=strategy_id,
+        kind=kind,
+        strategy_version=strategy_version,
+        name=name,
+        cron_spec=cron_spec,
+        interval_s=interval_s,
+        time_of_day=time_of_day,
+        tz=tz,
+    )
+
+
+@mcp.tool
+def list_strategy_schedules() -> str:
+    """List strategy schedules owned by the RM control plane.
+
+    Reads RM only; no local job store is consulted or written, and the
+    deprecated in-box jobs are counted read-only as ``legacy_jobs_ignored``
+    (those schedules never fired). Each row carries the local library's
+    ``current_version`` and a ``drift`` flag when the pinned version is stale.
+    Fails closed with ``scheduling_unavailable`` when ``RM_AGENT_API_URL`` or
+    the agent token file is missing. No order or broker call is made.
+    """
+    return _agent_schedules_call("list_strategy_schedules")
+
+
+@mcp.tool
+def pause_strategy_schedule(schedule_id: str) -> str:
+    """Pause one RM control-plane schedule without deleting its history.
+
+    The schedule table and its due-time loop live in RM; this box writes
+    nothing locally and fails closed with ``scheduling_unavailable`` when
+    ``RM_AGENT_API_URL`` or the agent token file is missing. No order or
+    broker call is made.
+
+    Args:
+        schedule_id: RM schedule id returned by schedule_strategy.
+    """
+    return _agent_schedules_call("pause_strategy_schedule", schedule_id=schedule_id)
+
+
+@mcp.tool
+def resume_strategy_schedule(schedule_id: str) -> str:
+    """Re-enable one paused RM control-plane schedule.
+
+    The schedule table and its due-time loop live in RM; this box writes
+    nothing locally and fails closed with ``scheduling_unavailable`` when
+    ``RM_AGENT_API_URL`` or the agent token file is missing. No order or
+    broker call is made.
+
+    Args:
+        schedule_id: RM schedule id returned by schedule_strategy.
+    """
+    return _agent_schedules_call("resume_strategy_schedule", schedule_id=schedule_id)
+
+
+@mcp.tool
+def delete_strategy_schedule(schedule_id: str) -> str:
+    """Delete one RM control-plane schedule; its run history stays with RM.
+
+    This box writes nothing locally and fails closed with
+    ``scheduling_unavailable`` when ``RM_AGENT_API_URL`` or the agent token
+    file is missing. No order or broker call is made.
+
+    Args:
+        schedule_id: RM schedule id returned by schedule_strategy.
+    """
+    return _agent_schedules_call("delete_strategy_schedule", schedule_id=schedule_id)
+
+
+@mcp.tool
+def retarget_strategy_schedule(
+    schedule_id: str, strategy_version: str | None = None
+) -> str:
+    """Re-pin one RM schedule to a version, keeping its id and run history.
+
+    The local strategy and target version are resolved first and must already
+    be materialised locally; nothing is sent to RM when that check fails. The
+    schedule table stays in RM, so this box writes nothing locally and fails
+    closed with ``scheduling_unavailable`` when ``RM_AGENT_API_URL`` or the
+    agent token file is missing. No order or broker call is made.
+
+    Args:
+        schedule_id: RM schedule id returned by schedule_strategy.
+        strategy_version: Optional version to pin; defaults to the library's
+            current version.
+    """
+    return _agent_schedules_call(
+        "retarget_strategy_schedule",
+        schedule_id=schedule_id,
+        strategy_version=strategy_version,
     )
 
 
@@ -2733,6 +3213,11 @@ _MIRRORED_TOOL_SOURCES = (
     ("src.tools.sentiment_tool", "SentimentTool"),
     ("src.tools.technical_indicator_tool", "TechnicalIndicatorTool"),
     ("src.tools.get_fundamentals_tool", "GetFundamentalsTool"),
+    # ClickHouse semantic-layer flexibility channel (Phase 2): Catalog →
+    # Inspect → constrained Execute over the read-only llm_role credentials.
+    ("src.tools.clickhouse_explore_tools", "ChListTablesTool"),
+    ("src.tools.clickhouse_explore_tools", "ChDescribeTableTool"),
+    ("src.tools.clickhouse_query_tool", "ChQueryTool"),
 )
 
 

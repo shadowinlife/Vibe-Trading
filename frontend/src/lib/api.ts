@@ -573,6 +573,69 @@ export const api = {
       `/scheduled-runs/proposals/${encodeURIComponent(proposalId)}/discard`,
       { method: "POST" },
     ),
+  // Strategy library: every gate, version and next-run value is projected by
+  // the backend. The frontend authors no cron and derives no readiness.
+  listStrategies: (params: ListStrategiesParams = {}) => {
+    const q = new URLSearchParams();
+    if (params.kind) q.set("kind", params.kind);
+    if (params.readiness) q.set("readiness", params.readiness);
+    if (params.q) q.set("q", params.q);
+    if (params.include_demo !== undefined) q.set("include_demo", String(params.include_demo));
+    if (params.limit !== undefined) q.set("limit", String(params.limit));
+    if (params.offset !== undefined) q.set("offset", String(params.offset));
+    const qs = q.toString();
+    return request<StrategyListResponse>(`/strategies${qs ? `?${qs}` : ""}`);
+  },
+  getStrategySummary: () => request<StrategyLibrarySummary>("/strategies/summary"),
+  createStrategy: (body: CreateStrategyRequest) =>
+    request<StrategyDetail>("/strategies", { method: "POST", body: JSON.stringify(body) }),
+  getStrategy: (strategyId: string) =>
+    request<StrategyDetail>(`/strategies/${encodeURIComponent(strategyId)}`),
+  updateStrategySpec: (strategyId: string, spec: Record<string, unknown>) =>
+    request<StrategyDetail>(`/strategies/${encodeURIComponent(strategyId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ spec }),
+    }),
+  evaluateStrategy: (strategyId: string) =>
+    request<StrategyDetail>(`/strategies/${encodeURIComponent(strategyId)}/evaluate`, {
+      method: "POST",
+    }),
+  getStrategyRuns: (strategyId: string, limit?: number) => {
+    const qs = limit === undefined ? "" : `?limit=${encodeURIComponent(String(limit))}`;
+    return request<StrategyRun[]>(
+      `/strategies/${encodeURIComponent(strategyId)}/runs${qs}`,
+    );
+  },
+  seedDemoStrategy: () =>
+    request<StrategyDemoSeed>("/strategies/demo", { method: "POST" }),
+  listStrategySchedules: () =>
+    request<StrategySchedule[]>("/strategy-schedules"),
+  // A code strategy attaches immediately; a workflow one only stages a
+  // proposal, and the one-time confirm token in that response is the caller's
+  // to hold in memory until commit.
+  createStrategySchedule: (strategyId: string, body: AttachStrategyScheduleRequest) =>
+    request<StrategyScheduleAttachResult>(
+      `/strategies/${encodeURIComponent(strategyId)}/schedule`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  commitStrategySchedule: (proposalId: string, confirmToken: string) =>
+    request<StrategySchedule>(
+      `/strategy-schedule-proposals/${encodeURIComponent(proposalId)}/commit`,
+      { method: "POST", body: JSON.stringify({ confirm_token: confirmToken }) },
+    ),
+  deleteStrategySchedule: (jobId: string) =>
+    request<void>(`/strategy-schedules/${encodeURIComponent(jobId)}`, { method: "DELETE" }),
+  getStrategyScheduleRuns: (jobId: string, limit?: number) => {
+    const qs = limit === undefined ? "" : `?limit=${encodeURIComponent(String(limit))}`;
+    return request<StrategyRun[]>(
+      `/strategy-schedules/${encodeURIComponent(jobId)}/runs${qs}`,
+    );
+  },
+  runStrategyScheduleNow: (jobId: string) =>
+    request<StrategySchedule>(
+      `/strategy-schedules/${encodeURIComponent(jobId)}/run-now`,
+      { method: "POST" },
+    ),
   sendMessage: (sid: string, content: string) => request<{ message_id: string; attempt_id: string }>(`/sessions/${sid}/messages`, { method: "POST", body: JSON.stringify({ content }) }),
   cancelSession: (sid: string) => request<{ status: string }>(`/sessions/${sid}/cancel`, { method: "POST" }),
   getSessionMessages: (sid: string) => request<MessageItem[]>(`/sessions/${sid}/messages`),
@@ -792,7 +855,11 @@ export interface ScheduledRun {
   id: string;
   prompt: string;
   title: string;
-  source_type: "prompt" | "playbook" | "system";
+  source_type: "prompt" | "playbook" | "system" | "strategy";
+  // Only populated for a strategy-sourced row; absent on prompt/playbook jobs.
+  executor_kind?: "prompt" | "internal" | "strategy";
+  strategy_id?: string;
+  strategy_version?: string;
   playbook_slug: string | null;
   end_at: number | null;
   schedule: string;
@@ -882,6 +949,175 @@ export interface ScheduledResearchProposal {
   job: ScheduledResearchProposalJob;
   job_id?: string | null;
   committed_job_id?: string | null;
+}
+
+// --- Strategy library types ---
+
+export type StrategyKind = "code" | "workflow";
+export type StrategyReadiness = "draft" | "needs_work" | "reviewing" | "ready" | "rejected";
+export type StrategyEvidenceQuality = "high" | "medium" | "low" | "stale";
+export type StrategyRunStatus = "completed" | "failed" | "skipped" | "missed";
+
+export interface StrategyEvidence {
+  has_bench: boolean;
+  /** ISO timestamp of the verdict the quality was derived from, null when unevaluated. */
+  last_verified: string | null;
+  quality: StrategyEvidenceQuality | null;
+}
+
+export interface StrategyLastRun {
+  status: string;
+  finished_at: number | null;
+  run_id: string;
+}
+
+export interface StrategyScheduleStats {
+  count: number;
+  next_run_at: number | null;
+}
+
+export interface StrategySummary {
+  id: string;
+  name: string;
+  kind: StrategyKind;
+  readiness: StrategyReadiness;
+  version: string;
+  universe: string;
+  demo: boolean;
+  evidence: StrategyEvidence;
+  schedule: StrategyScheduleStats;
+  last_run: StrategyLastRun | null;
+}
+
+export interface StrategyGap {
+  code: string;
+  field: string;
+  message: string;
+  fix_hint: string;
+}
+
+export interface StrategyBenchRow {
+  id: number;
+  bench_type: string;
+  sharpe: number | null;
+  annual_return: number | null;
+  max_drawdown: number | null;
+  calmar: number | null;
+  category: string | null;
+  run_dir: string | null;
+  created_at: string;
+}
+
+export interface StrategyRun {
+  run_id: string;
+  job_id: string;
+  strategy_id: string;
+  strategy_version: string;
+  status: StrategyRunStatus;
+  started_at: number;
+  finished_at: number | null;
+  session_id: string | null;
+  run_dir: string | null;
+  summary: string;
+  error: string;
+  error_kind: string;
+}
+
+export interface StrategySchedule {
+  job_id: string;
+  strategy_id: string;
+  strategy_version: string;
+  schedule: string;
+  timezone: string | null;
+  status: string;
+  next_run_at: number;
+  /** At most five newest runs, so a list row renders without a second call. */
+  last_runs: StrategyRun[];
+}
+
+export interface StrategyConfigSummary {
+  keys: number;
+  source: string | null;
+  universe: string;
+}
+
+export interface StrategyDetail extends StrategySummary {
+  spec: Record<string, unknown>;
+  evaluator_verdict: Record<string, unknown> | null;
+  previous_verdict: Record<string, unknown> | null;
+  gaps: StrategyGap[];
+  bench_history: StrategyBenchRow[];
+  schedules: StrategySchedule[];
+  run_history: StrategyRun[];
+  config_summary: StrategyConfigSummary;
+  /** Absolute path to the copied signal engine, empty for a workflow strategy. */
+  signal_engine_path: string;
+}
+
+export interface StrategyListResponse {
+  items: StrategySummary[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface StrategyLibrarySummary {
+  active_count: number;
+  runs_today: number;
+  failed_today: number;
+  next_run_at: number | null;
+  /** Completed / (completed + failed) over seven days, null with no terminal runs. */
+  success_rate_7d: number | null;
+}
+
+export interface ListStrategiesParams {
+  kind?: StrategyKind;
+  readiness?: StrategyReadiness;
+  q?: string;
+  include_demo?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface CreateStrategyRequest {
+  spec: Record<string, unknown>;
+  run_dir?: string | null;
+  demo?: boolean;
+}
+
+export interface AttachStrategyScheduleRequest {
+  schedule: string;
+  timezone: string;
+  run_timeout_s?: number | null;
+}
+
+/**
+ * Outcome of attaching a schedule: a job for a code strategy, or a pending
+ * proposal plus its single-use token for a workflow strategy. The boolean
+ * discriminates so a caller must narrow before reading either branch.
+ */
+export type StrategyScheduleAttachResult =
+  | {
+      requires_confirmation: false;
+      job_id: string;
+      proposal_id: null;
+      confirm_token: null;
+      strategy_version: string;
+    }
+  | {
+      requires_confirmation: true;
+      job_id: null;
+      proposal_id: string;
+      confirm_token: string;
+      strategy_version: string;
+    };
+
+export interface StrategyDemoSeed {
+  created: boolean;
+  strategy_id: string;
+  version: string;
+  job_id: string;
+  readiness: StrategyReadiness;
 }
 
 // --- Swarm types ---

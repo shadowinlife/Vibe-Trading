@@ -155,6 +155,11 @@ class Session:
             before principals existed or by a path that has no request context.
             None means "unknown owner", which is different from an
             unattributable one -- do not collapse the two.
+        tool_allowlist: Exact tool names this session may expose to the agent,
+            or None for the unrestricted registry. Stored as a list because
+            ``to_dict`` serialises via ``asdict`` plus ``json.dumps`` and a
+            frozenset is not JSON-serialisable. None means "no session-level
+            restriction"; absent in an older session.json, it loads as None.
     """
 
     session_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
@@ -165,6 +170,7 @@ class Session:
     last_attempt_id: Optional[str] = None
     config: Dict[str, Any] = field(default_factory=dict)
     owner: Optional[Principal] = None
+    tool_allowlist: Optional[List[str]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize the session to a dictionary.
@@ -180,6 +186,9 @@ class Session:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Session:
         """Deserialize a session from a dictionary.
+
+        Keys missing from an older session.json keep their dataclass defaults;
+        ``tool_allowlist`` therefore loads as ``None`` (unrestricted).
 
         Args:
             data: Dictionary produced from parsed JSON.

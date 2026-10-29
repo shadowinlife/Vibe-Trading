@@ -163,6 +163,8 @@ def build_job_from_draft(
 
     source_type = str(source.get("kind") or "prompt")
     playbook_slug = None
+    strategy_id = None
+    strategy_version = None
     config: dict[str, Any] = {}
     if source_type == "prompt":
         prompt = str(source.get("prompt") or "").strip()
@@ -178,8 +180,17 @@ def build_job_from_draft(
             raise ValueError("source.variables must be an object")
         prompt = playbook.render(variables)
         config["playbook"] = playbook_slug
+    elif source_type == "strategy":
+        strategy_id = str(source.get("strategy_id") or "").strip()
+        if not strategy_id:
+            raise ValueError("source.strategy_id is required")
+        raw_version = source.get("strategy_version")
+        strategy_version = str(raw_version).strip() if raw_version is not None else ""
+        if not strategy_version:
+            raise ValueError("source.strategy_version is required")
+        prompt = ""
     else:
-        raise ValueError("source.kind must be 'prompt' or 'playbook'")
+        raise ValueError("source.kind must be 'prompt', 'playbook', or 'strategy'")
 
     expression = str(schedule_spec.get("expression") or "").strip()
     timezone = schedule_spec.get("timezone")
@@ -232,7 +243,10 @@ def build_job_from_draft(
         title=title,
         prompt=prompt,
         source_type=source_type,
+        executor_kind="strategy" if source_type == "strategy" else "prompt",
         playbook_slug=playbook_slug,
+        strategy_id=strategy_id,
+        strategy_version=strategy_version,
         schedule=expression,
         timezone=timezone,
         next_run_at=next_run_at,

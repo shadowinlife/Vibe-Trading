@@ -3,9 +3,10 @@
 Two pieces live here, both pure and domain-free:
 
 * :data:`ExecutorKind` — how a job is executed (``"prompt"`` dispatches an
-  agent session; ``"internal"`` runs a registered in-process callable). The
-  value domain is defined here once, and the job model validates against it
-  (:func:`is_executor_kind`), so model and registry cannot drift apart.
+  agent session; ``"internal"`` runs a registered in-process callable;
+  ``"strategy"`` runs a pinned strategy version through the strategy runner).
+  The value domain is defined here once, and the job model validates against
+  it (:func:`is_executor_kind`), so model and registry cannot drift apart.
 * The kernel callback aliases (:data:`NowFn`, :data:`OnTickFn`) — the
   injection seams of :class:`src.scheduling.kernel.SchedulerKernel`,
   declared here so the kernel module stays free of domain imports.
@@ -21,11 +22,12 @@ from typing import Awaitable, Callable, Literal
 
 #: How a job is executed: ``"prompt"`` dispatches an agent session,
 #: ``"internal"`` runs a callable from the explicit in-process registry
-#: (:mod:`src.scheduling.registry`).
-ExecutorKind = Literal["prompt", "internal"]
+#: (:mod:`src.scheduling.registry`), ``"strategy"`` runs the immutable strategy
+#: version pinned on the job.
+ExecutorKind = Literal["prompt", "internal", "strategy"]
 
 #: The closed value domain of :data:`ExecutorKind`, for runtime validation.
-EXECUTOR_KINDS: tuple[str, ...] = ("prompt", "internal")
+EXECUTOR_KINDS: tuple[str, ...] = ("prompt", "internal", "strategy")
 
 
 def is_executor_kind(value: object) -> bool:

@@ -62,6 +62,13 @@ vi.mock("@/lib/api", () => ({
     ]),
     deleteSession: vi.fn().mockResolvedValue(undefined),
     renameSession: vi.fn().mockResolvedValue(undefined),
+    getStrategySummary: vi.fn().mockResolvedValue({
+      active_count: 0,
+      runs_today: 0,
+      failed_today: 0,
+      next_run_at: null,
+      success_rate_7d: null,
+    }),
   },
 }));
 
@@ -96,6 +103,13 @@ describe("Layout accessibility", () => {
     vi.mocked(api.listSessions).mockReset().mockResolvedValue(sessions as never);
     vi.mocked(api.renameSession).mockReset().mockResolvedValue({ status: "ok" });
     vi.mocked(api.deleteSession).mockReset().mockResolvedValue({ status: "ok" });
+    vi.mocked(api.getStrategySummary).mockReset().mockResolvedValue({
+      active_count: 0,
+      runs_today: 0,
+      failed_today: 0,
+      next_run_at: null,
+      success_rate_7d: null,
+    });
   });
   it("labels landmarks, brand, main content, and the new-chat affordance", () => {
     renderLayout();
