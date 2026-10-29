@@ -1,0 +1,1155 @@
+version: 1
+source: D2-A2 corpus expansion (twin-arbitration powered re-run)
+entries:
+- id: D2W-001
+  query: 抓取这个页面 https://example.com/blog/ai-infra-outlook 的内容并整理成Markdown
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-002
+  query: 读一下这个网页 https://example.com/news/fed-minutes-july 把要点提炼出来
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-003
+  query: 帮我把这篇公告网页转成纯文本：https://example.com/announce/buyback-2026
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-004
+  query: fetch https://example.com/docs/quickstart 这个文档页，给我摘要
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-005
+  query: 把 https://example.com/research/lithium-report 这篇网页版研报读一下，总结核心观点
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-006
+  query: 打开这个链接 https://example.com/blog/quant-basics-3 看看讲了什么，输出干净的正文
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-007
+  query: 这个页面 https://example.com/policy/monetary-q2 的内容抓下来给我
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-008
+  query: 读一下 https://example.com/news/tsmc-earnings 这条新闻全文
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-009
+  query: 把这篇专栏 https://example.com/column/macro-weekly-34 转成Markdown，去掉广告和导航
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-010
+  query: 帮我读取 https://example.com/ir/2026q2-transcript 这个财报电话会实录网页
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-011
+  query: 抓一下 https://example.com/docs/api-changelog 这个更新日志页面
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-012
+  query: 这个网址 https://example.com/blog/energy-transition 的正文内容提取出来
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-013
+  query: 读读 https://example.com/research/semis-2026-outlook 这篇网页报告，列出关键数据
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-014
+  query: 把 https://example.com/announce/dividend-plan 这个分红公告页面内容给我抓下来
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-015
+  query: Fetch https://example.com/blog/fed-rate-path and summarize the key takeaways
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-016
+  query: Read this page for me — https://example.com/news/nvidia-datacenter — and give me clean markdown
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-017
+  query: Grab the content of https://example.com/docs/sdk-reference and condense it
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-018
+  query: Pull up https://example.com/research/oil-market-brief and extract the main arguments
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-019
+  query: Turn this article into clean text — https://example.com/column/weekly-crypto
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-020
+  query: Fetch the transcript page https://example.com/ir/aapl-q3-call and give me the highlights
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-021
+  query: Read https://example.com/policy/tariff-notice-2026 and tell me what changed
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-022
+  query: Please scrape https://example.com/blog/backtesting-pitfalls into Markdown
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-023
+  query: Summarize this link — https://example.com/news/earnings-season-preview
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-024
+  query: Get the body text of https://example.com/docs/migration-guide-v2
+  expected: {kind: tool, name: read_url}
+  domain: D19
+  negatives: [web-reader, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: tool
+- id: D2W-025
+  query: 网页正文提取成Markdown一般怎么做？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-026
+  query: 我想批量读一些财经新闻网页的正文，有什么工具能做到？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-027
+  query: 为什么有些网页直接抓下来全是导航栏和广告，怎么才能只读正文？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-028
+  query: 如何读取需要渲染的网页文章内容？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-029
+  query: 什么工具能把网页文章整理成适合AI阅读的文本？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-030
+  query: 网页正文提取总是失败，该怎么办？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-031
+  query: 怎么才能把一个博客页面的正文抓成干净的文本？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-032
+  query: 读网页的工具怎么用，是直接把HTML给我还是会清洗一遍？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-033
+  query: 如果我只有一篇文章的链接，怎么让工具帮我读出正文？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-034
+  query: 网页转Markdown这个过程具体是怎么实现的，会经过第三方服务吗？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-035
+  query: 如何能稳定地读取国外财经网站的专栏文章？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-036
+  query: 有没有能把长篇网页研报整理成纯文本的阅读器？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-037
+  query: 抓取网页正文时遇到反爬拦截怎么办，有没有现成的读取工具？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-038
+  query: 怎么读取一个网页并去掉里面的样式、脚本和广告？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-039
+  query: How do I read a web page and get clean Markdown out of it?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-040
+  query: How can I turn an online article into plain readable text?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-041
+  query: How can I extract just the body of a web article without the navigation junk?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-042
+  query: Why do some pages come back garbled, and how do I read them properly?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-043
+  query: Which tool converts web pages to Markdown for me?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-044
+  query: How do I use the web-reading tool — does it send the URL to a third party?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-045
+  query: How do I read long-form research published as web pages?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-046
+  query: How do I get the text of an article when I only have its link?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-047
+  query: How do I get web page content extracted and cleaned?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, read_document]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-048
+  query: Which tool should I use to get the main text of a news page instead of raw HTML?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [read_url, web_search]
+  arbitration_ref: K7
+  twin_pair: read_url×web-reader
+  twin_side: skill
+- id: D2W-049
+  query: 把 /tmp/uploads/宁德时代2025年报.pdf 这份文件的文字提取出来
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-050
+  query: 读一下我刚上传的 中芯国际招股说明书.pdf，总结主营业务
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-051
+  query: 这份PDF是扫描版的公司公告 /tmp/files/major-contract.pdf，帮我把正文识别出来
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-052
+  query: 提取 /tmp/uploads/macro-strategy-2026H2.pptx 里每页的标题和要点
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-053
+  query: 读一下这份Word版的尽调报告 /tmp/uploads/due-diligence.docx
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-054
+  query: 把这个Excel持仓表 /tmp/uploads/portfolio.xlsx 的内容读出来给我
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-055
+  query: 我刚传的 美联储7月纪要翻译版.pdf，帮我提取要点
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-056
+  query: 解析这份PDF论文 /tmp/papers/momentum-crashes.pdf，把摘要和结论提出来
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-057
+  query: 读一下 /tmp/uploads/10-Q-2026Q2.pdf 这份季报文件的风险因素章节
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-058
+  query: 这份合同扫描件 /tmp/files/lease-agreement.pdf 帮我转成可复制的文字
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-059
+  query: 把 /tmp/uploads/bond-prospectus.pdf 募集说明书里的发行条款提取出来
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-060
+  query: 读一下我上传的 行业白皮书.pdf，给我一份结构化摘要
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-061
+  query: 这个CSV交易记录 /tmp/uploads/trades.csv 帮我读出来看看格式
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-062
+  query: 提取 /tmp/uploads/policy-document-2026.pdf 这份政策文件的全文文字
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-063
+  query: Extract the text from /tmp/uploads/nvda-10k-2025.pdf, especially the risk factors
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-064
+  query: Read this uploaded whitepaper token-economics.pdf and summarize the supply schedule
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-065
+  query: Pull the key clauses out of /tmp/files/credit-agreement.docx
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-066
+  query: Parse /tmp/uploads/q2-earnings-deck.pptx and list the slide headlines
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-067
+  query: This scanned PDF at /tmp/files/annual-report-1987.pdf needs OCR — get me the text
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-068
+  query: Read /tmp/uploads/basel-iii-consult.pdf and extract the capital requirement sections
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-069
+  query: Extract the tables from this spreadsheet — /tmp/uploads/holdings-2026.xlsx
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-070
+  query: Get the abstract and methodology from /tmp/papers/forecasting-returns.pdf
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-071
+  query: Read this DOCX memo /tmp/files/investment-committee-notes.docx and list the action items
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-072
+  query: Pull the full text out of /tmp/uploads/proxy-statement-def14a.pdf
+  expected: {kind: tool, name: read_document}
+  domain: D19
+  negatives: [doc-reader, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: tool
+- id: D2W-073
+  query: 怎么提取一份扫描版PDF里的文字？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-074
+  query: Which tool do I use to parse office documents like DOCX and XLSX?
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-075
+  query: 我有个PDF是图片扫出来的，为什么直接复制不了文字，该怎么读？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-076
+  query: 如何才能把PDF年报里的表格提取出来？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-077
+  query: 读取本地文档和读取网页分别该用什么工具？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-078
+  query: 带扫描页的PDF要怎么处理才能拿到里面的文字？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-079
+  query: 这个文档读取工具怎么用，支持哪些格式？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-080
+  query: 为什么我直接读PDF读出来是乱码，该怎么办？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-081
+  query: 怎么才能从一份PPT里批量提取图表旁边的说明文字？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-082
+  query: 读一份几百页的PDF招股书，怎么才能高效提取？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-083
+  query: Excel文件里的多个sheet能不能一次都读出来，怎么操作？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-084
+  query: 如何把一个PDF文件的指定页码内容提取出来？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-085
+  query: 文档解析工具是什么流程，会不会把PDF上传到第三方服务？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-086
+  query: 怎么读取一份带密码保护的PDF文件？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-087
+  query: How do I extract text from a scanned PDF?
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-088
+  query: 如何把一份英文研报PDF的要点提取并翻译成中文？
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-089
+  query: How do I pull tables out of a PDF annual report?
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-090
+  query: How do I handle scanned pages with the document reader — does it OCR them?
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-091
+  query: How can I read only specific pages of a large PDF?
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-092
+  query: How do I check which file formats the document reader supports?
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-093
+  query: Why does my PDF come back as gibberish, and how do I extract it properly?
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-094
+  query: How do I read an uploaded Excel file with multiple sheets?
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-095
+  query: How do I extract the footnotes from an academic PDF?
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, read_url]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-096
+  query: Which tool reads PowerPoint slide notes as well as slide text?
+  expected: {kind: skill, name: doc-reader}
+  domain: D19
+  negatives: [read_document, web-reader]
+  arbitration_ref: K8
+  twin_pair: read_document×doc-reader
+  twin_side: skill
+- id: D2W-097
+  query: 搜一下英伟达最新一季财报的发布时间
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-098
+  query: 帮我搜搜最近关于固态电池量产的行业新闻
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-099
+  query: 查一下央行最新一期LPR报价是多少
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-100
+  query: 搜一下特斯拉2026年股东大会的会议纪要或报道
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-101
+  query: 找找有没有关于日元加息影响的深度分析文章
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-102
+  query: 搜一下美国最新CPI数据公布后的市场反应分析
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-103
+  query: 帮我找一下最近券商对白酒行业的研报观点
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-104
+  query: 搜一下巴菲特最新一封致股东信的全文出处
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-105
+  query: 查查最近港股通南向资金大幅流入的新闻报道
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-106
+  query: 搜一下关于稳定币立法进展的最新消息
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-107
+  query: 帮我搜搜黄金创历史新高的相关分析和评论
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-108
+  query: 找一下苹果公司最新发布会的产品信息汇总
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-109
+  query: 搜一下国内最新的房地产政策调整内容
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-110
+  query: 查查欧盟对中国电动车关税的最新进展报道
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-111
+  query: 搜一下最近AI算力板块回调的原因分析
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-112
+  query: 帮我找一下关于美联储缩表节奏的研究文章
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-113
+  query: 搜一下最近发布的低空经济扶持政策原文出处
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-114
+  query: Search for the latest Fed dot plot release
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-115
+  query: Find recent news about TSMC's Arizona fab expansion
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-116
+  query: Look up analyst reactions to the latest jobs report
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-117
+  query: Search for articles on the yen carry trade unwind
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-118
+  query: Find the original source of BlackRock's latest Bitcoin ETF filing news
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-119
+  query: Search for coverage of the OPEC+ production decision this month
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-120
+  query: Look up recent explainers on the Basel III endgame rules
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-121
+  query: Find news about Apple's latest antitrust ruling in the EU
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-122
+  query: Search for commentary on the latest US Treasury refunding announcement
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-123
+  query: Find recent blog posts analyzing the copper supply deficit
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-124
+  query: Look up reports on China's latest property sector stimulus measures
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-125
+  query: Search for the timeline of the latest SEC climate disclosure rule
+  expected: {kind: tool, name: web_search}
+  domain: D19
+  negatives: [web-reader, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: tool
+- id: D2W-126
+  query: 搜到一篇文章之后，怎么才能把网页正文干净地读出来？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-127
+  query: 网页阅读工具和搜索引擎是怎么配合工作的？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-128
+  query: 为什么搜索能搜到的网页内容却读不了，该怎么解决？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-129
+  query: 你们读网页是什么流程，会先搜索再抓取吗？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-130
+  query: 有没有办法在读网页时自动过滤掉评论区和相关推荐？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-131
+  query: 如何把搜索到的多篇网页文章批量整理成可读文本？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-132
+  query: 网页正文提取功能怎么用，财经门户网站能读吗？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-133
+  query: 搜索结果的摘要和网页全文差别很大，怎么拿到全文？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-134
+  query: 读网页时遇到需要登录才能看的内容怎么办？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-135
+  query: 怎么才能把一个长篇网页报告按章节拆开来读？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-136
+  query: 网页抓取出来的内容里夹杂着大量链接和按钮文字，怎么清洗？
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-137
+  query: How do I go from a search result to clean page text with the web-reading toolchain?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-138
+  query: Why can I find a page in search but fail to read it — how do I fix that?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-139
+  query: How do I read the full text of articles that search only shows snippets for?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-140
+  query: How do I turn a list of article links into readable Markdown?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-141
+  query: How do I read JavaScript-heavy news sites with the web reader?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-142
+  query: How do I batch-read several web articles on the same topic?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-143
+  query: How do I trace what happens between fetching a URL and getting clean Markdown?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill
+- id: D2W-144
+  query: How do I keep the extracted text free of ads and boilerplate when reading web pages?
+  expected: {kind: skill, name: web-reader}
+  domain: D19
+  negatives: [web_search, read_url]
+  arbitration_ref: K9
+  twin_pair: web_search×web-reader
+  twin_side: skill

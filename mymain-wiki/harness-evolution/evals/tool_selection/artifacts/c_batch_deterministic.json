@@ -1,0 +1,51 @@
+{
+  "recall": {
+    "primary_n": 143,
+    "structural_miss_n": 15,
+    "structural_miss_ids": [
+      "D01-007",
+      "D11-001",
+      "D11-002",
+      "D16-001",
+      "D16-002",
+      "D16-003",
+      "D16-004",
+      "D16-005",
+      "D16-006",
+      "D16-007",
+      "D16-008",
+      "D18-001",
+      "D18-002",
+      "D18-003",
+      "D18-005"
+    ],
+    "recall_at_7": 0.9370629370629371,
+    "recall_at_7_hits": 134,
+    "recall_at_3": 0.8951048951048951,
+    "median_shortlist_size": 5,
+    "negative_outrank_rate": 0.02727272727272727,
+    "negative_outrank": 3,
+    "negative_outrank_eligible": 110
+  },
+  "disclosure_tax": {
+    "baseline_tools": 74,
+    "tiered_tools": 13,
+    "baseline_tokens_tiktoken": 6974,
+    "tiered_tokens_tiktoken": 1459,
+    "reduction_tiktoken": 0.7907943791224549,
+    "baseline_tokens_chars3": 9887,
+    "tiered_tokens_chars3": 1969,
+    "reduction_chars3": 0.800849600485486
+  },
+  "surface": {
+    "default_surface_size": 13
+  },
+  "verdict": {
+    "D1_recall7_pass": true,
+    "D4_recall3_pass": true,
+    "D2_shortlist_pass": true,
+    "D3_negative_pass": true,
+    "S1_tax_pass": true,
+    "S4_surface_pass": true
+  }
+}

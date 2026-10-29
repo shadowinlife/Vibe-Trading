@@ -1,0 +1,75 @@
+# A5-A8 LLM-judge evaluation — pinned judge configuration (2-model panel).
+#
+# Dedicated panel for the A5-A8 quantitative test plan
+# (HARNESS_EVOLUTION_A5_A8_TEST_PLAN.md). User-directed constraint: the target
+# environment is ALWAYS head-tier SOTA open-source models, so this panel keeps
+# exactly two — qwen3.8-max (primary) and kimi-k3 (sensitivity) — both hosted
+# by DashScope under the SAME key. This is a deliberate subset of the 4-family
+# E2 panel in judge_config.yaml, which stays untouched for E2 reproducibility.
+#
+# DOCUMENTED DEVIATIONS — reasoning-model caps (EMPIRICAL, inherited from the
+# E2 panel probing; do not lower without re-probing):
+# - kimi-k3 finishes within ~200 completion tokens on easy queries; 1000 is
+#   headroom for the harder 164-candidate prompt.
+# - qwen3.8-max probed 7/8 consistent at cap 80 with one truncation suspect;
+#   500 is headroom.
+# Reasoning tokens are billed as completion tokens; they do not affect parsing.
+# Budget is user-approved as UNLIMITED — caps here bound worst-case latency and
+# keep failures fast; they are not cost controls.
+#
+# Use with: python -m src.evals.tool_selection.run_llm_judge \
+#     --config judge_config_a5a8.yaml ...
+
+schema_version: 3
+
+models:
+  - id: qwen3.8-max
+    provider: dashscope
+    base_url_env: DASHSCOPE_BASE_URL
+    base_url_fallback: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key_env: DASHSCOPE_API_KEY
+    temperature: 0.0
+    max_response_tokens: 500
+    role: primary
+  - id: kimi-k3
+    provider: dashscope
+    base_url_env: DASHSCOPE_BASE_URL
+    base_url_fallback: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key_env: DASHSCOPE_API_KEY
+    temperature: 0.0
+    max_response_tokens: 1000
+    role: sensitivity
+
+budget:
+  # Hard caps per (model, surface) run, checked BEFORE each call so a run can
+  # never overshoot. Resume-friendly: already-spent tokens/calls are re-derived
+  # from the golden trace on startup.
+  max_input_tokens_per_model_run: 25000000
+  max_calls_per_model_run: 700
+
+determinism_probe:
+  # --probe-only: first N query ids, each repeated R times; reports the
+  # agreement rate of the `first` pick across repeats.
+  sample_queries: 8
+  repeats: 3
+
+candidate_format:
+  # Spec for the candidate block of the frozen prompt (see run_llm_judge.py).
+  line: "<kind>:<name> — <description>"
+  order: "tools first in registration order, then skills in loader order"
+  id_scheme: "<kind>:<name>"
+  description_whitespace: "collapsed to a single line (newlines -> spaces)"
+
+prices:
+  # PLACEHOLDER prices — estimate: true, best-effort per-1M guesses. They MUST
+  # be verified against the providers' current price lists before any cost
+  # figure produced by the reports is quoted outside this repo.
+  estimate: true
+  currency: USD
+  per_million_tokens:
+    qwen3.8-max:
+      input: 2.50    # estimate:true — verify against DashScope price list
+      output: 10.00  # estimate:true — verify against DashScope price list
+    kimi-k3:
+      input: 0.60    # estimate:true — verify against DashScope price list
+      output: 2.50   # estimate:true — verify against DashScope price list

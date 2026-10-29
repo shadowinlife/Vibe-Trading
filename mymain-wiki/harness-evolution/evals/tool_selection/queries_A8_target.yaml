@@ -1,0 +1,443 @@
+# A8 targeted query set for the LLM-judge T-A8 evaluation.
+#
+# ~70 entries, ~10 per A8 description change, tagged with the change's
+# arbitration_ref. Mix of regression-guard and hard/adversarial queries
+# probing the exact confusion each change removes.
+#
+# Schema matches queries.yaml.
+
+version: 1
+entries:
+  # ── ① Q9 · cashflow_performance 触发词 ──
+  - id: A8-01
+    query: 基金期间有申购赎回，怎么算真实的时间加权收益率
+    expected: {kind: tool, name: cashflow_performance}
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+  - id: A8-02
+    query: 我的账户多次追加和取出资金，算真实收益率
+    expected: {kind: tool, name: cashflow_performance}
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+  - id: A8-03
+    query: 计算这批不规则日期现金流的 XIRR 内部收益率
+    expected: {kind: tool, name: cashflow_performance}
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+  - id: A8-04
+    query: 区分基金经理的真实能力和客户资金加权的体验收益
+    expected: {kind: tool, name: cashflow_performance}
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+  - id: A8-05
+    query: 有资本召唤和分配的私募基金收益怎么算
+    expected: {kind: tool, name: cashflow_performance}
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+  - id: A8-06
+    query: 用修正 Dietz 方法算这个月的组合收益率
+    expected: {kind: tool, name: cashflow_performance}
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+  - id: A8-07
+    query: 给我算这笔投资的 MOIC 和 DPI 倍数
+    expected: {kind: tool, name: cashflow_performance}
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+  - id: A8-08
+    query: 一组 NAV 估值点加不规则现金流，算时间加权回报
+    expected: {kind: tool, name: cashflow_performance}
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+  - id: A8-09
+    query: 期间有资金进出的组合，算真实收益
+    expected: {kind: tool, name: cashflow_performance}
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+  - id: A8-10
+    query: 客户有分红再投入，算他的资金加权收益率
+    expected: {kind: tool, name: cashflow_performance}
+    domain: D09
+    negatives: [quantlib_call]
+    arbitration_ref: Q9
+
+  # ── ② Q14 · get_sector_info 模式说明（全新）──
+  - id: A8-11
+    query: 贵州茅台属于哪些行业板块和概念板块
+    expected: {kind: tool, name: get_sector_info}
+    domain: D11
+    negatives: [get_stock_profile]
+    arbitration_ref: Q14
+  - id: A8-12
+    query: 查一下宁德时代所在的申万行业
+    expected: {kind: tool, name: get_sector_info}
+    domain: D11
+    negatives: [get_stock_profile]
+    arbitration_ref: Q14
+  - id: A8-13
+    query: 今天哪个行业板块涨得最多
+    expected: {kind: tool, name: get_sector_info}
+    domain: D11
+    negatives: [screen_market]
+    arbitration_ref: Q14
+  - id: A8-14
+    query: 按涨幅给今天的行业板块排个名
+    expected: {kind: tool, name: get_sector_info}
+    domain: D11
+    negatives: [screen_market]
+    arbitration_ref: Q14
+  - id: A8-15
+    query: 这只股票有哪些概念板块标签
+    expected: {kind: tool, name: get_sector_info}
+    domain: D11
+    negatives: [get_stock_profile]
+    arbitration_ref: Q14
+  - id: A8-16
+    query: 今天领涨的板块是哪些，各有多少家上涨
+    expected: {kind: tool, name: get_sector_info}
+    domain: D11
+    negatives: [screen_market]
+    arbitration_ref: Q14
+  - id: A8-17
+    query: 查某只A股的行业归属和板块成员关系
+    expected: {kind: tool, name: get_sector_info}
+    domain: D11
+    negatives: [get_stock_profile]
+    arbitration_ref: Q14
+  - id: A8-18
+    query: 行业板块今日涨跌幅排行榜
+    expected: {kind: tool, name: get_sector_info}
+    domain: D11
+    negatives: [screen_market]
+    arbitration_ref: Q14
+  - id: A8-19
+    query: 比亚迪属于什么行业和概念板块
+    expected: {kind: tool, name: get_sector_info}
+    domain: D11
+    negatives: [get_stock_profile]
+    arbitration_ref: Q14
+  - id: A8-20
+    query: 哪些行业板块今天表现最好，领涨股是谁
+    expected: {kind: tool, name: get_sector_info}
+    domain: D11
+    negatives: [screen_market]
+    arbitration_ref: Q14
+
+  # ── ③ Q15 · prediction_market 首句定位 ──
+  - id: A8-21
+    query: Polymarket 上美联储下次降息的隐含概率是多少
+    expected: {kind: tool, name: prediction_market}
+    domain: D12
+    negatives: [web_search]
+    arbitration_ref: Q15
+  - id: A8-22
+    query: 预测市场上某候选人胜选的概率定价
+    expected: {kind: tool, name: prediction_market}
+    domain: D12
+    negatives: [web_search]
+    arbitration_ref: Q15
+  - id: A8-23
+    query: 查一下这个事件合约的市场隐含概率
+    expected: {kind: tool, name: prediction_market}
+    domain: D12
+    negatives: [web_search]
+    arbitration_ref: Q15
+  - id: A8-24
+    query: Polymarket 上美国经济衰退的赔率
+    expected: {kind: tool, name: prediction_market}
+    domain: D12
+    negatives: [web_search]
+    arbitration_ref: Q15
+  - id: A8-25
+    query: 搜索预测市场上关于 CPI 的开放事件合约
+    expected: {kind: tool, name: prediction_market}
+    domain: D12
+    negatives: [web_search]
+    arbitration_ref: Q15
+  - id: A8-26
+    query: 这个二元合约 Yes 的价格隐含多少概率
+    expected: {kind: tool, name: prediction_market}
+    domain: D12
+    negatives: [web_search]
+    arbitration_ref: Q15
+  - id: A8-27
+    query: 某事件合约的隐含概率这段时间怎么变的
+    expected: {kind: tool, name: prediction_market}
+    domain: D12
+    negatives: [web_search]
+    arbitration_ref: Q15
+  - id: A8-28
+    query: 看某个还在交易的事件和它下面的市场
+    expected: {kind: tool, name: prediction_market}
+    domain: D12
+    negatives: [web_search]
+    arbitration_ref: Q15
+  - id: A8-29
+    query: 事件合约的订单簿深度和隐含概率
+    expected: {kind: tool, name: prediction_market}
+    domain: D12
+    negatives: [web_search]
+    arbitration_ref: Q15
+  - id: A8-30
+    query: 市场对某个结果现在定价多少概率
+    expected: {kind: tool, name: prediction_market}
+    domain: D12
+    negatives: [web_search]
+    arbitration_ref: Q15
+
+  # ── ④ Q16 · volatility 策略定位 ──
+  - id: A8-31
+    query: 基于历史波动率百分位的均值回归策略
+    expected: {kind: skill, name: volatility}
+    domain: D05
+    negatives: [risk-analysis]
+    arbitration_ref: Q16
+  - id: A8-32
+    query: 用 HV 分位数做波动率均值回归交易信号
+    expected: {kind: skill, name: volatility}
+    domain: D05
+    negatives: [risk-analysis]
+    arbitration_ref: Q16
+  - id: A8-33
+    query: 波动率回到低分位时买入的策略
+    expected: {kind: skill, name: volatility}
+    domain: D05
+    negatives: [risk-analysis]
+    arbitration_ref: Q16
+  - id: A8-34
+    query: 给我一个基于波动率的均值回归交易策略
+    expected: {kind: skill, name: volatility}
+    domain: D05
+    negatives: [risk-analysis]
+    arbitration_ref: Q16
+  - id: A8-35
+    query: 历史波动率百分位排名策略回测
+    expected: {kind: skill, name: volatility}
+    domain: D05
+    negatives: [risk-analysis]
+    arbitration_ref: Q16
+  - id: A8-36
+    query: 低波动时做多高波动时减仓的策略
+    expected: {kind: skill, name: volatility}
+    domain: D05
+    negatives: [risk-analysis]
+    arbitration_ref: Q16
+  - id: A8-37
+    query: 用波动率均值回归的思路生成交易信号
+    expected: {kind: skill, name: volatility}
+    domain: D05
+    negatives: [risk-analysis]
+    arbitration_ref: Q16
+  - id: A8-38
+    query: 写一个 HV percentile 均值回归策略
+    expected: {kind: skill, name: volatility}
+    domain: D05
+    negatives: [risk-analysis]
+    arbitration_ref: Q16
+  - id: A8-39
+    query: 波动率高低分位决定仓位的交易策略
+    expected: {kind: skill, name: volatility}
+    domain: D05
+    negatives: [risk-analysis]
+    arbitration_ref: Q16
+  - id: A8-40
+    query: 想做一个波动率相关的均值回归策略
+    expected: {kind: skill, name: volatility}
+    domain: D05
+    negatives: [risk-analysis]
+    arbitration_ref: Q16
+
+  # ── ⑤ G2 · TA 流派技能适用场景句 ──
+  - id: A8-41
+    query: 用缠论分析这只股票的分型、笔和中枢结构
+    expected: {kind: skill, name: chanlun}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: A8-42
+    query: 缠论找一买二买三买的买卖点
+    expected: {kind: skill, name: chanlun}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: A8-43
+    query: 艾略特波浪数浪，现在五浪推动走完了吗
+    expected: {kind: skill, name: elliott-wave}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: A8-44
+    query: 用波浪理论判断这轮调整是否结束
+    expected: {kind: skill, name: elliott-wave}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: A8-45
+    query: ICT 聪明钱概念，找订单块和 FVG 缺口
+    expected: {kind: skill, name: smc}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: A8-46
+    query: SMC 的 BOS 和 ChoCH 市场结构判断
+    expected: {kind: skill, name: smc}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: A8-47
+    query: 一目均衡表云层位置和转换线交叉信号
+    expected: {kind: skill, name: ichimoku}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: A8-48
+    query: K线形态识别，有没有吞没锤子线启明星
+    expected: {kind: skill, name: candlestick}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: A8-49
+    query: 谐波形态 Butterfly 和 Crab 的 PRZ 测算
+    expected: {kind: skill, name: harmonic}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+  - id: A8-50
+    query: 加特利形态的潜在反转区点位
+    expected: {kind: skill, name: harmonic}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: G2
+
+  # ── ⑥ G9 · shadow 流水线步骤号 ──
+  - id: A8-51
+    query: 第一步，解析我的券商交割单看交易行为
+    expected: {kind: tool, name: analyze_trade_journal}
+    domain: D15
+    negatives: [extract_shadow_strategy]
+    arbitration_ref: G9
+  - id: A8-52
+    query: 分析我交割单里的处置效应和过度交易偏差
+    expected: {kind: tool, name: analyze_trade_journal}
+    domain: D15
+    negatives: [extract_shadow_strategy]
+    arbitration_ref: G9
+  - id: A8-53
+    query: 第二步，从我赚钱的交易里提炼影子策略规则
+    expected: {kind: tool, name: extract_shadow_strategy}
+    domain: D15
+    negatives: [analyze_trade_journal]
+    arbitration_ref: G9
+  - id: A8-54
+    query: 把我的盈利模式总结成几条可回测的规则
+    expected: {kind: tool, name: extract_shadow_strategy}
+    domain: D15
+    negatives: [analyze_trade_journal]
+    arbitration_ref: G9
+  - id: A8-55
+    query: 第三步，影子策略跨市场回测
+    expected: {kind: tool, name: run_shadow_backtest}
+    domain: D15
+    negatives: [extract_shadow_strategy]
+    arbitration_ref: G9
+  - id: A8-56
+    query: 影子账户和我实际交易做差值归因
+    expected: {kind: tool, name: run_shadow_backtest}
+    domain: D15
+    negatives: [render_shadow_report]
+    arbitration_ref: G9
+  - id: A8-57
+    query: 第四步，生成影子账户的完整报告
+    expected: {kind: tool, name: render_shadow_report}
+    domain: D15
+    negatives: [run_shadow_backtest]
+    arbitration_ref: G9
+  - id: A8-58
+    query: 渲染八节的影子账户 PDF 报告
+    expected: {kind: tool, name: render_shadow_report}
+    domain: D15
+    negatives: [run_shadow_backtest]
+    arbitration_ref: G9
+  - id: A8-59
+    query: 今天哪些标的符合我影子账户的入场节奏
+    expected: {kind: tool, name: scan_shadow_signals}
+    domain: D15
+    negatives: [run_shadow_backtest]
+    arbitration_ref: G9
+  - id: A8-60
+    query: 影子账户整套流程是怎么走的
+    expected: {kind: skill, name: shadow-account}
+    domain: D15
+    negatives: [analyze_trade_journal]
+    arbitration_ref: G9
+
+  # ── ⑦ G1 · 数据源技能删互称备份 ──
+  - id: A8-61
+    query: 脚本里直连通达信 TCP 协议取A股日线
+    expected: {kind: skill, name: mootdx}
+    domain: D01
+    negatives: [get_market_data]
+    arbitration_ref: G1
+  - id: A8-62
+    query: 用 mootdx 拉A股行情，免 token 不走 HTTP
+    expected: {kind: skill, name: mootdx}
+    domain: D01
+    negatives: [get_market_data]
+    arbitration_ref: G1
+  - id: A8-63
+    query: OKX V5 REST 接口取现货K线和资金费率
+    expected: {kind: skill, name: okx-market}
+    domain: D01
+    negatives: [get_market_data]
+    arbitration_ref: G1
+  - id: A8-64
+    query: 直接调 OKX API 拿合约持仓量和资金费率
+    expected: {kind: skill, name: okx-market}
+    domain: D01
+    negatives: [get_market_data]
+    arbitration_ref: G1
+  - id: A8-65
+    query: 用 akshare 取A股期货宏观的免费数据
+    expected: {kind: skill, name: akshare}
+    domain: D01
+    negatives: [get_market_data]
+    arbitration_ref: G1
+  - id: A8-66
+    query: akshare 拉东方财富的行情数据
+    expected: {kind: skill, name: akshare}
+    domain: D01
+    negatives: [get_market_data]
+    arbitration_ref: G1
+  - id: A8-67
+    query: tushare 取A股的财务和日线行情
+    expected: {kind: skill, name: tushare}
+    domain: D01
+    negatives: [get_market_data]
+    arbitration_ref: G1
+  - id: A8-68
+    query: 用 tushare pro 接口拿基金和宏观数据
+    expected: {kind: skill, name: tushare}
+    domain: D01
+    negatives: [get_market_data]
+    arbitration_ref: G1
+  - id: A8-69
+    query: yfinance 取美股和港股的历史行情
+    expected: {kind: skill, name: yfinance}
+    domain: D01
+    negatives: [get_market_data]
+    arbitration_ref: G1
+  - id: A8-70
+    query: 用 yfinance 拉加拿大股票的 OHLCV
+    expected: {kind: skill, name: yfinance}
+    domain: D01
+    negatives: [get_market_data]
+    arbitration_ref: G1

@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-23T04:49:06.684620+00:00",
+  "host": {
+    "platform": "macOS-26.5.2-arm64-i386-64bit",
+    "python": "3.12.13",
+    "worktree": "/Users/mgong/LegoNanoBot/vibe-trading-harness-evolution"
+  },
+  "timeouts_seconds": {
+    "docker_command": 20.0,
+    "hf_probe": 15.0,
+    "container_health_wait": 180.0,
+    "connect": 10.0,
+    "health": 15.0,
+    "session_create": 30.0,
+    "message_turn": 300.0,
+    "message_list": 30.0,
+    "poll_interval": 5.0
+  },
+  "checks": {
+    "docker": {
+      "status": "ok",
+      "measured": {
+        "server_version": "27.4.0",
+        "command": "docker info"
+      },
+      "decision": null,
+      "remediation": []
+    },
+    "huggingface": {
+      "status": "degraded",
+      "measured": {
+        "probed": [
+          {
+            "endpoint": "https://huggingface.co",
+            "label": "direct",
+            "status": 0,
+            "latency_ms": 30074.1
+          },
+          {
+            "endpoint": "https://hf-mirror.com",
+            "label": "mirror",
+            "status": 200,
+            "latency_ms": 1656.3
+          }
+        ],
+        "endpoint_used": "https://hf-mirror.com"
+      },
+      "decision": "huggingface.co unreachable; set HF_ENDPOINT=https://hf-mirror.com for all HuggingFace dataset downloads (FinanceBench, FinEval).",
+      "remediation": [
+        "export HF_ENDPOINT=https://hf-mirror.com before running HF-backed benchmarks",
+        "restore direct network access to https://huggingface.co"
+      ]
+    },
+    "disk": {
+      "status": "ok",
+      "measured": {
+        "path": "/Users/mgong/LegoNanoBot/vibe-trading-harness-evolution",
+        "free_gb": 318.89,
+        "required_gb": 50.0,
+        "hard_floor_gb": 10.0,
+        "basis": "BacktestBench ~6.5M A-share daily rows (<1GB parquet) plus Docker task images for SWE-bench/terminal-bench and HF dataset cache"
+      },
+      "decision": null,
+      "remediation": []
+    },
+    "opencode_serve": {
+      "status": "failed",
+      "measured": {
+        "origin": "ephemeral container opencode-serve:v2.1.1-mymain",
+        "url": "http://127.0.0.1:55751",
+        "ok": false,
+        "phases": {
+          "health": {
+            "ok": true,
+            "detail": "GET /health -> 200"
+          },
+          "session_create": {
+            "ok": true,
+            "detail": "POST /api/session -> 200"
+          },
+          "turn1_dialog": {
+            "ok": true,
+            "detail": "turn1 marker: verified: 2 messages"
+          },
+          "turn2_tool_call": {
+            "ok": false,
+            "detail": "turn2 marker+tool: 5 messages; tools=[]"
+          }
+        },
+        "session_id": "ses_fd3114c92ffeGu9EGXkKsNYyPs",
+        "tool_call_observed": false,
+        "tool_names": [],
+        "elapsed_seconds": 309.91,
+        "timeouts_seconds": {
+          "connect": 10.0,
+          "health": 15.0,
+          "session_create": 30.0,
+          "message_turn": 300.0,
+          "message_list": 30.0,
+          "poll_interval": 5.0
+        }
+      },
+      "decision": "opencode-serve is reachable but the single-task round-trip (session -> multi-turn dialog -> tool call -> result retrieval) failed; baseline-side benchmarks are blocked pending HIL decision.",
+      "remediation": [
+        "fix the session bridge (todo 4) and re-run this probe",
+        "degrade the baseline side of affected benchmarks: record 'baseline missing, PoC single-side measurement' at the decision gate"
+      ]
+    }
+  },
+  "overall": "degraded"
+}
