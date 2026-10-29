@@ -487,7 +487,7 @@ def test_ohlcv_code_maps_to_artifacts_file(run_dir: Path) -> None:
 
 
 # --------------------------------------------------------------------------
-# (j) run_card / corrupt JSON
+# (j) run_card / progress / corrupt JSON
 # --------------------------------------------------------------------------
 
 
@@ -506,6 +506,14 @@ def test_corrupt_run_card_rejected(run_dir: Path) -> None:
     env = json.loads(read_run_artifact(str(run_dir), "run_card"))
     assert env["ok"] is False
     assert set(env) == {"ok", "error", "hint"}
+
+
+def test_progress_returns_parsed_json(run_dir: Path) -> None:
+    progress = {"stage": "simulate", "pct": 42, "updated_at": "2026-09-30T08:00:00Z"}
+    (run_dir / "progress.json").write_text(json.dumps(progress), encoding="utf-8")
+    env = json.loads(read_run_artifact(str(run_dir), "progress"))
+    assert env["artifact"] == "progress"
+    assert env["json"] == progress
 
 
 # --------------------------------------------------------------------------
@@ -549,7 +557,9 @@ def test_tool_class_contract(run_dir: Path) -> None:
     assert tool.is_readonly is True
     assert tool.repeatable is True
     assert tool.description
-    assert "progress" not in tool.description
+    # mymain superset: the progress sidecar alias stays exposed (upstream
+    # pins its absence; this branch keeps the local R5' alias superset).
+    assert "progress" in tool.description
     schema = tool.to_openai_schema()
     props = schema["function"]["parameters"]["properties"]
     assert props["format"]["enum"] == ["rows", "downsample", "meta"]

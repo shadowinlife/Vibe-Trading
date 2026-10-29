@@ -83,6 +83,7 @@ def build_registry(
     warn_callback: Callable[[str], None] | None = None,
     interactive: bool | None = None,
     cancel_event: Any | None = None,
+    tool_allowlist: frozenset[str] | None = None,
     _mcp_server_tool_name_segments: Mapping[str, str] | None = None,
 ) -> ToolRegistry:
     """Build the tool registry via auto-discovery, optionally enriched with MCP tools.
@@ -92,6 +93,12 @@ def build_registry(
     after the local tools. Each MCP server is isolated: a failure to connect
     or discover tools for one server emits a warning and skips that server
     without affecting local tools or other MCP servers.
+
+    ``tool_allowlist`` is the enforcement point for a session-scoped tool
+    boundary. It is applied to the finished registry, after MCP tools have
+    been appended, so a remote tool can never bypass it. A prompt instruction
+    is not a control; the tool must be absent from the registry the agent
+    receives.
 
     Args:
         persistent_memory: Shared PersistentMemory instance. Injected into
@@ -119,10 +126,25 @@ def build_registry(
             channel rather than blocking on a browser that cannot open
             (SPEC Transport §4). ``None`` (default) auto-detects via
             ``sys.stdin.isatty()``.
+        tool_allowlist: When provided and non-empty, the built registry is
+            projected down to exactly these tool names. Filtering happens
+            after MCP tools are appended, immediately before the registry is
+            returned, so every ``trading_*`` / ``etoro_*`` / ``connector_*`` /
+            ``mcp_*`` tool outside the list is absent from what the agent
+            receives, not merely discouraged. ``None`` or an empty set means
+            no filtering.
 
     Returns:
         ToolRegistry containing all available local tools followed by any
-        successfully discovered MCP tools.
+        successfully discovered MCP tools, or only the allowlisted subset when
+        ``tool_allowlist`` is provided and non-empty.
+
+    Raises:
+        ValueError: If ``tool_allowlist`` names a tool that is not present in
+            the built registry. Unknown names fail closed instead of being
+            dropped: a typo, an unavailable dependency or a tool excluded by
+            the shell policy must stop the run, never weaken the boundary
+            silently.
     """
     from src.tools.goal_tool import (
         AddGoalEvidenceTool,
@@ -134,6 +156,10 @@ def build_registry(
     from src.tools.remember_tool import RememberTool
     from src.tools.swarm_tool import SwarmTool
     from src.tools.scheduled_research_tool import ScheduledResearchTool
+    from src.tools.strategy_library_tool import (
+        PromoteStrategyTool,
+        ScheduleStrategyTool,
+    )
 
     goal_tool_classes = {
         StartResearchGoalTool,
@@ -146,6 +172,8 @@ def build_registry(
     session_injected_classes = goal_tool_classes | {
         RunResearchAutopilotTool,
         ScheduledResearchTool,
+        PromoteStrategyTool,
+        ScheduleStrategyTool,
     }
     classes = _discover_subclasses()
     registry = ToolRegistry()
@@ -280,7 +308,59 @@ def build_registry(
                 if warn_callback is not None:
                     warn_callback(skip_msg)
 
+    # Applied last on purpose: everything above this line can add tools (MCP
+    # wrappers, live-broker rewrites), so an allowlist applied earlier would
+    # let a later append bypass it.
+    if tool_allowlist:
+        registry = _apply_tool_allowlist(registry, frozenset(tool_allowlist))
+
     return registry
+
+
+def _apply_tool_allowlist(
+    registry: ToolRegistry,
+    tool_names: frozenset[str],
+) -> ToolRegistry:
+    """Project a fully built registry down to an exact allowlist.
+
+    This is a security boundary, not a convenience filter: the caller has
+    declared which tools a session may ever see, and the result is the only
+    registry that session's agent receives.
+
+    Unlike :func:`_filter_registry`, which warns and drops names a preset
+    requests but the build could not supply, an allowlisted name that is absent
+    from the registry raises. Silently dropping would run the session with a
+    different tool surface than the caller authorised, and an allowlist typo
+    would never surface at all.
+
+    Args:
+        registry: Fully built registry with MCP tools already appended.
+        tool_names: Exact tool names to keep. Must be non-empty.
+
+    Returns:
+        A registry containing only the named tools, in build order, carrying
+        the source registry's import and registration failure records.
+
+    Raises:
+        ValueError: If any requested name is absent from ``registry``.
+    """
+    unknown = sorted(name for name in tool_names if name not in registry)
+    if unknown:
+        raise ValueError(
+            "tool_allowlist names are not available in the built registry: "
+            + ", ".join(unknown)
+        )
+    filtered = ToolRegistry()
+    for module_name, reason in registry.import_failures.items():
+        filtered.record_import_failure(module_name, reason)
+    for tool_name, reason in registry.registration_failures.items():
+        filtered.record_registration_failure(tool_name, reason)
+    for name in registry.tool_names:
+        if name in tool_names:
+            tool = registry.get(name)
+            if tool is not None:
+                filtered.register(tool)
+    return filtered
 
 
 def build_filtered_registry(
