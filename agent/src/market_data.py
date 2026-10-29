@@ -17,10 +17,12 @@ DEFAULT_MAX_ROWS = 250
 # fallback chain (registry.FALLBACK_CHAINS), so an unavailable preferred source
 # still degrades gracefully to the rest of the chain. US equities route to the
 # throttle-tolerant Yahoo public endpoint first (lower IP-ban risk than the
-# yfinance SDK), A-shares and HK equities to the never-banned Tencent endpoint.
+# yfinance SDK), A-shares to the ClickHouse local store first (degrading to
+# the never-banned Tencent endpoint when ClickHouse is unavailable), and HK
+# equities to the never-banned Tencent endpoint.
 _SOURCE_PATTERNS = [
     (re.compile(r"^local:", re.I), "local"),
-    (re.compile(r"^\d{6}\.(SZ|SH|BJ)$", re.I), "tencent"),
+    (re.compile(r"^\d{6}\.(SZ|SH|BJ)$", re.I), "clickhouse"),
     (re.compile(r"^[A-Z0-9&.\-]+\.US$", re.I), "yahoo"),
     (re.compile(r"^\d{3,5}\.HK$", re.I), "tencent"),
     # India: NSE (RELIANCE.NS) / BSE (500325.BO). Tickers may carry '&' and '-'
@@ -196,6 +198,38 @@ def _json_safe(value: Any) -> Any:
     return value
 
 
+def _clickhouse_table(frame: Any) -> str:
+    """Return the ClickHouse table the loader recorded on *frame*."""
+    attrs = getattr(frame, "attrs", None)
+    frame_provenance = attrs.get("_provenance") if isinstance(attrs, dict) else None
+    if isinstance(frame_provenance, dict):
+        table = frame_provenance.get("table")
+        if isinstance(table, str) and table:
+            return table
+    return "stk_factor_pro"
+
+
+def _clickhouse_provenance(frame: Any) -> dict[str, Any]:
+    """Additive unit metadata for ClickHouse-served bars (P1.2).
+
+    Returns ``volume_unit`` / ``amount_unit`` / ``price_adjust`` / ``caliber``
+    for the table the loader actually queried (``stk_factor_pro``,
+    ``idx_factor_pro`` or ``fund_daily``), read from the frame's own
+    ``_provenance``. Fail-soft: any failure yields an empty dict so the
+    provenance envelope only ever grows, never breaks.
+    """
+    table = _clickhouse_table(frame)
+    try:
+        from src.clickhouse_units import clickhouse_bar_provenance
+
+        provenance = clickhouse_bar_provenance(table)
+        provenance["table"] = table
+        return provenance
+    except Exception as exc:  # noqa: BLE001 — additive metadata is best-effort
+        logger.debug("clickhouse provenance metadata unavailable: %s", exc)
+        return {}
+
+
 def fetch_market_data(
     *,
     codes: list[str],
@@ -248,9 +282,7 @@ def fetch_market_data(
     provenance: dict[str, dict[str, Any]] = {}
     diagnostics: dict[str, list[dict[str, str]]] = {}
     result_aliases = {
-        code: code.split(":", 1)[1]
-        if code.lower().startswith("local:")
-        else code
+        code: code.split(":", 1)[1] if code.lower().startswith("local:") else code
         for code in codes
     }
 
@@ -397,7 +429,9 @@ def fetch_market_data(
         if used_source and used_source != src:
             logger.info(
                 "market-data source %r unavailable for %s; fell back to %r",
-                src, src_codes, used_source,
+                src,
+                src_codes,
+                used_source,
             )
         served_elsewhere = sorted(
             {serve_src for serve_src, _ in symbol_sources.values()} - {used_source}
@@ -459,10 +493,16 @@ def fetch_market_data(
             symbol_source, symbol_provider_cls = symbol_sources.get(
                 symbol, (used_source, provider_cls)
             )
+            extra = (
+                _clickhouse_provenance(df)
+                if (symbol_source or src) == "clickhouse"
+                else None
+            )
             _emit(
                 symbol, df,
                 src=src, used_source=symbol_source, provider_cls=symbol_provider_cls,
                 market=market,
+                extra_provenance=extra,
             )
 
     unresolved = [

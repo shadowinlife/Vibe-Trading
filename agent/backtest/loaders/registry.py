@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Collection
 from threading import Lock
 from typing import Any, Type
 
@@ -44,6 +45,7 @@ VALID_SOURCES: set[str] = {
     "baostock",
     "tencent",
     "mootdx",
+    "clickhouse",
     "ccxt",
     "futu",
     "eastmoney",
@@ -107,6 +109,7 @@ def _ensure_registered() -> None:
             "backtest.loaders.baostock_loader",
             "backtest.loaders.tencent_loader",
             "backtest.loaders.mootdx_loader",
+            "backtest.loaders.clickhouse",
             "backtest.loaders.ccxt_loader",
             "backtest.loaders.futu",
             "backtest.loaders.eastmoney_loader",
@@ -179,6 +182,7 @@ def is_no_network_fallback_source(source: str) -> bool:
 # REST fallbacks placed deeper in the chain.
 FALLBACK_CHAINS: dict[str, list[str]] = {
     "a_share": [
+        "clickhouse",
         "tencent",
         # mootdx retired from the default chain 2026-10-08: the TDX quote
         # servers stopped answering the client protocol mootdx/tdxpy speak
@@ -294,6 +298,7 @@ PRICE_CALIBER_BY_SOURCE: dict[str, str] = {
     "alphavantage": "raw",  # TIME_SERIES_DAILY, not the _ADJUSTED endpoint
     "longbridge": "raw",  # pins AdjustType.NoAdjust
     "b3_cotahist": "raw",  # B3 COTAHIST files carry traded prices only
+    "clickhouse": "raw",  # loader serves bare close/open from all three routed tables
 }
 
 #: Per-(source, market) exceptions to the per-source table.
@@ -368,7 +373,9 @@ def market_has_corporate_actions(market: str) -> bool:
     return market not in _NA_CALIBER_MARKETS and market not in _INDEX_CALIBER_MARKETS
 
 
-def frame_caliber(frame: object, source: str, market: str | None = None, symbol: str | None = None) -> str:
+def frame_caliber(
+    frame: object, source: str, market: str | None = None, symbol: str | None = None
+) -> str:
     """Caliber of one served frame, honoring what the loader actually served.
     A loader that converted its series (e.g. the additive-to-multiplicative
     path from #1541) reports the caliber on the frame itself; the static
@@ -381,7 +388,9 @@ def frame_caliber(frame: object, source: str, market: str | None = None, symbol:
     return price_caliber(source, market, symbol)
 
 
-def price_caliber(source: str, market: str | None = None, symbol: str | None = None) -> str:
+def price_caliber(
+    source: str, market: str | None = None, symbol: str | None = None
+) -> str:
     """Return the adjustment caliber of ``source``'s served prices.
 
     Args:
@@ -588,7 +597,7 @@ def refresh_source_order_overrides() -> None:
 refresh_source_order_overrides()
 
 
-def resolve_loader(market: str) -> Any:
+def resolve_loader(market: str, *, exclude: Collection[str] = ()) -> Any:
     """Return the first *available* loader instance for *market*.
 
     Walks the fallback chain and returns the first loader whose
@@ -596,6 +605,10 @@ def resolve_loader(market: str) -> Any:
 
     Args:
         market: Market type key (e.g. ``"a_share"``, ``"crypto"``).
+        exclude: Source names to skip.  The A-share chain leads with
+            ``clickhouse``, so the ClickHouse loader's own federation path
+            excludes itself to reach a genuine network source instead of
+            resolving back into itself.
 
     Returns:
         A loader instance.
@@ -605,9 +618,10 @@ def resolve_loader(market: str) -> Any:
     """
     _ensure_registered()
     chain = FALLBACK_CHAINS.get(market, [])
+    excluded = set(exclude)
     tried: list[str] = []
     for name in chain:
-        if name not in LOADER_REGISTRY:
+        if name in excluded or name not in LOADER_REGISTRY:
             continue
         tried.append(name)
         # Issue #50 — some loaders (e.g. Tushare) call into the SDK during

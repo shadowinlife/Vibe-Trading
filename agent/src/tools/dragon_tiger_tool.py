@@ -247,6 +247,17 @@ class DragonTigerTool(BaseTool):
         )
 
         try:
+            from src.tools.clickhouse_fallbacks import fetch_dragon_tiger_ch
+
+            data = fetch_dragon_tiger_ch(trade_date, code)
+            return json.dumps(
+                {"ok": True, "market": "a_share", "source": "clickhouse", "data": data},
+                ensure_ascii=False,
+            )
+        except Exception:
+            pass
+
+        try:
             data = self._collect(trade_date, code)
         except (
             Exception
