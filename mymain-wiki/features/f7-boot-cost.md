@@ -50,6 +50,16 @@ tags: [feature, boot, opencode, plugin]
 - `OpencodeAgent/entrypoint.sh`：`finalize_config()` 复制配置到项目作用域后删除 `plugin` 键（保留 `mcp`）。
 - 回归测试：`OpencodeAgent/tests/test_entrypoint_supervision.py::test_project_scope_copy_drops_the_plugin_list`。
 
+## 实测记录（生产箱子，同一控制面、同一区域）
+
+| 镜像 | 做的改动 | warmup→MCP connected | 入口 `/health` | 启动期是否写 `node_modules` |
+|---|---|---|---|---|
+| `v3.14.2-backtest-summary-20261030` | 无 | 73-82s | 77-122s | 是（63 MB） |
+| `v3.15.0-mymain` | 只删项目侧 `plugin` 键 | 75s | 107s | 是（63 MB） |
+| `v3.15.1-mymain` | 再加镜像预烘焙项目 `node_modules`（208 MB） | **14.4s** | **48s** | 否（mtime 早于启动） |
+
+领取体验：`replicas: 0` 下从 wake 到 ready 由约 122 秒降到 **57 秒**；剩余耗时是固定的 `sleep 20` + warmup（约 16 秒）与 opencode 项目引导（约 14 秒），不再是安装。
+
 ## 验收
 
 - 冷启动（新箱、无缓存目录）：首次 `/mcp?directory=/workspace` 到 `vibe-trading: connected` **≤ 15 秒**。
