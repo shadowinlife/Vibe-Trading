@@ -32,6 +32,7 @@ tags: [index]
 - [features/f4-memory-guard.md](features/f4-memory-guard.md) — MemoryGuard 中间件 + 项目目录存储 — active
 - [features/f5-clickhouse-data-source.md](features/f5-clickhouse-data-source.md) — ClickHouse A 股数据源 + 语义层 Phase 0-2 — active
 - [features/f7-opencode-agent.md](features/f7-opencode-agent.md) — OpencodeAgent harness 层（2026-09-27 起主循环直连 VT MCP；子代理/nano-search 已回退） — active
+- [features/f7-boot-cost.md](features/f7-boot-cost.md) — 冷启动耗时：项目作用域插件安装（63 MB、70-82s）的度量、根因与修复（去掉项目侧 plugin 列表后 8.75s 连上 MCP） — active
 - [features/f8-engine-bridge.md](features/f8-engine-bridge.md) — opencode 引擎桥（2026-09-27 移出 mymain；**2026-10-10 线废弃封存**，opencode 桥接方式验证不可行） — archived-discarded（冻结墓碑）
 - [features/f9-strategy-library-scheduling.md](features/f9-strategy-library-scheduling.md) — 策略库与调度（code/workflow 双门就绪 + 版本 CAS + 复用定时研究） — active（本地 mymain 已合入；P1 入口/状态/工具已交付）
 - [features/f10-strategy-run-entry.md](features/f10-strategy-run-entry.md) — 策略运行服务入口（`/strategy-runs`、run_key、per-box、sweeper） — active
