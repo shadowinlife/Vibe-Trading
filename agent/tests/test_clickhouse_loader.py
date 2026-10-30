@@ -408,6 +408,64 @@ def test_fund_daily_string_date_predicate_casts_the_column(
     }
 
 
+@pytest.mark.parametrize(
+    "raw_trade_date",
+    ["2025-04-30", "20250430", dt.date(2025, 4, 30)],
+)
+def test_normalize_ch_frame_accepts_date_and_legacy_string(raw_trade_date: Any) -> None:
+    """A live ``Date`` column and a legacy ``YYYYMMDD`` String both parse."""
+    from backtest.loaders.clickhouse import DataLoader
+
+    frame = _sample_bar_frame("fund_daily")
+    frame["trade_date"] = raw_trade_date
+
+    normalized = DataLoader._normalize_ch_frame(frame)
+
+    assert list(normalized.index) == [pd.Timestamp("2025-04-30")]
+    assert "volume" in normalized.columns
+
+
+def test_normalize_ch_frame_accepts_a_partially_migrated_column() -> None:
+    """Rows written before and after the type change may coexist."""
+    from backtest.loaders.clickhouse import DataLoader
+
+    frame = _sample_bar_frame("fund_daily")
+    frame = pd.concat([frame, frame.copy()], ignore_index=True)
+    frame["trade_date"] = ["20250430", "2025-05-06"]
+
+    normalized = DataLoader._normalize_ch_frame(frame)
+
+    assert list(normalized.index) == [
+        pd.Timestamp("2025-04-30"),
+        pd.Timestamp("2025-05-06"),
+    ]
+
+
+def test_normalize_ch_frame_rejects_an_unparseable_trade_date() -> None:
+    """A future format change must fail loudly, not become NaT rows."""
+    from backtest.loaders.clickhouse import DataLoader
+
+    frame = _sample_bar_frame("fund_daily")
+    frame["trade_date"] = "not-a-date"
+
+    with pytest.raises(ValueError):
+        DataLoader._normalize_ch_frame(frame)
+
+
+def test_fund_daily_date_typed_trade_date_fetches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The production ``Date`` shape (ISO 8601) must not fail the fetch."""
+    frame = _sample_bar_frame("fund_daily")
+    frame["trade_date"] = "2025-04-30"
+    loader, _ = _loader_with_frame(monkeypatch, frame)
+
+    result = loader.fetch(["510300.SH"], "2025-04-01", "2025-04-30", interval="1D")
+
+    assert list(result["510300.SH"].index) == [pd.Timestamp("2025-04-30")]
+    assert result["510300.SH"].attrs["_provenance"]["table"] == "fund_daily"
+
+
 def test_empty_clickhouse_result_warns_with_symbol_table_and_range(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,

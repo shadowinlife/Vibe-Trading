@@ -61,6 +61,10 @@ def test_real_registry_substitution_reports_serving_source(monkeypatch, requeste
     assert provenance["source"] == (requested if available else "tencent")
     assert provenance["requested_source"] == requested
     assert provenance["fallback_used"] is (not available)
+    if available:
+        assert "fallback_reason" not in provenance
+    else:
+        assert provenance["fallback_reason"] == f"{requested}:source_unavailable"
     assert provenance["volume_unit"] == ("lots" if available else "shares")
     # The caliber follows the source that actually served, not the one requested.
     caliber_by_source = {
@@ -106,3 +110,58 @@ def test_substituted_partial_batch_keeps_each_serving_source():
         True,
     )
     assert (second["source"], second["adjustment"], second["fallback_used"]) == ("sina", "raw", True)
+
+
+def test_fallback_provenance_names_the_failed_source():
+    """A served-but-degraded symbol carries why the chain moved on."""
+
+    class Broken:
+        name = "baostock"
+
+        def fetch(self, codes, start, end, interval="1D"):
+            raise RuntimeError("dial tcp: connection refused")
+
+    class Serving:
+        name = "sina"
+
+        def fetch(self, codes, start, end, interval="1D"):
+            return {code: _bars() for code in codes}
+
+    out = fetch_market_data(
+        codes=["600519.SH"],
+        start_date="2026-09-01",
+        end_date="2026-09-02",
+        source="baostock",
+        include_provenance=True,
+        loader_resolver=lambda source: Broken if source == "baostock" else Serving,
+        fallback_chain_provider=lambda source: ["sina"],
+    )
+
+    provenance = out["_provenance"]["600519.SH"]
+    assert provenance["source"] == "sina"
+    assert provenance["fallback_used"] is True
+    assert provenance["fallback_reason"] == "baostock:fetch_failed"
+
+
+def test_direct_serve_omits_fallback_reason():
+    """No failed attempt means no fallback_reason key at all."""
+
+    class Serving:
+        name = "sina"
+
+        def fetch(self, codes, start, end, interval="1D"):
+            return {code: _bars() for code in codes}
+
+    out = fetch_market_data(
+        codes=["600519.SH"],
+        start_date="2026-09-01",
+        end_date="2026-09-02",
+        source="sina",
+        include_provenance=True,
+        loader_resolver=lambda source: Serving,
+        fallback_chain_provider=lambda source: ["sina"],
+    )
+
+    provenance = out["_provenance"]["600519.SH"]
+    assert provenance["fallback_used"] is False
+    assert "fallback_reason" not in provenance

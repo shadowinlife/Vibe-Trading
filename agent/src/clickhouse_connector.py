@@ -128,6 +128,22 @@ class ClickHouseConnector:
     # Core query method
     # ------------------------------------------------------------------
 
+    def _auth_params(self) -> dict[str, str]:
+        """Return the credential query parameters shared by every request.
+
+        ``query()`` and :meth:`health_check` must authenticate identically.
+        A probe that omits them is rejected (HTTP 403) by a
+        password-protected server even when the configured credentials are
+        valid, which made ``is_available()`` false and silently dropped
+        ClickHouse from the A-share fallback chain.
+        """
+        params: dict[str, str] = {}
+        if self.user:
+            params["user"] = self.user
+        if self.password:
+            params["password"] = self.password
+        return params
+
     def query(self, sql: str, params: dict[str, str] | None = None) -> pd.DataFrame:
         """Execute a raw SQL statement and return the result as a DataFrame.
 
@@ -161,10 +177,7 @@ class ClickHouseConnector:
         }
         if params:
             query_params.update(params)
-        if self.user:
-            query_params["user"] = self.user
-        if self.password:
-            query_params["password"] = self.password
+        query_params.update(self._auth_params())
 
         try:
             resp = requests.post(
@@ -200,18 +213,24 @@ class ClickHouseConnector:
     # ------------------------------------------------------------------
 
     def health_check(self) -> bool:
-        """Check whether the ClickHouse server is reachable.
+        """Check whether ClickHouse answers ``SELECT 1`` to this identity.
+
+        The probe carries the same ``user``/``password`` as :meth:`query`
+        (see :meth:`_auth_params`).  Probing anonymously reported a healthy,
+        password-protected server as unavailable (HTTP 403), so
+        ``is_available()`` was false and the loader registry skipped the head
+        of the A-share fallback chain.
 
         Returns
         -------
         bool
-            ``True`` if the server responds successfully, ``False`` otherwise.
-            Never raises.
+            ``True`` if the authenticated ``SELECT 1`` succeeds, ``False``
+            otherwise.  Never raises.
         """
         try:
             resp = requests.get(
                 self._base_url,
-                params={"query": "SELECT 1"},
+                params={"query": "SELECT 1", **self._auth_params()},
                 timeout=self._TIMEOUT,
             )
             return resp.ok

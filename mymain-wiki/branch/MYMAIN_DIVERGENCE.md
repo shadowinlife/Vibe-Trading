@@ -94,8 +94,9 @@ python -m pytest agent/tests/memory/ agent/tests/test_persistent_memory.py \
   agent/tests/test_memory_orphan_recovery.py agent/tests/test_memory_gc.py \
   agent/tests/test_env_schema.py -q
 
-# ClickHouse 套件（F5 原始 3 文件 + 语义层 Phase 0–2 测试）——基线 144 passed / 11 skipped（skip = 需真实 CH 连接；2026-10-27 实测持平）
+# ClickHouse 套件（F5 原始 3 文件 + 语义层 Phase 0–2 + 连接器健康/日期漂移回归）——基线 166 passed / 11 skipped（skip = 需真实 CH 连接；2026-10-30 实测）
 python -m pytest agent/tests/test_clickhouse_loader.py \
+  agent/tests/test_clickhouse_connector_health.py \
   agent/tests/test_clickhouse_fundamentals.py agent/tests/test_clickhouse_flow.py \
   agent/tests/test_clickhouse_anchor.py agent/tests/test_clickhouse_query_guard.py \
   agent/tests/test_clickhouse_semantic_tools.py agent/tests/test_clickhouse_unit_conversions.py \
@@ -112,6 +113,7 @@ python -m pytest tools/test_semantic_layer_gate.py -q
 python tools/ci_semantic_layer_gate.py
 
 # 2026-10-29 子集：loader / market_data 92 passed / 3 skipped（全量 CH 10 文件套件本轮未重跑）
+# 2026-10-30 全量 CH 套件（含新增 connector health）：166 passed / 11 skipped
 
 # README/SKILL.md 计数门禁——基线 122 passed（2026-10-27 实测持平；七份 README + manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
 python -m pytest agent/tests/test_readme_counts.py agent/tests/test_distribution_skill_manifest.py -q
@@ -513,3 +515,11 @@ R1 研究结论（[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKH
 - **镜像**：`opencode-serve:v3.13.0-mymain`（linux/amd64，4.15 GB）构建并推送 `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode:v3.13.0-mymain`，digest `sha256:439d8c99e5d578967d00b282bf0b29cb96ca309dd560016bb4e15d85ae6d47ab`；离线启动门禁 `/config` 首次 200 = **26.6s**、strategy-run `/health` 200 = **32.3s**，均 PASS。
 - **CI 收敛**：`test.yml` 的 hash-lock 矩阵只保留 Linux x64，`test` 只保留 Python 3.12；删除 `windows-background` / `desktop-electron-windows`；`desktop-windows.yml` 改为仅 `workflow_dispatch`。本地等价门禁：safety 39、CH schema 34、语义层 6、语法检查 OK（Python 3.12.13）。
 - **未完成（同步仓）**：P0-A 契约/巡检、P0-B 幂等写入、P1 北向语义/东财防御/schema 收敛见 `.omo/plans/clickhouse-data-repair.md`（不在本轮提交内）。
+
+### 2026-10-29 carve 落地（基线 `3cbb167e`，10 commit）——2026-10-30 无损核验
+
+- **形态变更**：2026-10-29 15:05–15:28 `mymain` 从 merge 形态 reset 为 `mymain-consolidated`（`d06c132e6`）并追加 2 个提交，当前 `5a6ab769`：`3cbb167e` + **10 个线性 commit、0 个 merge commit**。PR #8（`bff6e762 × e2d02bc7` → `9af8062c`）的 base `e2d02bc7` **不在**新祖先链上，PR 已按 superseded 关闭，不再合入。
+- **等价校验（2026-10-30）**：以 carve 前 `mymain`（`b83e2bb86`）为基准，当前树仅 **21 个文件**不同（+860/−73），**0 个文件删除**。其中 18 个是折叠进来的内容：12 个与源分支 blob 完全一致（PR #6 `ddac38be9`：`AGENTS.md` 8.4；PR #7 `80cf57fa`：`wave1_probe_*.jsonl`；`mymain-image` `9672176aa` / `f036c6b97`：RM 生命周期重构 5 文件 + f10-f12 卡片），6 个 wiki 文件是 consolidation 的有意重写（F10-F12 导航、MCP 计数 89/94→94/99）。另 3 个为 carve 之后的提交（`HANDOFF.md` + CI private-files gate 两文件）。
+- **源分支 lost/diverged 检查**：对 `ddac38be9`（PR #6）、`80cf57fa`（PR #7）、`9672176aa`（mymain-image）分别做文件级对比，**lost=0**；diverged 项均为源分支旧版本（CI 收敛、F5 v2、wiki 重建），carved 持有更新内容。与 PR #8 head（`ddc5194a`）对比出现的 5 个"缺失"文件（`paper_trade/order_lifecycle.py` 等）全部在 `bff6e762`、不在 `3cbb167e`，属未合入的上游 22 commit，不是 carve 丢失。
+- **局限**：carve 的目标树未落盘（无 tmp 分支，`git fsck` 无 2026-10-29 dangling commit），无法做"carved == 目标树"逐字节校验；以上为等价校验。6 个 wiki 重写文件已人工逐段检查，删除行均为旧描述替换。
+- **后续**：下一轮上游对齐以 `origin/main` 最新 tip 为目标（carve 时 `de359932`；`mymain` 落后 64 / 领先 10），从 carve 后的 `mymain` 开新分支并重跑 §3 基线；不再复活 PR #8 的 merge 形态。
