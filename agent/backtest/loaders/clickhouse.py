@@ -16,10 +16,11 @@ No SELECT uses ``*``: each table has its own explicit column list (generated
 from the DDL snapshots under ``schema/clickhouse/``), so a schema change fails
 loudly instead of silently leaking new columns (Flow-B closure,
 mymain-wiki/clickhouse/CLICKHOUSE_ITERATION_PLAN.md P1.1).
-``fund_daily.trade_date`` is a ``YYYYMMDD`` String while the other two tables
-store a ``Date``, so its date predicate casts the column with
-``toDate(trade_date)``.  Returned frames carry additive unit metadata under
-``df.attrs["_provenance"]`` (P1.2), including the table that served them.
+
+``trade_date`` is a ``Date`` live but a ``YYYYMMDD`` String on older
+deployments, so ``fund_daily`` casts it with ``toDate(trade_date)`` and the
+normaliser parses ``format="ISO8601"``, which accepts both spellings.  Frames
+carry additive unit metadata under ``df.attrs["_provenance"]`` (P1.2).
 
 Non-A-share symbols and minute intervals return an empty dict so the fallback
 chain continues.  An empty ClickHouse answer is logged with symbol, table and
@@ -84,9 +85,9 @@ def resolve_table(code: str) -> str | None:
 def _bar_query(table: str) -> str:
     """Build one table's ascending OHLCV query with its own column list.
 
-    Only ``fund_daily`` stores ``trade_date`` as a String (``YYYYMMDD``), so
-    its predicates cast the column; comparing that String column against a
-    Date literal would compare two different types.
+    ``fund_daily`` casts ``trade_date`` with ``toDate()``: the column is a
+    ``Date`` live but a ``YYYYMMDD`` String on older deployments, and a
+    String-versus-Date comparison would compare two different types.
     """
     if table == "fund_daily":
         start_predicate = "toDate(trade_date) >= toDate({start_date:String})"
@@ -218,7 +219,7 @@ class DataLoader:
             if not needs_federation:
                 if ch_df is not None and not ch_df.empty:
                     result[code] = self._with_provenance(
-                        self._normalize_ch_frame(ch_df, table), table
+                        self._normalize_ch_frame(ch_df), table
                     )
                 continue
 
@@ -236,13 +237,13 @@ class DataLoader:
             if net_empty:
                 if ch_df is not None:
                     result[code] = self._with_provenance(
-                        self._normalize_ch_frame(ch_df, table), table
+                        self._normalize_ch_frame(ch_df), table
                     )
                 continue
 
             # Merge: outer-join on trade_date, CH columns take priority.
             assert ch_df is not None and net_df is not None
-            ch_norm = self._normalize_ch_frame(ch_df, table)
+            ch_norm = self._normalize_ch_frame(ch_df)
             merged = ch_norm.combine_first(net_df)
             result[code] = self._with_provenance(merged, table)
 
@@ -336,16 +337,15 @@ class DataLoader:
         return df
 
     @staticmethod
-    def _normalize_ch_frame(df: pd.DataFrame, table: str) -> pd.DataFrame:
+    def _normalize_ch_frame(df: pd.DataFrame) -> pd.DataFrame:
         """Normalise a CH frame: date index, ``vol`` → ``volume``, numeric.
 
-        ``fund_daily.trade_date`` is a ``YYYYMMDD`` String, so it is parsed
-        with an explicit format while the ``Date`` tables keep pandas' default.
+        ``trade_date`` is ISO 8601 for a ``Date`` column and ``YYYYMMDD`` for
+        a legacy String column; ``format="ISO8601"`` accepts both.
         """
         df = df.copy()
         if "trade_date" in df.columns:
-            date_format = "%Y%m%d" if table == "fund_daily" else None
-            df["trade_date"] = pd.to_datetime(df["trade_date"], format=date_format)
+            df["trade_date"] = pd.to_datetime(df["trade_date"], format="ISO8601")
             df = df.set_index("trade_date")
         df = df.sort_index()
         if "vol" in df.columns:

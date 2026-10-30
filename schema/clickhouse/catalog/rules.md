@@ -185,6 +185,10 @@ WHERE is_open = 1 AND cal_date <= today();
 - `stk_factor_pro.close` **不复权**，`close_hfq` 后复权；`idx_factor_pro` / `fund_daily` **只有不复权 close**。
 - 因此：指数/ETF 的多年收益只能表述为**价格收益**；要全收益必须叠加分红事件（`stk_dividend`，仅个股）。
 - 单位未登记的列，先看 `tables/<table>.md` 的列注释；仍无注释时，**在结论里写"单位未登记"**，不要默认。
+- **日期列类型以 `ch_describe_table` 为准，仓库快照可能滞后于库**：`fund_daily.trade_date`
+  在 2026-10-30 实测已由 `String`(YYYYMMDD) 漂移为 `Date`。日期过滤统一写成
+  `toDate(trade_date) >= toDate('2025-04-30')`，两种形态都成立；不要按快照里的类型
+  硬编码日期字面量或省略 `toDate()`。
 
 ---
 

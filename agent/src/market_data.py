@@ -261,6 +261,11 @@ def fetch_market_data(
     100 shares, ``"shares"`` = single shares, ``None`` = undeclared). Volume
     units are source- and market-dependent (HKUDS/Vibe-Trading#1062), so
     consumers must read this field instead of assuming a unit.
+
+    When ``fallback_used`` is true the entry also carries ``fallback_reason``,
+    the ``source:reason`` attempts recorded before the serving source (e.g.
+    ``"clickhouse:source_unavailable"``), so a degraded source is diagnosable
+    from the payload instead of from container-side re-runs.
     """
     from backtest.engines._market_hooks import _detect_market
     from backtest.loaders.base import NoAvailableSourceError, resample_bars, source_interval
@@ -380,6 +385,8 @@ def fetch_market_data(
                 logger.debug("loader %r resolver failed: %s", attempt_src, exc)
                 continue
             serving_source = getattr(loader_cls, "name", None) or attempt_src
+            if serving_source != attempt_src:
+                record(remaining, attempt_src, "source_unavailable")
             if serving_source in attempted_providers:
                 continue
             attempted_providers.add(serving_source)
@@ -443,6 +450,18 @@ def fetch_market_data(
             )
         return data_map, used_source, provider_cls, symbol_sources
 
+    def _fallback_reason(symbol: str) -> str | None:
+        """Return the ``source:reason`` attempts that preceded the serving one.
+
+        ``diagnostics`` already records every failed attempt for
+        ``_unresolved`` symbols; the same evidence explains a served-but-
+        degraded symbol, so ``_provenance`` can say *why* the chain moved on.
+        """
+        attempts = diagnostics.get(symbol) or []
+        if not attempts:
+            return None
+        return "; ".join(f"{item['source']}:{item['reason']}" for item in attempts)
+
     def _emit(
         symbol: str,
         df: Any,
@@ -478,6 +497,10 @@ def fetch_market_data(
                 # table is the fallback for unconverted data (#1541).
                 "adjustment": frame_caliber(df, used_source or src, market, symbol),
             }
+            if entry["fallback_used"]:
+                reason = _fallback_reason(symbol)
+                if reason:
+                    entry["fallback_reason"] = reason
             quote_currency = frame_attrs.get("quote_currency")
             if isinstance(quote_currency, str) and quote_currency:
                 entry["quote_currency"] = quote_currency

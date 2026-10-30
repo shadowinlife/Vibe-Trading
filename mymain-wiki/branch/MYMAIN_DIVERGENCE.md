@@ -94,8 +94,9 @@ python -m pytest agent/tests/memory/ agent/tests/test_persistent_memory.py \
   agent/tests/test_memory_orphan_recovery.py agent/tests/test_memory_gc.py \
   agent/tests/test_env_schema.py -q
 
-# ClickHouse 套件（F5 原始 3 文件 + 语义层 Phase 0–2 测试）——基线 144 passed / 11 skipped（skip = 需真实 CH 连接；2026-10-27 实测持平）
+# ClickHouse 套件（F5 原始 3 文件 + 语义层 Phase 0–2 + 连接器健康/日期漂移回归）——基线 166 passed / 11 skipped（skip = 需真实 CH 连接；2026-10-30 实测）
 python -m pytest agent/tests/test_clickhouse_loader.py \
+  agent/tests/test_clickhouse_connector_health.py \
   agent/tests/test_clickhouse_fundamentals.py agent/tests/test_clickhouse_flow.py \
   agent/tests/test_clickhouse_anchor.py agent/tests/test_clickhouse_query_guard.py \
   agent/tests/test_clickhouse_semantic_tools.py agent/tests/test_clickhouse_unit_conversions.py \
@@ -112,6 +113,7 @@ python -m pytest tools/test_semantic_layer_gate.py -q
 python tools/ci_semantic_layer_gate.py
 
 # 2026-10-29 子集：loader / market_data 92 passed / 3 skipped（全量 CH 10 文件套件本轮未重跑）
+# 2026-10-30 全量 CH 套件（含新增 connector health）：166 passed / 11 skipped
 
 # README/SKILL.md 计数门禁——基线 122 passed（2026-10-27 实测持平；七份 README + manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
 python -m pytest agent/tests/test_readme_counts.py agent/tests/test_distribution_skill_manifest.py -q

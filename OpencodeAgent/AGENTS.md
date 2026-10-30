@@ -12,9 +12,9 @@
 
 ## ClickHouse 语义层（交互式 SQL 首选通道）
 
-**语义层目录（任何 ClickHouse 取数前必读）**：`./skills/semantic-layer/INDEX.md`
+**语义层目录（任何 ClickHouse 取数前必读）**：`.opencode/skills/semantic-layer/INDEX.md`
 - 57 张表逐表说明（粒度 / 主键 / 日期列类型 / 单位 / 权威性 / 坑 / 示例 / 全列清单）。
-- `./skills/semantic-layer/RULES.md` 是**判定规则**：ETF↔指数、估值降级阶梯、空结果四分法、范围过大、过期标注、列名与单位。
+- `.opencode/skills/semantic-layer/RULES.md` 是**判定规则**：ETF↔指数、估值降级阶梯、空结果四分法、范围过大、过期标注、列名与单位。
 - 文档由 `tools/gen_semantic_layer.py` 从库结构生成；**不要手改**。目录只描述库，实时列名仍以 `ch_describe_table` 为准。
 
 VT 内置三个 ClickHouse 语义层工具，是 LLM 交互式取数的**首选通道**：
@@ -31,7 +31,7 @@ VT 内置三个 ClickHouse 语义层工具，是 LLM 交互式取数的**首选�
 1. A 股历史数据：ClickHouse 提供 T-1 全量；VT `get_market_data` 的 A 股 fallback 链**头部即 `clickhouse`**。行情按标的类型分表：个股 `stk_factor_pro`、ETF/LOF `fund_daily`、指数 `idx_factor_pro`（详见语义层目录）。
 2. 当日（T 日）OHLCV：ClickHouse 不覆盖，由网络源实时补数（`tencent`/`akshare`/`tushare`）。数据联邦模式 = ClickHouse T-1 历史 + 网络源当日。
 3. **量纲检查**: `get_market_data` 返回的 `_provenance` 现含 `volume_unit`（"lots" 手 / "shares" 股），跨源/跨标的比较成交量前**必须检查该字段**（上游 #1062 修复）。
-4. 估值速查：**仅个股**可查 `stk_factor_pro` 的 pe_ttm / pb / total_mv；ETF 与指数**没有**直接估值列，必须走 `semantic-layer/RULES.md` R3 的三级降级（官方指数估值 → 成分股加权并披露覆盖率 → 明确拒答）。
+4. 估值速查：**仅个股**可查 `stk_factor_pro` 的 pe_ttm / pb / total_mv；ETF 与指数**没有**直接估值列，必须走 `.opencode/skills/semantic-layer/RULES.md` R3 的三级降级（官方指数估值 → 成分股加权并披露覆盖率 → 明确拒答）。
 5. 本地找不到标的时，先用 `search_symbol` 判断是否为 ETF、港股、美股或其他市场代码，再选数据源，不要直接反问用户代码；ETF 需要指数数据时按 `RULES.md` R2 解析跟踪指数（库内无 `fund_basic` 映射表，已核验映射见 R2.1）。
 
 ## 跨市场与实时数据

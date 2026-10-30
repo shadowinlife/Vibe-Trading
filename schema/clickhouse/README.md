@@ -80,6 +80,45 @@ Until Phase 3 (write-back of `/opt/qdata/sync/schema.py` and putting
 and this directory stays the reviewed contract snapshot — drift is resolved
 by re-export + review, never by hand-editing snapshots.
 
+### Type drift is invisible to `schema_drift_log`
+
+`ashare.schema_drift_log` is written by the sync engine
+(`/opt/qdata/sync/clickhouse/engine.py::_apply_upstream_drift`) and records
+only **column additions** and **columns missing from the source**. A column
+whose type changes in place writes no row at all. On 2026-10-30
+`fund_daily.trade_date` was `Date` in production while every snapshot here
+still said `String`, and the drift log held nothing about it; the first
+symptom was a loader-side parse failure, not a schema event.
+
+The only detector for this class of change is a snapshot diff, so `--check`
+has to run on a schedule from a host that can reach ClickHouse (the VPC
+address is not reachable from GitHub Actions runners):
+
+```cron
+# /etc/cron.d/clickhouse-ddl-drift — daily 06:20, non-zero exit = drift
+# (crontab entries are single-line; adjust the checkout path per host)
+20 6 * * * root cd /opt/vibe-trading && CLICKHOUSE_HOST=172.24.165.51 python tools/clickhouse_export_ddl.py --check >> /var/log/clickhouse-ddl-drift.log 2>&1
+```
+
+A non-zero exit is the alarm; the unified diff in the log names the table and
+the old/new column type. Then re-export and regenerate:
+
+```bash
+python tools/clickhouse_export_ddl.py        # refresh .sql snapshots
+python tools/gen_semantic_layer.py          # refresh agent docs (reads metadata.json)
+python tools/ci_semantic_layer_gate.py      # table/column/link consistency gate
+```
+
+`metadata.json` (types, comments, row counts, watermarks) must be refreshed
+from the live database before `gen_semantic_layer.py` — the repo has no
+committed exporter for it yet; produce it from `system.tables` /
+`system.columns` plus each catalog entry's `date_column`.
+
+Consumer-side tolerance: `agent/backtest/loaders/clickhouse.py` parses
+`trade_date` with `format="ISO8601"`, which accepts both the `Date` form
+(`2025-04-30`) and the legacy `YYYYMMDD` String (`20250430`), so a drifted
+table keeps serving while the snapshots catch up.
+
 ## Flexibility channel (Phase 2: L2/L3 ad-hoc exploration)
 
 The deterministic domain tools (`get_market_data`, fund-flow, margin, …) stay
