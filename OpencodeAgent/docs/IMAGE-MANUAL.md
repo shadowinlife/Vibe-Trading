@@ -248,8 +248,9 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 | `OPENCODE_DISABLE_MODELS_FETCH` | `1` | 禁用 models 目录后台刷新（目录已构建期固化于 `~/.cache/opencode/models.json`）；在线环境想恢复刷新，运行时覆盖为空值即可 |
 | `OPENCODE_DISABLE_AUTOUPDATE` | `1` | 禁用 opencode 自更新检查 |
 | `SKIP_VT_VERIFY` | `0` | 置 `1` 跳过 entrypoint 的 VT MCP 运行时校验（构建期已门禁，可省 ~1.5-3s 启动时间） |
+| `VT_STARTUP_BUDGET_S` | `300` | 启动墙钟总预算：覆盖 20s settle + 首次 `/config` 预热 + VT MCP 连接闸门；用尽即退出容器。与 `RM_ROUTE_WAIT_BUDGET_S` / startupProbe 预算同向，改一处必须一起重算 |
 
-> **启动时序（v3.2.0+）**：entrypoint 渲染配置 → 校验插件缓存存在 → （可选）VT verify → 启动 `opencode serve` → **后台预热请求**触发首次 bootstrap（纯本地初始化，无任何下载）→ **校验 opencode 侧 VT MCP 已连接**（`GET /mcp` 中 `vibe-trading` 必须为 `connected`，否则容器退出）。注意：opencode 在 bootstrap 完成前会挂起入站 HTTP 请求（固有行为），生产侧应以 healthcheck 状态为准再接流量；预热完成后首次业务请求实测 <1s。
+> **启动时序（v3.2.0+）**：entrypoint 渲染配置 → 校验插件缓存存在 → （可选）VT verify → 启动 `opencode serve` → **后台预热请求**触发首次 bootstrap（纯本地初始化，无任何下载）→ **校验 opencode 侧 VT MCP 已连接**（`GET /mcp?directory=/workspace` 中 `vibe-trading` 必须为 `connected`，否则容器退出；更早用尽的 `VT_STARTUP_BUDGET_S` 同样判失败）。注意：opencode 在 bootstrap 完成前会挂起入站 HTTP 请求（固有行为），生产侧应以 healthcheck 状态为准再接流量；预热完成后首次业务请求实测 <1s。
 
 > **配置落盘与键名（v3.13+）**：渲染结果同时写到 `$HOME/.opencode/opencode.json` 与 `/workspace/.opencode/opencode.json`，避免 Pod 的 `HOME` 与镜像用户不一致时 opencode 找不到配置。local MCP 的环境变量键是 **`environment`**——opencode 的 `mcp.<name>` schema 为 `additionalProperties: false`，写成 `env` 会被**静默丢弃**（MCP 仍显示 connected，但子进程拿不到 `CLICKHOUSE_*`，`ch_*` 语义层全部失效）。`render_config.py` 现在对该块做渲染期校验，模板回退源固定在 `/opt/opencode-config/`。
 
@@ -566,7 +567,7 @@ IMAGE=opencode-serve:v3.8.2-mymain \
 
 | 项 | 说明 |
 |----|------|
-| 启动参数 | `--platform linux/amd64`、`--network none`（`OFFLINE=0` 可放开）、随机 dummy `OPENCODE_SERVER_PASSWORD`、`DASHSCOPE_API_KEY=dummy-not-a-real-key`、`CLICKHOUSE_HOST=` 为空 |
+| 启动参数 | `--platform linux/amd64`、`--network none`（`OFFLINE=0` 可放开）、随机 dummy `OPENCODE_SERVER_PASSWORD`、`DASHSCOPE_API_KEY=dummy-not-a-real-key`、`VT_STARTUP_BUDGET_S=$STARTUP_BUDGET_S`（让容器闸门与脚本预算对齐）、`CLICKHOUSE_HOST=` 为空 |
 | 通过条件 | 日志出现 `opencode server listening`、`[entrypoint] warmup complete`、`[entrypoint] VT MCP connected` 与 `strategy-run entry listening`；首次 `/config` 200 与 VT MCP 连接的耗时均 ≤ `STARTUP_BUDGET_S`（默认 60s）；`docker exec curl` 复核 `/config` 返回 200、`/mcp` 中 `vibe-trading` 为 `connected` |
 | 失败条件 | 任一标记缺失、首次 200 或 MCP 连接超预算、容器提前退出、`/config` 复核非 200、`/mcp` 中 `vibe-trading` 不是 `connected` |
 | 清理 | `trap` 保证退出时 `docker rm -f`；`KEEP_CONTAINER=1` 可保留现场 |

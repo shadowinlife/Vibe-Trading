@@ -135,7 +135,6 @@ CONFIG_FALLBACK_DIR="/opt/opencode-config"
 TEMPLATE="$CONFIG_DIR/opencode.json.tmpl"
 MANIFEST="$CONFIG_DIR/vibe-trading-tools.json"
 RENDERER="$CONFIG_DIR/render_config.py"
-FALLBACK="$CONFIG_DIR/opencode.json.fallback"
 
 # opencode resolves config from $HOME/.opencode and from the session
 # directory's .opencode/. Write both: a pod whose HOME is not the image user
@@ -163,11 +162,13 @@ render_config() {
         --target "$TARGET"
 }
 
-publish_project_config() {
+finalize_config() {
+    chmod 600 "$TARGET" 2>/dev/null || true
     if [ "$TARGET" = "$PROJECT_TARGET" ]; then
         return 0
     fi
     if cp "$TARGET" "$PROJECT_TARGET" 2>/dev/null; then
+        chmod 600 "$PROJECT_TARGET" 2>/dev/null || true
         echo "[entrypoint] opencode.json project-scope copy → $PROJECT_TARGET"
     else
         echo "[entrypoint] WARNING: could not write project-scope config → $PROJECT_TARGET"
@@ -273,17 +274,12 @@ EOFPY
 if render_config 2>/tmp/entrypoint_render_err; then
     echo "[entrypoint] opencode.json rendered from template → $TARGET"
     rm -f /tmp/entrypoint_render_err
-    publish_project_config
+    finalize_config
 else
     echo "[entrypoint] WARNING: Jinja2 render failed: $(tr '\n' ' ' < /tmp/entrypoint_render_err 2>/dev/null)"
     rm -f /tmp/entrypoint_render_err
-    if [ -f "$FALLBACK" ]; then
-        cp "$FALLBACK" "$TARGET"
-        echo "[entrypoint] Using fallback config: $FALLBACK"
-    else
-        echo "[entrypoint] WARNING: No fallback config at $FALLBACK, writing minimal config (VT MCP included)"
-        write_fallback_config
-    fi
+    echo "[entrypoint] WARNING: writing the minimal config with the VT MCP block"
+    write_fallback_config
     if [ -n "$LLM_BASE_URL" ]; then
         if inject_llm_proxy; then
             echo "[entrypoint] LLM proxy provider block injected into fallback config"
@@ -291,7 +287,7 @@ else
             echo "[entrypoint] WARNING: LLM proxy injection failed — fallback stays direct-mode"
         fi
     fi
-    publish_project_config
+    finalize_config
 fi
 
 # ── Probe ClickHouse connectivity ─────────────────────────────────────────────
@@ -378,6 +374,17 @@ except Exception as e:
 fi
 
 # ── Start opencode serve (unchanged: :4096) ───────────────────────────────────
+# One wall-clock budget covers settle + bootstrap warmup + the VT MCP gate, so
+# the boot path cannot outrun the 300s route-wait / startupProbe budget.
+VT_STARTUP_BUDGET_S="${VT_STARTUP_BUDGET_S:-300}"
+case "$VT_STARTUP_BUDGET_S" in
+    '' | *[!0-9]*)
+        echo "[entrypoint] WARNING: invalid VT_STARTUP_BUDGET_S — using 300"
+        VT_STARTUP_BUDGET_S=300
+        ;;
+esac
+OPENCODE_MCP_URL="http://127.0.0.1:4096/mcp?directory=/workspace"
+
 opencode serve --port 4096 --hostname 0.0.0.0 &
 SERVER_PID=$!
 
@@ -390,11 +397,11 @@ SERVER_PID=$!
 # opencode 1.19.x can stall its first bootstrap when a request arrives before
 # local init finishes; let it settle before the warmup probe.
 sleep 20
-if curl -sf --max-time 300 -u opencode:"${OPENCODE_SERVER_PASSWORD:-}" \
+if curl -sf --max-time "$VT_STARTUP_BUDGET_S" -u opencode:"${OPENCODE_SERVER_PASSWORD:-}" \
     "http://127.0.0.1:4096/config?directory=/home/opencode" >/dev/null 2>&1; then
     echo "[entrypoint] warmup complete — first client request will be fast"
 else
-    echo "[entrypoint] WARNING: warmup request did not complete within 300s"
+    echo "[entrypoint] WARNING: warmup request did not complete within ${VT_STARTUP_BUDGET_S}s"
 fi
 
 if ! pid_running "$SERVER_PID"; then
@@ -407,18 +414,10 @@ fi
 # whether opencode loaded the config and connected it. Without this gate a
 # render/scope regression ships a container where chat works but the model has
 # zero `vibe-trading_*` tools.
-VT_MCP_READY_BUDGET_S="${VT_MCP_READY_BUDGET_S:-180}"
-case "$VT_MCP_READY_BUDGET_S" in
-    '' | *[!0-9]*)
-        echo "[entrypoint] WARNING: invalid VT_MCP_READY_BUDGET_S — using 180"
-        VT_MCP_READY_BUDGET_S=180
-        ;;
-esac
-
 vt_mcp_connected() {
     local body
     body="$(curl -sf --max-time 10 -u "opencode:${OPENCODE_SERVER_PASSWORD:-}" \
-        "http://127.0.0.1:4096/mcp" 2>/dev/null)" || return 1
+        "$OPENCODE_MCP_URL" 2>/dev/null)" || return 1
     [ -n "$body" ] || return 1
     VT_MCP_STATUS="$body" /opt/venv/bin/python3 - << 'EOFPY'
 import json, os, sys
@@ -431,15 +430,20 @@ sys.exit(0 if isinstance(entry, dict) and entry.get("status") == "connected" els
 EOFPY
 }
 
-MCP_DEADLINE=$((SECONDS + VT_MCP_READY_BUDGET_S))
+MCP_REMAINING_S=$((VT_STARTUP_BUDGET_S - SECONDS))
+if [ "$MCP_REMAINING_S" -lt 1 ]; then
+    echo "[entrypoint] FATAL: the ${VT_STARTUP_BUDGET_S}s startup budget was spent before the VT MCP gate — refusing to serve without the finance tool surface"
+    exit 1
+fi
+MCP_DEADLINE=$((SECONDS + MCP_REMAINING_S))
 until vt_mcp_connected; do
     if ! pid_running "$SERVER_PID"; then
         echo "[entrypoint] FATAL: opencode exited before the VT MCP server connected"
         exit 1
     fi
     if [ "$SECONDS" -ge "$MCP_DEADLINE" ]; then
-        echo "[entrypoint] FATAL: VT MCP server 'vibe-trading' not connected after ${VT_MCP_READY_BUDGET_S}s — refusing to serve without the finance tool surface"
-        curl -s -u "opencode:${OPENCODE_SERVER_PASSWORD:-}" "http://127.0.0.1:4096/mcp" 2>/dev/null || true
+        echo "[entrypoint] FATAL: VT MCP server 'vibe-trading' not connected within the ${VT_STARTUP_BUDGET_S}s startup budget — refusing to serve without the finance tool surface"
+        curl -s -u "opencode:${OPENCODE_SERVER_PASSWORD:-}" "$OPENCODE_MCP_URL" 2>/dev/null || true
         echo
         exit 1
     fi

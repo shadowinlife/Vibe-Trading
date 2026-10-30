@@ -76,7 +76,8 @@ WARMUP_MARKER="[entrypoint] warmup complete"
 MCP_MARKER="[entrypoint] VT MCP connected"
 ENTRY_LISTEN_MARKER="strategy-run entry listening"
 CONFIG_URL="http://127.0.0.1:4096/config?directory=/home/opencode"
-MCP_URL="http://127.0.0.1:4096/mcp"
+# 与 entrypoint 的启动闸门同实例：会话目录为 /workspace，`/mcp` 支持 directory 参数。
+MCP_URL="http://127.0.0.1:4096/mcp?directory=/workspace"
 ENTRY_HEALTH_URL="http://127.0.0.1:${ENTRY_PORT}/health"
 
 CID=""
@@ -146,6 +147,7 @@ RUN_ARGS=(--name "$CONTAINER_NAME" --platform "$PLATFORM"
     -e "OPENCODE_SERVER_PASSWORD=$DUMMY_PASSWORD"
     -e "DASHSCOPE_API_KEY=dummy-not-a-real-key"
     -e "VT_STRATEGY_RUN_PORT=$ENTRY_PORT"
+    -e "VT_STARTUP_BUDGET_S=$STARTUP_BUDGET_S"
     -e "CLICKHOUSE_HOST=")
 if [ "$OFFLINE" = "1" ]; then
     RUN_ARGS+=(--network none)
@@ -243,10 +245,11 @@ HTTP_CODE="$(docker exec "$CID" curl -s -o /dev/null -w '%{http_code}' --max-tim
 # MCP 状态是模型能否看到 vibe-trading_* 工具的唯一真凭据；只验 import 不够。
 MCP_BODY="$(docker exec "$CID" curl -s --max-time 10 \
     -u "opencode:$DUMMY_PASSWORD" "$MCP_URL" 2>/dev/null || true)"
-case "$MCP_BODY" in
-    *'"vibe-trading":{"status":"connected"}'*) MCP_OK=1 ;;
-    *) MCP_OK=0 ;;
-esac
+if printf '%s' "$MCP_BODY" | grep -Eq '"vibe-trading"[[:space:]]*:[[:space:]]*\{[^}]*"status"[[:space:]]*:[[:space:]]*"connected"'; then
+    MCP_OK=1
+else
+    MCP_OK=0
+fi
 # 入口 /health 无需认证；未挂载 RM token 时也必须返回 200（服务路由才 403）。
 ENTRY_HTTP_CODE="$(docker exec "$CID" curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
     "$ENTRY_HEALTH_URL" 2>/dev/null || true)"
