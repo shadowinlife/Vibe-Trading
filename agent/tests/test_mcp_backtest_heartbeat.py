@@ -19,6 +19,7 @@ import pytest
 
 import mcp_server
 import src.tools.backtest_tool as backtest_tool_mod
+from src.config.limits import MCP_TOOL_RESULT_BYTE_BUDGET
 
 
 class _RecordingContext:
@@ -41,8 +42,8 @@ def fast_heartbeat(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_slow_run_emits_repeated_increasing_heartbeats(
     fast_heartbeat, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def slow_run(run_dir: str) -> str:
-        del run_dir
+    def slow_run(run_dir: str, *, byte_limit: int | None = None) -> str:
+        del run_dir, byte_limit
         time.sleep(0.3)
         return '{"status": "ok"}'
 
@@ -64,10 +65,10 @@ def test_slow_run_emits_repeated_increasing_heartbeats(
 def test_ctx_none_returns_identical_result(
     fast_heartbeat, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    calls: list[str] = []
+    calls: list[tuple[str, int | None]] = []
 
-    def fake_run(run_dir: str) -> str:
-        calls.append(run_dir)
+    def fake_run(run_dir: str, *, byte_limit: int | None = None) -> str:
+        calls.append((run_dir, byte_limit))
         return '{"status": "ok", "run_dir": "%s"}' % run_dir
 
     monkeypatch.setattr(backtest_tool_mod, "run_backtest", fake_run)
@@ -75,7 +76,7 @@ def test_ctx_none_returns_identical_result(
     result = asyncio.run(mcp_server.backtest("/tmp/run", None))
 
     assert result == '{"status": "ok", "run_dir": "/tmp/run"}'
-    assert calls == ["/tmp/run"]
+    assert calls == [("/tmp/run", MCP_TOOL_RESULT_BYTE_BUDGET)]
 
 
 def test_fast_run_returns_intact_with_at_most_one_report(
@@ -83,8 +84,8 @@ def test_fast_run_returns_intact_with_at_most_one_report(
 ) -> None:
     monkeypatch.setattr(mcp_server, "_BACKTEST_HEARTBEAT_SECONDS", 30.0)
 
-    def fast_run(run_dir: str) -> str:
-        del run_dir
+    def fast_run(run_dir: str, *, byte_limit: int | None = None) -> str:
+        del run_dir, byte_limit
         return '{"status": "ok", "exit_code": 0}'
 
     monkeypatch.setattr(backtest_tool_mod, "run_backtest", fast_run)
@@ -99,8 +100,8 @@ def test_fast_run_returns_intact_with_at_most_one_report(
 def test_run_backtest_exception_propagates(
     fast_heartbeat, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def exploding_run(run_dir: str) -> str:
-        del run_dir
+    def exploding_run(run_dir: str, *, byte_limit: int | None = None) -> str:
+        del run_dir, byte_limit
         time.sleep(0.12)
         raise RuntimeError("engine boom")
 

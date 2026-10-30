@@ -864,6 +864,8 @@ Benchmark selection honors `.SH`, `.SZ`, and `.BJ` A-share suffixes, plus Yahoo'
 
 Bars: 1m / 5m / 15m / 30m / 1H / 4H / 1D, plus weekly / monthly (1W / 1M, built from daily bars). 15 metrics + benchmark comparison, **5 portfolio optimizers** (equal-volatility / risk-parity / mean-variance / max-diversification / turnover-aware), and 3 validation tools (Monte Carlo / Bootstrap / Walk-Forward).
 
+A successful `backtest` MCP call also returns an inline `summary` (`schema_version` `"1.0"`) with the scalar metrics, an equal-stride `equity_preview` of at most 50 points (first and last bar pinned), the run window, codes and `artifact_paths`. Full curves, per-trade detail and the HTML report stay in those files; a missing or empty equity curve still yields one point anchored at the run's start date and initial cash, the envelope is kept under the host's 2,000-line / 50 KiB cap, and any trimmed optional block is named in `summary.omitted_fields`. `python agent/scripts/verify_backtest_result.py --run-dir <run>` checks the contract end to end.
+
 The turnover-aware optimizer validates per-name and group caps for single-asset
 allocations too. It preserves feasible supplied allocations (including cash),
 and raises an error when the singleton allocation exceeds a cap.

@@ -99,6 +99,9 @@ Example workflow:
 
 The **strategy library** stores reviewable `code` and `workflow` strategies with versioned snapshots, a readiness gate and a scheduling model; use `promote_strategy`, `evaluate_strategy`, `list_strategy_library` and `schedule_strategy` to manage it, and note that it never approves a strategy automatically and never places an order.
 
+### Backtest result envelope
+A successful `backtest` result carries the legacy `status` / `exit_code` / `stdout` / `stderr` / `artifacts` / `run_dir` fields plus an inline `summary` (`schema_version` `"1.0"`): `run_id` (safe as one query path segment), the full scalar `metrics`, an equal-stride `equity_preview` of at most 50 points with the first and last bar always kept, `codes`, `start_date` / `end_date` / `interval`, `initial_cash`, `warnings`, and `artifact_paths` (equity, trades, metrics, run card and per-symbol OHLCV). Full curves, per-trade detail and the HTML report stay in those files. The MCP envelope is fitted under the host's 2,000-line / 50 KiB cap: logs are dropped first, then `validation`, `structured_metrics`, `warnings`, `title` and the per-symbol path map, then the largest metric entries (`metrics.<key>`), each named in `summary.omitted_fields`; `equity_preview` is thinned but never emptied, and `summary` is never removed from a successful result. The in-process model path keeps its 10,000-character cap with the same never-drop rule. A missing or corrupt run card still leaves the run successful without a summary.
+
 ### Multi-Agent Swarm Teams
 30 pre-built agent teams for complex research:
 - **Investment Committee**: bull/bear debate → risk review → PM decision

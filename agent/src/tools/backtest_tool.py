@@ -16,6 +16,7 @@ from src.config.limits import TOOL_RESULT_LIMIT
 from src.core.runner import Runner
 from src.core.state import RunStateStore
 from src.strategy_store.models import BENCH_TYPES
+from src.tools.backtest_result import serialize_result
 from src.tools.backtest_summary import collect_ohlcv_paths, try_build_backtest_summary
 from src.tools.path_utils import safe_run_dir
 
@@ -190,11 +191,26 @@ def _record_bench_if_declared(
         return _outcome("failed", reason=f"{type(exc).__name__}: {exc}")
 
 
-def run_backtest(run_dir: str) -> str:
+def _error_result(message: str, **extra: Any) -> str:
+    """Serialize a bounded error envelope.
+
+    The message is clipped so a hostile ``run_dir`` or config value cannot push
+    the envelope past the host's result cap before the consumer reads it.
+    """
+    payload: dict[str, Any] = {"status": "error", "error": message[:2000]}
+    payload.update(extra)
+    return json.dumps(payload, ensure_ascii=False)
+
+
+def run_backtest(run_dir: str, *, byte_limit: int | None = None) -> str:
     """Run backtest: validate config.json + signal_engine.py, invoke built-in engine.
 
     Args:
         run_dir: Path to the run directory.
+        byte_limit: Maximum UTF-8 bytes of the serialized result.  ``None``
+            keeps the existing 10,000-character model-delivery cap, enforced
+            in UTF-8 bytes; the MCP entry point passes its larger host budget
+            explicitly.
 
     Returns:
         JSON-formatted execution result.
@@ -203,39 +219,31 @@ def run_backtest(run_dir: str) -> str:
     try:
         run_path = safe_run_dir(run_dir)
     except ValueError as exc:
-        return json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
+        return _error_result(str(exc))
 
     config_path = run_path / "config.json"
     if not config_path.exists():
-        return json.dumps(
-            {
-                "status": "error",
-                "error": f"config.json not found in {run_path}",
-                "hint": "config.json belongs at the root of run_dir.",
-            },
-            ensure_ascii=False,
+        return _error_result(
+            f"config.json not found in {run_path}",
+            hint="config.json belongs at the root of run_dir.",
         )
 
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
-        return json.dumps({"status": "error", "error": f"config.json parse error: {e}"}, ensure_ascii=False)
+        return _error_result(f"config.json parse error: {e}")
 
     if "source" not in config:
-        return json.dumps({"status": "error", "error": "config.json missing 'source' field (tushare/okx/yfinance)"}, ensure_ascii=False)
+        return _error_result("config.json missing 'source' field (tushare/okx/yfinance)")
 
     if config["source"] not in VALID_SOURCES:
-        return json.dumps({"status": "error", "error": f"source must be one of {VALID_SOURCES}, got: {config['source']}"}, ensure_ascii=False)
+        return _error_result(f"source must be one of {VALID_SOURCES}, got: {config['source']}")
 
     signal_path = run_path / "code" / "signal_engine.py"
     if not signal_path.exists():
-        return json.dumps(
-            {
-                "status": "error",
-                "error": f"code/signal_engine.py not found in {run_path}",
-                "hint": "signal_engine.py belongs in code/ inside run_dir.",
-            },
-            ensure_ascii=False,
+        return _error_result(
+            f"code/signal_engine.py not found in {run_path}",
+            hint="signal_engine.py belongs in code/ inside run_dir.",
         )
 
     agent_root = Path(__file__).resolve().parents[2]
@@ -313,42 +321,19 @@ def run_backtest(run_dir: str) -> str:
     if bench_record is not None:
         envelope["bench_record"] = bench_record
     if result.success:
-        # Small envelopes retain the legacy fields unchanged. Oversized
-        # envelopes are fitted below with explicit omission notices. A missing
-        # or corrupt run card never turns a successful run into an error.
+        # Small envelopes keep the legacy fields unchanged. Oversized envelopes
+        # are fitted by serialize_result, which drops optional blocks first and
+        # never removes ``summary``. A missing or corrupt run card never turns a
+        # successful run into an error.
         ohlcv_paths = collect_ohlcv_paths(run_path)
         artifacts_found["ohlcv"] = ohlcv_paths
         summary = try_build_backtest_summary(run_path, ohlcv_paths)
         if summary is not None:
             envelope["summary"] = summary
-    return _serialize_result(envelope)
-
-
-def _serialize_result(envelope: dict[str, Any]) -> str:
-    """Keep structured results usable through the agent's delivery cap."""
-    def encode() -> str:
-        return json.dumps(envelope, ensure_ascii=False)
-
-    if len(encode()) <= TOOL_RESULT_LIMIT:
-        return encode()
-    for key in ("stdout", "stderr"):
-        if envelope.get(key):
-            envelope[key] = ""
-            envelope["logs_omitted"] = "Read the run logs for full stdout/stderr."
-    summary = envelope.get("summary")
-    if isinstance(summary, dict):
-        points = summary.get("equity_preview", [])
-        while len(encode()) > TOOL_RESULT_LIMIT and len(points) > 2:
-            count = max(2, len(points) // 2)
-            points = [points[i * (len(points) - 1) // (count - 1)] for i in range(count)]
-            summary["equity_preview"] = points
-        if len(encode()) > TOOL_RESULT_LIMIT:
-            envelope.pop("summary")
-            envelope["summary_omitted"] = "Summary exceeds the result budget; inspect run_card.json locally or use read_run_artifact in meta mode."
-    if len(encode()) > TOOL_RESULT_LIMIT:
-        envelope["artifacts"] = {}
-        envelope["artifacts_omitted"] = "Artifact paths exceed the result budget; inspect the run directory with read_file."
-    return encode()
+    limit = TOOL_RESULT_LIMIT if byte_limit is None else byte_limit
+    if envelope["status"] != "ok":
+        limit = min(limit, TOOL_RESULT_LIMIT)
+    return serialize_result(envelope, limit)
 
 
 class BacktestTool(BaseTool):

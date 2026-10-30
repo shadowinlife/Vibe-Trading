@@ -19,9 +19,11 @@ first and last row always kept, while ``metrics`` stays complete.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import logging
 import math
+import re
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -32,6 +34,21 @@ SCHEMA_VERSION = "1.0"
 #: Hard cap on ``equity_preview`` points; longer curves are equal-stride
 #: sampled with the first and last row always included.
 MAX_PREVIEW_POINTS = 50
+#: Keys every successful summary carries even after budget trimming.
+REQUIRED_SUMMARY_KEYS = (
+    "run_id",
+    "metrics",
+    "equity_preview",
+    "codes",
+    "start_date",
+    "end_date",
+    "interval",
+    "artifact_paths",
+)
+
+#: Characters the downstream consumer accepts in a ``run_id`` (its regex is
+#: ``^[A-Za-z0-9._-]+$``).  Any other run is collapsed to one underscore.
+_RUN_ID_INVALID = re.compile(r"[^A-Za-z0-9._-]+")
 
 _OHLCV_PREFIX = "ohlcv_"
 _OHLCV_SUFFIX = ".csv"
@@ -39,6 +56,29 @@ _OHLCV_GLOB = f"{_OHLCV_PREFIX}*{_OHLCV_SUFFIX}"
 # U+00B7 MIDDLE DOT, spelled as an escape so the separator is unambiguous.
 _TITLE_SEPARATOR = " \u00b7 "
 _PREVIEW_NUMERIC_FIELDS = ("equity", "drawdown", "benchmark_equity")
+
+
+def _safe_run_id(name: str) -> str:
+    """Normalize a run directory name to the consumer's run_id character set.
+
+    The downstream consumer matches ``^[A-Za-z0-9._-]+$``; spaces, CJK and
+    other punctuation would make the whole run unaddressable.  Runs of
+    disallowed characters collapse to one ``_``.  Only a name that needed
+    rewriting gets a 12-hex digest of the original appended, so two different
+    directories can never collapse onto one run_id.  Names already inside the
+    set pass through byte-identically.
+
+    Args:
+        name: Raw run directory name (``Path(run_dir).name``).
+
+    Returns:
+        A non-empty run_id containing only ``A-Z a-z 0-9 . _ -``.
+    """
+    safe = _RUN_ID_INVALID.sub("_", name)
+    if safe == name and safe:
+        return safe
+    digest = hashlib.sha256(name.encode("utf-8")).hexdigest()[:12]
+    return f"{safe or 'run'}-{digest}"
 
 
 def collect_ohlcv_paths(run_dir: Path) -> dict[str, str]:
@@ -109,9 +149,18 @@ def build_backtest_summary(
     for name in ("equity.csv", "trades.csv", "metrics.csv"):
         _contained(run_dir, artifacts_dir / name)
     ohlcv_paths = {code: str(_contained(run_dir, Path(path))) for code, path in ohlcv_paths.items()}
+    equity_preview = _equity_preview(artifacts_dir / "equity.csv")
+    if not equity_preview:
+        # A successful run starts at initial_cash by definition, so a missing
+        # or header-only curve still gets one anchored point instead of an
+        # empty preview the consumer cannot render.
+        start_date = backtest.get("start_date")
+        initial_cash = backtest.get("initial_cash")
+        if start_date is not None and initial_cash is not None:
+            equity_preview = [{"time": str(start_date), "equity": initial_cash}]
     return _json_safe({
         "schema_version": SCHEMA_VERSION,
-        "run_id": run_dir.name,
+        "run_id": _safe_run_id(run_dir.name),
         "title": _TITLE_SEPARATOR.join(codes),
         "codes": codes,
         "start_date": backtest.get("start_date"),
@@ -121,7 +170,7 @@ def build_backtest_summary(
         "metrics": _json_safe(_as_dict(card.get("metrics"))),
         "structured_metrics": _json_safe(_as_dict(card.get("structured_metrics"))),
         "validation": _json_safe(_as_dict(card.get("validation"))),
-        "equity_preview": _equity_preview(artifacts_dir / "equity.csv"),
+        "equity_preview": equity_preview,
         "artifact_paths": {
             "equity": _existing_file(artifacts_dir / "equity.csv"),
             "trades": _existing_file(artifacts_dir / "trades.csv"),
@@ -223,7 +272,8 @@ def _equity_preview(equity_path: Path) -> list[dict[str, Any]]:
     Columns follow the engine's artifact contract: ``timestamp,ret,equity,
     drawdown,benchmark_equity,active_ret``.  ``time`` keeps the raw timestamp
     string; numeric fields become finite floats or ``None``.  A missing or
-    empty file yields ``[]`` — the summary is still built.
+    empty file yields ``[]``; :func:`build_backtest_summary` then anchors one
+    point at the run's start date and initial cash.
 
     Raises:
         OSError: The file exists but cannot be read.

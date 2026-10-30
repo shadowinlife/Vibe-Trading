@@ -39,6 +39,20 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Backtest summaries survive result delivery**: a successful backtest used to
+  drop its whole `summary` once the envelope exceeded the 10,000-character model
+  cap, leaving consumers only `run_id`/`run_dir`. The MCP path now gets a 48 KiB
+  budget (4 KiB headroom under the host's 2000-line / 50 KiB cap), and the
+  summary is never removed: optional bulk blocks are dropped first and named in
+  `summary["omitted_fields"]`, `equity_preview` stays at 50 points or fewer, and
+  the largest metric entries are trimmed (reported as `metrics`) only if the
+  required payload itself is too large. `schema_version` remains `"1.0"`, full
+  detail remains in `artifact_paths`, and a missing or empty equity curve falls
+  back to one point anchored at the run's start date and initial cash. A run
+  directory whose name is not a single `[A-Za-z0-9._-]` segment gets a short
+  digest suffix so `run_id` stays addressable and unique. Run
+  `python agent/scripts/verify_backtest_result.py --run-dir <run>` to check the
+  contract end to end.
 - **Global futures routing and pricing**: digit-bearing contracts such as
   `M2K=F` and `6EZ2026.CME`, including `local:` inputs, reach the global
   futures engine with their full product code. OJ and ZR use quote-unit

@@ -12,6 +12,16 @@ from __future__ import annotations
 #: Maximum characters of a single tool result handed back to the model.
 TOOL_RESULT_LIMIT = 10_000
 
+#: Maximum UTF-8 bytes of a single MCP tool result.  The OpenCode host truncates
+#: a tool result at 2000 lines / 50 KiB, and a truncated JSON envelope is no
+#: longer valid JSON — the consumer then skips the run entirely.  48 KiB leaves
+#: 4 KiB of headroom under that hard cap.
+MCP_TOOL_RESULT_BYTE_BUDGET = 48 * 1024
+
+#: Maximum lines of a single tool result; mirrors the host's 2000-line cap and
+#: applies to both the MCP and in-process delivery paths.
+TOOL_RESULT_LINE_BUDGET = 2000
+
 _TRUNCATION_NOTICE = (
     "\n\n[TRUNCATED: {shown} of {total} characters delivered. The remainder was "
     "not sent. Do not treat this as the complete result — narrow the request, "

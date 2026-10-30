@@ -1018,17 +1018,24 @@ async def _backtest_impl(run_dir: str, ctx: Context | None = None) -> str:
         The JSON envelope produced by ``run_backtest``.
     """
     import asyncio
+    import functools
     import time
 
+    from src.config.limits import MCP_TOOL_RESULT_BYTE_BUDGET
     from src.tools.backtest_tool import run_backtest
 
     # Successful runs auto-reflect inside run_backtest (see
     # src.memory.reflections), covering both this MCP entry path and the
-    # in-process BacktestTool path without double-appending lessons.
+    # in-process BacktestTool path without double-appending lessons. The host
+    # cuts a tool result at 2000 lines / 50 KiB, so this path passes the
+    # larger, still bounded MCP budget instead of the model-delivery default.
+    invoke = functools.partial(
+        run_backtest, run_dir, byte_limit=MCP_TOOL_RESULT_BYTE_BUDGET
+    )
     if ctx is None:
-        return await asyncio.to_thread(run_backtest, run_dir)
+        return await asyncio.to_thread(invoke)
 
-    task = asyncio.create_task(asyncio.to_thread(run_backtest, run_dir))
+    task = asyncio.create_task(asyncio.to_thread(invoke))
     started = time.monotonic()
     while True:
         done, _pending = await asyncio.wait({task}, timeout=_BACKTEST_HEARTBEAT_SECONDS)
@@ -1058,12 +1065,18 @@ async def backtest(run_dir: str, ctx: Context | None = None) -> str:
     - "auto": auto-detect based on symbol format (with fallback)
 
     Returns metrics (Sharpe, return, drawdown, etc.) and artifact paths.
-    On success the envelope also carries a structured ``summary``: the full
-    scalar metrics plus structured_metrics and validation, run metadata,
-    an ``equity_preview`` (at most 50 equal-stride points, first and last
-    pinned) and ``artifact_paths`` including per-symbol ohlcv files — read
-    these instead of parsing ``stdout``. Large envelopes omit logs first
-    and reduce preview points; any omitted summary is explicitly reported.
+    On success the envelope also carries a structured ``summary`` unless the
+    run card is missing or corrupt. It always includes ``schema_version``,
+    ``run_id``, ``metrics``, ``equity_preview`` (at most 50 equal-stride points,
+    first and last pinned), ``codes``, ``start_date``, ``end_date``,
+    ``interval`` and ``artifact_paths`` (per-symbol ohlcv files included).
+    The full detail stays in the run directory. The whole result is kept under
+    the host's 2000-line / 50 KiB cap (48 KiB enforced), so optional bulk
+    blocks (validation, structured_metrics, warnings, title,
+    artifact_paths.ohlcv) and the largest metric entries are trimmed before
+    anything required, and every trimmed block is named in
+    ``summary["omitted_fields"]``. Read ``artifact_paths`` instead of parsing
+    ``stdout``.
 
     Args:
         run_dir: Path to the run directory containing config.json and code/.
