@@ -80,7 +80,7 @@ DIRECT_MODE_GOLDEN = """\
         "/opt/vibe-trading/agent/mcp_server.py"
       ],
       "timeout": 600000,
-      "env": {
+      "environment": {
         "CLICKHOUSE_HOST": "ch.test",
         "CLICKHOUSE_PORT": "8123",
         "CLICKHOUSE_USER": "default",
@@ -166,12 +166,47 @@ class TestTemplateRender:
         assert list(config["mcp"]) == ["vibe-trading"]
         assert config["mcp"]["vibe-trading"]["type"] == "local"
 
-    def test_clickhouse_credentials_reach_vt_mcp_env(self):
-        vt_env = _rendered()["mcp"]["vibe-trading"]["env"]
+    def test_clickhouse_credentials_reach_vt_mcp_environment(self):
+        vt_env = _rendered()["mcp"]["vibe-trading"]["environment"]
         assert vt_env["CLICKHOUSE_HOST"] == "ch.test"
         assert vt_env["CLICKHOUSE_LLM_USER"] == "llm_role"
         assert vt_env["VT_MEMORY"] == "full"
         assert vt_env["VT_MEMORY_MCP_TOOLS"] == "1"
+
+    def test_local_mcp_uses_the_environment_key_opencode_accepts(self):
+        """opencode's ``mcp.<name>`` schema is ``additionalProperties: false``.
+
+        A legacy ``env`` key is dropped without a warning, so the server would
+        start without ClickHouse credentials while every status stays green.
+        """
+        server = _rendered()["mcp"]["vibe-trading"]
+        assert "environment" in server
+        assert "env" not in server
+
+    def test_legacy_env_key_is_rejected(self, tmp_path):
+        legacy = tmp_path / "legacy.tmpl"
+        legacy.write_text(
+            json.dumps(
+                {
+                    "mcp": {
+                        "vibe-trading": {
+                            "type": "local",
+                            "command": ["/opt/venv/bin/python"],
+                            "env": {"CLICKHOUSE_HOST": "ch.test"},
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match="environment"):
+            render_config.render(legacy, MANIFEST_PATH)
+
+    def test_missing_vt_mcp_block_is_rejected(self, tmp_path):
+        empty = tmp_path / "no-mcp.tmpl"
+        empty.write_text(json.dumps({"model": "alibaba-cn/x"}), encoding="utf-8")
+        with pytest.raises(ValueError, match="vibe-trading"):
+            render_config.render(empty, MANIFEST_PATH)
 
     def test_no_unrendered_jinja_placeholders(self):
         raw = render_config.render(TEMPLATE_PATH, MANIFEST_PATH)

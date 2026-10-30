@@ -9,8 +9,9 @@ Single source of truth for the container's opencode config assembly
    opencode ``permission`` deny entries, so disabled VT tools are removed
    from the model's visible tool surface instead of sitting in a file that
    opencode never reads.
-3. Validate the final JSON before writing. Fail loud — ``entrypoint.sh``
-   owns the fallback path when rendering fails.
+3. Validate the final JSON before writing, including the VT MCP block whose
+   local-server schema is strict (``environment``, not ``env``). Fail loud —
+   ``entrypoint.sh`` owns the fallback path when rendering fails.
 
 Rationale for trimming the visible tool surface: MCP tool definitions are
 paid every planning turn, and tool-selection accuracy degrades past a few
@@ -37,6 +38,12 @@ DEFAULT_MANIFEST = CONFIG_DIR / "vibe-trading-tools.json"
 #: opencode namespaces MCP tools as ``<server>_<tool>``; the vibe-trading
 #: server keeps its hyphen (see the rendered tool names in any session).
 VT_SERVER = "vibe-trading"
+
+#: opencode's ``mcp.<name>`` local-server schema is ``additionalProperties:
+#: false`` and names the environment map ``environment``. A legacy ``env`` key
+#: is dropped without a warning, so the server would start without its
+#: credentials — the block is validated instead of trusting the template.
+VT_MCP_ENV_KEY = "environment"
 
 
 def load_manifest(path: Path) -> dict:
@@ -78,6 +85,43 @@ def build_permission_denies(manifest: dict) -> dict:
         Mapping of namespaced tool glob to ``"deny"``.
     """
     return {f"{VT_SERVER}_{entry}": "deny" for entry in manifest.get("disabled", [])}
+
+
+def validate_mcp_config(config: dict) -> None:
+    """Assert the rendered config carries a usable VT MCP server block.
+
+    Args:
+        config: Rendered opencode config.
+
+    Raises:
+        ValueError: If the VT MCP block is missing or malformed.
+    """
+    mcp = config.get("mcp")
+    if not isinstance(mcp, dict) or VT_SERVER not in mcp:
+        raise ValueError(f"mcp.{VT_SERVER} missing from the rendered config")
+    server = mcp[VT_SERVER]
+    if not isinstance(server, dict):
+        raise ValueError(f"mcp.{VT_SERVER} must be a JSON object")
+    if server.get("type") != "local":
+        raise ValueError(f"mcp.{VT_SERVER}.type must be 'local'")
+    command = server.get("command")
+    if (
+        not isinstance(command, list)
+        or not command
+        or not all(isinstance(part, str) and part for part in command)
+    ):
+        raise ValueError(f"mcp.{VT_SERVER}.command must be a non-empty list of strings")
+    if "env" in server:
+        raise ValueError(
+            f"mcp.{VT_SERVER} uses 'env'; opencode names the local MCP "
+            f"environment map '{VT_MCP_ENV_KEY}' and silently drops 'env'"
+        )
+    environment = server.get(VT_MCP_ENV_KEY)
+    if not isinstance(environment, dict) or "CLICKHOUSE_HOST" not in environment:
+        raise ValueError(
+            f"mcp.{VT_SERVER}.{VT_MCP_ENV_KEY} must carry the ClickHouse "
+            f"and memory settings"
+        )
 
 
 def build_context() -> dict:
@@ -131,6 +175,7 @@ def render(template_path: Path, manifest_path: Path) -> str:
     if not isinstance(permission, dict):
         raise ValueError("opencode.json.tmpl 'permission' must be a JSON object")
     permission.update(build_permission_denies(load_manifest(manifest_path)))
+    validate_mcp_config(config)
     return json.dumps(config, ensure_ascii=False, indent=2) + "\n"
 
 

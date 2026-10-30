@@ -101,6 +101,11 @@ RUN if [ "$PREBAKE_PLUGIN_SDK" = "1" ]; then \
 RUN curl -sfL https://models.opencode.ai/api.json -o /home/opencode/.cache/opencode/models.json && \
     chown opencode:opencode /home/opencode/.cache/opencode/models.json
 
+# Immutable copy of the renderer inputs. The entrypoint falls back to this path
+# when a volume mount shadows /workspace/.opencode, so a masked workspace can
+# never downgrade the container to a chat-only config.
+COPY config/opencode.json.tmpl config/vibe-trading-tools.json config/render_config.py /opt/opencode-config/
+
 COPY config/opencode.json.tmpl /workspace/.opencode/opencode.json.tmpl
 COPY config/oh-my-openagent.json /workspace/.opencode/oh-my-openagent.json
 COPY config/tui.json /workspace/.opencode/tui.json

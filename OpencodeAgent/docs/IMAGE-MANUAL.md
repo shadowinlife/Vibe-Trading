@@ -32,7 +32,7 @@
 
 - **OpenCode** Web Server（HTTP API + WebSocket），端口 4096
 - **OMO**（oh-my-openagent）并行任务分解插件
-- **Vibe-Trading**（mymain 分支，2026-09-26 对齐 v0.1.15 上游基线）— 78 个 MCP 工具的量化研究引擎（`VT_MEMORY_MCP_TOOLS=1` 时 83 个，含 5 个 `memory_*` 工具）
+- **Vibe-Trading**（mymain 分支，2026-09-26 对齐 v0.1.15 上游基线）— 94 个 MCP 工具的量化研究引擎（`VT_MEMORY_MCP_TOOLS=1` 时 99 个，含 5 个 `memory_*` 工具）
 - **data-warehouse** Skill — ClickHouse 数据仓库查询接口
 - **html-report** Skill — ECharts 交互式 HTML 报告生成
 - **MemoryGuard** Middleware — 自动记忆管理（Hook 触发，零 LLM 依赖）
@@ -249,11 +249,13 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 | `OPENCODE_DISABLE_AUTOUPDATE` | `1` | 禁用 opencode 自更新检查 |
 | `SKIP_VT_VERIFY` | `0` | 置 `1` 跳过 entrypoint 的 VT MCP 运行时校验（构建期已门禁，可省 ~1.5-3s 启动时间） |
 
-> **启动时序（v3.2.0+）**：entrypoint 渲染配置 → 校验插件缓存存在 → （可选）VT verify → 启动 `opencode serve` → **后台预热请求**触发首次 bootstrap（纯本地初始化，无任何下载）。注意：opencode 在 bootstrap 完成前会挂起入站 HTTP 请求（固有行为），生产侧应以 healthcheck 状态为准再接流量；预热完成后首次业务请求实测 <1s。
+> **启动时序（v3.2.0+）**：entrypoint 渲染配置 → 校验插件缓存存在 → （可选）VT verify → 启动 `opencode serve` → **后台预热请求**触发首次 bootstrap（纯本地初始化，无任何下载）→ **校验 opencode 侧 VT MCP 已连接**（`GET /mcp` 中 `vibe-trading` 必须为 `connected`，否则容器退出）。注意：opencode 在 bootstrap 完成前会挂起入站 HTTP 请求（固有行为），生产侧应以 healthcheck 状态为准再接流量；预热完成后首次业务请求实测 <1s。
+
+> **配置落盘与键名（v3.13+）**：渲染结果同时写到 `$HOME/.opencode/opencode.json` 与 `/workspace/.opencode/opencode.json`，避免 Pod 的 `HOME` 与镜像用户不一致时 opencode 找不到配置。local MCP 的环境变量键是 **`environment`**——opencode 的 `mcp.<name>` schema 为 `additionalProperties: false`，写成 `env` 会被**静默丢弃**（MCP 仍显示 connected，但子进程拿不到 `CLICKHOUSE_*`，`ch_*` 语义层全部失效）。`render_config.py` 现在对该块做渲染期校验，模板回退源固定在 `/opt/opencode-config/`。
 
 ### 6.3 VT MCP 工具特性（v0.1.16 基线 + FE-1 增强）
 
-本镜像的 Vibe-Trading 基线为 **mymain @ 上游 `596fcf3d` 对齐（2026-10-17，上游历史重写后自 b1f6ce71 等价点前进 296 commit，v0.1.16 后开发段；新增 get_fund_nav / Gildata 研究三件套 / adapt_strategy 等上游工具）**，MCP Server 默认暴露 **85 个工具**；`VT_MEMORY_MCP_TOOLS=1`（本镜像默认开启）时额外注册 5 个 `memory_*` 工具，共 **90 个**。配套资产：**91 个内置 skills**、**30 个 swarm 多智能体预设**。
+本镜像的 Vibe-Trading 基线为 **mymain @ 上游 `596fcf3d` 对齐（2026-10-17，上游历史重写后自 b1f6ce71 等价点前进 296 commit，v0.1.16 后开发段；新增 get_fund_nav / Gildata 研究三件套 / adapt_strategy 等上游工具）**，MCP Server 默认暴露 **94 个工具**；`VT_MEMORY_MCP_TOOLS=1`（本镜像默认开启）时额外注册 5 个 `memory_*` 工具，共 **99 个**。配套资产：**91 个内置 skills**、**30 个 swarm 多智能体预设**。
 
 相对 v3.2.0-mymain（v0.1.13 基线），新增以下能力：
 
@@ -448,7 +450,7 @@ MemoryGuard 是 mymain 分支的核心特性，在 FastMCP 层面拦截所有 Vi
 
 | 阶段 | 触发条件 | 动作 |
 |------|---------|------|
-| 每次工具调用 | 所有 78 个 VT MCP 工具（73 基础 + 5 个 `memory_*`） | `memory_save`（工具名、参数、结果、耗时） |
+| 每次工具调用 | 所有 99 个 VT MCP 工具（94 基础 + 5 个 `memory_*`） | `memory_save`（工具名、参数、结果、耗时） |
 | 回测/因子分析/交易日志后 | `backtest`、`factor_analysis` 等 | `memory_reflect`（sharpe、max_drawdown 等指标） |
 | 容器启动时 | entrypoint 阶段 | `memory_status` 验证 |
 
@@ -500,13 +502,15 @@ docker logs opencode-web 2>&1 | grep "\[entrypoint\]"
 ```
 [entrypoint] Fixed venv python symlinks → /usr/bin/python3
 [entrypoint] opencode.json rendered from template → /home/opencode/.opencode/opencode.json
-[entrypoint] Plugin cache symlinked
+[entrypoint] opencode.json project-scope copy → /workspace/.opencode/opencode.json
 [entrypoint] ClickHouse OK — warming schema cache
-[entrypoint] VT MCP server OK — 78 tools registered
+[entrypoint] VT MCP server OK — 99 tools registered
 [entrypoint] VT_MEMORY=full, VT_MEMORY_MCP_TOOLS=1 → memory tools enabled
+[entrypoint] warmup complete — first client request will be fast
+[entrypoint] VT MCP connected — vibe-trading tools are in the model tool surface
 ```
 
-> 工具数由 entrypoint 动态统计：默认 73 个，`VT_MEMORY_MCP_TOOLS=1`（本镜像默认）时额外注册 5 个 `memory_*` 工具，共 78 个。
+> 工具数由 entrypoint 动态统计：默认 94 个，`VT_MEMORY_MCP_TOOLS=1`（本镜像默认）时额外注册 5 个 `memory_*` 工具，共 99 个。
 
 ### 9.2 健康检查
 
@@ -543,7 +547,8 @@ print(f'MemoryGuard: OK' if hasattr(mcp, '_middleware') else 'MemoryGuard: MISSI
 
 `opencode serve` 会先绑定 `:4096`、再完成首次 `/config` bootstrap。该 bootstrap 若很慢，
 缺少 startupProbe 的 Pod 会过早 Ready，请求直接撞上 ReadTimeout。下面的脚本在**镜像**
-上量出「容器启动 → 首次认证 `GET /config` 返回 200」的墙钟，把慢镜像挡在打包阶段。
+上量出「容器启动 → 首次认证 `GET /config` 返回 200」与「容器启动 → VT MCP 连接」的墙钟，
+把慢镜像和「能聊天但没有金融工具」的镜像都挡在打包阶段。
 
 ```bash
 cd OpencodeAgent
@@ -562,8 +567,8 @@ IMAGE=opencode-serve:v3.8.2-mymain \
 | 项 | 说明 |
 |----|------|
 | 启动参数 | `--platform linux/amd64`、`--network none`（`OFFLINE=0` 可放开）、随机 dummy `OPENCODE_SERVER_PASSWORD`、`DASHSCOPE_API_KEY=dummy-not-a-real-key`、`CLICKHOUSE_HOST=` 为空 |
-| 通过条件 | 日志同时出现 `opencode server listening` 与 `[entrypoint] warmup complete`，且首次 `/config` 200 的耗时 ≤ `STARTUP_BUDGET_S`（默认 60s），并用 `docker exec curl` 复核返回 200 |
-| 失败条件 | 任一标记缺失、首次 200 超预算、容器提前退出、复核请求非 200 |
+| 通过条件 | 日志出现 `opencode server listening`、`[entrypoint] warmup complete`、`[entrypoint] VT MCP connected` 与 `strategy-run entry listening`；首次 `/config` 200 与 VT MCP 连接的耗时均 ≤ `STARTUP_BUDGET_S`（默认 60s）；`docker exec curl` 复核 `/config` 返回 200、`/mcp` 中 `vibe-trading` 为 `connected` |
+| 失败条件 | 任一标记缺失、首次 200 或 MCP 连接超预算、容器提前退出、`/config` 复核非 200、`/mcp` 中 `vibe-trading` 不是 `connected` |
 | 清理 | `trap` 保证退出时 `docker rm -f`；`KEEP_CONTAINER=1` 可保留现场 |
 | 镜像缺失 | 默认打印 `SKIP` 并退出 0（便于无镜像的 CI）；`REQUIRE_IMAGE=1` 时视为失败 |
 | 其它变量 | `CONTAINER_NAME` 自定义容器名；`HARD_TIMEOUT_S` 等待标记的上限（默认预算 + 60s） |
@@ -580,7 +585,8 @@ IMAGE=opencode-serve:v3.8.2-mymain \
    `@opencode-ai/plugin`；镜像已通过 `PREBAKE_PLUGIN_SDK=1`（默认）预烘，
    `--build-arg PREBAKE_PLUGIN_SDK=0` 构建的镜像会重新付出这段成本。
 2. **容器提前退出**：`docker logs <container>` 查 entrypoint 报错（配置渲染、权限、端口）。
-3. **QEMU 环境**：aarch64 主机模拟 amd64 时整体启动会明显变慢（v3.8.2 实测 164.3s），
+3. **`VT MCP connected` 缺失或 `/mcp` 里 `vibe-trading` 不是 `connected`**：说明 opencode 没加载到配置或 MCP 起不来。查渲染日志（`rendered from template` / `WARNING: Jinja2 render failed` / `writing minimal config`）、容器内 `$HOME/.opencode/opencode.json` 与 `/workspace/.opencode/opencode.json` 是否同时存在，以及 `docker exec <c> /opt/venv/bin/python /opt/vibe-trading/agent/mcp_server.py` 能否手工起 stdio。
+4. **QEMU 环境**：aarch64 主机模拟 amd64 时整体启动会明显变慢（v3.8.2 实测 164.3s），
    属预期差异；请到 native amd64 builder 复跑，或仅在本地用更大的预算做冒烟验证。
 
 ---
