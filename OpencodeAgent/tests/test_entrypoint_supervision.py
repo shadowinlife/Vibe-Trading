@@ -172,6 +172,15 @@ def test_entrypoint_writes_config_for_both_opencode_scopes(entrypoint: str) -> N
     assert 'chmod 600 "$PROJECT_TARGET"' in entrypoint
 
 
+def test_project_scope_copy_drops_the_plugin_list(entrypoint: str) -> None:
+    # A plugin entry in the project config makes opencode install the whole
+    # bundle into /workspace/.opencode/node_modules on the first request
+    # (~70s); the global scope already loads it from the pre-baked cache.
+    finalize = entrypoint.split("finalize_config()", 1)[1].split("\n}", 1)[0]
+    assert 'config.pop("plugin", None)' in finalize
+    assert 'json.dump(config' in finalize
+
+
 def test_entrypoint_renders_from_a_workspace_independent_template_source(
     entrypoint: str,
 ) -> None:

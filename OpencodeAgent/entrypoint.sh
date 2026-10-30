@@ -168,6 +168,29 @@ finalize_config() {
         return 0
     fi
     if cp "$TARGET" "$PROJECT_TARGET" 2>/dev/null; then
+        # The project scope must not declare plugins. opencode installs every
+        # plugin named in a project's config into <project>/.opencode/
+        # node_modules before serving the first request, which costs ~70s for
+        # the OMO bundle on a cold box; the global scope already loads the same
+        # plugin from the image's pre-baked cache, so the project copy keeps
+        # the MCP block and drops the plugin list.
+        if ! PROJECT_TARGET="$PROJECT_TARGET" /opt/venv/bin/python3 - <<'EOFPY'
+import json
+import os
+
+path = os.environ["PROJECT_TARGET"]
+with open(path, encoding="utf-8") as handle:
+    config = json.load(handle)
+if isinstance(config, dict) and config.pop("plugin", None) is not None:
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as handle:
+        json.dump(config, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+    os.replace(tmp, path)
+EOFPY
+        then
+            echo "[entrypoint] WARNING: could not strip the project-scope plugin list — the first request may install it"
+        fi
         chmod 600 "$PROJECT_TARGET" 2>/dev/null || true
         echo "[entrypoint] opencode.json project-scope copy → $PROJECT_TARGET"
     else
