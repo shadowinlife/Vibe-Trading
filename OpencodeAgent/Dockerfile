@@ -135,6 +135,27 @@ RUN mkdir -p /workspace/analysis \
 # workspace subdirectories when they are not volume-mounted.
 RUN chown -R opencode:opencode /workspace
 
+# ── Pre-bake the PROJECT-scope plugin tree ──────────────────────────────────
+# opencode resolves plugins per project and installs the merged set (the SDK
+# plus the plugin named by the global config) into <project>/.opencode/
+# node_modules before serving the first request. Without this layer a cold
+# /workspace pays a 63 MB registry install inside that request: measured
+# 70-82s on the packaged image, which the strategy-run entry then waits
+# behind. Baking the same tree here makes the first request find it already
+# satisfied (6s control with a pre-seeded node_modules).
+RUN set -eux; \
+    SDK_VERSION="$(node -e "console.log(require('/usr/lib/node_modules/opencode-ai/package.json').version)")"; \
+    mkdir -p /workspace/.opencode; \
+    printf '{\n  "dependencies": {\n    "@opencode-ai/plugin": "%s"\n  }\n}\n' "$SDK_VERSION" > /workspace/.opencode/package.json; \
+    cd /workspace/.opencode; \
+    npm install --no-audit --no-fund --cache /tmp/npm-cache-project; \
+    npm install --no-audit --no-fund --no-save "oh-my-openagent@${OMO_VERSION}" --cache /tmp/npm-cache-project; \
+    test -d node_modules/@opencode-ai/plugin; \
+    test -d "node_modules/oh-my-openagent"; \
+    printf 'node_modules\npackage.json\npackage-lock.json\nbun.lock\n.gitignore\n' > /workspace/.opencode/.gitignore; \
+    rm -rf /tmp/npm-cache-project; \
+    chown -R opencode:opencode /workspace/.opencode
+
 ENV LANGCHAIN_PROVIDER=dashscope \
     LANGCHAIN_MODEL_NAME=qwen3.8-max \
     DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1 \

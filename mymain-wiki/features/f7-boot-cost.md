@@ -12,9 +12,10 @@ tags: [feature, boot, opencode, plugin]
 
 ## 结论
 
-`OpencodeAgent/entrypoint.sh` 把渲染好的 `opencode.json` 复制到项目作用域 `/workspace/.opencode/opencode.json` 时，**必须去掉其中的 `plugin` 列表**。opencode 会为项目作用域单独安装配置里声明的插件（`oh-my-openagent` 及其依赖，约 63 MB），冷启动实测耗时 70-82 秒；插件本身已由全局作用域从镜像里预烘焙的缓存加载，去掉项目侧的声明不影响插件生效。
+修复分两层，缺一不可：
 
-修复后同一台机器上：冷启动到 `/mcp?directory=/workspace` 显示 `vibe-trading: connected` 从 73-82 秒降到 **8.75 秒**；策略恢复入口 `/health` 就绪从 77-122 秒降到 **40 秒上下**。
+1. **镜像预烘焙项目作用域的插件树**（`/workspace/.opencode/node_modules`：SDK + `oh-my-openagent`）。opencode 按项目解析并安装插件，与插件声明在哪个作用域无关；只在配置里删键不会取消这次安装——实测只做删键的镜像（v3.15.0）冷启动仍然是 75 秒，`node_modules` 依旧被写入 63 MB。
+2. **项目作用域副本不声明 `plugin`**。配置保持最小，避免同一份插件清单被两处重复表达；插件由全局作用域声明并从预烘焙缓存加载。
 
 ## 症状与影响
 
@@ -45,9 +46,9 @@ tags: [feature, boot, opencode, plugin]
 
 ## 修复
 
-`finalize_config()` 复制配置到项目作用域后，调用一次 JSON 处理删除 `plugin` 键（保留 `mcp` 块，它才是项目作用域副本存在的理由）。插件仍由全局配置加载——日志里 `[oh-my-openagent] ENTRY - plugin loading {"directory":"/workspace"}` 依旧出现，工具面与代理配置不变。
-
-回归测试：`OpencodeAgent/tests/test_entrypoint_supervision.py::test_project_scope_copy_drops_the_plugin_list`。
+- `OpencodeAgent/Dockerfile`：新增一层，在 `/workspace/.opencode/` 内 `npm install` 出 SDK 与 `oh-my-openagent@${OMO_VERSION}`（与全局缓存同一版本变量），并断言两个目录存在；构建期完成，运行期零网络。
+- `OpencodeAgent/entrypoint.sh`：`finalize_config()` 复制配置到项目作用域后删除 `plugin` 键（保留 `mcp`）。
+- 回归测试：`OpencodeAgent/tests/test_entrypoint_supervision.py::test_project_scope_copy_drops_the_plugin_list`。
 
 ## 验收
 
