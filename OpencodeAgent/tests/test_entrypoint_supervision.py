@@ -8,9 +8,12 @@ regression in that contract fails without a Docker build.
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -123,3 +126,95 @@ def test_readiness_script_covers_the_entry_in_offline_mode(readiness: str) -> No
     assert '"$ENTRY_HEALTH_URL"' in readiness
     assert "--network none" in readiness
     assert "entry /health 200" in readiness
+
+
+def test_readiness_script_gates_on_the_mcp_connection(readiness: str) -> None:
+    assert 'MCP_MARKER="[entrypoint] VT MCP connected"' in readiness
+    assert 'MCP_URL="http://127.0.0.1:4096/mcp?directory=/workspace"' in readiness
+    assert '"vibe-trading"[[:space:]]*' in readiness
+    assert "VT MCP 未连接" in readiness
+    assert '-e "VT_STARTUP_BUDGET_S=$STARTUP_BUDGET_S"' in readiness
+
+
+def test_entrypoint_fails_without_a_connected_vt_mcp(entrypoint: str) -> None:
+    assert "vt_mcp_connected()" in entrypoint
+    assert (
+        'OPENCODE_MCP_URL="http://127.0.0.1:4096/mcp?directory=/workspace"'
+        in entrypoint
+    )
+    assert 'VT_STARTUP_BUDGET_S="${VT_STARTUP_BUDGET_S:-300}"' in entrypoint
+    assert "refusing to serve without the finance tool surface" in entrypoint
+    assert (
+        "VT MCP connected — vibe-trading tools are in the model tool surface"
+        in entrypoint
+    )
+    fatal = re.search(
+        r"FATAL: VT MCP server 'vibe-trading' not connected[\s\S]{0,400}?\n(\s*)exit 1",
+        entrypoint,
+    )
+    assert fatal, "the VT MCP gate must exit non-zero, not just log"
+    exhausted = re.search(
+        r"budget was spent before the VT MCP gate[\s\S]{0,200}?\n(\s*)exit 1",
+        entrypoint,
+    )
+    assert exhausted, "an exhausted startup budget must also fail the container"
+
+
+def test_entrypoint_writes_config_for_both_opencode_scopes(entrypoint: str) -> None:
+    assert 'TARGET="${HOME:-/home/opencode}/.opencode/opencode.json"' in entrypoint
+    assert 'PROJECT_TARGET="/workspace/.opencode/opencode.json"' in entrypoint
+    assert 'cp "$TARGET" "$PROJECT_TARGET"' in entrypoint
+    # Both the rendered path and the fallback path must publish the config, or a
+    # render failure silently loses the project-scope copy.
+    calls = re.findall(r"^\s+finalize_config$", entrypoint, flags=re.MULTILINE)
+    assert len(calls) == 2, f"expected 2 finalize_config calls, found {len(calls)}"
+    assert 'chmod 600 "$TARGET"' in entrypoint
+    assert 'chmod 600 "$PROJECT_TARGET"' in entrypoint
+
+
+def test_entrypoint_renders_from_a_workspace_independent_template_source(
+    entrypoint: str,
+) -> None:
+    assert 'CONFIG_FALLBACK_DIR="/opt/opencode-config"' in entrypoint
+    assert "$CONFIG_FALLBACK_DIR/opencode.json.tmpl" in entrypoint
+    assert "$CONFIG_FALLBACK_DIR/render_config.py" in entrypoint
+
+
+def test_entrypoint_fallback_config_keeps_the_vt_mcp_block(entrypoint: str) -> None:
+    fallback = entrypoint.split("write_fallback_config()", 1)[1].split("\n}", 1)[0]
+    assert '"mcp"' in fallback
+    assert '"vibe-trading"' in fallback
+    assert '"/opt/vibe-trading/agent/mcp_server.py"' in fallback
+    assert '"environment"' in fallback
+    assert '"CLICKHOUSE_HOST": env("CLICKHOUSE_HOST")' in fallback
+
+
+def test_fallback_config_generator_emits_valid_mcp_json(tmp_path: Path) -> None:
+    """Execute the shipped fallback generator instead of trusting its source text."""
+    body = ENTRYPOINT_PATH.read_text(encoding="utf-8")
+    heredoc = body.split("write_fallback_config() {", 1)[1]
+    script = heredoc.split("<< 'EOFPY'\n", 1)[1].split("\nEOFPY\n", 1)[0]
+    target = tmp_path / "opencode.json"
+    env = {
+        **os.environ,
+        "TARGET": str(target),
+        "CLICKHOUSE_HOST": "ch.test",
+        "CLICKHOUSE_LLM_USER": "llm_role",
+        "OMO_VERSION": "5.1.35",
+    }
+    subprocess.run([sys.executable, "-c", script], env=env, check=True)
+    config = json.loads(target.read_text(encoding="utf-8"))
+    server = config["mcp"]["vibe-trading"]
+    assert server["type"] == "local"
+    assert "env" not in server
+    assert server["environment"]["CLICKHOUSE_HOST"] == "ch.test"
+    assert server["environment"]["CLICKHOUSE_LLM_USER"] == "llm_role"
+    assert server["environment"]["VT_MEMORY_MCP_TOOLS"] == "1"
+    assert config["plugin"] == ["oh-my-openagent@5.1.35"]
+
+
+def test_dockerfile_ships_the_immutable_renderer_inputs(dockerfile: str) -> None:
+    assert (
+        "COPY config/opencode.json.tmpl config/vibe-trading-tools.json "
+        "config/render_config.py /opt/opencode-config/" in dockerfile
+    )

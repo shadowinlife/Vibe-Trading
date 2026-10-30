@@ -126,23 +126,53 @@ LLM_BASE_URL="${LLM_BASE_URL:-}"
 LLM_API_KEY="${LLM_API_KEY:-}"
 SANDBOX_ID="${HOSTNAME:-$(uname -n)}"
 
-# ── Ensure target directory exists ────────────────────────────────────────────
-mkdir -p /home/opencode/.opencode
+# ── Render opencode.json from the Jinja2 template ─────────────────────────────
+# The build-time copies live under /workspace, which a deployment may shadow
+# with a volume mount; /opt/opencode-config is the immutable copy baked into
+# the image and backs the template/manifest/renderer when that happens.
+CONFIG_DIR="/workspace/.opencode"
+CONFIG_FALLBACK_DIR="/opt/opencode-config"
+TEMPLATE="$CONFIG_DIR/opencode.json.tmpl"
+MANIFEST="$CONFIG_DIR/vibe-trading-tools.json"
+RENDERER="$CONFIG_DIR/render_config.py"
 
-# ── Render opencode.json from Jinja2 template ─────────────────────────────────
-TEMPLATE="/workspace/.opencode/opencode.json.tmpl"
-TARGET="/home/opencode/.opencode/opencode.json"
-FALLBACK="/workspace/.opencode/opencode.json.fallback"
+# opencode resolves config from $HOME/.opencode and from the session
+# directory's .opencode/. Write both: a pod whose HOME is not the image user
+# must not boot without the rendered config (and therefore without the MCP).
+TARGET="${HOME:-/home/opencode}/.opencode/opencode.json"
+PROJECT_TARGET="/workspace/.opencode/opencode.json"
+mkdir -p "$(dirname "$TARGET")"
 
 # Rendering lives in config/render_config.py (single source of truth, covered
 # by OpencodeAgent/tests/test_config_render.py). It also compiles the tool
 # governance manifest (vibe-trading-tools.json) into opencode permission
 # denies, so disabled VT tools never reach the model's tool list.
 render_config() {
-    /opt/venv/bin/python3 /workspace/.opencode/render_config.py \
-        --template "$TEMPLATE" \
-        --manifest /workspace/.opencode/vibe-trading-tools.json \
+    local template="$TEMPLATE" manifest="$MANIFEST" renderer="$RENDERER"
+    [ -f "$template" ] || template="$CONFIG_FALLBACK_DIR/opencode.json.tmpl"
+    [ -f "$manifest" ] || manifest="$CONFIG_FALLBACK_DIR/vibe-trading-tools.json"
+    [ -f "$renderer" ] || renderer="$CONFIG_FALLBACK_DIR/render_config.py"
+    if [ ! -f "$template" ] || [ ! -f "$renderer" ] || [ ! -f "$manifest" ]; then
+        echo "ERROR: no opencode.json.tmpl/render_config.py/vibe-trading-tools.json in $CONFIG_DIR or $CONFIG_FALLBACK_DIR" >&2
+        return 1
+    fi
+    /opt/venv/bin/python3 "$renderer" \
+        --template "$template" \
+        --manifest "$manifest" \
         --target "$TARGET"
+}
+
+finalize_config() {
+    chmod 600 "$TARGET" 2>/dev/null || true
+    if [ "$TARGET" = "$PROJECT_TARGET" ]; then
+        return 0
+    fi
+    if cp "$TARGET" "$PROJECT_TARGET" 2>/dev/null; then
+        chmod 600 "$PROJECT_TARGET" 2>/dev/null || true
+        echo "[entrypoint] opencode.json project-scope copy → $PROJECT_TARGET"
+    else
+        echo "[entrypoint] WARNING: could not write project-scope config → $PROJECT_TARGET"
+    fi
 }
 
 # Fallback-only counterpart of the template's conditional provider block:
@@ -170,45 +200,86 @@ os.replace(tmp, path)
 EOFPY
 }
 
+# Last-resort config when neither the template nor opencode.json.fallback can
+# be used. It keeps the VT MCP block on purpose: a chat-only container loses
+# the whole finance tool surface while still looking healthy.
+write_fallback_config() {
+    TARGET="$TARGET" \
+    OMO_VERSION="${OMO_VERSION:-5.1.35}" \
+    CLICKHOUSE_HOST="${CLICKHOUSE_HOST:-}" \
+    CLICKHOUSE_PORT="${CLICKHOUSE_PORT:-8123}" \
+    CLICKHOUSE_USER="${CLICKHOUSE_USER:-default}" \
+    CLICKHOUSE_PASSWORD="${CLICKHOUSE_PASSWORD:-}" \
+    CLICKHOUSE_DATABASE="${CLICKHOUSE_DATABASE:-ashare}" \
+    CLICKHOUSE_LLM_USER="${CLICKHOUSE_LLM_USER:-}" \
+    CLICKHOUSE_LLM_PASSWORD="${CLICKHOUSE_LLM_PASSWORD:-}" \
+    VT_MEMORY_BASE_DIR="${VT_MEMORY_BASE_DIR:-/workspace/.vt-memory}" \
+    /opt/venv/bin/python3 - << 'EOFPY'
+import json, os
+
+def env(name: str, default: str = "") -> str:
+    return os.environ.get(name) or default
+
+config = {
+    "model": "alibaba-cn/deepseek-v4.1-flash-1017",
+    "provider": {
+        "alibaba-cn": {
+            "models": {
+                "deepseek-v4.1-flash-1017": {
+                    "attachment": True,
+                    "limit": {"context": 1000000, "input": 500000, "output": 131072},
+                    "name": "DeepSeek V4.1 Flash 1017",
+                    "options": {"enable_thinking": True, "reasoning_effort": "high"},
+                    "reasoning": True,
+                    "tool_call": True,
+                }
+            }
+        }
+    },
+    "mcp": {
+        "vibe-trading": {
+            "type": "local",
+            "command": [
+                "/opt/venv/bin/python",
+                "/opt/vibe-trading/agent/mcp_server.py",
+            ],
+            "timeout": 600000,
+            "environment": {
+                "CLICKHOUSE_HOST": env("CLICKHOUSE_HOST"),
+                "CLICKHOUSE_PORT": env("CLICKHOUSE_PORT", "8123"),
+                "CLICKHOUSE_USER": env("CLICKHOUSE_USER", "default"),
+                "CLICKHOUSE_PASSWORD": env("CLICKHOUSE_PASSWORD"),
+                "CLICKHOUSE_DATABASE": env("CLICKHOUSE_DATABASE", "ashare"),
+                "CLICKHOUSE_LLM_USER": env("CLICKHOUSE_LLM_USER"),
+                "CLICKHOUSE_LLM_PASSWORD": env("CLICKHOUSE_LLM_PASSWORD"),
+                "VT_MEMORY": "full",
+                "VT_MEMORY_MCP_TOOLS": "1",
+                "VT_MEMORY_BASE_DIR": env("VT_MEMORY_BASE_DIR", "/workspace/.vt-memory"),
+            },
+        }
+    },
+    "plugin": [f"oh-my-openagent@{env('OMO_VERSION', '5.1.35')}"],
+}
+
+path = os.environ["TARGET"]
+os.makedirs(os.path.dirname(path), exist_ok=True)
+tmp = path + ".tmp"
+with open(tmp, "w", encoding="utf-8") as f:
+    json.dump(config, f, ensure_ascii=False, indent=2)
+    f.write("\n")
+os.replace(tmp, path)
+EOFPY
+}
+
 if render_config 2>/tmp/entrypoint_render_err; then
     echo "[entrypoint] opencode.json rendered from template → $TARGET"
     rm -f /tmp/entrypoint_render_err
+    finalize_config
 else
     echo "[entrypoint] WARNING: Jinja2 render failed: $(tr '\n' ' ' < /tmp/entrypoint_render_err 2>/dev/null)"
     rm -f /tmp/entrypoint_render_err
-    if [ -f "$FALLBACK" ]; then
-        cp "$FALLBACK" "$TARGET"
-        echo "[entrypoint] Using fallback config: $FALLBACK"
-    else
-        echo "[entrypoint] ERROR: No fallback config at $FALLBACK, writing minimal config"
-        cat > "$TARGET" << EOFMIN
-{
-  "model": "alibaba-cn/deepseek-v4.1-flash-1017",
-  "provider": {
-    "alibaba-cn": {
-      "models": {
-        "deepseek-v4.1-flash-1017": {
-          "attachment": true,
-          "limit": {
-            "context": 1000000,
-            "input": 500000,
-            "output": 131072
-          },
-          "name": "DeepSeek V4.1 Flash 1017",
-          "options": {
-            "enable_thinking": true,
-            "reasoning_effort": "high"
-          },
-          "reasoning": true,
-          "tool_call": true
-        }
-      }
-    }
-  },
-  "plugin": ["oh-my-openagent@${OMO_VERSION:-5.1.35}"]
-}
-EOFMIN
-    fi
+    echo "[entrypoint] WARNING: writing the minimal config with the VT MCP block"
+    write_fallback_config
     if [ -n "$LLM_BASE_URL" ]; then
         if inject_llm_proxy; then
             echo "[entrypoint] LLM proxy provider block injected into fallback config"
@@ -216,6 +287,7 @@ EOFMIN
             echo "[entrypoint] WARNING: LLM proxy injection failed — fallback stays direct-mode"
         fi
     fi
+    finalize_config
 fi
 
 # ── Probe ClickHouse connectivity ─────────────────────────────────────────────
@@ -302,6 +374,17 @@ except Exception as e:
 fi
 
 # ── Start opencode serve (unchanged: :4096) ───────────────────────────────────
+# One wall-clock budget covers settle + bootstrap warmup + the VT MCP gate, so
+# the boot path cannot outrun the 300s route-wait / startupProbe budget.
+VT_STARTUP_BUDGET_S="${VT_STARTUP_BUDGET_S:-300}"
+case "$VT_STARTUP_BUDGET_S" in
+    '' | *[!0-9]*)
+        echo "[entrypoint] WARNING: invalid VT_STARTUP_BUDGET_S — using 300"
+        VT_STARTUP_BUDGET_S=300
+        ;;
+esac
+OPENCODE_MCP_URL="http://127.0.0.1:4096/mcp?directory=/workspace"
+
 opencode serve --port 4096 --hostname 0.0.0.0 &
 SERVER_PID=$!
 
@@ -314,17 +397,59 @@ SERVER_PID=$!
 # opencode 1.19.x can stall its first bootstrap when a request arrives before
 # local init finishes; let it settle before the warmup probe.
 sleep 20
-if curl -sf --max-time 300 -u opencode:"${OPENCODE_SERVER_PASSWORD:-}" \
+if curl -sf --max-time "$VT_STARTUP_BUDGET_S" -u opencode:"${OPENCODE_SERVER_PASSWORD:-}" \
     "http://127.0.0.1:4096/config?directory=/home/opencode" >/dev/null 2>&1; then
     echo "[entrypoint] warmup complete — first client request will be fast"
 else
-    echo "[entrypoint] WARNING: warmup request did not complete within 300s"
+    echo "[entrypoint] WARNING: warmup request did not complete within ${VT_STARTUP_BUDGET_S}s"
 fi
 
 if ! pid_running "$SERVER_PID"; then
     echo "[entrypoint] ERROR: opencode serve exited before the strategy-run entry could start"
     exit 1
 fi
+
+# ── Gate startup on a connected VT MCP server ─────────────────────────────────
+# The import check above proves the server *can* start; it says nothing about
+# whether opencode loaded the config and connected it. Without this gate a
+# render/scope regression ships a container where chat works but the model has
+# zero `vibe-trading_*` tools.
+vt_mcp_connected() {
+    local body
+    body="$(curl -sf --max-time 10 -u "opencode:${OPENCODE_SERVER_PASSWORD:-}" \
+        "$OPENCODE_MCP_URL" 2>/dev/null)" || return 1
+    [ -n "$body" ] || return 1
+    VT_MCP_STATUS="$body" /opt/venv/bin/python3 - << 'EOFPY'
+import json, os, sys
+try:
+    status = json.loads(os.environ["VT_MCP_STATUS"])
+except Exception:
+    sys.exit(1)
+entry = status.get("vibe-trading") if isinstance(status, dict) else None
+sys.exit(0 if isinstance(entry, dict) and entry.get("status") == "connected" else 1)
+EOFPY
+}
+
+MCP_REMAINING_S=$((VT_STARTUP_BUDGET_S - SECONDS))
+if [ "$MCP_REMAINING_S" -lt 1 ]; then
+    echo "[entrypoint] FATAL: the ${VT_STARTUP_BUDGET_S}s startup budget was spent before the VT MCP gate — refusing to serve without the finance tool surface"
+    exit 1
+fi
+MCP_DEADLINE=$((SECONDS + MCP_REMAINING_S))
+until vt_mcp_connected; do
+    if ! pid_running "$SERVER_PID"; then
+        echo "[entrypoint] FATAL: opencode exited before the VT MCP server connected"
+        exit 1
+    fi
+    if [ "$SECONDS" -ge "$MCP_DEADLINE" ]; then
+        echo "[entrypoint] FATAL: VT MCP server 'vibe-trading' not connected within the ${VT_STARTUP_BUDGET_S}s startup budget — refusing to serve without the finance tool surface"
+        curl -s -u "opencode:${OPENCODE_SERVER_PASSWORD:-}" "$OPENCODE_MCP_URL" 2>/dev/null || true
+        echo
+        exit 1
+    fi
+    sleep 2
+done
+echo "[entrypoint] VT MCP connected — vibe-trading tools are in the model tool surface"
 
 # ── Start the dedicated strategy-run entry ────────────────────────────────────
 # `agent/strategy_run_server.py` mounts only /health and the two RM service
