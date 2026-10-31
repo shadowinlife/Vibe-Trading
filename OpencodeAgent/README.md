@@ -13,7 +13,7 @@ This project packages the OpenCode Web Server research environment into a reprod
 
 - **OpenCode CLI** (pinned in `Dockerfile.base`, currently 1.19.3) + **OMO (oh-my-openagent) plugin** (pinned via `OMO_VERSION`, currently 5.1.35, pre-baked into the plugin cache)
 - **13 OpenCode skills**: data-warehouse (ClickHouse heavy queries), escape-top-microstructure (top-detection signals), html-report (manual offline HTML export only; not a product report path), intake (clarification routing, slot defaults and parameter compile table, loaded on demand), periodic-execution (cron), research-scenarios (scenario playbooks A-F, loaded on demand), plus six external-evidence skills: ashare-filings (定期报告全文), ashare-events (临时公告), ashare-risk (监管处罚), ashare-ir (机构调研), ashare-research (券商研报), ashare-policy (gov.cn 行业政策)
-- **Full AGENTS.md** (334 lines, always loaded): an 8-artifact product index, behavior instructions for 6 scenarios (A through F), a 4-class request router and anti-hallucination discipline; the clarification protocol now lives in the `intake` skill, not in this file
+- **Full AGENTS.md** (345 lines, always loaded): an 8-artifact product index, behavior instructions for 6 scenarios (A through F), a 4-class request router and anti-hallucination discipline; the clarification protocol now lives in the `intake` skill, not in this file
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
 - **Cron job infrastructure** with CLI management and DingTalk/email notification
 

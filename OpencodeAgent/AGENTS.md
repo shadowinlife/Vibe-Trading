@@ -78,6 +78,17 @@ ClickHouse 数据由外部同步进程维护，本容器内不包含同步逻辑
 3. 回答只返回 `run_id`、关键指标和简短结论；报告入口是控制面的 Run Detail。用户追问“可视化/报告”时，返回 `run_id` 并说明在 Run Detail 查看。
 4. `html-report` 仅用于用户明确要求的独立 HTML 导出（非产品需求），保存到 `/home/opencode/.vibe-trading/reports/`；禁止 `/workspace/reports`、`nginx:8088`、`scp`。
 
+### 产物布局（控制面契约，不得改名）
+
+一次成功回测的 `run_dir` 必须包含 `run_card.json` 与：
+
+- `artifacts/metrics.csv`：任意表头，单行宽表；
+- `artifacts/equity.csv`：必需 `timestamp,equity,drawdown`，可选 `benchmark_equity`；
+- `artifacts/trades.csv`：必需 `timestamp,code,side,price,qty,pnl`，可选 `reason,holding_days,holding_bars,return_pct`；
+- `artifacts/positions.csv`：唯一且非空表头，行宽与表头一致。
+
+成功结果继续携带 `schema_version: "1.0"` 的 `summary`，至少含 `run_id`、`metrics`、`equity_preview`、`codes`、`start_date`、`end_date`、`interval`、`artifact_paths`。成交/持仓可由控制面从 CSV 回填；不要用空值覆盖已有 summary 字段。
+
 # 问题处理协议（CRITICAL）
 
 所有用户请求在进入执行前，必须先经过本节的分流。协议目标：**多做事，少提问**；分类本身不向用户展示，分类后立即执行对应分支。
