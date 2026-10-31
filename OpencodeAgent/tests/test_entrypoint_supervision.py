@@ -49,10 +49,22 @@ def test_shell_scripts_parse(path: Path) -> None:
     assert result.returncode == 0, result.stderr
 
 
-def test_opencode_command_and_warmup_are_unchanged(entrypoint: str) -> None:
+def test_opencode_command_and_warmup_use_the_project_directory(entrypoint: str) -> None:
     assert "opencode serve --port 4096 --hostname 0.0.0.0 &" in entrypoint
-    assert "http://127.0.0.1:4096/config?directory=/home/opencode" in entrypoint
+    assert 'PROJECT_DIR="/workspace"' in entrypoint
+    assert "config?directory=${PROJECT_DIR}" in entrypoint
     assert "sleep 20" in entrypoint
+
+
+def test_dockerfile_pins_the_project_working_directory(dockerfile: str) -> None:
+    assert re.search(r"(?m)^WORKDIR /workspace$", dockerfile)
+
+
+def test_entrypoint_fails_fast_when_cwd_is_not_the_project(entrypoint: str) -> None:
+    assert 'if [ "$(pwd)" != "$PROJECT_DIR" ]; then' in entrypoint
+    assert "working directory is $(pwd), expected $PROJECT_DIR" in entrypoint
+    assert 'if [ ! -w "$PROJECT_DIR" ]; then' in entrypoint
+    assert "project directory is not writable: $PROJECT_DIR" in entrypoint
 
 
 def test_entrypoint_starts_the_dedicated_service_entry(entrypoint: str) -> None:
@@ -126,11 +138,17 @@ def test_readiness_script_covers_the_entry_in_offline_mode(readiness: str) -> No
     assert '"$ENTRY_HEALTH_URL"' in readiness
     assert "--network none" in readiness
     assert "entry /health 200" in readiness
+    assert 'PROJECT_DIR="/workspace"' in readiness
+    assert "config?directory=${PROJECT_DIR}" in readiness
+    assert "容器工作目录是" in readiness
 
 
 def test_readiness_script_gates_on_the_mcp_connection(readiness: str) -> None:
     assert 'MCP_MARKER="[entrypoint] VT MCP connected"' in readiness
-    assert 'MCP_URL="http://127.0.0.1:4096/mcp?directory=/workspace"' in readiness
+    assert (
+        'MCP_URL="http://127.0.0.1:4096/mcp?directory=${PROJECT_DIR}"'
+        in readiness
+    )
     assert '"vibe-trading"[[:space:]]*' in readiness
     assert "VT MCP 未连接" in readiness
     assert '-e "VT_STARTUP_BUDGET_S=$STARTUP_BUDGET_S"' in readiness
@@ -139,7 +157,7 @@ def test_readiness_script_gates_on_the_mcp_connection(readiness: str) -> None:
 def test_entrypoint_fails_without_a_connected_vt_mcp(entrypoint: str) -> None:
     assert "vt_mcp_connected()" in entrypoint
     assert (
-        'OPENCODE_MCP_URL="http://127.0.0.1:4096/mcp?directory=/workspace"'
+        'OPENCODE_MCP_URL="http://127.0.0.1:4096/mcp?directory=${PROJECT_DIR}"'
         in entrypoint
     )
     assert 'VT_STARTUP_BUDGET_S="${VT_STARTUP_BUDGET_S:-300}"' in entrypoint

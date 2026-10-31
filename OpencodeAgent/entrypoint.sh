@@ -414,7 +414,20 @@ case "$VT_STARTUP_BUDGET_S" in
         VT_STARTUP_BUDGET_S=300
         ;;
 esac
-OPENCODE_MCP_URL="http://127.0.0.1:4096/mcp?directory=/workspace"
+# opencode resolves its project from cwd. The image pins WORKDIR=/workspace;
+# fail fast if a deployment overrides it, because OMO would write /.omo and the
+# project AGENTS.md/commands would silently disappear.
+PROJECT_DIR="/workspace"
+if [ "$(pwd)" != "$PROJECT_DIR" ]; then
+    echo "[entrypoint] ERROR: working directory is $(pwd), expected $PROJECT_DIR" >&2
+    exit 1
+fi
+if [ ! -w "$PROJECT_DIR" ]; then
+    echo "[entrypoint] ERROR: project directory is not writable: $PROJECT_DIR" >&2
+    exit 1
+fi
+echo "[entrypoint] project dir=$PROJECT_DIR"
+OPENCODE_MCP_URL="http://127.0.0.1:4096/mcp?directory=${PROJECT_DIR}"
 
 opencode serve --port 4096 --hostname 0.0.0.0 &
 SERVER_PID=$!
@@ -429,7 +442,7 @@ SERVER_PID=$!
 # local init finishes; let it settle before the warmup probe.
 sleep 20
 if curl -sf --max-time "$VT_STARTUP_BUDGET_S" -u opencode:"${OPENCODE_SERVER_PASSWORD:-}" \
-    "http://127.0.0.1:4096/config?directory=/home/opencode" >/dev/null 2>&1; then
+    "http://127.0.0.1:4096/config?directory=${PROJECT_DIR}" >/dev/null 2>&1; then
     echo "[entrypoint] warmup complete — first client request will be fast"
 else
     echo "[entrypoint] WARNING: warmup request did not complete within ${VT_STARTUP_BUDGET_S}s"
