@@ -12,9 +12,9 @@
 
 ## ClickHouse 语义层（交互式 SQL 首选通道）
 
-**语义层目录（任何 ClickHouse 取数前必读）**：`.opencode/skills/semantic-layer/INDEX.md`
+**语义层目录（任何 ClickHouse 取数前必读）**：`/home/opencode/.config/opencode/skills/semantic-layer/INDEX.md`
 - 57 张表逐表说明（粒度 / 主键 / 日期列类型 / 单位 / 权威性 / 坑 / 示例 / 全列清单）。
-- `.opencode/skills/semantic-layer/RULES.md` 是**判定规则**：ETF↔指数、估值降级阶梯、空结果四分法、范围过大、过期标注、列名与单位。
+- `/home/opencode/.config/opencode/skills/semantic-layer/RULES.md` 是**判定规则**：ETF↔指数、估值降级阶梯、空结果四分法、范围过大、过期标注、列名与单位。
 - 文档由 `tools/gen_semantic_layer.py` 从库结构生成；**不要手改**。目录只描述库，实时列名仍以 `ch_describe_table` 为准。
 
 VT 内置三个 ClickHouse 语义层工具，是 LLM 交互式取数的**首选通道**：
@@ -31,7 +31,7 @@ VT 内置三个 ClickHouse 语义层工具，是 LLM 交互式取数的**首选�
 1. A 股历史数据：ClickHouse 提供 T-1 全量；VT `get_market_data` 的 A 股 fallback 链**头部即 `clickhouse`**。行情按标的类型分表：个股 `stk_factor_pro`、ETF/LOF `fund_daily`、指数 `idx_factor_pro`（详见语义层目录）。
 2. 当日（T 日）OHLCV：ClickHouse 不覆盖，由网络源实时补数（`tencent`/`akshare`/`tushare`）。数据联邦模式 = ClickHouse T-1 历史 + 网络源当日。
 3. **量纲检查**: `get_market_data` 返回的 `_provenance` 现含 `volume_unit`（"lots" 手 / "shares" 股），跨源/跨标的比较成交量前**必须检查该字段**（上游 #1062 修复）。
-4. 估值速查：**仅个股**可查 `stk_factor_pro` 的 pe_ttm / pb / total_mv；ETF 与指数**没有**直接估值列，必须走 `.opencode/skills/semantic-layer/RULES.md` R3 的三级降级（官方指数估值 → 成分股加权并披露覆盖率 → 明确拒答）。
+4. 估值速查：**仅个股**可查 `stk_factor_pro` 的 pe_ttm / pb / total_mv；ETF 与指数**没有**直接估值列，必须走 `/home/opencode/.config/opencode/skills/semantic-layer/RULES.md` R3 的三级降级（官方指数估值 → 成分股加权并披露覆盖率 → 明确拒答）。
 5. 本地找不到标的时，先用 `search_symbol` 判断是否为 ETF、港股、美股或其他市场代码，再选数据源，不要直接反问用户代码；ETF 需要指数数据时按 `RULES.md` R2 解析跟踪指数（库内无 `fund_basic` 映射表，已核验映射见 R2.1）。
 
 ## 跨市场与实时数据
@@ -43,10 +43,12 @@ VT 内置三个 ClickHouse 语义层工具，是 LLM 交互式取数的**首选�
 ## 资金流与补充维度
 VT 的 `get_fund_flow`、`get_margin_trading`、`get_northbound_flow`、`get_sector_info`、`get_dragon_tiger`、`get_block_trades`、`get_shareholder_count`、`get_lockup_expiry` 等 Flow/结构工具可作为 ClickHouse 数据的补充维度。
 
-## 外部检索（VT 内置工具；nano-search-mcp 已于 2026-09-26 回退下线）
-- 通用网页检索：`web_search`（VT 内置，ddgs 聚合 DuckDuckGo/Google/Bing/Brave 等多引擎，含 cn.bing 国内可达回退）；任意 URL 正文提取：`read_url`。
-- A 股结构化资料：券商研报与一致预期 → `get_research_reports`；个股/全局财经新闻 → `get_stock_news`。
-- **已知缺口**（待未来替换搜索引擎补齐）：年报/半年报/季报全文、公告检索、监管处罚、机构调研/业绩说明会、gov.cn 行业政策——原 nano-search-mcp 专用通道已下线；需要时只能用 `web_search` 做公网检索，且必须在结论中注明覆盖有限。
+## 外部证据取数（skills，按需加载）
+- 定期报告全文 → `ashare-filings`；临时公告 → `ashare-events`；监管处罚 → `ashare-risk`。
+- 机构调研/业绩说明会 → `ashare-ir`；券商行业研报 → `ashare-research`；gov.cn 行业政策 → `ashare-policy`。
+- 通用检索：`web_search`（ddgs + cn.bing 回退）；URL 正文：`read_url`；研报与一致预期：`get_research_reports`；新闻：`get_stock_news`。
+- 全文类资料必须用 `--grep` 或 `--max-chars` 分片读取，禁止整篇读入上下文；`available:false` 表示数据源不可达，不得当作"没有披露"。
+- 一次提问只走对应的一类 skill：先窄后宽（先按类型/关键词过滤，不拉全量）；同一问题最多 3 次脚本调用，第 2 次必须收窄而非重跑；不要串联多个 `ashare-*` skill 做"交叉验证"。
 
 # 数据同步
 ClickHouse 数据由外部同步进程维护，本容器内不包含同步逻辑。如需手动触发同步，请在同步进程所在环境执行。数据联邦模式：ClickHouse 提供 T-1 历史全量数据 + 网络源提供当日 OHLCV。
@@ -308,10 +310,9 @@ Vibe-Trading 内置记忆生命周期管理系统（F1-F4），支持跨会话�
 # 复盘与持续改进
 
 ## 交易复盘（每次交易后）
-1. 实际成交价 vs 信号触发价，计算滑点。
-2. 持仓期间最大浮盈/浮亏 vs 最终盈亏，评估出场时机。
-3. 是否遵守了交易前检查清单？未遵守的原因是什么？
-4. 将复盘结果保存为 VT 记忆（`memory_save`），标记为 `reflection` 类型。
+1. 实际成交价 vs 信号触发价（滑点）、持仓期间最大浮盈/浮亏 vs 最终盈亏（出场时机）。
+2. 是否遵守了交易前检查清单？未遵守的原因是什么？
+3. 将复盘结果保存为 VT 记忆（`memory_save`），标记为 `reflection` 类型。
 
 ## 周期性自检（每周/每月）
 1. 统计本周/本月所有策略信号的胜率、盈亏比、夏普比率。

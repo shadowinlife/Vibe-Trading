@@ -66,14 +66,14 @@ Every generated HTML must follow these constraints:
 2. Prepare the data structure matching the renderer function's parameters.
 3. Call the appropriate renderer from `scripts/reports/html_renderer.py`:
    ```python
-   import sys; sys.path.insert(0, "/workspace/.opencode/skills/html-report")
+   import sys; sys.path.insert(0, "/home/opencode/.config/opencode/skills/html-report")
    from scripts.reports.html_renderer import render_vibe_backtest_html
    html = render_vibe_backtest_html(ts_code="588000.SH", name="科创50ETF", ...)
    ```
 4. Save the HTML to `analysis/<stock_code>/backtests/<date>_<strategy>.html` (alongside the .md file).
 5. Deploy to local nginx:
    ```bash
-   python /workspace/.opencode/skills/html-report/scripts/reports/deploy_report.py <html_path> --stock <stock_code>
+   python /home/opencode/.config/opencode/skills/html-report/scripts/reports/deploy_report.py <html_path> --stock <stock_code>
    ```
 6. Record the deployed URL in `analysis/_index.json` under `html_url`.
 7. If DingTalk notification is configured, the notifier will include the report URL as an ActionCard button.

@@ -68,6 +68,15 @@ def test_intake_skill_is_documented():
     assert "intake" in _read(README_PATH)
 
 
+def test_readme_agents_md_line_count_matches_the_file():
+    match = re.search(r"Full AGENTS\.md\*\* \((\d+) lines", _read(README_PATH))
+    assert match, "README is missing the 'Full AGENTS.md (N lines' claim"
+    actual = len((ROOT / "AGENTS.md").read_text(encoding="utf-8").splitlines())
+    assert int(match.group(1)) == actual, (
+        f"README claims {match.group(1)} AGENTS.md lines; file has {actual}"
+    )
+
+
 def test_four_slash_commands_exist_and_are_documented():
     readme = _read(README_PATH)
     assert COMMANDS_DIR.is_dir(), COMMANDS_DIR

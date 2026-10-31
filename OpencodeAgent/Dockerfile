@@ -116,7 +116,10 @@ COPY config/command/ /workspace/.opencode/command/
 
 COPY AGENTS.md /workspace/AGENTS.md
 
-COPY skills/ /workspace/.opencode/skills/
+# Global, not /workspace/.opencode: a mounted workspace must not be able to
+# delete agent capability. Do not also ship a project-scoped copy — project
+# scope outranks global scope and would shadow this one.
+COPY --chown=opencode:opencode skills/ /home/opencode/.config/opencode/skills/
 
 COPY workspace/scripts/ /workspace/scripts/
 COPY workspace/cron_jobs/ /workspace/cron_jobs/

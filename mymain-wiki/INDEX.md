@@ -4,7 +4,7 @@ description: wiki 内每份文档的一行式索引（路径 + 一句话 + 状�
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-10-28
+updated: 2026-10-31
 tags: [index]
 ---
 
@@ -38,6 +38,7 @@ tags: [index]
 - [features/f10-strategy-run-entry.md](features/f10-strategy-run-entry.md) — 策略运行服务入口（`/strategy-runs`、run_key、per-box、sweeper） — active
 - [features/f11-state-export-import.md](features/f11-state-export-import.md) — 状态导出/导入（`vt-state-v1`、digest、原子安装、generation marker） — active
 - [features/f12-rm-schedule-tools.md](features/f12-rm-schedule-tools.md) — 六个 RM 调度 MCP 工具（create/list/pause/resume/delete/retarget） — active
+- [features/f13-ashare-evidence-skills.md](features/f13-ashare-evidence-skills.md) — A 股外部证据取数 skills：6 skill + 9 个零 key 脚本（年报全文/公告/处罚/调研/研报/gov.cn 政策），装到全局配置目录免疫工作区挂载 — active
 
 ## harness-evolution/ — harness 演进研究档案（2026-08-21~30）
 

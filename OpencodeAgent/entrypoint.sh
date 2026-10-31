@@ -362,6 +362,14 @@ else
     echo "[entrypoint] WARNING: OMO plugin cache missing: ${OMO_CACHE} — opencode will download it on first request (needs npm registry access; see Dockerfile pre-bake)"
 fi
 
+# ── Report the global skills root ────────────────────────────────────────────
+# Skills are baked into the global config dir, not /workspace, so mounting the
+# workspace cannot remove them. Diagnostic only: a mount that hides AGENTS.md or
+# scripts/ is a deployment error, and this entrypoint does not repair it.
+SKILLS_ROOT="${HOME:-/home/opencode}/.config/opencode/skills"
+SKILLS_LOADED=$(find "$SKILLS_ROOT" -maxdepth 3 -name SKILL.md 2>/dev/null | wc -l | tr -d ' ')
+echo "[entrypoint] skills root=$SKILLS_ROOT loaded=$SKILLS_LOADED"
+
 # ── Verify VT MCP server is importable ────────────────────────────────────────
 # FastMCP >=2 no longer exposes the private ``_tool_manager`` attribute, so try
 # the public ``list_tools()`` API first and fall back to import-only reporting.

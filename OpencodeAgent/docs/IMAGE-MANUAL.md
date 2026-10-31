@@ -67,10 +67,10 @@
 │  └──────────┘  └──────────┘  └─────────┼────────┘  │
 │                                         │            │
 │  ┌──────────────────┐   ┌───────────────▼──────────┐ │
-│  │  Skills (3)       │   │  /workspace/.vt-memory/  │ │
-│  │  - data-warehouse │   │  - reflections/          │ │
-│  │  - html-report    │   │  - persistent store      │ │
-│  │  - periodic-exec  │   │  - quality scoring       │ │
+│  │  Skills (13)      │   │  /workspace/.vt-memory/  │ │
+│  │  ~/.config/opencode│  │  - reflections/          │ │
+│  │   /skills (global)│   │  - persistent store      │ │
+│  │  （挂载不受影响）  │   │  - quality scoring       │ │
 │  └──────────────────┘   └──────────────────────────┘ │
 └─────────────────────────────────────────────────────┘
          │                    │
@@ -340,6 +340,8 @@ services:
         max-size: "50m"
         max-file: "3"
 ```
+
+> **挂载约定（v3.16+）**：`/workspace` 允许整体挂载，也允许只挂子目录。skills 烘焙在全局配置目录 `/home/opencode/.config/opencode/skills/`，**不在 `/workspace` 内**，因此任何挂载都不会影响 skill 能力。`AGENTS.md`、`scripts/`、`cron_jobs/` 属于工作区内容：整体挂载 `/workspace` 时挂载方必须自带，缺失属部署配置错误——容器只打印 `skills root=... loaded=N` 诊断行，不回填、不阻断。
 
 ```bash
 # 启动

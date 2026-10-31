@@ -12,8 +12,8 @@ Docker build project for `opencode-serve` — OpenCode Web Server with Vibe-Trad
 This project packages the OpenCode Web Server research environment into a reproducible Docker image. It extends the base `opencode-serve` image with:
 
 - **OpenCode CLI** (pinned in `Dockerfile.base`, currently 1.19.3) + **OMO (oh-my-openagent) plugin** (pinned via `OMO_VERSION`, currently 5.1.35, pre-baked into the plugin cache)
-- **6 OpenCode skills**: data-warehouse (ClickHouse heavy queries), escape-top-microstructure (top-detection signals), html-report (ECharts), intake (clarification routing, slot defaults and parameter compile table, loaded on demand), periodic-execution (cron), research-scenarios (scenario playbooks A-F, loaded on demand)
-- **Full AGENTS.md** (329 lines, always loaded): an 8-artifact product index, behavior instructions for 6 scenarios (A through F), a 4-class request router and anti-hallucination discipline; the clarification protocol now lives in the `intake` skill, not in this file
+- **13 OpenCode skills**: data-warehouse (ClickHouse heavy queries), escape-top-microstructure (top-detection signals), html-report (ECharts), intake (clarification routing, slot defaults and parameter compile table, loaded on demand), periodic-execution (cron), research-scenarios (scenario playbooks A-F, loaded on demand), plus six external-evidence skills: ashare-filings (定期报告全文), ashare-events (临时公告), ashare-risk (监管处罚), ashare-ir (机构调研), ashare-research (券商研报), ashare-policy (gov.cn 行业政策)
+- **Full AGENTS.md** (336 lines, always loaded): an 8-artifact product index, behavior instructions for 6 scenarios (A through F), a 4-class request router and anti-hallucination discipline; the clarification protocol now lives in the `intake` skill, not in this file
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
 - **Cron job infrastructure** with CLI management and DingTalk/email notification
 
@@ -71,13 +71,15 @@ OpencodeAgent/
 │   ├── package.json            # OpenCode plugin dependencies
 │   └── vibe-trading-tools.json # Tool governance manifest (disabled VT tools → permission denies)
 │
-├── skills/                     # OpenCode skills (6)
+├── skills/                     # OpenCode skills (13) — installed to the global config dir, not /workspace
 │   ├── data-warehouse/         # ClickHouse query interface (query_warehouse, list_tables)
 │   ├── html-report/            # Interactive HTML reports with ECharts (7+1 templates)
 │   ├── intake/                 # Clarification routing, slot defaults and parameter compile table
 │   ├── periodic-execution/     # Cron job management (manage.py, notifier)
 │   ├── escape-top-microstructure/ # A-share top-detection signals
-│   └── research-scenarios/     # Scenario playbooks A–F (on-demand, offloaded from AGENTS.md)
+│   ├── research-scenarios/     # Scenario playbooks A–F (on-demand, offloaded from AGENTS.md)
+│   ├── _lib/nanofetch/         # Shared retry / slicing / result envelope for ashare-* (not a skill)
+│   └── ashare-{filings,events,risk,ir,research,policy}/  # Script-backed external-evidence skills
 │
 ├── tests/                      # Config assembly tests (render / governance / budget guards)
 │

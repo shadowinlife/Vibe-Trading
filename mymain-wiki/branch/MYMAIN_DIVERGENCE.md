@@ -1,6 +1,6 @@
 ---
 title: mymain 分支差异说明（DIVERGENCE）
-description: mymain 与上游 main 的权威差异台账——独有功能 F1-F9、F10-F12、上游贡献队列、验证门禁、维护约定、已知债务。改代码/发 PR/rebase 前必读。触发词：分支差异、上游、回流、rebase、门禁、D1-D4、engine-bridge。
+description: mymain 与上游 main 的权威差异台账——独有功能 F1-F9、F10-F13、上游贡献队列、验证门禁、维护约定、已知债务。改代码/发 PR/rebase 前必读。触发词：分支差异、上游、回流、rebase、门禁、D1-D4、engine-bridge。
 type: delta
 status: active
 created: 2026-07-27
@@ -33,6 +33,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **F7** | OpencodeAgent harness 层 | opencode + omo + 本仓库 MCP 的独立部署 harness（Docker 镜像 `opencode-serve`）：问题处理协议（明确/开放/待澄清/宏观四类分流，Least-to-Most 收敛漏斗 + Step-Back 拆分 + 单轮 ≤3 问轮次预算）、防幻觉与诚实拒答纪律（数字溯源三来源、弃权一等公民、五要素拒答模板）、escape-top 微观结构信号（CH 数据层 + 7 门验证框架）、三层选股、VT 联邦行情 scanner、cron + 钉钉通知基础设施；**2026-09-27 起 opencode 主循环直接集成 VT MCP 全工具面**（12 领域子代理层与 nano-search-mcp 经验证不够有效已回退，通用检索由 VT `web_search` 承接、A 股结构化检索为已知缺口，见 §5 与 §4.6） | `OpencodeAgent/`（整目录，源自独立仓库 vibetrading-opencode-instruct，2026-08-17 引入） | 容器 env（`CLICKHOUSE_*` / `CLICKHOUSE_LLM_*` / `DASHSCOPE_API_KEY` 等，见 `OpencodeAgent/.env.example`） | 个人部署独有，不回流；消费 F5 语义层（ch_* 工具）与 F1–F4 记忆能力 |
 | **F8** | ~~opencode 引擎桥~~ **已移出本分支（2026-09-27）** | SessionService 接缝置换 + 多租户基础设施 = 前端兼容路线，整体移至 `mymain-engine-bridge` 分支独立演进（两线零兼容/零相互索引）；mymain 树内不再含 `agent/src/opencode_bridge/`、tenant 容器栈与相关 env。原 F8 附带产出 `scheduled_research` MCP wrapper 作为纯 MCP 面增量**保留本分支**（见队列 ⑦） | 历史代码见 `backup/mymain-pre-rebase-20260926` 与引擎桥线；本 wiki f8 卡为冻结墓碑。**2026-10-10 线废弃封存**：worktree 已移除，`mymain-engine-bridge`/`backup/engine-bridge-pre-rebase-20260918`/`wip/opencode-llm-proxy-20261010`（含渲染事故修复 WIP 封存提交 `1b9a1140`）为只读档案 | — | 分支特有，不回流；上游候选 ⑦①③ 随引擎桥线**一并废弃**（② wrapper 已留存本分支） |
 | **F9** | 策略库与调度 | 版本化策略快照 + code/workflow 双门就绪 + 复用定时研究的排程；Web 策略库与排程页 | `agent/src/strategy_library/`、`agent/src/api/strategy_library_routes.py` / `strategy_schedule_routes.py`、`frontend/src/pages/StrategyLibrary.tsx` / `StrategySchedules.tsx` | 见功能卡 | 本地 `mymain` 已合入（81df3a992）；P1 入口/状态/工具 2026-10-28 合入（`585845ad` / `d90d5308` / `f036c6b9`，见 F10-F12）；未回上游 HKUDS |
+| **F13** | A 股外部证据取数 skills（OpencodeAgent 侧） | 六类公开信息取数：定期报告全文 / 临时公告 / 监管处罚 / 机构调研 / 券商研报 / gov.cn 政策。6 个 skill + 9 个零 key 脚本（纯标准库 + bs4），装到 `/home/opencode/.config/opencode/skills/`；全文类用 `--grep` / `--max-chars` 分片，失败契约沿用 `workspace/scripts/AGENTS.md` | `OpencodeAgent/skills/ashare-*/`、`OpencodeAgent/skills/_lib/nanofetch/` | 无 env 开关；`ashare-policy` 不可达时返回 `available:false` | 个人部署独有，不回流；关闭 §4.6 R2 |
 
 > F9 于 2026-10-25 合入本地 `mymain`（81df3a992），新增 3 个 MCP 工具（promote/evaluate/schedule_strategy）与 4 个 agent tools（含 list_strategy_library）；本表计数已于 2026-10-28 发布轮刷新为 MCP 94/99、agent tools 121。最新运行计数见 [timeline](../history/timeline.md) 的 2026-10-22/10-25/10-27 条。
 
@@ -199,9 +200,19 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 | # | 任务 | 背景与目标 |
 |---|---|---|
 | R1 ✅ | **ClickHouse 语义层深度研究**（2026-08-12 完成。正式调研结论（英文原文，含全部出处链接/架构图/数据流/场景决策示例）：[`CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md`](../clickhouse/CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md)；中文决策报告：[`CLICKHOUSE_SEMANTIC_LAYER_REPORT.md`](../clickhouse/CLICKHOUSE_SEMANTIC_LAYER_REPORT.md)） | 决策结论：**分层混合 + 语义下沉数据库**——不引入官方 mcp-clickhouse 作主接口（UInt64 损坏 #111 / readonly 可击穿 #131 / 无结果上限）；保留强化 F5 领域工具层为主通道；新增 L0 地基（DDL 入仓库 + COMMENT COLUMN 结构化注释 + llm_role 只读用户）与 L2/L3 分层探索 + 受约束 SQL 逃生舱；暂不引入 dbt SL/Cube（单消费者不满足价值判据）。落地分四阶段（Phase 0 地基 → Phase 1 主通道强化，协同 #1065/#1067 → Phase 2 灵活性通道 → Phase 3 可选演进）。原始调研证据——2026-08-11 调研结论：mymain 的 CH 语义层是「隐性的、代码携带的」——业务→表列映射/单位换算固化在 Python 工具链（connector 模板 + fallbacks 换算 + 工具描述 + skill 文档），数据库层零语义（仓库无 DDL、列无 COMMENT，CH 实例当前不可达未直查 `system.columns`）。已证实的缺口：① `get_market_data` 的 `SELECT *` 泄漏路径（pe_ttm/pb/total_mv 等 ~199 列）无语义标注，契约漂移；② 语义与数据物理分离，任何绕过工具链的直连（含 ClickHouse MCP）立即丢失全部语义。研究方向：a) 语义下沉数据库——CH 列 COMMENT + schema DDL 入仓库；b) 语义视图层——views + COMMENT（Altinity 模式：视图变工具）；c) SELECT * 泄漏路径显式工具化（如 `get_valuation`：pe_ttm/pb/total_mv 固定模板 + tushare daily_basic 兜底）；d) 指标字典——pe_ttm TTM 口径、amount/volume 单位、close vs close_hfq 选择规则；e) 若引入 ClickHouse MCP 供人工探索，语义层必须先库化或包领域工具层（官方 hdx-evals 证明领域工具 > 裸 SQL：准确率 +18%）。相关证据链见 #1062 审计评论与 opencode 会话记录 |
-| R2 | **A 股结构化检索替换引擎**（2026-09-27 立项） | nano-search-mcp 回退后（§5 2026-09-27 条），年报/半年报/季报全文、公告检索、监管处罚、机构调研/业绩说明会、gov.cn 行业政策失去专用通道；`web_search`（ddgs 多引擎）+ `get_research_reports` / `get_stock_news` 只覆盖通用检索与研报/新闻。候选方向：akshare 结构化接口（公告/研报已有部分封装）、tushare 扩展权限、自建 RSSHub 实例、或第三方金融检索 API。判据：可自部署、结构化返回（非仅网页快照）、覆盖上述五类、维护成本低于 nano-search 实测水平 |
+| R2 ✅ | **A 股结构化检索替换引擎**（2026-09-27 立项，**2026-10-31 完成**：F13 以 6 个零 key skill 承接全部五类，gov.cn 政策用站内检索打通，不引入 DashScope/第三方 key；见 [F13 卡片](../features/f13-ashare-evidence-skills.md)） | nano-search-mcp 回退后（§5 2026-09-27 条），年报/半年报/季报全文、公告检索、监管处罚、机构调研/业绩说明会、gov.cn 行业政策失去专用通道；`web_search`（ddgs 多引擎）+ `get_research_reports` / `get_stock_news` 只覆盖通用检索与研报/新闻。候选方向：akshare 结构化接口（公告/研报已有部分封装）、tushare 扩展权限、自建 RSSHub 实例、或第三方金融检索 API。判据：可自部署、结构化返回（非仅网页快照）、覆盖上述五类、维护成本低于 nano-search 实测水平 |
 
 ## 5. 迭代笔记
+
+### 2026-10-31 F13：A 股外部证据取数改为 script-backed skills（镜像 `v3.16.0-nano-skills-20261031`）
+
+**动机**：`OpencodeAgent/AGENTS.md` 原「外部检索」节写着「nano-search-mcp 已于 2026-09-26 回退下线」并列出五项「已知缺口」。核对后三处都需纠正：① 该 MCP 从未接线，其 12 个工具里 9 个零凭证、仅 3 个依赖 DashScope；② `get_cn_announcements` / `search_broker_reports` 本就在 VT 树内，只是 fail-closed 于未配置的 `GILDATA_TOKEN`；③ 容器本就挂着 OMO 自带的 4 个 MCP（`websearch` / `context7` / `grep_app` / `lsp`），搜索路径不止一条。**文档把「未配置」写成「不存在」，等于在模型侧关闭能力。**
+
+**落地**：6 skill / 9 脚本 / 共享库 `nanofetch`；常驻工具面 12 schema（约 3.5k tokens/请求）→ 6 条 description（约 300 tokens）。skills 装全局配置目录而非 `/workspace/.opencode`：OMO 的 `getOpenCodeSkillDirs()` 扫描 `<config>/skills`，且作用域优先级 `project(4) > global(2)`——保留项目副本会反向遮蔽并在挂载时一并消失。**因此不做兜底**：挂载遮掉 `AGENTS.md`/`scripts/` 属部署错误，entrypoint 只打 `[entrypoint] skills root=... loaded=N`。
+
+**实测修正**：① 四份并行产出的脚本给了四套字段命名，已归一为 `excerpts`/`matched`/`chars`/`text`/`truncated`；② `--grep` 相邻命中重复返回同一段（单窗口曾 5123 字符），改为按 `context*4` 合并封顶（实测最大 958）；③ 模型为确认 `ann_type` 规则去 `sed -n` 读脚本源码，补关键词表后消失；④ 单个提问曾 13 次 bash / 3 个 skill（含与问题无关的 `company_report`），在 AGENTS.md 加唯一一条检索预算（先窄后宽、≤3 次、不串联 skill）并给 3 个重叠 skill 加「不适用」边界后降到 4 次 / 1 个。
+
+**验证**：`pytest OpencodeAgent/tests/` **209 passed / 1 skipped**；镜像内三次真实会话（强制路径 + 两次自然提问）均 skill → script → 引用原文（储能营收 57,290,460 千元、毛利率 26.84%）；空 volume 遮蔽 `/workspace/.opencode` 后 `/skill` 仍返回 16 个技能。附带发现：`/workspace` **整体**挂载时容器因 `ENTRYPOINT` 落在 `/workspace` 内而无法启动（exit 127），故真实威胁只有子路径遮蔽——现已与能力解耦。
 
 ### 2026-07-27 五-agent 并行评审（Goal/QA/CodeQuality/Security/ContextMining）
 

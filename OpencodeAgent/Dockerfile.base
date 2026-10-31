@@ -43,6 +43,7 @@ RUN pip install --no-cache-dir \
     pyharmonics \
     loguru \
     markdownify \
+    beautifulsoup4 \
     pycryptodome \
     binance-connector \
     alpaca-trade-api \

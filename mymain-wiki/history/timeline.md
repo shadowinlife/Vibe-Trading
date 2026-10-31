@@ -4,7 +4,7 @@ description: mymain 分支从 2026-07 记忆工作起步到当前的完整时间
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-10-30
+updated: 2026-10-31
 tags: [history, timeline, changelog, mymain]
 related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 ---
@@ -16,6 +16,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md, ../branch/MYMAIN_README.md]
 
 | 日期 | 事件 | 证据 |
 |---|---|---|
+| 2026-10-31 | **F13 A 股外部证据取数 skills（镜像 v3.16.0-nano-skills-20261031）**：把「已知缺口」六类资料（定期报告全文 / 临时公告 / 监管处罚 / 机构调研 / 券商研报 / gov.cn 政策）改为 6 skill + 9 个零 key 脚本，常驻工具面 12 个 schema（约 3.5k tokens）→ 6 条 description（约 300 tokens）。skills 装到全局配置目录（OMO 作用域 project>global，保留项目副本会反向遮蔽），因此 `/workspace` 挂载不影响能力；不做 entrypoint 兜底，只打 `loaded=N` 诊断行。失败契约沿用 `workspace/scripts/AGENTS.md`（不可达 exit 0 + `available:false`，仅参数错 exit 2）。实测处置三类问题：四份脚本四种契约→归一；命中窗口重叠（单窗口曾 5123 字符）→按 `context*4` 合并封顶；过度探索（13 次 bash/3 个 skill）→ 加检索预算后降到 4 次/1 个。验证：OpencodeAgent **209 passed / 1 skipped**；镜像内三次真实会话（强制路径 + 两次自然提问）全部 skill→script→引用原文；空 volume 遮蔽 `/workspace/.opencode` 后 `/skill` 仍返回 16 个技能。附带发现：`/workspace` 整体挂载时容器因 `ENTRYPOINT` 在 `/workspace` 内而无法启动（exit 127）。关闭 [DIVERGENCE §4.6](../branch/MYMAIN_DIVERGENCE.md) R2 | [../features/f13-ashare-evidence-skills.md](../features/f13-ashare-evidence-skills.md)、[../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-10-31 条 |
 | 2026-10-30 | **2026-10-29 carve 无损核验 + PR #8 关闭**：mymain 已为 carve 形态（`3cbb167e` + 10 线性 commit、0 merge，`5a6ab769`）；对 carve 前 `b83e2bb86` 仅 21 文件差异、0 删除（18 折叠：12 blob 与源分支一致 + 6 wiki 重写；3 后续提交）；对 PR #6/#7/mymain-image 三源 lost=0；PR #8 的 5 个“缺失”全属上游 `bff6e762`。PR #8 以 superseded 关闭，下一轮对齐目标为 `origin/main` 最新 tip | [../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-10-29 carve 条 |
 | 2026-10-30 | **F5 CH 取数降级双 bug 修复**：① `health_check()` 匿名探测对密码保护实例得 403 → `is_available()=False`，A 股链跳过 `clickhouse` 落到 `tencent`；改为与 `query()` 共用 `_auth_params()`。② 生产 `fund_daily.trade_date` 已由 String(YYYYMMDD) 漂移为 Date，loader 硬编码 `%Y%m%d` 解析 ISO 串失败；改 `format="ISO8601"`（兼容 Date / YYYYMMDD / 混合列）。③ `_provenance` 在 `fallback_used` 时透出 `fallback_reason`。文档：`OpencodeAgent/AGENTS.md` 语义层路径改 `.opencode/skills/...`；RULES R7 增加日期列类型提示；`schema/clickhouse/README.md` 记录 `schema_drift_log` 类型变更盲区与 cron `--check` 门禁。验证：CH **166 passed / 11 skipped**、schema **53/1 + exit 0**、语义层 **6/0**。未完成：37 表 DDL / metadata / 语义层文档重导出（本机不可达生产 CH） | [../features/f5-clickhouse-data-source.md](../features/f5-clickhouse-data-source.md)、[../../schema/clickhouse/README.md](../../schema/clickhouse/README.md) |
 | 2026-10-29 | **F5 取数链路修复 + 语义层 v2 + CI 收敛**：loader 按资产类别路由（stock→`stk_factor_pro`、ETF→`fund_daily`、index→`idx_factor_pro`），provenance 记录实际表，修掉联邦分支自解析递归；新增 57 表契约 / 一表一档 / 生成器 / CI 门禁；CI 收敛为 Linux + Python 3.12；镜像 `v3.13.0-mymain` 推送（digest `sha256:439d8c99…`），离线启动门禁 `/config` 首次 200 = 26.6s。验证：loader / market_data **92 passed / 3 skipped**，语义层门禁 **6 passed / 0 violations**，schema **53 passed / 1 skipped + exit 0** | [../features/f5-clickhouse-data-source.md](../features/f5-clickhouse-data-source.md)、[../clickhouse/README.md](../clickhouse/README.md)、[../branch/MYMAIN_README.md](../branch/MYMAIN_README.md) |

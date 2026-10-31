@@ -381,3 +381,34 @@ class TestProductIndex:
         assert "91 个" in text
         assert "memory-lifecycle" in text
         assert "vibe-trading_read_run_artifact" not in _read(AGENTS_MD_PATH)
+
+
+# The six external-evidence skills replaced the retired nano-search-mcp server.
+# Both directions are pinned: the directories must exist, and AGENTS.md must
+# route to them — a stale "known gap" paragraph silently disables the tools.
+ASHARE_SKILLS = (
+    "ashare-filings",
+    "ashare-events",
+    "ashare-risk",
+    "ashare-ir",
+    "ashare-research",
+    "ashare-policy",
+)
+
+
+def test_ashare_skill_dirs_exist():
+    for name in ASHARE_SKILLS:
+        assert (SKILLS_DIR / name / "SKILL.md").is_file(), f"missing {name}/SKILL.md"
+        assert list((SKILLS_DIR / name / "scripts").glob("*.py")), f"{name} has no script"
+
+
+def test_agents_md_routes_to_every_ashare_skill():
+    text = _read(AGENTS_MD_PATH)
+    missing = [name for name in ASHARE_SKILLS if name not in text]
+    assert not missing, f"AGENTS.md never routes to: {missing}"
+
+
+def test_agents_md_no_longer_claims_the_gap():
+    text = _read(AGENTS_MD_PATH)
+    assert "nano-search-mcp" not in text
+    assert "已知缺口" not in text
