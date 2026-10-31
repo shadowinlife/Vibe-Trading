@@ -252,7 +252,7 @@ FALLBACK_ROUTING_LINE = (
 )
 
 # Report §12.2 P1-1: 6 of the 8 products map 1:1 onto a research-scenarios
-# playbook; 组合体检 (A + risk-analysis) and 报告 (html-report) are the two
+# playbook; 组合体检 (A + risk-analysis) and 报告 (report-generate) are the two
 # named exceptions. The mapping is asserted cell-by-cell so a reorder or a
 # silent re-routing cannot pass as cosmetic.
 PRODUCT_SCENARIOS = (
@@ -263,7 +263,7 @@ PRODUCT_SCENARIOS = (
     ("事件/宏观影响", "场景 F"),
     ("交易复盘", "场景 B2"),
     ("定时监控", "场景 D"),
-    ("报告", "html-report"),
+    ("报告", "report-generate"),
 )
 
 SCENARIO_TARGETS = ("场景 A", "场景 B", "场景 B2", "场景 D", "场景 E", "场景 F")

@@ -9,8 +9,8 @@
 - **主题切换**: 右上角按钮切换浅色/深色/跟随系统
 - **当前状态头**: 回测报告顶部显示当前信号、建议仓位、判断依据
 - **多策略 Tab**: Vibe-Trading 回测支持多策略对比展示
-- **远程部署**: SCP 部署到 nginx 静态服务器
-- **DingTalk 推送**: ActionCard 消息带"查看完整报告"按钮
+- **本地归档**: 复制到 `/home/opencode/.vibe-trading/reports/`
+- **手工导出**: 仅用于用户明确要求的独立 HTML 文件；产品回测报告由控制面渲染
 
 ## 适用范围
 
@@ -26,7 +26,6 @@
 - pandas >= 1.5
 - markupsafe >= 2.0
 - ECharts 5 (CDN, 需要网络访问)
-- 可选: nginx (远程部署), SSH (SCP 部署)
 
 ## 安装
 
@@ -112,32 +111,14 @@ html = render_seven_look_html(
 )
 ```
 
-### 4. 部署到远端 nginx
+### 4. 导出到本地归档
 
 ```bash
-# 部署到远端
 python scripts/reports/deploy_report.py report.html --stock 588000.SH
-
-# 本地部署（测试）
-python scripts/reports/deploy_report.py report.html --stock 588000.SH --local
-
-# 预览命令（不执行）
-python scripts/reports/deploy_report.py report.html --stock 588000.SH --dry-run
+# 默认写入 /home/opencode/.vibe-trading/reports/588000.SH/report.html
 ```
 
-### 5. DingTalk 推送
-
-```python
-from cron_jobs.notifier import send_dingtalk_actioncard
-
-send_dingtalk_actioncard(
-    webhook="https://oapi.dingtalk.com/robot/send?access_token=xxx",
-    title="588000.SH 回测报告",
-    markdown="## 科创50ETF 回测报告\n- 总收益: +41.2%\n- Sharpe: 0.60",
-    single_title="查看完整报告",
-    single_url="http://your-server.example.com/reports/588000.SH/report.html",
-)
-```
+本镜像不提供 nginx，也不提供报告 URL。需要分享时由调用方自行处理文件。
 
 ## 模板说明
 
@@ -151,16 +132,14 @@ send_dingtalk_actioncard(
 | 信号报告 | `render_signal_html()` | 信号摘要 + 价格图 |
 | Markdown 转换 | `render_from_markdown()` | 现有 .md 报告转 HTML |
 
-## nginx 配置
+## 归档位置
 
-参见 `docs/nginx-reports.conf` 和 `docs/nginx-reports-setup.md`。
+手工导出文件写入 `/home/opencode/.vibe-trading/reports/`；产品回测报告由控制面从 `run_dir` 渲染，不走本 skill。
 
 ## 安全说明
 
 - 所有路径参数经过严格正则校验，防止命令注入和路径穿越
 - Jinja2 模板启用 autoescape，防止 XSS
-- DingTalk API 错误会被检测并抛出异常
-- SSH/SCP 错误信息不暴露内部细节
 
 ## License
 

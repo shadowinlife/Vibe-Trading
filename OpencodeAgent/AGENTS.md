@@ -68,8 +68,15 @@ ClickHouse 数据由外部同步进程维护，本容器内不包含同步逻辑
 2. 定性分析必须给出明确结论、逻辑链和可靠来源；区分证据与预测。
 3. 报告结构需包含引言、数据分析方法、分析结果、结论与风险。
 4. 需求含糊时按下方「问题处理协议」路由；开放型 / 待澄清型先加载 intake skill，按类型执行（开放型默认值直接执行，待澄清型仅私有槽位一轮）。
-5. 正式报告保存到 `analysis/<stock_code>/`，并更新 `analysis/_index.json`。
-6. **分析完成后必须主动问询用户是否需要生成 HTML 交互报告**（详见下方 HTML 报告展示能力）。
+5. 分析类 Markdown 报告保存到 `analysis/<stock_code>/`，并更新 `analysis/_index.json`；回测产物写入 run_dir，不写 `analysis/`。
+6. 报告展示：回测报告由控制面 Run Detail 自动渲染；不要主动生成 HTML 报告。
+
+# 回测与报告运行契约（控制面，CRITICAL）
+
+1. 回测 `run_dir` 固定为 `/home/opencode/.vibe-trading/runs/<run_id>`。先在该目录写 `config.json` 与 `code/signal_engine.py`，再调用 `vibe-trading_backtest(run_dir=...)`；禁止用 bash 直接跑回测，禁止把 `run_dir` 放到 `/workspace`、`/tmp` 或 `analysis/`。
+2. 回测完成后，控制面从 tool result 的 `summary` 与 `run_dir` artifacts 自动渲染报告。不要为“可视化回测报告”手写 HTML/PDF，也不要再生成一份 Markdown 回测报告。
+3. 回答只返回 `run_id`、关键指标和简短结论；报告入口是控制面的 Run Detail。用户追问“可视化/报告”时，返回 `run_id` 并说明在 Run Detail 查看。
+4. `html-report` 仅用于用户明确要求的独立 HTML 导出（非产品需求），保存到 `/home/opencode/.vibe-trading/reports/`；禁止 `/workspace/reports`、`nginx:8088`、`scp`。
 
 # 问题处理协议（CRITICAL）
 
@@ -155,20 +162,11 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
    - 单周亏损 ≥ 10% → 红色预警，减仓至 50%
    - 单月亏损 ≥ 15% → 黑色预警，清仓并强制复盘
 
-# HTML 报告展示能力（html-report Skill）
+# 报告展示（控制面优先）
 
-已安装 `html-report` Skill，可将分析/回测结果渲染为带 ECharts 交互图表的 HTML 页面，通过本地 nginx 提供服务。**模板清单（7+1）、设计约束、部署命令与模板自我迭代规则见该 Skill 正文**（需要时加载 `html-report`）。
-
-## 主动展示规则（MANDATORY）
-**每次完成以下类型的分析后，必须主动问询用户是否需要生成 HTML 交互报告：**
-1. 量化回测完成（场景 B）→ 提供回测报告 HTML
-2. 基本面/投资分析完成（场景 A）→ 提供基本面分析或七看八问 HTML
-3. 缠论分析完成 → 提供缠论分析 HTML
-4. 信号扫描完成 → 提供信号报告 HTML
-5. 事件驱动/行业/宏观分析完成（场景 F）→ 提供 Markdown 转 HTML
-
-**问询话术示例**：
-> "分析已完成。是否需要生成交互式 HTML 报告？可通过浏览器查看 ECharts 图表、暗色主题切换。"
+- 回测报告：控制面 Run Detail 自动渲染，不生成 HTML/PDF。
+- 分析类 Markdown：保存到 `analysis/<stock_code>/`，按需更新 `_index.json`。
+- `html-report` 仅作为手工离线导出工具保留，不属于产品交付路径；不要主动询问用户是否生成 HTML。
 
 # 组合能力（多 Skill 工作流）
 
@@ -176,19 +174,19 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
 
 | 场景 | 组合的 Skill | 数据流向 |
 |------|-------------|---------|
-| 场景 A: 个股分析 | ch_* / data-warehouse → VT financial-statement / valuation-model / investor-lenses → html-report | ClickHouse → 分析 → 报告 → HTML |
-| 场景 B: 量化回测 | strategy-generate → vibe-trading_backtest → backtest-diagnose → html-report | 因子 → 回测 → 诊断 → HTML |
+| 场景 A: 个股分析 | ch_* / data-warehouse → VT financial-statement / valuation-model / investor-lenses → report-generate | ClickHouse → 分析 → Markdown |
+| 场景 B: 量化回测 | strategy-generate → vibe-trading_backtest → backtest-diagnose → 控制面 Run Detail | 因子 → 回测 → 诊断 → 报告 |
 | 场景 B2: Shadow Account | analyze_trade_journal → extract_shadow_strategy → run_shadow_backtest → render_shadow_report | 交割单 → 规则 → 回测 → 报告 |
 | 场景 C: 开放性问题 | intake skill（漏斗）→ 场景 E / A / B | 澄清 → 收敛 → 路由 |
 | 场景 D: 周期执行 | 任意分析 Skill + cron_jobs/manage.py + notifier | 分析 → 定时 → 通知 |
-| 场景 E: 选股策略 | ch_* + fundamental-filter → multi-factor / factor-research → html-report | 筛选 → 验证 → 报告 |
-| 场景 F: 宏观/事件驱动 | Step-Back 协议 → geopolitical-risk / macro-analysis / commodity-analysis → quantlib_call 事件研究 → html-report | 传导链 → 代理问题 → 量化 → 报告 |
+| 场景 E: 选股策略 | ch_* + fundamental-filter → multi-factor / factor-research → report-generate | 筛选 → 验证 → Markdown |
+| 场景 F: 宏观/事件驱动 | Step-Back 协议 → geopolitical-risk / macro-analysis / commodity-analysis → quantlib_call 事件研究 → report-generate | 传导链 → 代理问题 → 量化 → Markdown |
 
 **编排原则**:
 1. AGENTS.md 场景决定"用什么 Skill、什么顺序"。
 2. **交互式取数优先 `ch_*` 语义层**，重查询用 `data-warehouse`，本地不足时用 VT 网络源补数。
 3. 每个场景完成后必须引导用户进入下一个场景。
-4. 所有分析结果必须持久化到 `analysis/` 并更新 `_index.json`。
+4. 分析结果持久化到 `analysis/` 并更新 `_index.json`；回测产物写入 run_dir。
 
 # 场景路由（CRITICAL）
 
@@ -204,12 +202,12 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
 |---|---|---|---|---|---|
 | **个股体检** | 场景 A | "帮我看看 600519" | 标的、期限、风险 | 基本面+估值+资金+技术+结论 | 不预测具体价格 |
 | **选股清单** | 场景 E | "最近买什么" | 市场、风格、风险、数量 | 10–20 只候选 + 理由 + 风险 | 不构成投资建议 |
-| **策略回测** | 场景 B | "帮我回测一个策略" | 市场、因子/信号、区间、成本 | 净值、Sharpe、回撤、归因、run card | 不做实盘 |
+| **策略回测** | 场景 B | "帮我回测一个策略" | 市场、因子/信号、区间、成本 | run_id、净值、Sharpe、回撤、归因、run card | 不做实盘 |
 | **组合体检** | 组合（场景 A + risk-analysis） | "我的持仓怎么样" | 持仓、成本、风险 | 暴露、集中度、回撤、再平衡建议 | 不读取未授权账户 |
 | **事件/宏观影响** | 场景 F | "俄乌战争影响" | 事件、市场、窗口 | 历史 CAR、行业暴露、情景 | 不预测地缘政治 |
 | **交易复盘** | 场景 B2 | "分析我的交割单" | 文件、市场、时间范围 | 行为诊断、shadow account、改进 | 不保证收益 |
 | **定时监控** | 场景 D | "每天帮我盯" | 标的、条件、频率、通知 | 定时任务 + 通知 | 不自动下单 |
-| **报告** | html-report | "生成报告" | 已有分析、模板、输出格式 | HTML/PDF | 不编造数据 |
+| **报告** | report-generate | "生成报告" | 已有分析、模板、输出格式 | Markdown | 不编造数据 |
 未命中产物 → 加载 research-scenarios 附录查能力索引。
 菜单外请求（未命中以上 8 个产物）→ 先按分流表判定类型：明确可执行直接路由；开放型/待澄清型加载 intake；宏观型走场景 F；仍无匹配则说明能力边界并给出可回答的替代菜单。
 
@@ -318,7 +316,7 @@ Vibe-Trading 内置记忆生命周期管理系统（F1-F4），支持跨会话�
 1. 统计本周/本月所有策略信号的胜率、盈亏比、夏普比率。
 2. 对比基准指数表现，计算超额收益。
 3. 检测策略衰减：IC/IR 是否持续下降？是否需要重新调参？
-4. 更新 `analysis/_index.json` 中的回测表现摘要。
+4. 更新 `analysis/_index.json` 中的回测 `run_id`/摘要；产物仍在 run_dir。
 
 # 关键约束速查
 1. **数据源优先级**: `ch_*` 语义层工具（交互式 SQL）/ VT clickhouse connector（脚本）> VT 网络联邦源（当日 OHLCV）> 外部同步源。不得使用 DuckDB。
