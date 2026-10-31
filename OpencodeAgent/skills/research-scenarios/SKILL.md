@@ -40,7 +40,7 @@ triggers:
    - 内置方法用 `vibe-trading_list_skills` / `vibe-trading_load_skill` 发现。
 5. Step 4：交易时间内或用户问"现在能不能买/卖"时，补充 akshare/Yahoo/quote 近实时数据，给出实时信号与数据延迟说明。
 6. Step 5：完成后必须用 `report-generate` 生成标准报告。
-7. Step 6：**主动问询是否需要生成 HTML 交互报告**（加载 `html-report` Skill）。
+7. Step 6：报告由 `report-generate` 保存为 Markdown；不生成 HTML。
 8. Step 7：Skills 发现：询问是否需要了解当前可用的所有分析 Skills。
 
 > 输出结尾逐字复制以下四行，禁止改写日期；数据截止一律写 T-1：
@@ -53,11 +53,10 @@ triggers:
 1. Step 0：执行通用前置检查，重点看历史回测。
 2. Step 1：必须询问是否使用 Vibe-Trading 的全套因子回测策略；说明增量能力包括 `alpha-zoo`、`technical-basic`、`ml-strategy`、`factor-research`、`multi-factor`、`backtest-diagnose`、`pine-script`、`vnpy-export`。
 3. Step 2：加载 `strategy-generate` 并使用 VT 回测引擎（`vibe-trading_backtest`）；自定义信号先经 `scripts/vibe_bridge/` 转为 VT 回测契约。
-4. Step 3：用 `report-generate` 保存回测报告到 `analysis/<stock_code>/backtests/`。
-5. Step 4：**主动问询是否需要生成 HTML 交互回测报告**（加载 `html-report` Skill，使用 `render_vibe_backtest_html()` 或 `render_alpha158_backtest_html()`）。
-6. Step 5：询问是否需要回测诊断（`backtest-diagnose`）、实盘策略导出（`pine-script`/`vnpy-export`）或风险评估（`risk-analysis`）。
-7. Step 6：若回测推导出后续买入/卖出位，询问是否让 crontab 在次日/交易时间用实时数据监控触发。
-8. Step 7：若结果可跟踪，询问是否周期性自动执行并提醒。
+4. Step 3：回测 `run_dir` 固定为 `/home/opencode/.vibe-trading/runs/<run_id>`；回测完成后控制面自动渲染，返回 `run_id` 与关键指标，不另存 Markdown/HTML。
+5. Step 4：询问是否需要回测诊断（`backtest-diagnose`）、实盘策略导出（`pine-script`/`vnpy-export`）或风险评估（`risk-analysis`）。
+6. Step 5：若回测推导出后续买入/卖出位，询问是否让 crontab 在次日/交易时间用实时数据监控触发。
+7. Step 6：若结果可跟踪，询问是否周期性自动执行并提醒。
 
 > 输出结尾逐字复制以下四行，禁止改写日期；数据截止一律写 T-1：
 > **我假设了什么：** 本次实际生效的默认值，逐项列出
@@ -176,7 +175,7 @@ triggers:
 
 - `report-generate`: 保存标准报告到 `analysis/screening_<date>/`
 - 更新 `analysis/_index.json`
-- `html-report`: 使用 `render_screening_html()` 生成交互式 HTML
+- 报告为 Markdown；不生成 HTML
 
 ### Step 6: 后续引导
 - 询问是否对 Top 标的做个股深入分析（→ 场景 A）
@@ -218,7 +217,7 @@ triggers:
    - 政策面 / 外部研究 → `web_search` + `read_url`（nano-search-mcp 已回退，政策/研报全文仅公网检索，结论须注明覆盖有限）；券商研报 → `get_research_reports`
 3. 方法论声明（强制）：短窗口事件研究可靠；长周期影响仅作情景分析（MacKinlay 1997; Kothari & Warner 2007）。文献结论标注为文献结论，不作为预测。
 4. 输出遵守「防幻觉与诚实拒答纪律」：不可解部分用拒答模板；所有数字带 data-as-of。
-5. 完成后用 `report-generate` 保存，并主动问询是否生成 HTML（Markdown 转 HTML）。
+5. 完成后用 `report-generate` 保存 Markdown；不生成 HTML。
 
 > 输出结尾逐字复制以下四行，禁止改写日期；数据截止一律写 T-1：
 > **我假设了什么：** 本次实际生效的默认值，逐项列出
@@ -228,7 +227,7 @@ triggers:
 
 ## 产物结尾契约（closing block）
 
-凡产出具名产物的回答（个股体检 / 策略回测 / 交割单诊断 / 选股清单 / 事件影响 / HTML 报告），正文结尾必须附下列四行；纯解释性回答（如"什么是因子"）不附。
+凡产出具名产物的回答（个股体检 / 策略回测 / 交割单诊断 / 选股清单 / 事件影响），正文结尾必须附下列四行；纯解释性回答（如"什么是因子"）不附。
 
 ```
 **我假设了什么：** 本次实际生效的默认值，逐项列出
@@ -261,7 +260,6 @@ triggers:
 | 财务三表深读 | `financial-statement` (VT) | 财报解读、三表勾稽、盈利质量、七看八问 |
 | 投资视角框架 | `investor-lenses` (VT) | 巴菲特/芒格视角、深度价值、反向验证 |
 | 标准报告 | `report-generate` (VT) | 生成报告、保存分析、分析报告 |
-| **HTML 交互报告** | **`html-report`** | **HTML 报告、交互图表、ECharts、可视化展示** |
 | 周期执行 | `periodic-execution`（cron_jobs/manage.py） | 定时运行、cron、自动提醒 |
 | 逃顶预警 | `escape-top-microstructure` + `scripts/microstructure/` | 顶部预警、拥挤度、两融背离 |
 | 宏观/地缘/商品 | `macro-analysis` / `geopolitical-risk` / `commodity-analysis` (VT) | 宏观、战争、制裁、厄尔尼诺、油价、金价 |
