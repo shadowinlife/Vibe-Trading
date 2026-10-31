@@ -1,12 +1,52 @@
 # 环境
 1. Python/数据分析前先 `source /opt/venv/bin/activate`（venv 位于 `/opt/venv`，所有 Python 脚本必须在此环境中执行）。
 2. 容器运行 opencode serve（端口 :4096），agent 工作目录为 `/workspace`。
-3. **Vibe-Trading 来源**: 镜像使用 `shadowinlife/Vibe-Trading` 的 `mymain` 分支（2026-10-27 对齐上游 main @ 3cbb167e，自 11cff3f3 前进 119 commit，非 PyPI 版本），以 editable install 方式安装于 `/opt/vibe-trading`。包含 ClickHouse 数据源（`clickhouse` loader）、ClickHouse 语义层工具（`ch_*`）、MemoryGuard 记忆中间件。
-4. **VT MCP 工具规模**: 当前 mymain 树默认 **94 个**；`VT_MEMORY_MCP_TOOLS=1` 时为 **99 个**（多出的 5 个为 `memory_save` / `memory_recall` / `memory_reinforce` / `memory_reflect` / `memory_status`）。策略调度为六个 RM 控制面工具：`schedule_strategy` / `list_strategy_schedules` / `pause_strategy_schedule` / `resume_strategy_schedule` / `delete_strategy_schedule` / `retarget_strategy_schedule`。已交付的 v3.8.x 镜像早于 F9 与 2026-10-27 对齐，为 85/90；本镜像为 94/99。镜像已预置记忆工具开关。
-5. **VT 内置技能**: 91 个金融技能（`vibe-trading_list_skills` 查看，`vibe-trading_load_skill` 加载）；**Swarm 团队预设**: 30 个（`vibe-trading_list_swarm_presets` 查看）。
+3. **VT 运行时**: editable install 在 `/opt/vibe-trading`；工具/技能/预设能力以 `tools/list`、`vibe-trading_list_skills`、`vibe-trading_list_swarm_presets` 的运行时结果为准，不用版本号或 commit 数推断。
+4. **VT MCP 工具面**: 以 `tools/list` 为准；`VT_MEMORY_MCP_TOOLS=1` 时额外暴露 5 个 `memory_*` 工具（save/recall/reinforce/reflect/status）。策略调度为 6 个 RM 控制面工具：`schedule_strategy` / `list_strategy_schedules` / `pause_strategy_schedule` / `resume_strategy_schedule` / `delete_strategy_schedule` / `retarget_strategy_schedule`。
+5. **VT 内置技能与团队预设**: 用 `vibe-trading_list_skills` 查全部金融技能，用 `vibe-trading_list_swarm_presets` 查全部 swarm 预设及其 required variables。
 6. **记忆存储**: `/workspace/.vt-memory/`（由 `VT_MEMORY_BASE_DIR` 指定），通过 `docker-compose.yml` 挂载 `volumes/vt-memory` 持久化，容器重启不丢失。
 7. 可复用 ClickHouse SQL 查询放 `./sql/`，视图定义文档放 `./docs/views/`。
 8. 临时脚本、中间文件、下载材料放 `./tmp/<session-id>_*`。
+
+# VT 能力地图（按场景）
+
+> 这是路由入口，不是穷举手册。MCP 工具名省略 `vibe-trading_` 前缀（opencode 调用面会自动加）；完整工具名以 `tools/list` 为准，技能用 `vibe-trading_list_skills` 查，团队预设用 `vibe-trading_list_swarm_presets` 查；不要凭本表猜参数。
+
+| 用户意图 | 首选入口 | 常用补充 | 边界 |
+|---|---|---|---|
+| 看行情、估值、K 线、技术指标 | `get_market_data`、`technical_indicators`、`ch_*` | `pattern_recognition`、`screen_market` | 多方法共振 → `technical_analysis_panel` |
+| 资金流、两融、北向、龙虎榜、筹码 | `get_fund_flow`、`get_margin_trading`、`get_northbound_flow`、`get_dragon_tiger` | `get_block_trades`、`get_shareholder_count`、`get_lockup_expiry`、`get_sector_info` | 单日异动解释不等于趋势 |
+| 财报、公告、研报、IR、监管、政策 | `get_financial_statements`、`get_cn_announcements`、`get_research_reports`、skills `ashare-*` | `search_broker_reports`、`get_stock_news`、`web_search` | 全文资料必须分片读 |
+| 个股基本面、估值、投资视角 | `financial-statement`、`valuation-model`、`investor-lenses`、`fundamental-filter` | `earnings-forecast`、`thesis-tracker`、`get_sec_filings` | 多空辩论 → `investment_committee` |
+| 选股、因子、回测 | `screen_market`、`iwencai_search`、`factor_analysis`、`multi-factor`、`factor-research` | `alpha_zoo`、`alpha_bench`、`strategy-generate`、`vibe-trading_backtest`、`backtest-diagnose`、`quantlib_call` | 报告走控制面 Run Detail |
+| 组合、配置、风险 | `portfolio_review_board`、`risk_committee`、`etf_allocation_desk`、`global_allocation_committee`、`fund_selection_panel` | `risk-analysis`、`etf_holdings`、`quantlib_call` | 单标的诊断不走组合团队 |
+| 宏观、事件、地缘、商品 | `macro_strategy_forum`、`macro_rates_fx_desk`、`event_driven_task_force`、`geopolitical_war_room`、`commodity_research_team` | `get_macro_series`、`get_cn_macro_series`、`macro-analysis`、`geopolitical-risk`、`commodity-analysis` | 单条新闻摘要不走团队 |
+| 技术面 | `technical-basic`、`candlestick`、`ichimoku`、`elliott-wave`、`harmonic`、`smc`、`chanlun` | `technical_analysis_panel`（多方法共振） | 单一均线/指标直接算 |
+| 加密、衍生品、跨市场 | `crypto_trading_desk`、`crypto_research_lab`、`derivatives_strategy_desk`、`pairs_research_lab`、`statistical_arbitrage_desk`、`ml_quant_lab` | `get_market_data`(okx/ccxt)、`orderbook_depth`、`get_options_chain`、`analyze_options` | 未指定市场先确认或按默认 |
+| 另类数据、情绪、预测市场 | `sentiment`、`get_stock_news`、`prediction_market`、`web_search`、`read_url` | `sentiment_intelligence_team`、`social_alpha_team` | 社媒信号不得作为唯一证据 |
+| 交易账户、纸面交易、复盘 | `trading_account`、`trading_positions`、`trading_orders`、`trading_quote`、`trading_history`、`paper_trade_step` | `analyze_trade_journal`、`extract_shadow_strategy`、`run_shadow_backtest`、`render_shadow_report` | 只读；不自动下单 |
+| 记忆、调度 | `memory_*`、`schedule_strategy` / `list_strategy_schedules` / `pause_strategy_schedule` / `resume_strategy_schedule` / `delete_strategy_schedule` / `retarget_strategy_schedule` | `periodic-execution` | cron 里不得调用交互式提问 |
+| 多智能体团队 | `vibe-trading_run_swarm` | 见下方「Swarm 预设」 | 简单单步/单指标/已给定回测不走 |
+
+## Swarm 预设（30 个，按场景分组）
+
+| 场景 | 预设 | 典型触发 |
+|---|---|---|
+| 单票辩论 / 投委会 / 价值流派 | `investment_committee`、`value_investing_committee`、`fundamental_research_team`、`earnings_research_desk` | 多空都说说、投委会视角、巴菲特/芒格怎么看、财报深研 |
+| 量化 / 因子 / 策略 | `quant_strategy_desk`、`factor_research_committee`、`ml_quant_lab`、`pairs_research_lab`、`statistical_arbitrage_desk` | 设计并回测策略、因子评审、机器学习选股、配对/统计套利 |
+| 组合 / 配置 / 风险 | `portfolio_review_board`、`risk_committee`、`etf_allocation_desk`、`global_allocation_committee`、`fund_selection_panel` | 组合复盘、风险审计、ETF 配置、全球多资产、FOF 选基 |
+| 宏观 / 事件 / 地缘 / 商品 | `macro_strategy_forum`、`macro_rates_fx_desk`、`event_driven_task_force`、`geopolitical_war_room`、`commodity_research_team` | 降息/汇率/大宗、并购/政策事件、地缘冲突、商品供需 |
+| 行业 / 全球股票 | `equity_research_team`、`sector_rotation_team`、`global_equities_desk` | 行业轮动、跨市场选股、宏观→行业→个股 |
+| 技术面多方法共振 | `technical_analysis_panel` | 多指标共振、缠论+波浪+谐波+SMC |
+| 加密 / 衍生品 | `crypto_trading_desk`、`crypto_research_lab`、`derivatives_strategy_desk` | 加密仓位/链上研究、期权策略与 Greeks |
+| 信用 / 可转债 | `credit_research_team`、`convertible_bond_team` | 信用债/城投、可转债低价/双低 |
+| 情绪 / 社交另类数据 | `sentiment_intelligence_team`、`social_alpha_team` | 新闻/社媒情绪、Twitter/Telegram/Reddit alpha |
+
+**Swarm 使用规则**：
+1. 先判断是否真的需要多视角：用户明确要“多空辩论 / 投委会 / 委员会 / 组合复盘 / 风险审计 / 跨市场配置 / 多方法共振”才升级；简单单票、单指标、单条新闻、已给定完整策略的回测不走 swarm。
+2. 调用前必须用 `vibe-trading_list_swarm_presets` 查该预设的 required variables；变量名因预设而异（`target` / `market` / `company` / `goal` / `commodity` / `horizon` 等），不得套固定模板。
+3. 长时间团队任务用 `start_only=true` 拿 `run_id`，再用 `get_swarm_status` / `get_run_result` 查询；不要阻塞等待。
+4. 金融多智能体团队用 swarm；研究/代码类并行用 OMO；两者不得嵌套。
 
 # 数据采集能力
 

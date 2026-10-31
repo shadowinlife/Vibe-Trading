@@ -97,8 +97,8 @@ def _turn_budget_files() -> dict[str, list[str]]:
 
 
 class TestLineBudget:
-    def test_budget_constant_is_350(self):
-        assert AGENTS_MD_MAX_LINES == 350
+    def test_budget_constant_is_450(self):
+        assert AGENTS_MD_MAX_LINES == 450
 
     def test_agents_md_within_budget(self):
         lines = AGENTS_MD_PATH.read_text(encoding="utf-8").splitlines()
@@ -412,3 +412,58 @@ def test_agents_md_no_longer_claims_the_gap():
     text = _read(AGENTS_MD_PATH)
     assert "nano-search-mcp" not in text
     assert "已知缺口" not in text
+
+
+SWARM_PRESETS = (
+    "investment_committee",
+    "value_investing_committee",
+    "fundamental_research_team",
+    "equity_research_team",
+    "earnings_research_desk",
+    "quant_strategy_desk",
+    "factor_research_committee",
+    "ml_quant_lab",
+    "pairs_research_lab",
+    "statistical_arbitrage_desk",
+    "portfolio_review_board",
+    "risk_committee",
+    "etf_allocation_desk",
+    "global_allocation_committee",
+    "fund_selection_panel",
+    "macro_strategy_forum",
+    "macro_rates_fx_desk",
+    "event_driven_task_force",
+    "geopolitical_war_room",
+    "commodity_research_team",
+    "sector_rotation_team",
+    "global_equities_desk",
+    "technical_analysis_panel",
+    "crypto_trading_desk",
+    "crypto_research_lab",
+    "derivatives_strategy_desk",
+    "credit_research_team",
+    "convertible_bond_team",
+    "sentiment_intelligence_team",
+    "social_alpha_team",
+)
+
+
+class TestCapabilityMap:
+    def test_agents_md_lists_all_swarm_presets(self):
+        text = _read(AGENTS_MD_PATH)
+        assert "# VT 能力地图（按场景）" in text
+        assert "## Swarm 预设（30 个，按场景分组）" in text
+        missing = [name for name in SWARM_PRESETS if name not in text]
+        assert not missing, f"AGENTS.md misses swarm presets: {missing}"
+
+    def test_swarm_table_is_linked_from_intake_and_scenarios(self):
+        pointer = "AGENTS.md「Swarm 预设」"
+        assert pointer in _read(INTAKE_SKILL_PATH)
+        assert pointer in _read(SCENARIOS_SKILL_PATH)
+
+    def test_stale_upstream_provenance_is_not_in_always_loaded_context(self):
+        text = _read(AGENTS_MD_PATH)
+        assert "Vibe-Trading 来源" not in text
+        assert "3cbb167e" not in text
+        assert "119 commit" not in text
+        assert "VT 运行时" in text
