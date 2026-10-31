@@ -106,6 +106,8 @@ set -a && source /opt/my-vibe-trading/.env && set +a
 | `cron_jobs/trigger.sh`、`cron_jobs/manage.py` | `OPENCODE_API` 默认端口 `4096` → `4097`（repo 内 4096 是容器内端口，勿改 repo） |
 | `OpencodeAgent/AGENTS.md`（repo 侧） | 计数口径随 mymain 演进同步（当前 MCP OFF=89 / ON=94、技能 91） |
 
+> **skills 位置（v3.16+）**：skills 不再随 `/workspace` 部署，而是烘焙在全局配置目录 `/home/opencode/.config/opencode/skills/`；宿主部署对应 `$HOME/.config/opencode/skills/`。因此整体挂载 `/workspace` 不影响 skill 能力；但 `AGENTS.md` 与 `scripts/` 属于工作区内容，整体挂载时必须由挂载方自带，缺失属部署配置错误，容器只打印 `skills root=... loaded=N` 诊断行，不回填也不阻断。
+
 ## 6. 环境变量（`/opt/my-vibe-trading/.env`，chmod 600）
 
 | 变量 | 必填 | 说明 |

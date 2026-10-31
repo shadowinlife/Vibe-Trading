@@ -34,7 +34,7 @@
 - **OMO**（oh-my-openagent）并行任务分解插件
 - **Vibe-Trading**（mymain 分支，2026-09-26 对齐 v0.1.15 上游基线）— 94 个 MCP 工具的量化研究引擎（`VT_MEMORY_MCP_TOOLS=1` 时 99 个，含 5 个 `memory_*` 工具）
 - **data-warehouse** Skill — ClickHouse 数据仓库查询接口
-- **html-report** Skill — ECharts 交互式 HTML 报告生成
+- **html-report** Skill — 手工离线 HTML 导出（非产品报告路径；产品回测报告由控制面渲染）
 - **MemoryGuard** Middleware — 自动记忆管理（Hook 触发，零 LLM 依赖）
 
 ### 核心特性
@@ -67,10 +67,10 @@
 │  └──────────┘  └──────────┘  └─────────┼────────┘  │
 │                                         │            │
 │  ┌──────────────────┐   ┌───────────────▼──────────┐ │
-│  │  Skills (3)       │   │  /workspace/.vt-memory/  │ │
-│  │  - data-warehouse │   │  - reflections/          │ │
-│  │  - html-report    │   │  - persistent store      │ │
-│  │  - periodic-exec  │   │  - quality scoring       │ │
+│  │  Skills (13)      │   │  /workspace/.vt-memory/  │ │
+│  │  ~/.config/opencode│  │  - reflections/          │ │
+│  │   /skills (global)│   │  - persistent store      │ │
+│  │  （挂载不受影响）  │   │  - quality scoring       │ │
 │  └──────────────────┘   └──────────────────────────┘ │
 └─────────────────────────────────────────────────────┘
          │                    │
@@ -341,6 +341,8 @@ services:
         max-file: "3"
 ```
 
+> **挂载约定（v3.16+）**：`/workspace` 允许整体挂载，也允许只挂子目录。skills 烘焙在全局配置目录 `/home/opencode/.config/opencode/skills/`，**不在 `/workspace` 内**，因此任何挂载都不会影响 skill 能力。`AGENTS.md`、`scripts/`、`cron_jobs/` 属于工作区内容：整体挂载 `/workspace` 时挂载方必须自带，缺失属部署配置错误——容器只打印 `skills root=... loaded=N` 诊断行，不回填、不阻断。
+
 ```bash
 # 启动
 docker compose up -d
@@ -425,8 +427,8 @@ ls volumes/vt-memory/
 | 容器内路径 | 用途 | 建议场景 |
 |-----------|------|---------|
 | `/workspace/analysis/` | 分析报告（Markdown/JSON） | 需要持久化保存分析结果 |
-| `/workspace/reports/` | HTML 交互报告 | 需要 nginx 对外服务 |
-| `/workspace/runs/` | 回测运行目录（config + artifacts） | 需要保留回测记录 |
+| `/home/opencode/.vibe-trading/reports/` | 手工 HTML 导出归档 | 仅离线导出；无 nginx |
+| `/home/opencode/.vibe-trading/runs/` | 回测运行目录（config + artifacts） | 需要保留回测记录 |
 | `/workspace/tmp/` | 临时文件 | 调试排查 |
 
 挂载方式（在 `docker-compose.yml` 或 `docker run -v` 中添加）：
@@ -438,7 +440,8 @@ volumes:
   - ./volumes/cron-logs:/workspace/cron_jobs/logs
   # 可选
   - ./volumes/analysis:/workspace/analysis
-  - ./volumes/reports:/workspace/reports
+  - ./volumes/runs:/home/opencode/.vibe-trading/runs
+  - ./volumes/reports:/home/opencode/.vibe-trading/reports
 ```
 
 ---
@@ -873,8 +876,8 @@ docker builder prune
 | `/workspace/scripts/` | 量化分析脚本 |
 | `/workspace/cron_jobs/` | 周期任务管理 |
 | `/workspace/analysis/` | 分析报告输出 |
-| `/workspace/reports/` | HTML 报告 |
-| `/workspace/runs/` | 回测运行目录 |
+| `/home/opencode/.vibe-trading/reports/` | 手工 HTML 导出归档 |
+| `/home/opencode/.vibe-trading/runs/` | 回测运行目录（控制面可见） |
 | `/workspace/tmp/` | 临时文件 |
 | `/workspace/.vt-memory/` | VT 记忆存储 |
 | `/home/opencode/.opencode/opencode.json` | 运行时配置（由 entrypoint 渲染） |

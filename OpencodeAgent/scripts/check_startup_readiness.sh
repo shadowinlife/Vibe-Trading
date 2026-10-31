@@ -12,7 +12,7 @@
 #   1. 用一次性的 dummy OPENCODE_SERVER_PASSWORD 启动容器；
 #   2. 等待日志出现 `opencode server listening`、`[entrypoint] warmup complete`、
 #      `[entrypoint] VT MCP connected` 与 `strategy-run entry listening` 四条标记；
-#   3. 计算「容器启动 → 首次认证 GET /config?directory=/home/opencode 成功」的墙钟。
+#   3. 计算「容器启动 → 首次认证 GET /config?directory=/workspace 成功」的墙钟。
 #      entrypoint 的 warmup curl 就是这次请求，所以取该日志行的时间戳；
 #      再用一次显式 `docker exec curl` 复核端点确实返回 200；
 #   4. 计算「容器启动 → VT MCP 连上」的墙钟，并复核 `GET /mcp` 里
@@ -75,9 +75,10 @@ LISTEN_MARKER="opencode server listening"
 WARMUP_MARKER="[entrypoint] warmup complete"
 MCP_MARKER="[entrypoint] VT MCP connected"
 ENTRY_LISTEN_MARKER="strategy-run entry listening"
-CONFIG_URL="http://127.0.0.1:4096/config?directory=/home/opencode"
+PROJECT_DIR="/workspace"
+CONFIG_URL="http://127.0.0.1:4096/config?directory=${PROJECT_DIR}"
 # 与 entrypoint 的启动闸门同实例：会话目录为 /workspace，`/mcp` 支持 directory 参数。
-MCP_URL="http://127.0.0.1:4096/mcp?directory=/workspace"
+MCP_URL="http://127.0.0.1:4096/mcp?directory=${PROJECT_DIR}"
 ENTRY_HEALTH_URL="http://127.0.0.1:${ENTRY_PORT}/health"
 
 CID=""
@@ -211,6 +212,19 @@ while :; do
     fi
     sleep 1
 done
+
+PROJECT_CWD="$(docker exec "$CID" sh -c 'pwd' 2>/dev/null || true)"
+if [ "$PROJECT_CWD" != "$PROJECT_DIR" ]; then
+    say "--- 容器日志（尾部） ---"
+    docker logs --timestamps "$CID" 2>&1 | tail -n 40
+    die "容器工作目录是 ${PROJECT_CWD:-<unknown>}，期望 ${PROJECT_DIR}（opencode 会把 /.omo 写到根目录）"
+fi
+if ! docker exec "$CID" sh -c "test -w '$PROJECT_DIR'"; then
+    say "--- 容器日志（尾部） ---"
+    docker logs --timestamps "$CID" 2>&1 | tail -n 40
+    die "容器工作目录不可写：${PROJECT_DIR}"
+fi
+say "[ok] container cwd=${PROJECT_CWD} (writable)"
 
 LISTEN_TS="$(log_timestamp_for "$LISTEN_MARKER")"
 WARMUP_TS="$(log_timestamp_for "$WARMUP_MARKER")"

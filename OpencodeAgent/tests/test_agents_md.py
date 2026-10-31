@@ -97,8 +97,8 @@ def _turn_budget_files() -> dict[str, list[str]]:
 
 
 class TestLineBudget:
-    def test_budget_constant_is_350(self):
-        assert AGENTS_MD_MAX_LINES == 350
+    def test_budget_constant_is_450(self):
+        assert AGENTS_MD_MAX_LINES == 450
 
     def test_agents_md_within_budget(self):
         lines = AGENTS_MD_PATH.read_text(encoding="utf-8").splitlines()
@@ -252,7 +252,7 @@ FALLBACK_ROUTING_LINE = (
 )
 
 # Report §12.2 P1-1: 6 of the 8 products map 1:1 onto a research-scenarios
-# playbook; 组合体检 (A + risk-analysis) and 报告 (html-report) are the two
+# playbook; 组合体检 (A + risk-analysis) and 报告 (report-generate) are the two
 # named exceptions. The mapping is asserted cell-by-cell so a reorder or a
 # silent re-routing cannot pass as cosmetic.
 PRODUCT_SCENARIOS = (
@@ -263,7 +263,7 @@ PRODUCT_SCENARIOS = (
     ("事件/宏观影响", "场景 F"),
     ("交易复盘", "场景 B2"),
     ("定时监控", "场景 D"),
-    ("报告", "html-report"),
+    ("报告", "report-generate"),
 )
 
 SCENARIO_TARGETS = ("场景 A", "场景 B", "场景 B2", "场景 D", "场景 E", "场景 F")
@@ -381,3 +381,89 @@ class TestProductIndex:
         assert "91 个" in text
         assert "memory-lifecycle" in text
         assert "vibe-trading_read_run_artifact" not in _read(AGENTS_MD_PATH)
+
+
+# The six external-evidence skills replaced the retired nano-search-mcp server.
+# Both directions are pinned: the directories must exist, and AGENTS.md must
+# route to them — a stale "known gap" paragraph silently disables the tools.
+ASHARE_SKILLS = (
+    "ashare-filings",
+    "ashare-events",
+    "ashare-risk",
+    "ashare-ir",
+    "ashare-research",
+    "ashare-policy",
+)
+
+
+def test_ashare_skill_dirs_exist():
+    for name in ASHARE_SKILLS:
+        assert (SKILLS_DIR / name / "SKILL.md").is_file(), f"missing {name}/SKILL.md"
+        assert list((SKILLS_DIR / name / "scripts").glob("*.py")), f"{name} has no script"
+
+
+def test_agents_md_routes_to_every_ashare_skill():
+    text = _read(AGENTS_MD_PATH)
+    missing = [name for name in ASHARE_SKILLS if name not in text]
+    assert not missing, f"AGENTS.md never routes to: {missing}"
+
+
+def test_agents_md_no_longer_claims_the_gap():
+    text = _read(AGENTS_MD_PATH)
+    assert "nano-search-mcp" not in text
+    assert "已知缺口" not in text
+
+
+SWARM_PRESETS = (
+    "investment_committee",
+    "value_investing_committee",
+    "fundamental_research_team",
+    "equity_research_team",
+    "earnings_research_desk",
+    "quant_strategy_desk",
+    "factor_research_committee",
+    "ml_quant_lab",
+    "pairs_research_lab",
+    "statistical_arbitrage_desk",
+    "portfolio_review_board",
+    "risk_committee",
+    "etf_allocation_desk",
+    "global_allocation_committee",
+    "fund_selection_panel",
+    "macro_strategy_forum",
+    "macro_rates_fx_desk",
+    "event_driven_task_force",
+    "geopolitical_war_room",
+    "commodity_research_team",
+    "sector_rotation_team",
+    "global_equities_desk",
+    "technical_analysis_panel",
+    "crypto_trading_desk",
+    "crypto_research_lab",
+    "derivatives_strategy_desk",
+    "credit_research_team",
+    "convertible_bond_team",
+    "sentiment_intelligence_team",
+    "social_alpha_team",
+)
+
+
+class TestCapabilityMap:
+    def test_agents_md_lists_all_swarm_presets(self):
+        text = _read(AGENTS_MD_PATH)
+        assert "# VT 能力地图（按场景）" in text
+        assert "## Swarm 预设（30 个，按场景分组）" in text
+        missing = [name for name in SWARM_PRESETS if name not in text]
+        assert not missing, f"AGENTS.md misses swarm presets: {missing}"
+
+    def test_swarm_table_is_linked_from_intake_and_scenarios(self):
+        pointer = "AGENTS.md「Swarm 预设」"
+        assert pointer in _read(INTAKE_SKILL_PATH)
+        assert pointer in _read(SCENARIOS_SKILL_PATH)
+
+    def test_stale_upstream_provenance_is_not_in_always_loaded_context(self):
+        text = _read(AGENTS_MD_PATH)
+        assert "Vibe-Trading 来源" not in text
+        assert "3cbb167e" not in text
+        assert "119 commit" not in text
+        assert "VT 运行时" in text

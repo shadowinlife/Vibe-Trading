@@ -22,7 +22,7 @@ Execute an arbitrary SQL query against the ClickHouse data warehouse and return 
 
 **Usage:**
 ```bash
-python /workspace/.opencode/skills/data-warehouse/query.py --sql "SELECT ts_code, trade_date, close, pe_ttm FROM stk_factor_pro WHERE ts_code='000001.SZ' ORDER BY trade_date DESC LIMIT 10"
+python /home/opencode/.config/opencode/skills/data-warehouse/query.py --sql "SELECT ts_code, trade_date, close, pe_ttm FROM stk_factor_pro WHERE ts_code='000001.SZ' ORDER BY trade_date DESC LIMIT 10"
 ```
 
 **Output:** JSON array of objects with column-name keys.
@@ -33,7 +33,7 @@ List all available tables in the ClickHouse database with their schema informati
 
 **Usage:**
 ```bash
-python /workspace/.opencode/skills/data-warehouse/query.py --list-tables
+python /home/opencode/.config/opencode/skills/data-warehouse/query.py --list-tables
 ```
 
 **Output:** JSON array of table names and column definitions.
