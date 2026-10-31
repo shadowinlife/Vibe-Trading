@@ -53,17 +53,17 @@ echo "COMMAND_FILES_OK"
 # Onboarding content shipped by Wave 1: the intake skill, the trimmed
 # AGENTS.md, and the question-tool permission on the primary agents.
 #
-# The AGENTS.md check asserts the documented plan cap (350 lines, the single
+# The AGENTS.md check asserts the documented plan cap (450 lines, the single
 # source of truth is AGENTS_MD_MAX_LINES in tests/test_config_render.py) plus a
 # sanity floor, not a pinned snapshot count. A pinned count fails on any
 # legitimate content change — e.g. adding a table column shifts every following
 # line number — so it would reject a healthy rebuild from a newer HEAD while
 # saying nothing about whether the trim regressed.
-test -f /workspace/.opencode/skills/intake/SKILL.md || { echo "FAIL: /workspace/.opencode/skills/intake/SKILL.md missing"; exit 1; }
+test -f /home/opencode/.config/opencode/skills/intake/SKILL.md || { echo "FAIL: /home/opencode/.config/opencode/skills/intake/SKILL.md missing"; exit 1; }
 actual_lines=$(wc -l < /workspace/AGENTS.md)
-test "$actual_lines" -le 350 || { echo "FAIL: /workspace/AGENTS.md is $actual_lines lines, above the 350-line plan cap"; exit 1; }
+test "$actual_lines" -le 450 || { echo "FAIL: /workspace/AGENTS.md is $actual_lines lines, above the 450-line plan cap"; exit 1; }
 test "$actual_lines" -ge 300 || { echo "FAIL: /workspace/AGENTS.md is $actual_lines lines, below the 300-line sanity floor (content likely lost)"; exit 1; }
-echo "WORKSPACE_CONTENT_OK: AGENTS.md=$actual_lines lines (cap 350), skills/intake/SKILL.md present"
+echo "WORKSPACE_CONTENT_OK: AGENTS.md=$actual_lines lines (cap 450), /home/opencode/.config/opencode/skills/intake/SKILL.md present"
 
 /opt/venv/bin/python3 /workspace/.opencode/render_config.py \
     --template /workspace/.opencode/opencode.json.tmpl \

@@ -36,10 +36,11 @@ SCENARIOS_SKILL_PATH = OPENCODE_AGENT_DIR / "skills" / "research-scenarios" / "S
 INTAKE_SKILL_PATH = OPENCODE_AGENT_DIR / "skills" / "intake" / "SKILL.md"
 
 # Always-loaded instruction budget: every AGENTS.md line is paid on every
-# turn, so growth must be deliberate. Scenario playbooks live in the
-# research-scenarios skill and the clarification protocol lives in the
+# turn, so growth must be deliberate. The cap leaves room for the scenario
+# capability map and the swarm preset routing table; scenario playbooks live
+# in the research-scenarios skill and the clarification protocol lives in the
 # intake skill instead.
-AGENTS_MD_MAX_LINES = 350
+AGENTS_MD_MAX_LINES = 450
 
 # Captured verbatim from the current template (direct mode, no proxy) rendered
 # with the fixture env below.

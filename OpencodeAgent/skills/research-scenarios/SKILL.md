@@ -36,7 +36,7 @@ triggers:
    - 估值 → VT `valuation-model` Skill + `ch_query` 速查（stk_factor_pro 估值列）；
    - 多视角投资框架 → VT `investor-lenses` Skill；
    - 逃顶风险预警 → `escape-top-microstructure` Skill（注意：当前仅 `margin_divergence` 与 `volatility_atr_expansion` 两个信号经过验证，RED/YELLOW/GREEN 集成结论需注明验证状态）；
-   - 专家团队必须主动提供 `vibe-trading_run_swarm`（如 `investment_committee` / `quant_strategy_desk`）；
+   - 专家团队/多视角请求：按 AGENTS.md「Swarm 预设」表选择预设，调用前用 `vibe-trading_list_swarm_presets` 查 required variables；不要只报 `investment_committee`。
    - 内置方法用 `vibe-trading_list_skills` / `vibe-trading_load_skill` 发现。
 5. Step 4：交易时间内或用户问"现在能不能买/卖"时，补充 akshare/Yahoo/quote 近实时数据，给出实时信号与数据延迟说明。
 6. Step 5：完成后必须用 `report-generate` 生成标准报告。
@@ -214,7 +214,7 @@ triggers:
    - 宏观周期定位、利率/汇率传导 → VT `macro-analysis` Skill + `get_macro_series`（FRED）
    - 大宗商品供需与季节性 → VT `commodity-analysis` Skill
    - 行业暴露度排序 → `get_sector_info` + ClickHouse 行业表；资金流验证 → `get_northbound_flow` / `get_fund_flow`
-   - 政策面 / 外部研究 → `web_search` + `read_url`（nano-search-mcp 已回退，政策/研报全文仅公网检索，结论须注明覆盖有限）；券商研报 → `get_research_reports`
+   - 政策面 → `ashare-policy`（gov.cn 中央部委行业政策）；研报全文 → `ashare-research`；结构化研报列表与一致预期 → `get_research_reports`；通用外部信息 → `web_search` + `read_url`（仅限通用公网检索）；新闻 → `get_stock_news`
 3. 方法论声明（强制）：短窗口事件研究可靠；长周期影响仅作情景分析（MacKinlay 1997; Kothari & Warner 2007）。文献结论标注为文献结论，不作为预测。
 4. 输出遵守「防幻觉与诚实拒答纪律」：不可解部分用拒答模板；所有数字带 data-as-of。
 5. 完成后用 `report-generate` 保存 Markdown；不生成 HTML。
@@ -263,7 +263,7 @@ triggers:
 | 周期执行 | `periodic-execution`（cron_jobs/manage.py） | 定时运行、cron、自动提醒 |
 | 逃顶预警 | `escape-top-microstructure` + `scripts/microstructure/` | 顶部预警、拥挤度、两融背离 |
 | 宏观/地缘/商品 | `macro-analysis` / `geopolitical-risk` / `commodity-analysis` (VT) | 宏观、战争、制裁、厄尔尼诺、油价、金价 |
-| SWARM 团队 | `vibe-trading_run_swarm`（30 预设） | investment_committee、quant_strategy_desk、risk_committee、sector_rotation_team |
+| SWARM 团队 | `vibe-trading_run_swarm`（30 预设；路由见 AGENTS.md「Swarm 预设」） | 多空辩论、投委会、组合复盘、风险审计、跨市场配置、多方法技术共振 |
 | 跨市场数据 | `vibe-trading_get_market_data` | clickhouse、tencent、akshare、yfinance、tushare、okx、auto |
 | 回测产物读取 | `vibe-trading_read_run_artifact` | equity/trades/metrics/positions/ohlcv:&lt;CODE&gt;/run_card/progress 的分页·降采样结构化读取；读 run 产物 CSV 时**优先于** `read_file`（省 token、不截断） |
 | Finance Skills | `vibe-trading_list_skills/load_skill`（91 个） | factor、strategy、risk、technical |
