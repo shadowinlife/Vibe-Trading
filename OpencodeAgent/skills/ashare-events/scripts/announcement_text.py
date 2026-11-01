@@ -10,7 +10,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
 
 from bs4 import BeautifulSoup
-from nanofetch import assert_host, clip, emit, fetch, grep_excerpts, html_to_text, unavailable
+from nanofetch import (
+    assert_host,
+    clip,
+    emit,
+    fetch,
+    grep_excerpts,
+    html_to_text,
+    unavailable,
+)
 from nanofetch.envelope import fail_args
 from nanofetch.http import HostNotAllowed
 
@@ -38,9 +46,13 @@ def _extract_body(html: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="单条公告正文（新浪财经）")
-    parser.add_argument("--url", required=True, help="list_announcements 返回的 source_url")
+    parser.add_argument(
+        "--url", required=True, help="list_announcements 返回的 source_url"
+    )
     parser.add_argument("--grep", help="正则，返回命中片段而不是整篇正文")
-    parser.add_argument("--max-chars", type=int, default=20000, help="stdout 正文字符上限，默认 20000")
+    parser.add_argument(
+        "--max-chars", type=int, default=20000, help="stdout 正文字符上限，默认 20000"
+    )
     parser.add_argument("--out", help="把完整正文写入该文件")
     args = parser.parse_args()
 
@@ -55,7 +67,13 @@ def main() -> int:
     try:
         html = fetch(args.url, encoding="gbk")
     except RuntimeError as exc:  # nanofetch.HttpError：抓取失败
-        emit(unavailable("sina", f"detail page fetch failed: {type(exc).__name__}", source_url=args.url))
+        emit(
+            unavailable(
+                "sina",
+                f"detail page fetch failed: {type(exc).__name__}",
+                source_url=args.url,
+            )
+        )
         return 0
 
     text = _extract_body(html)

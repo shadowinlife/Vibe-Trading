@@ -46,9 +46,9 @@ def test_skill_count_bullet_matches_the_filesystem():
     count = len(_skill_dirs())
     match = re.search(r"\*\*(\d+) OpenCode skills\*\*", readme)
     assert match, "README is missing the '**N OpenCode skills**' bullet"
-    assert int(match.group(1)) == count, (
-        f"README claims {match.group(1)} skills; skills/ has {count}"
-    )
+    assert (
+        int(match.group(1)) == count
+    ), f"README claims {match.group(1)} skills; skills/ has {count}"
 
 
 def test_tree_header_matches_the_filesystem():
@@ -72,9 +72,9 @@ def test_readme_agents_md_line_count_matches_the_file():
     match = re.search(r"Full AGENTS\.md\*\* \((\d+) lines", _read(README_PATH))
     assert match, "README is missing the 'Full AGENTS.md (N lines' claim"
     actual = len((ROOT / "AGENTS.md").read_text(encoding="utf-8").splitlines())
-    assert int(match.group(1)) == actual, (
-        f"README claims {match.group(1)} AGENTS.md lines; file has {actual}"
-    )
+    assert (
+        int(match.group(1)) == actual
+    ), f"README claims {match.group(1)} AGENTS.md lines; file has {actual}"
 
 
 def test_four_slash_commands_exist_and_are_documented():
@@ -95,9 +95,9 @@ def test_report_links_the_plan_directly_under_the_frontmatter():
     lines = _read(REPORT_PATH).splitlines()
     assert lines[0] == "---"
     closing = lines.index("---", 1)
-    assert lines[closing + 1] == PLAN_LINE, (
-        "the plan line must be the first line after the frontmatter block"
-    )
+    assert (
+        lines[closing + 1] == PLAN_LINE
+    ), "the plan line must be the first line after the frontmatter block"
 
 
 def test_report_appends_the_post_plan_changes_section():

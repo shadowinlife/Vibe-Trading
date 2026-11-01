@@ -30,7 +30,9 @@ def assert_host(url: str, allowed_suffixes: Sequence[str]) -> str:
     if parsed.scheme not in {"http", "https"}:
         raise HostNotAllowed(f"unsupported scheme: {parsed.scheme!r}")
     host = (parsed.hostname or "").lower()
-    if not any(host == suffix or host.endswith("." + suffix) for suffix in allowed_suffixes):
+    if not any(
+        host == suffix or host.endswith("." + suffix) for suffix in allowed_suffixes
+    ):
         raise HostNotAllowed(f"host not allowed: {host!r}")
     return host
 
@@ -46,7 +48,7 @@ def fetch(
     last: Exception | None = None
     for attempt in range(retries):
         if attempt:
-            time.sleep(min(2 ** attempt, 8) + random.random())
+            time.sleep(min(2**attempt, 8) + random.random())
         request = urllib.request.Request(
             url,
             headers={
@@ -62,6 +64,11 @@ def fetch(
                 if response.headers.get("Content-Encoding") == "gzip":
                     raw = gzip.decompress(raw)
                 return raw.decode(encoding, errors="replace")
-        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as exc:
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            TimeoutError,
+            OSError,
+        ) as exc:
             last = exc
     raise HttpError(f"GET {url} failed after {retries} attempts: {last}")

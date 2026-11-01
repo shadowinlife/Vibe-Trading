@@ -27,7 +27,9 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
+
 from nanofetch import clip, emit, fetch, html_to_text, unavailable
+from nanofetch.envelope import fail_args
 
 ENDPOINT = "https://sousuo.www.gov.cn/search-gov/data"
 SOURCE = "gov.cn"
@@ -73,12 +75,6 @@ _CENTRAL_PREFIXES = (
     "最高人民法院",
     "最高人民检察院",
 )
-
-
-def _fail_args(message: str) -> None:
-    """参数非法：stderr + 退出码 2，不输出 JSON。"""
-    print(f"error: {message}", file=sys.stderr)
-    raise SystemExit(2)
 
 
 def _plain(raw: str | None) -> str:
@@ -212,11 +208,11 @@ def _parse_args(argv: list[str]) -> tuple[str, int, int]:
 
     industry = args.industry.strip()
     if not industry:
-        _fail_args("--industry 不能为空")
+        fail_args("--industry 不能为空")
     if args.days < 1:
-        _fail_args("--days 必须为正整数")
+        fail_args("--days 必须为正整数")
     if args.limit < 1:
-        _fail_args("--limit 必须为正整数")
+        fail_args("--limit 必须为正整数")
     return industry, args.days, min(args.limit, MAX_LIMIT)
 
 

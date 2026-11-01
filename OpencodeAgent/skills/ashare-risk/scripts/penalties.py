@@ -11,12 +11,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
 
 from bs4 import BeautifulSoup
-from nanofetch import assert_host, clip, emit, fetch, grep_excerpts, html_to_text, unavailable
+from nanofetch import emit, fetch, unavailable
 from nanofetch.envelope import fail_args
 
-_PAGE_URL = (
-    "https://vip.stock.finance.sina.com.cn/corp/go.php/vGP_GetOutOfLine/stockid/{stockid}.phtml"
-)
+_PAGE_URL = "https://vip.stock.finance.sina.com.cn/corp/go.php/vGP_GetOutOfLine/stockid/{stockid}.phtml"
 
 _DATE_FIELD = re.compile(r"公告日期[:：]\s*(\d{4}-\d{2}-\d{2})")
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -78,7 +76,15 @@ def _issuer(raw: str) -> str:
 
 def _record(header: str, source_url: str) -> dict[str, str]:
     record = dict.fromkeys(
-        ("punish_date", "event_type", "title", "reason", "content", "issuer", "source_url"),
+        (
+            "punish_date",
+            "event_type",
+            "title",
+            "reason",
+            "content",
+            "issuer",
+            "source_url",
+        ),
         "",
     )
     found = _DATE_FIELD.search(header)
@@ -149,7 +155,13 @@ def main() -> int:
     try:
         html = fetch(page_url, encoding="gbk")
     except RuntimeError as exc:  # nanofetch.HttpError：抓取失败
-        emit(unavailable("sina", f"penalty page fetch failed: {type(exc).__name__}", ts_code=ts_code))
+        emit(
+            unavailable(
+                "sina",
+                f"penalty page fetch failed: {type(exc).__name__}",
+                ts_code=ts_code,
+            )
+        )
         return 0
 
     records = _parse(html, page_url)

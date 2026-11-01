@@ -36,6 +36,11 @@ def _scripts() -> list[Path]:
     return found
 
 
+_REQUIRED_ARGS_EXCEPT_CODE = {
+    "company_report.py": ("--year", "2024"),
+}
+
+
 def _load_module(path: Path):
     spec = importlib.util.spec_from_file_location(f"nanofetch_{path.stem}", path)
     module = importlib.util.module_from_spec(spec)
@@ -84,7 +89,8 @@ def test_scripts_reject_invalid_code_with_exit_2() -> None:
     for script in _scripts():
         if "_text" in script.stem or script.stem == "industry_policies":
             continue
-        result = _run(script, "--code", "12")
+        extra = _REQUIRED_ARGS_EXCEPT_CODE.get(script.name, ())
+        result = _run(script, "--code", "12", *extra)
         assert result.returncode == 2, f"{script.stem} accepted an invalid code"
         assert result.stderr.strip(), f"{script.stem} rejected silently"
 
@@ -100,7 +106,9 @@ def test_text_scripts_reject_foreign_host_with_exit_2() -> None:
 def test_scripts_helper_discovers_shared_lib() -> None:
     for script in _scripts():
         result = _run(script, "--help")
-        assert result.returncode == 0, f"{script.stem} --help failed: {result.stderr[-400:]}"
+        assert (
+            result.returncode == 0
+        ), f"{script.stem} --help failed: {result.stderr[-400:]}"
 
 
 def test_clip_and_grep_helpers() -> None:
@@ -145,10 +153,22 @@ def test_html_to_text_strips_scripts_and_styles() -> None:
     assert "a{}" not in out
 
 
-@pytest.mark.skipif(os.environ.get("NANO_SKILLS_LIVE") != "1", reason="live network probe")
+@pytest.mark.skipif(
+    os.environ.get("NANO_SKILLS_LIVE") != "1", reason="live network probe"
+)
 def test_live_company_report_returns_json() -> None:
     script = SKILLS / "ashare-filings" / "scripts" / "company_report.py"
-    result = _run(script, "--code", "300750", "--year", "2024", "--grep", "储能", "--max-chars", "2000")
+    result = _run(
+        script,
+        "--code",
+        "300750",
+        "--year",
+        "2024",
+        "--grep",
+        "储能",
+        "--max-chars",
+        "2000",
+    )
     assert result.returncode == 0
     payload = json.loads(result.stdout)
     assert payload["available"] is True

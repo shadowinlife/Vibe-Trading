@@ -6,13 +6,12 @@ import re
 import sys
 from datetime import date, timedelta
 from pathlib import Path
-from typing import NoReturn
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
-from nanofetch import assert_host, clip, emit, fetch, grep_excerpts, html_to_text, unavailable  # noqa: E402,F401
 
-from bs4 import BeautifulSoup  # noqa: E402
-from nanofetch.envelope import fail_args  # noqa: E402
+from bs4 import BeautifulSoup
+from nanofetch import emit, fetch, unavailable
+from nanofetch.envelope import fail_args
 
 SOURCE = "sina"
 MAX_PAGES = 12
@@ -45,24 +44,29 @@ IR_TITLE_KEYWORDS = (
 
 TYPE_KEYWORDS = {
     "earnings_call": (
-        "业绩说明会", "业绩交流会", "电话会议", "网上业绩",
-        "业绩交流", "投资者说明会", "业绩发布",
+        "业绩说明会",
+        "业绩交流会",
+        "电话会议",
+        "网上业绩",
+        "业绩交流",
+        "投资者说明会",
+        "业绩发布",
     ),
     "site_visit": ("实地调研", "现场参观", "参观", "现场考察"),
     "research": (
-        "调研", "机构投资者", "投资者关系活动记录",
-        "投资者关系管理信息", "调研活动信息表",
-        "投资者关系活动", "投资者开放日",
+        "调研",
+        "机构投资者",
+        "投资者关系活动记录",
+        "投资者关系管理信息",
+        "调研活动信息表",
+        "投资者关系活动",
+        "投资者开放日",
     ),
 }
 
 _DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 _CODE = re.compile(r"^\d{6}$")
 _SUFFIX = re.compile(r"\.(SH|SZ|BJ)$", re.IGNORECASE)
-
-
-def _fail(message: str) -> NoReturn:
-    fail_args(message)
 
 
 def _reason(exc: Exception) -> str:
@@ -85,7 +89,7 @@ def _split_code(raw: str) -> tuple[str, str]:
     suffix = _SUFFIX.search(text)
     stockid = text[: suffix.start()] if suffix else text
     if not _CODE.fullmatch(stockid):
-        _fail(f"--code must be a 6-digit A-share code, got {raw!r}")
+        fail_args(f"--code must be a 6-digit A-share code, got {raw!r}")
     return stockid, suffix.group(1) if suffix else _infer_exchange(stockid)
 
 
@@ -93,7 +97,7 @@ def _day(raw: str, flag: str) -> date:
     try:
         return date.fromisoformat(raw)
     except ValueError:
-        _fail(f"{flag} must be YYYY-MM-DD, got {raw!r}")
+        fail_args(f"{flag} must be YYYY-MM-DD, got {raw!r}")
 
 
 def _types(raw: str) -> list[str]:
@@ -102,7 +106,7 @@ def _types(raw: str) -> list[str]:
         return list(VALID_TYPES)
     unknown = sorted(set(selected) - set(VALID_TYPES))
     if unknown:
-        _fail(f"--types accepts {','.join(VALID_TYPES)}; got {','.join(unknown)}")
+        fail_args(f"--types accepts {','.join(VALID_TYPES)}; got {','.join(unknown)}")
     return selected
 
 
@@ -214,9 +218,11 @@ def main(argv: list[str] | None = None) -> int:
     stockid, exchange = _split_code(args.code)
     ts_code = f"{stockid}.{exchange}"
     end_day = _day(args.end, "--end") if args.end else date.today()
-    start_day = _day(args.start, "--start") if args.start else end_day - timedelta(days=182)
+    start_day = (
+        _day(args.start, "--start") if args.start else end_day - timedelta(days=182)
+    )
     if start_day > end_day:
-        _fail("--start must not be later than --end")
+        fail_args("--start must not be later than --end")
     wanted_types = _types(args.types)
     limit = max(1, min(200, args.limit))
 

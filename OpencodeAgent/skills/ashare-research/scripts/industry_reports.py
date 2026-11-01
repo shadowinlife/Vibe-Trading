@@ -8,13 +8,12 @@ import sys
 import urllib.parse
 from datetime import date, timedelta
 from pathlib import Path
-from typing import NoReturn
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
-from nanofetch import assert_host, clip, emit, fetch, grep_excerpts, html_to_text, unavailable  # noqa: E402,F401
 
-from bs4 import BeautifulSoup  # noqa: E402
-from nanofetch.envelope import fail_args  # noqa: E402
+from bs4 import BeautifulSoup
+from nanofetch import emit, fetch, unavailable
+from nanofetch.envelope import fail_args
 
 SOURCE = "sina"
 BASE = "https://stock.finance.sina.com.cn"
@@ -32,10 +31,6 @@ SW2_ANY_RE = re.compile(r"industry=(sw[23]_\d+)")
 SW2_ONLY_RE = re.compile(r"sw[23]_\d{6}")
 
 
-def _fail(message: str) -> NoReturn:
-    fail_args(message)
-
-
 def _reason(exc: Exception) -> str:
     message = str(exc).strip()
     return (message.splitlines()[0] if message else exc.__class__.__name__)[:180]
@@ -44,11 +39,11 @@ def _reason(exc: Exception) -> str:
 def _sina_code(raw: str) -> str:
     number, dot, market = raw.strip().partition(".")
     if not re.fullmatch(r"\d{6}", number):
-        _fail(f"--code must be a 6-digit A-share code, got {raw!r}")
+        fail_args(f"--code must be a 6-digit A-share code, got {raw!r}")
     if dot:
         market = market.upper()
         if market not in {"SH", "SZ", "BJ"}:
-            _fail(f"--code suffix must be SH, SZ or BJ, got {raw!r}")
+            fail_args(f"--code suffix must be SH, SZ or BJ, got {raw!r}")
         return market.lower() + number
     first = number[0]
     if first in "569":
@@ -57,7 +52,7 @@ def _sina_code(raw: str) -> str:
         return "sz" + number
     if first in "48":
         return "bj" + number
-    _fail(f"cannot infer exchange from {raw!r}; pass a .SH/.SZ/.BJ suffix")
+    fail_args(f"cannot infer exchange from {raw!r}; pass a .SH/.SZ/.BJ suffix")
 
 
 def _keywords(raw: str) -> list[str]:
@@ -81,7 +76,7 @@ def _resolve_from_company(sina_code: str) -> tuple[str, str]:
     loose = SW2_ANY_RE.search(html)
     if loose is None:
         raise RuntimeError("unexpected page shape: no 申万行业 link on company page")
-    tail = html[loose.end():loose.end() + 200]
+    tail = html[loose.end() : loose.end() + 200]
     t1 = re.search(r"t1=(\d+)", tail)
     return loose.group(1), t1.group(1) if t1 else "33"
 
@@ -109,7 +104,7 @@ def _resolve_from_name(name: str) -> tuple[str, str]:
 
     walk(nodes)
     if not matches:
-        _fail(f"unknown 申万二级行业: {name!r}")
+        fail_args(f"unknown 申万二级行业: {name!r}")
     return matches[0]
 
 
@@ -161,7 +156,7 @@ def _parse_rows(html: str) -> tuple[list[dict], str]:
             report_date = found.group(0) if found else ""
         publisher = ""
         if date_index >= 0:
-            for cell in cells[date_index + 1:]:
+            for cell in cells[date_index + 1 :]:
                 if cell:
                     publisher = cell
                     break
@@ -233,7 +228,9 @@ def main(argv: list[str] | None = None) -> int:
         description="List Sina Finance broker industry reports for a stock or industry."
     )
     source = parser.add_mutually_exclusive_group(required=True)
-    source.add_argument("--code", help="route via the stock's 申万二级行业, e.g. 300750.SZ")
+    source.add_argument(
+        "--code", help="route via the stock's 申万二级行业, e.g. 300750.SZ"
+    )
     source.add_argument("--industry", help="申万二级行业名, e.g. 电池")
     parser.add_argument("--keywords", default="", help="comma list; any title match")
     parser.add_argument("--days", type=int, default=365, help="lookback days")

@@ -9,12 +9,19 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
-from nanofetch import assert_host, clip, emit, fetch, grep_excerpts, html_to_text, unavailable
-
-from nanofetch import HttpError
-from nanofetch.envelope import fail_args
 
 from bs4 import BeautifulSoup
+from nanofetch import (
+    HttpError,
+    assert_host,
+    clip,
+    emit,
+    fetch,
+    grep_excerpts,
+    html_to_text,
+    unavailable,
+)
+from nanofetch.envelope import fail_args
 
 _BASE = "https://vip.stock.finance.sina.com.cn"
 _LIST_TPL = "/corp/go.php/{view}/stockid/{stockid}/page_type/{page_type}.phtml"
@@ -76,7 +83,9 @@ def _parse_listing(html: str) -> list[dict[str, str]]:
     soup = BeautifulSoup(html, "html.parser")
     entries: list[dict[str, str]] = []
     seen: set[str] = set()
-    for anchor in soup.find_all("a", href=lambda href: href and "vCB_AllBulletinDetail" in href):
+    for anchor in soup.find_all(
+        "a", href=lambda href: href and "vCB_AllBulletinDetail" in href
+    ):
         href = anchor.get("href")
         if not isinstance(href, str):
             continue
@@ -87,15 +96,19 @@ def _parse_listing(html: str) -> list[dict[str, str]]:
         if report_id in seen:
             continue
         seen.add(report_id)
-        entries.append({
-            "id": report_id,
-            "title": anchor.get_text(" ", strip=True),
-            "date": _publish_date(anchor),
-        })
+        entries.append(
+            {
+                "id": report_id,
+                "title": anchor.get_text(" ", strip=True),
+                "date": _publish_date(anchor),
+            }
+        )
     return entries
 
 
-def _select_report(entries: list[dict[str, str]], year: int, report_type: str) -> dict[str, str] | None:
+def _select_report(
+    entries: list[dict[str, str]], year: int, report_type: str
+) -> dict[str, str] | None:
     title_pattern = re.compile(_TITLE_PATTERNS[report_type])
     year_pattern = re.compile(rf"(?<!\d){year}\s*年")
     for entry in entries:
@@ -187,7 +200,9 @@ def main(argv: list[str] | None = None) -> int:
         help="annual=年报，semi=半年报，q1=一季报，q3=三季报",
     )
     parser.add_argument("--grep", help="在全文检索的关键词或正则；返回 offset 与上下文")
-    parser.add_argument("--max-chars", type=int, default=20000, help="text 字段的最大字数")
+    parser.add_argument(
+        "--max-chars", type=int, default=20000, help="text 字段的最大字数"
+    )
     parser.add_argument("--out", help="把全文写入该文件")
     return _run(parser.parse_args(argv))
 

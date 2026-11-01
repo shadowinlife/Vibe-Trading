@@ -363,7 +363,9 @@ class TestQuestionToolPermission:
         """The template has no way to say "interactive sessions only", so the
         non-interactive rule lives in the intake skill's execution contract."""
         body = INTAKE_SKILL_PATH.read_text(encoding="utf-8")
-        assert "非交互会话（cron / headless `opencode run` / IM）不得调用 question" in body
+        assert (
+            "非交互会话（cron / headless `opencode run` / IM）不得调用 question" in body
+        )
 
 
 class TestOmoModelConfig:
@@ -515,22 +517,31 @@ class TestSlashCommands:
 
     @pytest.mark.parametrize("filename", sorted(COMMANDS))
     def test_frontmatter_schema(self, filename):
-        fields, _ = _split_frontmatter((COMMAND_DIR / filename).read_text(encoding="utf-8"))
+        fields, _ = _split_frontmatter(
+            (COMMAND_DIR / filename).read_text(encoding="utf-8")
+        )
         assert fields.get("description"), filename
         assert fields.get("argument-hint"), filename
 
     @pytest.mark.parametrize("filename", sorted(COMMANDS))
     def test_description_is_a_short_chinese_prompt(self, filename):
-        fields, _ = _split_frontmatter((COMMAND_DIR / filename).read_text(encoding="utf-8"))
+        fields, _ = _split_frontmatter(
+            (COMMAND_DIR / filename).read_text(encoding="utf-8")
+        )
         description = fields["description"]
         assert len(description) <= 80, f"{filename}: {len(description)} chars"
         assert any("\u4e00" <= ch <= "\u9fff" for ch in description), filename
 
-    @pytest.mark.parametrize("filename,artifact,scenario", [
-        (name, *contract) for name, contract in sorted(COMMANDS.items())
-    ])
-    def test_template_names_artifact_defaults_and_scenario(self, filename, artifact, scenario):
-        _, body = _split_frontmatter((COMMAND_DIR / filename).read_text(encoding="utf-8"))
+    @pytest.mark.parametrize(
+        "filename,artifact,scenario",
+        [(name, *contract) for name, contract in sorted(COMMANDS.items())],
+    )
+    def test_template_names_artifact_defaults_and_scenario(
+        self, filename, artifact, scenario
+    ):
+        _, body = _split_frontmatter(
+            (COMMAND_DIR / filename).read_text(encoding="utf-8")
+        )
         assert artifact in body, f"{filename} must name the {artifact} artifact"
         assert DEFAULT_EXECUTION_SENTENCE in body, filename
         assert "research-scenarios" in body, filename
@@ -538,7 +549,9 @@ class TestSlashCommands:
         assert "$ARGUMENTS" in body, f"{filename} must pass the user's target through"
 
     def test_review_routes_to_shadow_account(self):
-        _, body = _split_frontmatter((COMMAND_DIR / "review.md").read_text(encoding="utf-8"))
+        _, body = _split_frontmatter(
+            (COMMAND_DIR / "review.md").read_text(encoding="utf-8")
+        )
         assert "场景 B2" in body
         assert "交割单" in body
 
@@ -546,6 +559,6 @@ class TestSlashCommands:
         lines = DOCKERFILE_PATH.read_text(encoding="utf-8").splitlines()
         assert COMMAND_COPY_LINE in lines, "Dockerfile must COPY config/command/"
         index = lines.index(RENDER_COPY_LINE)
-        assert lines[index + 1] == COMMAND_COPY_LINE, (
-            "the command COPY belongs immediately after render_config.py"
-        )
+        assert (
+            lines[index + 1] == COMMAND_COPY_LINE
+        ), "the command COPY belongs immediately after render_config.py"

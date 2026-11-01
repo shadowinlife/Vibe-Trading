@@ -13,13 +13,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
 
 from bs4 import BeautifulSoup
-from nanofetch import assert_host, clip, emit, fetch, grep_excerpts, html_to_text, unavailable
+from nanofetch import assert_host, emit, fetch, unavailable
 from nanofetch.envelope import fail_args
 from nanofetch.http import HostNotAllowed
 
-_LIST_PAGE = (
-    "http://money.finance.sina.com.cn/corp/go.php/vCB_AllBulletin/stockid/{stockid}.phtml"
-)
+_LIST_PAGE = "http://money.finance.sina.com.cn/corp/go.php/vCB_AllBulletin/stockid/{stockid}.phtml"
 _DETAIL_URL = (
     "http://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php"
     "?stockid={stockid}&id={bulletin_id}"
@@ -42,7 +40,10 @@ _ANN_TYPE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "鉴证报告",
         ),
     ),
-    ("accountant_change", ("会计师事务所变更", "更换会计师", "续聘会计师", "聘请会计师")),
+    (
+        "accountant_change",
+        ("会计师事务所变更", "更换会计师", "续聘会计师", "聘请会计师"),
+    ),
     ("litigation", ("诉讼", "仲裁", "法律纠纷")),
     (
         "penalty",
@@ -61,7 +62,14 @@ _ANN_TYPE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     (
         "restatement",
-        ("差错更正", "财报重述", "追溯调整", "前期会计差错", "前期差错更正", "前期财务"),
+        (
+            "差错更正",
+            "财报重述",
+            "追溯调整",
+            "前期会计差错",
+            "前期差错更正",
+            "前期财务",
+        ),
     ),
 )
 _ANN_TYPES = tuple(rule[0] for rule in _ANN_TYPE_RULES) + ("other",)
@@ -140,7 +148,9 @@ def _parse_list(html: str, stockid: str) -> list[dict[str, str]] | None:
                 "ann_date": _ann_date(anchor),
                 "title": title,
                 "ann_type": _classify(title),
-                "source_url": _DETAIL_URL.format(stockid=stockid, bulletin_id=bulletin_id),
+                "source_url": _DETAIL_URL.format(
+                    stockid=stockid, bulletin_id=bulletin_id
+                ),
             }
         )
     return entries
@@ -235,16 +245,24 @@ def main() -> int:
 
     types: tuple[str, ...] = ()
     if args.types:
-        requested = tuple(part.strip() for part in args.types.split(",") if part.strip())
+        requested = tuple(
+            part.strip() for part in args.types.split(",") if part.strip()
+        )
         unknown = [name for name in requested if name not in _ANN_TYPES]
         if unknown:
-            fail_args(f"未知 --types: {','.join(unknown)}；合法值: {','.join(_ANN_TYPES)}")
+            fail_args(
+                f"未知 --types: {','.join(unknown)}；合法值: {','.join(_ANN_TYPES)}"
+            )
         types = requested
 
     try:
         entries = _collect(stockid, start, end, types, args.limit)
     except RuntimeError as exc:  # nanofetch.HttpError：抓取失败
-        emit(unavailable("sina", f"list page fetch failed: {type(exc).__name__}", ts_code=ts_code))
+        emit(
+            unavailable(
+                "sina", f"list page fetch failed: {type(exc).__name__}", ts_code=ts_code
+            )
+        )
         return 0
 
     if entries is None:

@@ -145,10 +145,7 @@ def test_readiness_script_covers_the_entry_in_offline_mode(readiness: str) -> No
 
 def test_readiness_script_gates_on_the_mcp_connection(readiness: str) -> None:
     assert 'MCP_MARKER="[entrypoint] VT MCP connected"' in readiness
-    assert (
-        'MCP_URL="http://127.0.0.1:4096/mcp?directory=${PROJECT_DIR}"'
-        in readiness
-    )
+    assert 'MCP_URL="http://127.0.0.1:4096/mcp?directory=${PROJECT_DIR}"' in readiness
     assert '"vibe-trading"[[:space:]]*' in readiness
     assert "VT MCP 未连接" in readiness
     assert '-e "VT_STARTUP_BUDGET_S=$STARTUP_BUDGET_S"' in readiness
@@ -196,7 +193,7 @@ def test_project_scope_copy_drops_the_plugin_list(entrypoint: str) -> None:
     # (~70s); the global scope already loads it from the pre-baked cache.
     finalize = entrypoint.split("finalize_config()", 1)[1].split("\n}", 1)[0]
     assert 'config.pop("plugin", None)' in finalize
-    assert 'json.dump(config' in finalize
+    assert "json.dump(config" in finalize
 
 
 def test_entrypoint_renders_from_a_workspace_independent_template_source(

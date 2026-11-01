@@ -7,11 +7,19 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
-from nanofetch import assert_host, clip, emit, fetch, grep_excerpts, html_to_text, unavailable  # noqa: E402
 
-from bs4 import BeautifulSoup  # noqa: E402
-from nanofetch.envelope import fail_args  # noqa: E402
-from nanofetch.http import HostNotAllowed  # noqa: E402
+from bs4 import BeautifulSoup
+from nanofetch import (
+    assert_host,
+    clip,
+    emit,
+    fetch,
+    grep_excerpts,
+    html_to_text,
+    unavailable,
+)
+from nanofetch.envelope import fail_args
+from nanofetch.http import HostNotAllowed
 
 SOURCE = "sina"
 ALLOWED_HOSTS = ("vip.stock.finance.sina.com.cn", "finance.sina.com.cn")
@@ -25,17 +33,45 @@ PARTICIPANTS_HEADER_RE = re.compile(
     r"[^\n：:]{0,8}$"
 )
 STOP_LABELS = {
-    "时间", "地点", "形式", "会议形式", "召开方式",
-    "上市公司接待人员姓名", "接待人员姓名", "投资者关系活动主要内容介绍",
+    "时间",
+    "地点",
+    "形式",
+    "会议形式",
+    "召开方式",
+    "上市公司接待人员姓名",
+    "接待人员姓名",
+    "投资者关系活动主要内容介绍",
 }
 ORG_SPLITTER_RE = re.compile(r"[、，,；;]+")
 ORG_KEYWORDS = (
-    "证券", "资本", "基金", "银行", "资产", "投资", "保险", "信托",
-    "公司", "研究所", "研究院", "财富", "期货", "私募", "家族办公室",
+    "证券",
+    "资本",
+    "基金",
+    "银行",
+    "资产",
+    "投资",
+    "保险",
+    "信托",
+    "公司",
+    "研究所",
+    "研究院",
+    "财富",
+    "期货",
+    "私募",
+    "家族办公室",
 )
 ORG_BLOCKLIST = (
-    "其他", "详见", "附件", "见下", "名单", "等机构", "以上", "不限于",
-    "投资者", "等人员", "共计",
+    "其他",
+    "详见",
+    "附件",
+    "见下",
+    "名单",
+    "等机构",
+    "以上",
+    "不限于",
+    "投资者",
+    "等人员",
+    "共计",
 )
 
 
@@ -83,7 +119,7 @@ def _participants(text: str) -> list[str]:
     lines = [line.strip() for line in text.splitlines()]
     for index, line in enumerate(lines):
         if PARTICIPANTS_HEADER_RE.match(line):
-            for following in lines[index + 1:index + 3]:
+            for following in lines[index + 1 : index + 3]:
                 if not following:
                     continue
                 if following in STOP_LABELS:
@@ -102,7 +138,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--url", required=True, help="source_url from ir_list.py")
     parser.add_argument("--grep", default="", help="regex; return excerpt windows")
     parser.add_argument(
-        "--max-chars", dest="max_chars", type=int, default=20000,
+        "--max-chars",
+        dest="max_chars",
+        type=int,
+        default=20000,
         help="clip text to this many characters (default 20000)",
     )
     parser.add_argument("--out", default="", help="write the full body to this file")

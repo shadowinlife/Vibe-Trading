@@ -7,11 +7,19 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
-from nanofetch import assert_host, clip, emit, fetch, grep_excerpts, html_to_text, unavailable  # noqa: E402
 
-from bs4 import BeautifulSoup  # noqa: E402
-from nanofetch.envelope import fail_args  # noqa: E402
-from nanofetch.http import HostNotAllowed  # noqa: E402
+from bs4 import BeautifulSoup
+from nanofetch import (
+    assert_host,
+    clip,
+    emit,
+    fetch,
+    grep_excerpts,
+    html_to_text,
+    unavailable,
+)
+from nanofetch.envelope import fail_args
+from nanofetch.http import HostNotAllowed
 
 SOURCE = "sina"
 ALLOWED_HOSTS = ("vip.stock.finance.sina.com.cn", "finance.sina.com.cn")
@@ -48,10 +56,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Fetch one Sina Finance broker report body."
     )
-    parser.add_argument("--url", required=True, help="source_url from industry_reports.py")
+    parser.add_argument(
+        "--url", required=True, help="source_url from industry_reports.py"
+    )
     parser.add_argument("--grep", default="", help="regex; return excerpt windows")
     parser.add_argument(
-        "--max-chars", dest="max_chars", type=int, default=20000,
+        "--max-chars",
+        dest="max_chars",
+        type=int,
+        default=20000,
         help="clip text to this many characters (default 20000)",
     )
     parser.add_argument("--out", default="", help="write the full body to this file")

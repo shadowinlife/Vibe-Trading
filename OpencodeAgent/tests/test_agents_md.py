@@ -109,9 +109,9 @@ class TestLineBudget:
 
     def test_intake_skill_stays_compact(self):
         lines = INTAKE_SKILL_PATH.read_text(encoding="utf-8").splitlines()
-        assert len(lines) <= INTAKE_MAX_LINES, (
-            f"intake skill grew to {len(lines)} lines (budget {INTAKE_MAX_LINES})"
-        )
+        assert (
+            len(lines) <= INTAKE_MAX_LINES
+        ), f"intake skill grew to {len(lines)} lines (budget {INTAKE_MAX_LINES})"
 
 
 class TestSingleTurnBudgetRule:
@@ -356,9 +356,9 @@ class TestProductIndex:
         assert FALLBACK_LINE in lines
         fallback_index = lines.index(FALLBACK_LINE)
         assert fallback_index > 0
-        assert lines[fallback_index - 1].startswith("|"), (
-            "the fallback line must immediately follow the product table"
-        )
+        assert lines[fallback_index - 1].startswith(
+            "|"
+        ), "the fallback line must immediately follow the product table"
 
     def test_off_menu_routing_follows_the_fallback_line(self):
         lines = _read(AGENTS_MD_PATH).splitlines()
@@ -399,7 +399,9 @@ ASHARE_SKILLS = (
 def test_ashare_skill_dirs_exist():
     for name in ASHARE_SKILLS:
         assert (SKILLS_DIR / name / "SKILL.md").is_file(), f"missing {name}/SKILL.md"
-        assert list((SKILLS_DIR / name / "scripts").glob("*.py")), f"{name} has no script"
+        assert list(
+            (SKILLS_DIR / name / "scripts").glob("*.py")
+        ), f"{name} has no script"
 
 
 def test_agents_md_routes_to_every_ashare_skill():
