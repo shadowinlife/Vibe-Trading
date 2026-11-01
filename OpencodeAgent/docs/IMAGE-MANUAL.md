@@ -32,7 +32,7 @@
 
 - **OpenCode** Web Server（HTTP API + WebSocket），端口 4096
 - **OMO**（oh-my-openagent）并行任务分解插件
-- **Vibe-Trading**（mymain 分支，2026-09-26 对齐 v0.1.15 上游基线）— 94 个 MCP 工具的量化研究引擎（`VT_MEMORY_MCP_TOOLS=1` 时 99 个，含 5 个 `memory_*` 工具）
+- **Vibe-Trading**（mymain 分支，2026-09-26 对齐 v0.1.15 上游基线）— 量化研究引擎；MCP 工具数以运行期 `tools/list` / entrypoint 统计为准，随 `VT_MEMORY_MCP_TOOLS` 变化（置 `1` 时额外 5 个 `memory_*` 工具），口径见 §6.3
 - **data-warehouse** Skill — ClickHouse 数据仓库查询接口
 - **html-report** Skill — 手工离线 HTML 导出（非产品报告路径；产品回测报告由控制面渲染）
 - **MemoryGuard** Middleware — 自动记忆管理（Hook 触发，零 LLM 依赖）
@@ -256,7 +256,7 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 
 ### 6.3 VT MCP 工具特性（v0.1.16 基线 + FE-1 增强）
 
-本镜像的 Vibe-Trading 基线为 **mymain @ 上游 `596fcf3d` 对齐（2026-10-17，上游历史重写后自 b1f6ce71 等价点前进 296 commit，v0.1.16 后开发段；新增 get_fund_nav / Gildata 研究三件套 / adapt_strategy 等上游工具）**，MCP Server 默认暴露 **94 个工具**；`VT_MEMORY_MCP_TOOLS=1`（本镜像默认开启）时额外注册 5 个 `memory_*` 工具，共 **99 个**。配套资产：**91 个内置 skills**、**30 个 swarm 多智能体预设**。
+本镜像的 Vibe-Trading 基线为 **mymain @ 上游 `596fcf3d` 对齐（2026-10-17，上游历史重写后自 b1f6ce71 等价点前进 296 commit，v0.1.16 后开发段；新增 get_fund_nav / Gildata 研究三件套 / adapt_strategy 等上游工具）**。**MCP 工具数不在此写死**：唯一口径是运行期 `tools/list` 的返回条数与 entrypoint 日志 `VT MCP server OK — N tools registered`，数量随 Vibe-Trading 基线版本与 `VT_MEMORY_MCP_TOOLS` 变化（置 `1`——本镜像默认开启——时额外注册 5 个 `memory_*` 工具）。配套资产：**91 个内置 skills**、**30 个 swarm 多智能体预设**。
 
 相对 v3.2.0-mymain（v0.1.13 基线），新增以下能力：
 
@@ -341,7 +341,7 @@ services:
         max-file: "3"
 ```
 
-> **挂载约定（v3.16+）**：`/workspace` 允许整体挂载，也允许只挂子目录。skills 烘焙在全局配置目录 `/home/opencode/.config/opencode/skills/`，**不在 `/workspace` 内**，因此任何挂载都不会影响 skill 能力。`AGENTS.md`、`scripts/`、`cron_jobs/` 属于工作区内容：整体挂载 `/workspace` 时挂载方必须自带，缺失属部署配置错误——容器只打印 `skills root=... loaded=N` 诊断行，不回填、不阻断。
+> **挂载约定（v3.16+）**：允许只挂 `/workspace` 的子目录；**整体**挂载 `/workspace` 只在挂载内容同时提供 `entrypoint.sh` 与工作区内容（`AGENTS.md`、`scripts/`、`cron_jobs/`）时才可用——镜像 `ENTRYPOINT ["/workspace/entrypoint.sh"]`，缺该文件容器直接以 127 退出。skills 烘焙在全局配置目录 `/home/opencode/.config/opencode/skills/`，**不在 `/workspace` 内**，因此任何挂载都不会影响 skill 能力。`AGENTS.md`、`scripts/`、`cron_jobs/` 属于工作区内容：整体挂载 `/workspace` 时挂载方必须自带，缺失属部署配置错误——容器只打印 `skills root=... loaded=N` 诊断行，不回填、不阻断。
 
 ```bash
 # 启动
@@ -454,7 +454,7 @@ MemoryGuard 是 mymain 分支的核心特性，在 FastMCP 层面拦截所有 Vi
 
 | 阶段 | 触发条件 | 动作 |
 |------|---------|------|
-| 每次工具调用 | 所有 99 个 VT MCP 工具（94 基础 + 5 个 `memory_*`） | `memory_save`（工具名、参数、结果、耗时） |
+| 每次工具调用 | 全部 VT MCP 工具（数量以 `tools/list` 为准；`VT_MEMORY_MCP_TOOLS=1` 时含 5 个 `memory_*`） | `memory_save`（工具名、参数、结果、耗时） |
 | 回测/因子分析/交易日志后 | `backtest`、`factor_analysis` 等 | `memory_reflect`（sharpe、max_drawdown 等指标） |
 | 容器启动时 | entrypoint 阶段 | `memory_status` 验证 |
 
@@ -508,13 +508,13 @@ docker logs opencode-web 2>&1 | grep "\[entrypoint\]"
 [entrypoint] opencode.json rendered from template → /home/opencode/.opencode/opencode.json
 [entrypoint] opencode.json project-scope copy → /workspace/.opencode/opencode.json
 [entrypoint] ClickHouse OK — warming schema cache
-[entrypoint] VT MCP server OK — 99 tools registered
+[entrypoint] VT MCP server OK — <N> tools registered
 [entrypoint] VT_MEMORY=full, VT_MEMORY_MCP_TOOLS=1 → memory tools enabled
 [entrypoint] warmup complete — first client request will be fast
 [entrypoint] VT MCP connected — vibe-trading tools are in the model tool surface
 ```
 
-> 工具数由 entrypoint 动态统计：默认 94 个，`VT_MEMORY_MCP_TOOLS=1`（本镜像默认）时额外注册 5 个 `memory_*` 工具，共 99 个。
+> 工具数由 entrypoint 在运行期统计（日志 `VT MCP server OK — N tools registered`），并可用 `tools/list` 复核；数量随 Vibe-Trading 基线版本与 `VT_MEMORY_MCP_TOOLS` 变化（置 `1`——本镜像默认——时额外 5 个 `memory_*` 工具），本文档不写死数字。口径见 §6.3。
 
 ### 9.2 健康检查
 
@@ -872,7 +872,7 @@ docker builder prune
 | `/opt/vibe-trading/agent/mcp_server.py` | VT MCP Server 入口 |
 | `/opt/vibe-trading/agent/src/memory/memory_guard.py` | MemoryGuard Middleware |
 | `/workspace/.opencode/opencode.json.tmpl` | OpenCode 配置模板 |
-| `/workspace/.opencode/skills/` | 3 个 Skill |
+| `/home/opencode/.config/opencode/skills/` | 13 个 Skill（全局配置目录；镜像不提供项目级副本，因此挂载 `/workspace` 不影响 skill 能力） |
 | `/workspace/scripts/` | 量化分析脚本 |
 | `/workspace/cron_jobs/` | 周期任务管理 |
 | `/workspace/analysis/` | 分析报告输出 |

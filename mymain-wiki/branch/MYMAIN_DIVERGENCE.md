@@ -212,7 +212,7 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 
 **实测修正**：① 四份并行产出的脚本给了四套字段命名，已归一为 `excerpts`/`matched`/`chars`/`text`/`truncated`；② `--grep` 相邻命中重复返回同一段（单窗口曾 5123 字符），改为按 `context*4` 合并封顶（实测最大 958）；③ 模型为确认 `ann_type` 规则去 `sed -n` 读脚本源码，补关键词表后消失；④ 单个提问曾 13 次 bash / 3 个 skill（含与问题无关的 `company_report`），在 AGENTS.md 加唯一一条检索预算（先窄后宽、≤3 次、不串联 skill）并给 3 个重叠 skill 加「不适用」边界后降到 4 次 / 1 个。
 
-**验证**：`pytest OpencodeAgent/tests/` **209 passed / 1 skipped**；镜像内三次真实会话（强制路径 + 两次自然提问）均 skill → script → 引用原文（储能营收 57,290,460 千元、毛利率 26.84%）；空 volume 遮蔽 `/workspace/.opencode` 后 `/skill` 仍返回 16 个技能。附带发现：`/workspace` **整体**挂载时容器因 `ENTRYPOINT` 落在 `/workspace` 内而无法启动（exit 127），故真实威胁只有子路径遮蔽——现已与能力解耦。
+**验证**：`pytest OpencodeAgent/tests/` **219 passed / 1 skipped**（含 `tests/test_nano_skills.py` 的 10 个离线用例）；镜像内三次真实会话（强制路径 + 两次自然提问）均 skill → script → 引用原文（储能营收 57,290,460 千元、毛利率 26.84%）；空 volume 遮蔽 `/workspace/.opencode` 后 `/skill` 仍返回 16 个技能。附带发现：`/workspace` **整体**挂载时容器因 `ENTRYPOINT` 落在 `/workspace` 内而无法启动（exit 127），故真实威胁只有子路径遮蔽——现已与能力解耦。
 
 ### 2026-07-27 五-agent 并行评审（Goal/QA/CodeQuality/Security/ContextMining）
 

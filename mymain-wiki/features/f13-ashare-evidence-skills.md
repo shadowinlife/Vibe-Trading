@@ -13,7 +13,7 @@ related: [f7-opencode-agent.md, ../branch/MYMAIN_DIVERGENCE.md]
 
 ## 结论
 
-六类 A 股公开信息从「一个从未接线的 MCP 服务」改为「6 个 skill + 9 个纯标准库脚本」：常驻工具 schema 从 12 个（约 3.5k tokens/请求）降到 6 条 skill description（约 300 tokens），并且全文类资料可以用 `--grep` / `--max-chars` 分片读取，而不是把 20 万字的年报灌进上下文。
+六类 A 股公开信息从「一个从未接线的 MCP 服务」改为「6 个 skill + 9 个脚本（标准库 + `beautifulsoup4`）」：常驻工具 schema 从 12 个（约 3.5k tokens/请求）降到 6 条 skill description（约 300 tokens），并且全文类资料可以用 `--grep` / `--max-chars` 分片读取，而不是把 20 万字的年报灌进上下文。
 
 改造前 `AGENTS.md` 把这六类写成「已知缺口」并要求模型「在结论中注明覆盖有限」——**文档本身在关闭能力**：模型不会去尝试一个它被告知不存在的工具。
 
@@ -48,7 +48,7 @@ related: [f7-opencode-agent.md, ../branch/MYMAIN_DIVERGENCE.md]
 ### 契约
 
 - **失败**：数据源不可达或页面结构变化 → stdout `{"available": false, "reason": ...}` + **exit 0**；只有参数非法才 exit 2 + stderr。沿用 `workspace/scripts/AGENTS.md` 的既有惯例，不另立第二套。
-- **输出**：全文类统一 `available / source / chars / truncated / text`，带 `--grep` 时追加 `excerpts[]`（`offset` + `excerpt`）与 `matched`，带 `--out` 时追加 `path`（文件存完整正文）。列表类统一 `available / source / count / <domain>[]`，`ts_code` 一律带交易所后缀。
+- **输出**：全文类统一 `available / source / chars / truncated / text`，带 `--grep` 时 `text` 置空、`truncated` 置 `false`，仅返回 `excerpts[]`（`offset` + `excerpt`）与 `matched`，带 `--out` 时追加 `path`（文件存完整正文）。列表类统一 `available / source / count / <domain>[]`，`ts_code` 一律带交易所后缀。
 
 ## 关键文件与开关
 
@@ -58,7 +58,7 @@ related: [f7-opencode-agent.md, ../branch/MYMAIN_DIVERGENCE.md]
 | `OpencodeAgent/skills/_lib/nanofetch/` | 共享 HTTP / 文本 / 信封 |
 | `OpencodeAgent/Dockerfile` | `COPY skills/ /home/opencode/.config/opencode/skills/`（含 `--chown`） |
 | `OpencodeAgent/Dockerfile.base` | `beautifulsoup4` 显式入 pip 列表 |
-| `OpencodeAgent/AGENTS.md` | 46–50 行「外部证据取数」映射 + 检索预算 |
+| `OpencodeAgent/AGENTS.md` | 86–91 行「外部证据取数」映射 + 检索预算 |
 | `OpencodeAgent/entrypoint.sh` | skills 根与加载数诊断行 |
 | `OpencodeAgent/tests/test_nano_skills.py` | CLI 契约 / 白名单 / 窗口合并（10 例，离线） |
 | `OpencodeAgent/tests/test_agents_md.py` | 6 个 skill 存在且被 AGENTS.md 路由 |
@@ -69,7 +69,7 @@ related: [f7-opencode-agent.md, ../branch/MYMAIN_DIVERGENCE.md]
 
 | 项 | 结果 |
 |---|---|
-| 单元/契约 | `pytest OpencodeAgent/tests/` **209 passed / 1 skipped** |
+| 单元/契约 | `pytest OpencodeAgent/tests/` **219 passed / 1 skipped**（含 `tests/test_nano_skills.py` 的 10 个离线用例；该文件另有 1 个 live network probe 被跳过） |
 | 强制路径会话 | `skill(ashare-filings)` → `bash` ×2，24.1s；答案引用年报「主营业务分析」原文，储能营收 57,290,460 千元、毛利率 26.84% |
 | 自然提问路由（不提示） | 「有没有问询函/诉讼公告」→ 只加载 `ashare-events`；「有没有被监管处罚」→ 只加载 `ashare-risk`。2/2 自动路由成功 |
 | 挂载免疫 | 用空 volume 遮蔽 `/workspace/.opencode`，`GET /skill` 仍返回 16 个技能、6 个 `ashare-*` 全在 |
