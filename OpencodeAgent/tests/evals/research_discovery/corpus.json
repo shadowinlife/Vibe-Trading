@@ -1,0 +1,98 @@
+[
+  {
+    "id": "open_markets",
+    "turns": ["最近有什么机会？", "先比较A股、美股和加密，不要直接给买入清单", "我想先理解风险取舍，暂时不做回测"],
+    "target": {"question": "跨市场风险取舍", "market": "cross", "symbols": []},
+    "route": "allocation_review",
+    "unknown": ["position", "risk"],
+    "artifact_required": true
+  },
+  {
+    "id": "nvda_pivot",
+    "turns": ["最近涨很多，还能买吗？", "其实我满仓NVDA，担心财报", "先做公开资料事件风险研究，不提供成本价"],
+    "target": {"question": "NVDA财报事件风险", "market": "us", "symbols": ["NVDA.US"]},
+    "route": "event_risk",
+    "unknown": ["cost_basis"],
+    "artifact_required": true
+  },
+  {
+    "id": "ashare_top",
+    "turns": ["A股大盘顶部了吗？", "想看拥挤和回撤风险，不要预测点位"],
+    "target": {"question": "A股大盘拥挤风险", "market": "a", "symbols": []},
+    "route": "ashare_top_risk",
+    "unknown": ["position"],
+    "artifact_required": true
+  },
+  {
+    "id": "btc_structure",
+    "turns": ["BTC见底了吗？", "先看日线缠论结构，暂不回测"],
+    "target": {"question": "BTC日线技术结构", "market": "crypto", "symbols": ["BTC-USDT"]},
+    "route": "technical_structure",
+    "unknown": ["position", "risk"],
+    "artifact_required": true
+  },
+  {
+    "id": "strategy_directory",
+    "turns": ["有什么内置策略？", "先看目录与真实证据，不要生成新策略"],
+    "target": {"question": "策略目录与证据", "market": "unknown", "symbols": []},
+    "route": "strategy_catalog",
+    "unknown": ["market"],
+    "artifact_required": true
+  },
+  {
+    "id": "explicit_backtest",
+    "turns": ["回测AAPL双均线20/60，2020到2025年，手续费0.1%，SPY基准；仅一次，不调参"],
+    "target": {"question": "AAPL双均线单次回测", "market": "us", "symbols": ["AAPL.US"]},
+    "route": "strategy_test",
+    "unknown": ["position"],
+    "artifact_required": true
+  },
+  {
+    "id": "crypto_screen",
+    "turns": ["加密有什么机会？", "只比较BTC和ETH日线趋势，不要全市场扫描"],
+    "target": {"question": "BTC与ETH趋势比较", "market": "crypto", "symbols": ["BTC-USDT", "ETH-USDT"]},
+    "route": "technical_structure",
+    "unknown": ["risk"],
+    "artifact_required": true
+  },
+  {
+    "id": "macro_scope",
+    "turns": ["降息有什么影响？", "只看美股科技和美元资金渠道，不做全球配置"],
+    "target": {"question": "降息对美股科技的传导", "market": "us", "symbols": []},
+    "route": "event_risk",
+    "unknown": ["position"],
+    "artifact_required": true
+  },
+  {
+    "id": "deep_preferences",
+    "turns": ["深挖一下什么策略适合我", "我只想研究美股，优先少换手", "先看策略证据，风险容忍还不知道", "够了，就按这个目标继续"],
+    "target": {"question": "美股低换手策略证据", "market": "us", "symbols": []},
+    "route": "strategy_catalog",
+    "unknown": ["risk"],
+    "artifact_required": true
+  },
+  {
+    "id": "skip_private",
+    "turns": ["我的持仓怎么样？", "不想提供仓位，请先解释组合风险怎么研究"],
+    "target": {"question": "组合风险研究方法", "market": "unknown", "symbols": []},
+    "route": null,
+    "unknown": ["position", "position_size"],
+    "artifact_required": false
+  },
+  {
+    "id": "cancel",
+    "turns": ["先探索选股路线", "暂时不做了，取消"],
+    "target": {"question": "已取消", "market": "unknown", "symbols": []},
+    "route": null,
+    "unknown": ["market"],
+    "artifact_required": false
+  },
+  {
+    "id": "concept",
+    "turns": ["什么是因子？直接解释，不要访谈"],
+    "target": {"question": "因子概念", "market": "unknown", "symbols": []},
+    "route": null,
+    "unknown": ["market"],
+    "artifact_required": false
+  }
+]

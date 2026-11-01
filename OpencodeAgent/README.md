@@ -16,8 +16,8 @@ Docker build project for `opencode-serve` — OpenCode Web Server with Vibe-Trad
 This project packages the OpenCode Web Server research environment into a reproducible Docker image. It extends the base `opencode-serve` image with:
 
 - **OpenCode CLI** (pinned in `Dockerfile.base`, currently 1.19.3) + **OMO (oh-my-openagent) plugin** (pinned via `OMO_VERSION`, currently 5.1.35, pre-baked into the plugin cache)
-- **13 OpenCode skills**: data-warehouse (ClickHouse heavy queries), semantic-layer (ClickHouse semantic catalogue and table/result decision rules; read before querying), escape-top-microstructure (top-detection signals), html-report (manual offline HTML export only; not a product report path), intake (clarification routing, slot defaults and parameter compile table, loaded on demand), periodic-execution (cron), research-scenarios (scenario playbooks A-F, loaded on demand), plus six external-evidence skills: ashare-filings (定期报告全文), ashare-events (临时公告), ashare-risk (监管处罚), ashare-ir (机构调研), ashare-research (券商研报), ashare-policy (gov.cn 行业政策)
-- **Full AGENTS.md** (385 lines, always loaded): an 8-artifact product index, a scenario-based VT capability map, all 30 swarm presets grouped by use case, behavior instructions for 6 scenarios (A through F), a 4-class request router and anti-hallucination discipline; the clarification protocol now lives in the `intake` skill, not in this file
+- **14 OpenCode skills**: data-warehouse (ClickHouse heavy queries), semantic-layer (ClickHouse semantic catalogue and table/result decision rules; read before querying), escape-top-microstructure (top-detection signals), html-report (manual offline HTML export only; not a product report path), intake (legacy clarification routing, slot defaults and parameter compile table), research-discovery (explicit experimental progressive/deep needs exploration and evidence-backed research routes), periodic-execution (cron), research-scenarios (scenario playbooks A-F, loaded on demand), plus six external-evidence skills: ashare-filings (定期报告全文), ashare-events (临时公告), ashare-risk (监管处罚), ashare-ir (机构调研), ashare-research (券商研报), ashare-policy (gov.cn 行业政策)
+- **Full AGENTS.md** (387 lines, always loaded): an 8-artifact product index, a scenario-based VT capability map, all 30 swarm presets grouped by use case, behavior instructions for 6 scenarios (A through F), a 4-class request router and anti-hallucination discipline; legacy clarification lives in `intake`, while explicit `research-discovery` activation uses the experimental v2 policy
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
 - **Cron job infrastructure** with CLI management and DingTalk/email notification
 
@@ -51,6 +51,22 @@ docker compose up -d
 # Access at http://localhost:4096
 ```
 
+## Experimental research discovery
+
+Explicitly invoke `research-discovery` or ask “先探索需求 / 先选研究路线”.
+Progressive exploration asks only decisions that change the research route;
+deep exploration is user-selected. It does not impose a three-question budget,
+invent holdings/risk preferences, or start expensive analysis before a route is
+chosen. Direct lookups and fully specified backtests do not require an interview.
+Outside explicit activation, legacy behavior remains unchanged.
+
+The v2 brief separates the research goal, unknowns, route, sample window and
+actual MCP arguments. It reuses VT strategy discovery, research goals, Swarm and
+backtests instead of adding specialist agents. The validator is packaged beside
+global skills, but **contract validation is not runtime approval enforcement**.
+See [RESEARCH-DISCOVERY.md](docs/RESEARCH-DISCOVERY.md) for offline schema capture,
+multi-turn fixtures, the isolated MCP hook canary and remaining admission gates.
+
 ## Directory Structure
 
 ```
@@ -75,10 +91,11 @@ OpencodeAgent/
 │   ├── package.json            # OpenCode plugin dependencies
 │   └── vibe-trading-tools.json # Tool governance manifest (disabled VT tools → permission denies)
 │
-├── skills/                     # OpenCode skills (13) — installed to the global config dir, not /workspace
+├── skills/                     # OpenCode skills (14) — installed to the global config dir, not /workspace
 │   ├── data-warehouse/         # ClickHouse query interface (query_warehouse, list_tables)
 │   ├── html-report/            # Manual offline HTML export with ECharts (not a product path)
 │   ├── intake/                 # Clarification routing, slot defaults and parameter compile table
+│   ├── research-discovery/     # Explicit exploration, route recipes and v2 brief schema
 │   ├── periodic-execution/     # Cron job management (manage.py, notifier)
 │   ├── escape-top-microstructure/ # A-share top-detection signals
 │   ├── research-scenarios/     # Scenario playbooks A–F (on-demand, offloaded from AGENTS.md)
