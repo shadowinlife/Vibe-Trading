@@ -362,6 +362,14 @@ else
     echo "[entrypoint] WARNING: OMO plugin cache missing: ${OMO_CACHE} — opencode will download it on first request (needs npm registry access; see Dockerfile pre-bake)"
 fi
 
+# ── Report the global skills root ────────────────────────────────────────────
+# Skills are baked into the global config dir, not /workspace, so mounting the
+# workspace cannot remove them. Diagnostic only: a mount that hides AGENTS.md or
+# scripts/ is a deployment error, and this entrypoint does not repair it.
+SKILLS_ROOT="${HOME:-/home/opencode}/.config/opencode/skills"
+SKILLS_LOADED=$(find "$SKILLS_ROOT" -maxdepth 3 -name SKILL.md 2>/dev/null | wc -l | tr -d ' ')
+echo "[entrypoint] skills root=$SKILLS_ROOT loaded=$SKILLS_LOADED"
+
 # ── Verify VT MCP server is importable ────────────────────────────────────────
 # FastMCP >=2 no longer exposes the private ``_tool_manager`` attribute, so try
 # the public ``list_tools()`` API first and fall back to import-only reporting.
@@ -406,7 +414,20 @@ case "$VT_STARTUP_BUDGET_S" in
         VT_STARTUP_BUDGET_S=300
         ;;
 esac
-OPENCODE_MCP_URL="http://127.0.0.1:4096/mcp?directory=/workspace"
+# opencode resolves its project from cwd. The image pins WORKDIR=/workspace;
+# fail fast if a deployment overrides it, because OMO would write /.omo and the
+# project AGENTS.md/commands would silently disappear.
+PROJECT_DIR="/workspace"
+if [ "$(pwd)" != "$PROJECT_DIR" ]; then
+    echo "[entrypoint] ERROR: working directory is $(pwd), expected $PROJECT_DIR" >&2
+    exit 1
+fi
+if [ ! -w "$PROJECT_DIR" ]; then
+    echo "[entrypoint] ERROR: project directory is not writable: $PROJECT_DIR" >&2
+    exit 1
+fi
+echo "[entrypoint] project dir=$PROJECT_DIR"
+OPENCODE_MCP_URL="http://127.0.0.1:4096/mcp?directory=${PROJECT_DIR}"
 
 opencode serve --port 4096 --hostname 0.0.0.0 &
 SERVER_PID=$!
@@ -421,7 +442,7 @@ SERVER_PID=$!
 # local init finishes; let it settle before the warmup probe.
 sleep 20
 if curl -sf --max-time "$VT_STARTUP_BUDGET_S" -u opencode:"${OPENCODE_SERVER_PASSWORD:-}" \
-    "http://127.0.0.1:4096/config?directory=/home/opencode" >/dev/null 2>&1; then
+    "http://127.0.0.1:4096/config?directory=${PROJECT_DIR}" >/dev/null 2>&1; then
     echo "[entrypoint] warmup complete — first client request will be fast"
 else
     echo "[entrypoint] WARNING: warmup request did not complete within ${VT_STARTUP_BUDGET_S}s"

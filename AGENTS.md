@@ -87,7 +87,7 @@
 
 ## 10.3 强制规则：就绪必须由真实 warm 路径定义
 
-1. **「进程存活 / 端口可连」不是就绪**。凡是 bind 早于初始化的服务，必须提供与真实业务路径一致的 readiness 端点（本项目为 `GET /config?directory=/home/opencode`），并由 `startupProbe` 或 `readinessProbe` 门控。
+1. **「进程存活 / 端口可连」不是就绪**。凡是 bind 早于初始化的服务，必须提供与真实业务路径一致的 readiness 端点（本项目为 `GET /config?directory=/workspace`，opencode 以进程 cwd 解析项目，WORKDIR=/workspace），并由 `startupProbe` 或 `readinessProbe` 门控。
 2. **优先 `startupProbe`**：它在成功前抑制 readiness/liveness，且不会因为启动慢被重启。`readinessProbe` 只适合启动快、但可能阶段性失去服务能力的场景。
 3. **probe 必须打真实入口**。探一个静态 `/health`、而业务入口另有 bootstrap 成本，等于没门控。
 4. **禁止用「进程存活 + 端口可连」的脚本或 sidecar 推断就绪**。
@@ -104,7 +104,7 @@ startupProbe:
     command:
       - /bin/bash
       - -c
-      - 'curl -sf --max-time 40 -u "opencode:${OPENCODE_SERVER_PASSWORD}" "http://127.0.0.1:4096/config?directory=/home/opencode"'
+      - 'curl -sf --max-time 40 -u "opencode:${OPENCODE_SERVER_PASSWORD}" "http://127.0.0.1:4096/config?directory=/workspace"'
   periodSeconds: 5
   timeoutSeconds: 45
   failureThreshold: 6

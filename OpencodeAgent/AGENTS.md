@@ -1,20 +1,60 @@
 # 环境
 1. Python/数据分析前先 `source /opt/venv/bin/activate`（venv 位于 `/opt/venv`，所有 Python 脚本必须在此环境中执行）。
 2. 容器运行 opencode serve（端口 :4096），agent 工作目录为 `/workspace`。
-3. **Vibe-Trading 来源**: 镜像使用 `shadowinlife/Vibe-Trading` 的 `mymain` 分支（2026-10-27 对齐上游 main @ 3cbb167e，自 11cff3f3 前进 119 commit，非 PyPI 版本），以 editable install 方式安装于 `/opt/vibe-trading`。包含 ClickHouse 数据源（`clickhouse` loader）、ClickHouse 语义层工具（`ch_*`）、MemoryGuard 记忆中间件。
-4. **VT MCP 工具规模**: 当前 mymain 树默认 **94 个**；`VT_MEMORY_MCP_TOOLS=1` 时为 **99 个**（多出的 5 个为 `memory_save` / `memory_recall` / `memory_reinforce` / `memory_reflect` / `memory_status`）。策略调度为六个 RM 控制面工具：`schedule_strategy` / `list_strategy_schedules` / `pause_strategy_schedule` / `resume_strategy_schedule` / `delete_strategy_schedule` / `retarget_strategy_schedule`。已交付的 v3.8.x 镜像早于 F9 与 2026-10-27 对齐，为 85/90；本镜像为 94/99。镜像已预置记忆工具开关。
-5. **VT 内置技能**: 91 个金融技能（`vibe-trading_list_skills` 查看，`vibe-trading_load_skill` 加载）；**Swarm 团队预设**: 30 个（`vibe-trading_list_swarm_presets` 查看）。
+3. **VT 运行时**: editable install 在 `/opt/vibe-trading`；工具/技能/预设能力以 `tools/list`、`vibe-trading_list_skills`、`vibe-trading_list_swarm_presets` 的运行时结果为准，不用版本号或 commit 数推断。
+4. **VT MCP 工具面**: 以 `tools/list` 为准；`VT_MEMORY_MCP_TOOLS=1` 时额外暴露 5 个 `memory_*` 工具（save/recall/reinforce/reflect/status）。策略调度为 6 个 RM 控制面工具：`schedule_strategy` / `list_strategy_schedules` / `pause_strategy_schedule` / `resume_strategy_schedule` / `delete_strategy_schedule` / `retarget_strategy_schedule`。
+5. **VT 内置技能与团队预设**: 用 `vibe-trading_list_skills` 查全部金融技能，用 `vibe-trading_list_swarm_presets` 查全部 swarm 预设及其 required variables。
 6. **记忆存储**: `/workspace/.vt-memory/`（由 `VT_MEMORY_BASE_DIR` 指定），通过 `docker-compose.yml` 挂载 `volumes/vt-memory` 持久化，容器重启不丢失。
 7. 可复用 ClickHouse SQL 查询放 `./sql/`，视图定义文档放 `./docs/views/`。
 8. 临时脚本、中间文件、下载材料放 `./tmp/<session-id>_*`。
+
+# VT 能力地图（按场景）
+
+> 这是路由入口，不是穷举手册。MCP 工具名省略 `vibe-trading_` 前缀（opencode 调用面会自动加）；完整工具名以 `tools/list` 为准，技能用 `vibe-trading_list_skills` 查，团队预设用 `vibe-trading_list_swarm_presets` 查；不要凭本表猜参数。
+
+| 用户意图 | 首选入口 | 常用补充 | 边界 |
+|---|---|---|---|
+| 看行情、估值、K 线、技术指标 | `get_market_data`、`technical_indicators`、`ch_*` | `pattern_recognition`、`screen_market` | 多方法共振 → `technical_analysis_panel` |
+| 资金流、两融、北向、龙虎榜、筹码 | `get_fund_flow`、`get_margin_trading`、`get_northbound_flow`、`get_dragon_tiger` | `get_block_trades`、`get_shareholder_count`、`get_lockup_expiry`、`get_sector_info` | 单日异动解释不等于趋势 |
+| 财报、公告、研报、IR、监管、政策 | `get_financial_statements`、`get_cn_announcements`、`get_research_reports`、skills `ashare-*` | `search_broker_reports`、`get_stock_news`、`web_search` | 全文资料必须分片读 |
+| 个股基本面、估值、投资视角 | `financial-statement`、`valuation-model`、`investor-lenses`、`fundamental-filter` | `earnings-forecast`、`thesis-tracker`、`get_sec_filings` | 多空辩论 → `investment_committee` |
+| 选股、因子、回测 | `screen_market`、`iwencai_search`、`factor_analysis`、`multi-factor`、`factor-research` | `alpha_zoo`、`alpha_bench`、`strategy-generate`、`vibe-trading_backtest`、`backtest-diagnose`、`quantlib_call` | 报告走控制面 Run Detail |
+| 组合、配置、风险 | `portfolio_review_board`、`risk_committee`、`etf_allocation_desk`、`global_allocation_committee`、`fund_selection_panel` | `risk-analysis`、`etf_holdings`、`quantlib_call` | 单标的诊断不走组合团队 |
+| 宏观、事件、地缘、商品 | `macro_strategy_forum`、`macro_rates_fx_desk`、`event_driven_task_force`、`geopolitical_war_room`、`commodity_research_team` | `get_macro_series`、`get_cn_macro_series`、`macro-analysis`、`geopolitical-risk`、`commodity-analysis` | 单条新闻摘要不走团队 |
+| 技术面 | `technical-basic`、`candlestick`、`ichimoku`、`elliott-wave`、`harmonic`、`smc`、`chanlun` | `technical_analysis_panel`（多方法共振） | 单一均线/指标直接算 |
+| 加密、衍生品、跨市场 | `crypto_trading_desk`、`crypto_research_lab`、`derivatives_strategy_desk`、`pairs_research_lab`、`statistical_arbitrage_desk`、`ml_quant_lab` | `get_market_data`(okx/ccxt)、`orderbook_depth`、`get_options_chain`、`analyze_options` | 未指定市场先确认或按默认 |
+| 另类数据、情绪、预测市场 | `sentiment`、`get_stock_news`、`prediction_market`、`web_search`、`read_url` | `sentiment_intelligence_team`、`social_alpha_team` | 社媒信号不得作为唯一证据 |
+| 交易账户、纸面交易、复盘 | `trading_account`、`trading_positions`、`trading_orders`、`trading_quote`、`trading_history`、`paper_trade_step` | `analyze_trade_journal`、`extract_shadow_strategy`、`run_shadow_backtest`、`render_shadow_report` | 只读；不自动下单 |
+| 记忆、调度 | `memory_*`、`schedule_strategy` / `list_strategy_schedules` / `pause_strategy_schedule` / `resume_strategy_schedule` / `delete_strategy_schedule` / `retarget_strategy_schedule` | `periodic-execution` | cron 里不得调用交互式提问 |
+| 多智能体团队 | `vibe-trading_run_swarm` | 见下方「Swarm 预设」 | 简单单步/单指标/已给定回测不走 |
+
+## Swarm 预设（30 个，按场景分组）
+
+| 场景 | 预设 | 典型触发 |
+|---|---|---|
+| 单票辩论 / 投委会 / 价值流派 | `investment_committee`、`value_investing_committee`、`fundamental_research_team`、`earnings_research_desk` | 多空都说说、投委会视角、巴菲特/芒格怎么看、财报深研 |
+| 量化 / 因子 / 策略 | `quant_strategy_desk`、`factor_research_committee`、`ml_quant_lab`、`pairs_research_lab`、`statistical_arbitrage_desk` | 设计并回测策略、因子评审、机器学习选股、配对/统计套利 |
+| 组合 / 配置 / 风险 | `portfolio_review_board`、`risk_committee`、`etf_allocation_desk`、`global_allocation_committee`、`fund_selection_panel` | 组合复盘、风险审计、ETF 配置、全球多资产、FOF 选基 |
+| 宏观 / 事件 / 地缘 / 商品 | `macro_strategy_forum`、`macro_rates_fx_desk`、`event_driven_task_force`、`geopolitical_war_room`、`commodity_research_team` | 降息/汇率/大宗、并购/政策事件、地缘冲突、商品供需 |
+| 行业 / 全球股票 | `equity_research_team`、`sector_rotation_team`、`global_equities_desk` | 行业轮动、跨市场选股、宏观→行业→个股 |
+| 技术面多方法共振 | `technical_analysis_panel` | 多指标共振、缠论+波浪+谐波+SMC |
+| 加密 / 衍生品 | `crypto_trading_desk`、`crypto_research_lab`、`derivatives_strategy_desk` | 加密仓位/链上研究、期权策略与 Greeks |
+| 信用 / 可转债 | `credit_research_team`、`convertible_bond_team` | 信用债/城投、可转债低价/双低 |
+| 情绪 / 社交另类数据 | `sentiment_intelligence_team`、`social_alpha_team` | 新闻/社媒情绪、Twitter/Telegram/Reddit alpha |
+
+**Swarm 使用规则**：
+1. 先判断是否真的需要多视角：用户明确要“多空辩论 / 投委会 / 委员会 / 组合复盘 / 风险审计 / 跨市场配置 / 多方法共振”才升级；简单单票、单指标、单条新闻、已给定完整策略的回测不走 swarm。
+2. 调用前必须用 `vibe-trading_list_swarm_presets` 查该预设的 required variables；变量名因预设而异（`target` / `market` / `company` / `goal` / `commodity` / `horizon` 等），不得套固定模板。
+3. 长时间团队任务用 `start_only=true` 拿 `run_id`，再用 `get_swarm_status` / `get_run_result` 查询；不要阻塞等待。
+4. 金融多智能体团队用 swarm；研究/代码类并行用 OMO；两者不得嵌套。
 
 # 数据采集能力
 
 ## ClickHouse 语义层（交互式 SQL 首选通道）
 
-**语义层目录（任何 ClickHouse 取数前必读）**：`.opencode/skills/semantic-layer/INDEX.md`
+**语义层目录（任何 ClickHouse 取数前必读）**：`/home/opencode/.config/opencode/skills/semantic-layer/INDEX.md`
 - 57 张表逐表说明（粒度 / 主键 / 日期列类型 / 单位 / 权威性 / 坑 / 示例 / 全列清单）。
-- `.opencode/skills/semantic-layer/RULES.md` 是**判定规则**：ETF↔指数、估值降级阶梯、空结果四分法、范围过大、过期标注、列名与单位。
+- `/home/opencode/.config/opencode/skills/semantic-layer/RULES.md` 是**判定规则**：ETF↔指数、估值降级阶梯、空结果四分法、范围过大、过期标注、列名与单位。
 - 文档由 `tools/gen_semantic_layer.py` 从库结构生成；**不要手改**。目录只描述库，实时列名仍以 `ch_describe_table` 为准。
 
 VT 内置三个 ClickHouse 语义层工具，是 LLM 交互式取数的**首选通道**：
@@ -31,7 +71,7 @@ VT 内置三个 ClickHouse 语义层工具，是 LLM 交互式取数的**首选�
 1. A 股历史数据：ClickHouse 提供 T-1 全量；VT `get_market_data` 的 A 股 fallback 链**头部即 `clickhouse`**。行情按标的类型分表：个股 `stk_factor_pro`、ETF/LOF `fund_daily`、指数 `idx_factor_pro`（详见语义层目录）。
 2. 当日（T 日）OHLCV：ClickHouse 不覆盖，由网络源实时补数（`tencent`/`akshare`/`tushare`）。数据联邦模式 = ClickHouse T-1 历史 + 网络源当日。
 3. **量纲检查**: `get_market_data` 返回的 `_provenance` 现含 `volume_unit`（"lots" 手 / "shares" 股），跨源/跨标的比较成交量前**必须检查该字段**（上游 #1062 修复）。
-4. 估值速查：**仅个股**可查 `stk_factor_pro` 的 pe_ttm / pb / total_mv；ETF 与指数**没有**直接估值列，必须走 `.opencode/skills/semantic-layer/RULES.md` R3 的三级降级（官方指数估值 → 成分股加权并披露覆盖率 → 明确拒答）。
+4. 估值速查：**仅个股**可查 `stk_factor_pro` 的 pe_ttm / pb / total_mv；ETF 与指数**没有**直接估值列，必须走 `/home/opencode/.config/opencode/skills/semantic-layer/RULES.md` R3 的三级降级（官方指数估值 → 成分股加权并披露覆盖率 → 明确拒答）。
 5. 本地找不到标的时，先用 `search_symbol` 判断是否为 ETF、港股、美股或其他市场代码，再选数据源，不要直接反问用户代码；ETF 需要指数数据时按 `RULES.md` R2 解析跟踪指数（库内无 `fund_basic` 映射表，已核验映射见 R2.1）。
 
 ## 跨市场与实时数据
@@ -43,10 +83,12 @@ VT 内置三个 ClickHouse 语义层工具，是 LLM 交互式取数的**首选�
 ## 资金流与补充维度
 VT 的 `get_fund_flow`、`get_margin_trading`、`get_northbound_flow`、`get_sector_info`、`get_dragon_tiger`、`get_block_trades`、`get_shareholder_count`、`get_lockup_expiry` 等 Flow/结构工具可作为 ClickHouse 数据的补充维度。
 
-## 外部检索（VT 内置工具；nano-search-mcp 已于 2026-09-26 回退下线）
-- 通用网页检索：`web_search`（VT 内置，ddgs 聚合 DuckDuckGo/Google/Bing/Brave 等多引擎，含 cn.bing 国内可达回退）；任意 URL 正文提取：`read_url`。
-- A 股结构化资料：券商研报与一致预期 → `get_research_reports`；个股/全局财经新闻 → `get_stock_news`。
-- **已知缺口**（待未来替换搜索引擎补齐）：年报/半年报/季报全文、公告检索、监管处罚、机构调研/业绩说明会、gov.cn 行业政策——原 nano-search-mcp 专用通道已下线；需要时只能用 `web_search` 做公网检索，且必须在结论中注明覆盖有限。
+## 外部证据取数（skills，按需加载）
+- 定期报告全文 → `ashare-filings`；临时公告 → `ashare-events`；监管处罚 → `ashare-risk`。
+- 机构调研/业绩说明会 → `ashare-ir`；券商行业研报 → `ashare-research`；gov.cn 行业政策 → `ashare-policy`。
+- 通用检索：`web_search`（ddgs + cn.bing 回退）；URL 正文：`read_url`；研报与一致预期：`get_research_reports`；新闻：`get_stock_news`。
+- 全文类资料必须用 `--grep` 或 `--max-chars` 分片读取，禁止整篇读入上下文；`available:false` 表示数据源不可达，不得当作"没有披露"。
+- 一次提问只走对应的一类 skill：先窄后宽（先按类型/关键词过滤，不拉全量）；同一问题最多 3 次脚本调用，第 2 次必须收窄而非重跑；不要串联多个 `ashare-*` skill 做"交叉验证"。
 
 # 数据同步
 ClickHouse 数据由外部同步进程维护，本容器内不包含同步逻辑。如需手动触发同步，请在同步进程所在环境执行。数据联邦模式：ClickHouse 提供 T-1 历史全量数据 + 网络源提供当日 OHLCV。
@@ -66,8 +108,26 @@ ClickHouse 数据由外部同步进程维护，本容器内不包含同步逻辑
 2. 定性分析必须给出明确结论、逻辑链和可靠来源；区分证据与预测。
 3. 报告结构需包含引言、数据分析方法、分析结果、结论与风险。
 4. 需求含糊时按下方「问题处理协议」路由；开放型 / 待澄清型先加载 intake skill，按类型执行（开放型默认值直接执行，待澄清型仅私有槽位一轮）。
-5. 正式报告保存到 `analysis/<stock_code>/`，并更新 `analysis/_index.json`。
-6. **分析完成后必须主动问询用户是否需要生成 HTML 交互报告**（详见下方 HTML 报告展示能力）。
+5. 分析类 Markdown 报告保存到 `analysis/<stock_code>/`，并更新 `analysis/_index.json`；回测产物写入 run_dir，不写 `analysis/`。
+6. 报告展示：回测报告由控制面 Run Detail 自动渲染；不要主动生成 HTML 报告。
+
+# 回测与报告运行契约（控制面，CRITICAL）
+
+1. 回测 `run_dir` 固定为 `/home/opencode/.vibe-trading/runs/<run_id>`。先在该目录写 `config.json` 与 `code/signal_engine.py`，再调用 `vibe-trading_backtest(run_dir=...)`；禁止用 bash 直接跑回测，禁止把 `run_dir` 放到 `/workspace`、`/tmp` 或 `analysis/`。
+2. 回测完成后，控制面从 tool result 的 `summary` 与 `run_dir` artifacts 自动渲染报告。不要为“可视化回测报告”手写 HTML/PDF，也不要再生成一份 Markdown 回测报告。
+3. 回答只返回 `run_id`、关键指标和简短结论；报告入口是控制面的 Run Detail。用户追问“可视化/报告”时，返回 `run_id` 并说明在 Run Detail 查看。
+4. `html-report` 仅用于用户明确要求的独立 HTML 导出（非产品需求），保存到 `/home/opencode/.vibe-trading/reports/`；禁止 `/workspace/reports`、`nginx:8088`、`scp`。
+
+### 产物布局（控制面契约，不得改名）
+
+一次成功回测的 `run_dir` 必须包含 `run_card.json` 与：
+
+- `artifacts/metrics.csv`：任意表头，单行宽表；
+- `artifacts/equity.csv`：必需 `timestamp,equity,drawdown`，可选 `benchmark_equity`；
+- `artifacts/trades.csv`：必需 `timestamp,code,side,price,qty,pnl`，可选 `reason,holding_days,holding_bars,return_pct`；
+- `artifacts/positions.csv`：唯一且非空表头，行宽与表头一致。
+
+成功结果继续携带 `schema_version: "1.0"` 的 `summary`，至少含 `run_id`、`metrics`、`equity_preview`、`codes`、`start_date`、`end_date`、`interval`、`artifact_paths`。成交/持仓可由控制面从 CSV 回填；不要用空值覆盖已有 summary 字段。
 
 # 问题处理协议（CRITICAL）
 
@@ -153,20 +213,11 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
    - 单周亏损 ≥ 10% → 红色预警，减仓至 50%
    - 单月亏损 ≥ 15% → 黑色预警，清仓并强制复盘
 
-# HTML 报告展示能力（html-report Skill）
+# 报告展示（控制面优先）
 
-已安装 `html-report` Skill，可将分析/回测结果渲染为带 ECharts 交互图表的 HTML 页面，通过本地 nginx 提供服务。**模板清单（7+1）、设计约束、部署命令与模板自我迭代规则见该 Skill 正文**（需要时加载 `html-report`）。
-
-## 主动展示规则（MANDATORY）
-**每次完成以下类型的分析后，必须主动问询用户是否需要生成 HTML 交互报告：**
-1. 量化回测完成（场景 B）→ 提供回测报告 HTML
-2. 基本面/投资分析完成（场景 A）→ 提供基本面分析或七看八问 HTML
-3. 缠论分析完成 → 提供缠论分析 HTML
-4. 信号扫描完成 → 提供信号报告 HTML
-5. 事件驱动/行业/宏观分析完成（场景 F）→ 提供 Markdown 转 HTML
-
-**问询话术示例**：
-> "分析已完成。是否需要生成交互式 HTML 报告？可通过浏览器查看 ECharts 图表、暗色主题切换。"
+- 回测报告：控制面 Run Detail 自动渲染，不生成 HTML/PDF。
+- 分析类 Markdown：保存到 `analysis/<stock_code>/`，按需更新 `_index.json`。
+- `html-report` 仅作为手工离线导出工具保留，不属于产品交付路径；不要主动询问用户是否生成 HTML。
 
 # 组合能力（多 Skill 工作流）
 
@@ -174,19 +225,19 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
 
 | 场景 | 组合的 Skill | 数据流向 |
 |------|-------------|---------|
-| 场景 A: 个股分析 | ch_* / data-warehouse → VT financial-statement / valuation-model / investor-lenses → html-report | ClickHouse → 分析 → 报告 → HTML |
-| 场景 B: 量化回测 | strategy-generate → vibe-trading_backtest → backtest-diagnose → html-report | 因子 → 回测 → 诊断 → HTML |
+| 场景 A: 个股分析 | ch_* / data-warehouse → VT financial-statement / valuation-model / investor-lenses → report-generate | ClickHouse → 分析 → Markdown |
+| 场景 B: 量化回测 | strategy-generate → vibe-trading_backtest → backtest-diagnose → 控制面 Run Detail | 因子 → 回测 → 诊断 → 报告 |
 | 场景 B2: Shadow Account | analyze_trade_journal → extract_shadow_strategy → run_shadow_backtest → render_shadow_report | 交割单 → 规则 → 回测 → 报告 |
 | 场景 C: 开放性问题 | intake skill（漏斗）→ 场景 E / A / B | 澄清 → 收敛 → 路由 |
 | 场景 D: 周期执行 | 任意分析 Skill + cron_jobs/manage.py + notifier | 分析 → 定时 → 通知 |
-| 场景 E: 选股策略 | ch_* + fundamental-filter → multi-factor / factor-research → html-report | 筛选 → 验证 → 报告 |
-| 场景 F: 宏观/事件驱动 | Step-Back 协议 → geopolitical-risk / macro-analysis / commodity-analysis → quantlib_call 事件研究 → html-report | 传导链 → 代理问题 → 量化 → 报告 |
+| 场景 E: 选股策略 | ch_* + fundamental-filter → multi-factor / factor-research → report-generate | 筛选 → 验证 → Markdown |
+| 场景 F: 宏观/事件驱动 | Step-Back 协议 → geopolitical-risk / macro-analysis / commodity-analysis → quantlib_call 事件研究 → report-generate | 传导链 → 代理问题 → 量化 → Markdown |
 
 **编排原则**:
 1. AGENTS.md 场景决定"用什么 Skill、什么顺序"。
 2. **交互式取数优先 `ch_*` 语义层**，重查询用 `data-warehouse`，本地不足时用 VT 网络源补数。
 3. 每个场景完成后必须引导用户进入下一个场景。
-4. 所有分析结果必须持久化到 `analysis/` 并更新 `_index.json`。
+4. 分析结果持久化到 `analysis/` 并更新 `_index.json`；回测产物写入 run_dir。
 
 # 场景路由（CRITICAL）
 
@@ -202,12 +253,12 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
 |---|---|---|---|---|---|
 | **个股体检** | 场景 A | "帮我看看 600519" | 标的、期限、风险 | 基本面+估值+资金+技术+结论 | 不预测具体价格 |
 | **选股清单** | 场景 E | "最近买什么" | 市场、风格、风险、数量 | 10–20 只候选 + 理由 + 风险 | 不构成投资建议 |
-| **策略回测** | 场景 B | "帮我回测一个策略" | 市场、因子/信号、区间、成本 | 净值、Sharpe、回撤、归因、run card | 不做实盘 |
+| **策略回测** | 场景 B | "帮我回测一个策略" | 市场、因子/信号、区间、成本 | run_id、净值、Sharpe、回撤、归因、run card | 不做实盘 |
 | **组合体检** | 组合（场景 A + risk-analysis） | "我的持仓怎么样" | 持仓、成本、风险 | 暴露、集中度、回撤、再平衡建议 | 不读取未授权账户 |
 | **事件/宏观影响** | 场景 F | "俄乌战争影响" | 事件、市场、窗口 | 历史 CAR、行业暴露、情景 | 不预测地缘政治 |
 | **交易复盘** | 场景 B2 | "分析我的交割单" | 文件、市场、时间范围 | 行为诊断、shadow account、改进 | 不保证收益 |
 | **定时监控** | 场景 D | "每天帮我盯" | 标的、条件、频率、通知 | 定时任务 + 通知 | 不自动下单 |
-| **报告** | html-report | "生成报告" | 已有分析、模板、输出格式 | HTML/PDF | 不编造数据 |
+| **报告** | report-generate | "生成报告" | 已有分析、模板、输出格式 | Markdown | 不编造数据 |
 未命中产物 → 加载 research-scenarios 附录查能力索引。
 菜单外请求（未命中以上 8 个产物）→ 先按分流表判定类型：明确可执行直接路由；开放型/待澄清型加载 intake；宏观型走场景 F；仍无匹配则说明能力边界并给出可回答的替代菜单。
 
@@ -308,16 +359,15 @@ Vibe-Trading 内置记忆生命周期管理系统（F1-F4），支持跨会话�
 # 复盘与持续改进
 
 ## 交易复盘（每次交易后）
-1. 实际成交价 vs 信号触发价，计算滑点。
-2. 持仓期间最大浮盈/浮亏 vs 最终盈亏，评估出场时机。
-3. 是否遵守了交易前检查清单？未遵守的原因是什么？
-4. 将复盘结果保存为 VT 记忆（`memory_save`），标记为 `reflection` 类型。
+1. 实际成交价 vs 信号触发价（滑点）、持仓期间最大浮盈/浮亏 vs 最终盈亏（出场时机）。
+2. 是否遵守了交易前检查清单？未遵守的原因是什么？
+3. 将复盘结果保存为 VT 记忆（`memory_save`），标记为 `reflection` 类型。
 
 ## 周期性自检（每周/每月）
 1. 统计本周/本月所有策略信号的胜率、盈亏比、夏普比率。
 2. 对比基准指数表现，计算超额收益。
 3. 检测策略衰减：IC/IR 是否持续下降？是否需要重新调参？
-4. 更新 `analysis/_index.json` 中的回测表现摘要。
+4. 更新 `analysis/_index.json` 中的回测 `run_id`/摘要；产物仍在 run_dir。
 
 # 关键约束速查
 1. **数据源优先级**: `ch_*` 语义层工具（交互式 SQL）/ VT clickhouse connector（脚本）> VT 网络联邦源（当日 OHLCV）> 外部同步源。不得使用 DuckDB。

@@ -116,7 +116,10 @@ COPY config/command/ /workspace/.opencode/command/
 
 COPY AGENTS.md /workspace/AGENTS.md
 
-COPY skills/ /workspace/.opencode/skills/
+# Global, not /workspace/.opencode: a mounted workspace must not be able to
+# delete agent capability. Do not also ship a project-scoped copy — project
+# scope outranks global scope and would shadow this one.
+COPY --chown=opencode:opencode skills/ /home/opencode/.config/opencode/skills/
 
 COPY workspace/scripts/ /workspace/scripts/
 COPY workspace/cron_jobs/ /workspace/cron_jobs/
@@ -125,15 +128,25 @@ COPY entrypoint.sh /workspace/entrypoint.sh
 RUN chmod +x /workspace/entrypoint.sh
 
 RUN mkdir -p /workspace/analysis \
-             /workspace/reports \
              /workspace/runs \
              /workspace/tmp \
              /workspace/cron_jobs/logs \
-             /workspace/cron_jobs/state
+             /workspace/cron_jobs/state \
+             /home/opencode/.vibe-trading/runs \
+             /home/opencode/.vibe-trading/reports && \
+    chown -R opencode:opencode /home/opencode/.vibe-trading
 
 # The runtime user must be able to create files under the writable
 # workspace subdirectories when they are not volume-mounted.
 RUN chown -R opencode:opencode /workspace
+
+# opencode treats the process cwd as the project root: project-scoped
+# AGENTS.md, .opencode/command/ and .opencode/opencode.json are resolved from
+# here, and OMO writes <project>/.omo. Without an explicit WORKDIR the image
+# defaults to "/", where uid 1000 cannot create /.omo and /workspace/AGENTS.md
+# is never loaded. Keep the project root and the user-data root separate:
+# /workspace is code/instructions, /home/opencode is the control-plane fence.
+WORKDIR /workspace
 
 # ── Pre-bake the PROJECT-scope plugin tree ──────────────────────────────────
 # opencode resolves plugins per project and installs the merged set (the SDK

@@ -1,7 +1,7 @@
 ---
 name: html-report
 description: |
-  生成带 ECharts 交互图表的美观 HTML 报告。Use when: 生成报告、HTML输出、ECharts、图表、回测报告、分析报告、缠论报告、七看八问。
+  手工导出带 ECharts 的独立 HTML 文件（非产品报告路径）。Use when: 用户明确要求“生成一个独立 HTML 文件”、离线分享、非产品报告导出。
   支持 6 种专用模板：Vibe-Trading 回测、Alpha158 Walk-Forward、七看八问、基本面分析、缠论分析、信号报告。
 argument-hint: "报告类型 + 股票代码"
 user-invocable: true
@@ -18,7 +18,7 @@ Use this skill to generate beautiful, interactive HTML reports with ECharts char
 
 ## When to Use
 
-After completing any analysis, backtest, or signal scan that produces a Markdown report, **also generate an HTML report** using the appropriate renderer.
+Only when the user explicitly asks for a standalone HTML file. Product reports — including every backtest report — are rendered by the control plane from structured run data; do not generate HTML for them.
 
 ## Available Templates
 
@@ -66,17 +66,13 @@ Every generated HTML must follow these constraints:
 2. Prepare the data structure matching the renderer function's parameters.
 3. Call the appropriate renderer from `scripts/reports/html_renderer.py`:
    ```python
-   import sys; sys.path.insert(0, "/workspace/.opencode/skills/html-report")
+   import sys; sys.path.insert(0, "/home/opencode/.config/opencode/skills/html-report")
    from scripts.reports.html_renderer import render_vibe_backtest_html
    html = render_vibe_backtest_html(ts_code="588000.SH", name="科创50ETF", ...)
    ```
-4. Save the HTML to `analysis/<stock_code>/backtests/<date>_<strategy>.html` (alongside the .md file).
-5. Deploy to local nginx:
-   ```bash
-   python /workspace/.opencode/skills/html-report/scripts/reports/deploy_report.py <html_path> --stock <stock_code>
-   ```
-6. Record the deployed URL in `analysis/_index.json` under `html_url`.
-7. If DingTalk notification is configured, the notifier will include the report URL as an ActionCard button.
+4. Save the HTML to `/home/opencode/.vibe-trading/reports/<stock_code>/<date>_<strategy>.html`.
+5. Optionally record the file path in `analysis/_index.json` under `html_path`; this is a manual export, not a product report.
+6. Do not publish a URL: this image has no nginx and does not serve `/workspace/reports`.
 
 ## Fallback: Markdown to HTML
 
@@ -88,16 +84,14 @@ html = render_from_markdown("analysis/588000/backtests/2026-06-04_dual_ma_moment
 
 ## Storage Contract
 
-- HTML reports live alongside Markdown reports in the same directory
-- File extension: `.html` (same base name as the `.md` file)
-- Both formats are kept — Markdown for archival, HTML for interactive viewing
-- **Local nginx URL**: `http://localhost:8088/reports/<stock_code>/<filename>.html`
-- **Nginx root**: `/workspace/reports/`
-- **Remote nginx URL** (optional): `http://your-server.example.com/reports/<stock_code>/<filename>.html`
+- Manual exports live under `/home/opencode/.vibe-trading/reports/<stock_code>/`.
+- File extension: `.html`.
+- Product backtest reports are not stored here; the control plane renders them from `run_dir`.
+- There is no nginx URL and no remote deployment in this image.
 
 ## Rules
 
-- Always generate HTML after generating Markdown (never skip the HTML step).
+- Never generate HTML for a backtest or for a “可视化回测报告” request; return the `run_id` instead.
 - Never use external CSS frameworks (Bootstrap, Tailwind CDN).
 - Never use CDN fonts (system font stack is sufficient).
 - Never generate multi-file output (everything in one `.html` file).

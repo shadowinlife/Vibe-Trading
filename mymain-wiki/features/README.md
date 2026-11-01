@@ -1,10 +1,10 @@
 ---
-title: 功能卡索引（mymain 独有特性 F1-F5、F7、F9-F12）
-description: mymain 分支相对上游的独有功能索引。改代码前确认能力归属、查上游回流计划、定位验证基线时先读这里。触发词：F1、F2、F3、F4、F5、F7、F8、F9、F10、F11、F12、功能卡、feature、reflections、memory MCP、MemoryGuard、ClickHouse、OpencodeAgent、engine-bridge、opencode 引擎桥、策略库、strategy library、策略调度、strategy-run-entry、vt-state-v1、RM schedule tools。
+title: 功能卡索引（mymain 独有特性 F1-F5、F7、F9-F13）
+description: mymain 分支相对上游的独有功能索引。改代码前确认能力归属、查上游回流计划、定位验证基线时先读这里。触发词：F1、F2、F3、F4、F5、F7、F8、F9、F10、F11、F12、F13、ashare、功能卡、feature、reflections、memory MCP、MemoryGuard、ClickHouse、OpencodeAgent、engine-bridge、opencode 引擎桥、策略库、strategy library、策略调度、strategy-run-entry、vt-state-v1、RM schedule tools。
 type: index
 status: active
 created: 2026-08-30
-updated: 2026-10-29
+updated: 2026-10-31
 tags: [index, features, mymain]
 related: [../branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -29,6 +29,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 | F10 | 策略运行服务入口 | RM 专用 `/strategy-runs`：run_key 幂等、per-box 寻址、异步 runner + sweeper | 本地 mymain 已合入（585845ad / d90d5308）；未回上游 | [f10-strategy-run-entry.md](f10-strategy-run-entry.md) |
 | F11 | 状态导出/导入 | `vt-state-v1` 包：逐文件 digest、SQLite 一致快照、原子替换/回滚、generation marker | 本地 mymain 已合入（d90d5308）；未回上游 | [f11-state-export-import.md](f11-state-export-import.md) |
 | F12 | RM 调度工具 | 六个 MCP 工具转发 RM 控制面：create/list/pause/resume/delete/retarget | 本地 mymain 已合入（d90d5308）；未回上游 | [f12-rm-schedule-tools.md](f12-rm-schedule-tools.md) |
+| F13 | A 股外部证据取数 skills | 定期报告全文 / 公告 / 监管处罚 / 机构调研 / 券商研报 / gov.cn 政策，6 个 skill + 9 个零 key 脚本，装到全局配置目录 | 个人部署独有，不回流；关闭 DIVERGENCE R2 | [f13-ashare-evidence-skills.md](f13-ashare-evidence-skills.md) |
 
 ## 为什么没有 F6
 

@@ -4,7 +4,7 @@ description: mymain 分支持久知识库的路由层与使用协议：任务/�
 type: index
 status: active
 created: 2026-09-27
-updated: 2026-10-29
+updated: 2026-10-31
 tags: [index, routing, mymain]
 related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -20,7 +20,7 @@ related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 mymain = **纯粹的 opencode + omo + VT MCP 路线**：opencode 作为 harness 直接消费本仓库 MCP 全工具面（F7），叠加 F1-F4 记忆、F5 ClickHouse 数据层与 F9 策略库/调度。三项能力已回退/移出（裁决与证据见 DIVERGENCE §5 2026-09-27 条）：
 
 1. **12 领域子代理层**——验证不够有效，主循环直接集成 VT MCP；
-2. **nano-search-mcp**——验证不够有效，通用检索由 VT `web_search` 承接，A 股结构化检索为已知缺口待未来引擎；
+2. **nano-search-mcp**——未接线即回退，通用检索由 VT `web_search` 承接。**A 股结构化检索已于 2026-10-31 由 [F13](features/f13-ashare-evidence-skills.md) 补齐**（6 个零 key skill），原「已知缺口」表述作废；
 3. **F8 引擎桥 + 多租户基础设施**——前端兼容路线整体移出本分支，原独立演进于 `mymain-engine-bridge` 分支，**2026-10-10 该线废弃封存**（opencode 桥接方式验证不可行；本 wiki 中 f8 卡与 multitenant 台账为冻结墓碑）。
 
 ## 路由表（知识域）
@@ -42,6 +42,7 @@ mymain = **纯粹的 opencode + omo + VT MCP 路线**：opencode 作为 harness 
 | rebase/merge 对齐后 | DIVERGENCE §4.1 五步流程，第 5 步更新台账本身 |
 | 部署 / 生产配置（纯 opencode 路线） | `OpencodeAgent/docs/DEPLOY-GUIDE.md`（host-direct）+ `IMAGE-MANUAL.md`；接入方式背景 DIVERGENCE §3.3 |
 | ClickHouse 取数与语义层（F5） | [features/f5-clickhouse-data-source.md](features/f5-clickhouse-data-source.md) → [clickhouse/README.md](clickhouse/README.md)（现行代码入口 `schema/clickhouse/catalog/` + `OpencodeAgent/skills/semantic-layer/`）；同步管道事故 [clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md](clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md) |
+| A 股外部证据取数（F13：年报全文/公告/处罚/调研/研报/政策） | [features/f13-ashare-evidence-skills.md](features/f13-ashare-evidence-skills.md) → 对应 skill 的 `SKILL.md`；检索预算在 `OpencodeAgent/AGENTS.md` |
 | 记忆系统（F1-F4） | 对应功能卡 → DIVERGENCE §2.3 队列 ①-⑤ 前置 + §4.5 债务 D1-D4 |
 | 策略库 / 调度（F9） | [features/f9-strategy-library-scheduling.md](features/f9-strategy-library-scheduling.md) → 该卡「调度模型」「P1 服务入口」；RM 入口 [F10](features/f10-strategy-run-entry.md)、状态镜像 [F11](features/f11-state-export-import.md)、六个调度工具 [F12](features/f12-rm-schedule-tools.md)；差异台账见 DIVERGENCE §2.1 F9 行 |
 | 设计新手引导 / 意图澄清 / 能力发现 | [agent-ux/2026-10-27-novice-onboarding-guidance.md](agent-ux/2026-10-27-novice-onboarding-guidance.md)（7 个方案 + 本分支实验证据 + 外部产品/论文 + 代价） |
@@ -55,7 +56,7 @@ mymain = **纯粹的 opencode + omo + VT MCP 路线**：opencode 作为 harness 
 | 全量测试基线现在是多少 | DIVERGENCE §3.1 / §5 最新一轮（2026-10-27 对齐：routing 184、memory 353/3；2026-10-29 F5 子集 92/3 + 语义层门禁 6） |
 | MCP 工具计数被什么钉着 | DIVERGENCE §4.3 上游 pin 测试（本分支 OFF=94 / ON=99，**七份** README + SKILL.md 同步义务） |
 | 子代理/nano-search 为什么回退、证据在哪 | DIVERGENCE §5 2026-09-27 条 + 2026-09-06 specialist-arch iter3 终局条 |
-| A 股结构化检索缺口怎么补 | DIVERGENCE §4.6 待办研究（未来搜索替换引擎） |
+| A 股结构化检索从哪取（R2 已关闭） | [features/f13-ashare-evidence-skills.md](features/f13-ashare-evidence-skills.md) → `OpencodeAgent/AGENTS.md`「外部证据取数」→ 各 skill 的 `SKILL.md` |
 | 本分支跟踪的上游缺陷 | DIVERGENCE §2.4 |
 
 ## 目录地图
@@ -78,6 +79,7 @@ mymain = **纯粹的 opencode + omo + VT MCP 路线**：opencode 作为 harness 
 | `agent/backtest/loaders/` + `agent/src/clickhouse_*` + `schema/clickhouse/` + `OpencodeAgent/skills/semantic-layer/` | F5 卡片 → [clickhouse/README.md](clickhouse/README.md) → `catalog/rules.md` |
 | `agent/src/strategy_library/` + `strategy_runs/` + `state_export/` + `agent/src/api/strategy_*` + `frontend/src/pages/Strategy*` | F9 卡片 → DIVERGENCE §2.1 F9 行 |
 | `OpencodeAgent/`（skills / config / tests / workspace） | F7 卡片 → `OpencodeAgent/docs/{DEPLOY-GUIDE,IMAGE-MANUAL}.md` |
+| `OpencodeAgent/skills/ashare-*` + `skills/_lib/nanofetch/` | [F13 卡片](features/f13-ashare-evidence-skills.md) → `OpencodeAgent/AGENTS.md`「外部证据取数」 |
 | `mymain-wiki/` | 本文件 → [INDEX.md](INDEX.md) |
 
 ## 权威级别与冲突裁决（按序，不投票）
