@@ -46,6 +46,18 @@ related: [MYMAIN_DIVERGENCE.md]
 
 ---
 
+### 对齐记录 · 2026-11-01 — 基线：上游 `78fab6b3`（+99 commit；未发布、tag 未移动）
+
+- **发布 commit**：不适用——本轮只做上游对齐与推送；`release/mymain` tag 不移动（仍为 `0104bb38`），feature tag `v3.16.1-ashare-skills-20261101` 指向 PR #10 合并点 `31cbbdb6`
+- **上游基线**：`78fab6b3`（自 `3cbb167e` 前进 **99 commit / 61 非 merge**：后台任务子系统、research artifacts、Parallel 搜索、paper-trade 5m、quantlib/factors/loaders 批次、依赖补丁、channels 修复）
+- **差异总量**：1151 个文件、+197810/−476 行（`git diff 78fab6b3..mymain --shortstat`）
+- **对齐方式**：一次性直接 merge（`86996c83`；回退点 `backup/mymain-20261101` = `31cbbdb6` + 全量 bundle），普通推送、force-push 保护未放开；29 个冲突文件（计数/文档 11、构建/依赖 4、代码 2、前端 12）
+- **核心变更**：上游全量吸收；F1–F5/F7/F9 逐项核查未被取代（`origin/main` 上 `get_valuation`、策略库工具、`MemoryGuard`/`memory_*`、`ch_*`、clickhouse loader 命中均为 0）；本地仅多 12 个 MCP 工具（3 `ch_*` + 1 `scheduled_research` + 3 策略库 + 5 RM 调度）与 8 个 agent tools。**计数实测**：MCP **96/101**、agent tools **126**、engines 11、sources 30、skills 91
+- **修掉合并暴露的 2 处分歧**：`api_server.py` 触及 400 行 thin-assembler 上限 → 三个可选 F9 router 移入 `src/api/strategy_surfaces.py`（`api_server` 382 行）；auto 链内的 resolver 替换不再记 `source_unavailable`（上游 #1491），显式 source 仍记 `fallback_reason`
+- **验证基线**：memory **353/3**、ClickHouse **166/11**、schema **53/1 + exit 0**、语义层 **6 passed / 0 violations**、README/manifest **122**、OpencodeAgent **219 passed / 1 skipped**；**全量 22090 passed / 41 failed / 171 skipped**（41 = 22 上游/环境既有 + 19 本地 D5 既有，零回归）
+
+---
+
 ### 对齐记录 · 2026-10-27 — 基线：上游 `3cbb167e`（+119 commit；未发布、tag 未移动）
 
 - **发布 commit**：不适用——本轮只做上游对齐与推送，未移动 `release/mymain`（tag 仍为 `0104bb38`，2026-10-17 发布）
