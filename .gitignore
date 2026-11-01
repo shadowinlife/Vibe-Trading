@@ -220,3 +220,6 @@ agent/tests/artifacts/
 research/
 tmp/
 bench_report_tier2.json
+
+# Runtime background command previews and restart outcomes
+/background-tasks/

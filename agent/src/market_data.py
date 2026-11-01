@@ -385,7 +385,11 @@ def fetch_market_data(
                 logger.debug("loader %r resolver failed: %s", attempt_src, exc)
                 continue
             serving_source = getattr(loader_cls, "name", None) or attempt_src
-            if serving_source != attempt_src:
+            # An explicit source that lands on a substitute is a degraded read
+            # worth reporting; inside an auto-detected chain the substitution
+            # is ordinary routing, and upstream attributes the attempt to the
+            # loader that actually ran (#1491) instead of the name it replaced.
+            if serving_source != attempt_src and source != "auto":
                 record(remaining, attempt_src, "source_unavailable")
             if serving_source in attempted_providers:
                 continue

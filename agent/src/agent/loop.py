@@ -186,6 +186,7 @@ class AgentLoop(ToolCallLifecycle):
         max_iterations: int = 50,
         persistent_memory: Optional[Any] = None,
         cancel_event: Optional[threading.Event] = None,
+        background_manager: Optional[Any] = None,
     ) -> None:
         """Initialize AgentLoop.
 
@@ -200,6 +201,11 @@ class AgentLoop(ToolCallLifecycle):
                 tools (e.g. ``run_swarm``). The host session owns the event so a
                 user stop reaches both the loop and the tools it is blocked in;
                 ``None`` keeps the loop self-contained (CLI and tests).
+            background_manager: Scoped handle over the background task table.
+                Must be the same handle the registry bound to its background
+                tools, so this loop drains the completions of its own tasks and
+                never another conversation's. Falls back to the handle the
+                registry recorded, and only then to an unowned one.
         """
         self.registry = prepare_registry(registry)
         self.llm = llm
@@ -238,6 +244,13 @@ class AgentLoop(ToolCallLifecycle):
         # Skipped/error call IDs never enter this ledger.
         self._successful_call_keys: dict[str, tuple[str, str]] = {}
         self._cancel_event = cancel_event if cancel_event is not None else threading.Event()
+        # Resolved once, not per iteration: an unowned handle is private to
+        # itself, so re-deriving it would silently discard this loop's results.
+        self._background_manager = (
+            background_manager
+            or getattr(registry, "background", None)
+            or get_background_manager()
+        )
         self._previous_summary: str = ""
         self._persistent_memory = persistent_memory
         self._run_iteration: int = 0
@@ -284,6 +297,10 @@ class AgentLoop(ToolCallLifecycle):
         next cooperative checkpoint instead of only at the next iteration.
         """
         self._cancel_event.set()
+        # Stop must reach commands the current or an earlier turn spawned, not
+        # only the ReAct cycle. Normal successful turns do not call cancel().
+        if self._background_manager is not None:
+            self._background_manager.cancel_all()
 
     def _write_run_manifest(self, trace_dir: "Path", messages: List[Dict[str, Any]]) -> None:
         """Record what methodology produced this run, beside its trace.
@@ -358,10 +375,14 @@ class AgentLoop(ToolCallLifecycle):
             Execution result dict.
         """
         token = bind_llm_session_id(session_id)
+        result = None
         try:
-            return self._run_bound(user_message, history, session_id)
+            result = self._run_bound(user_message, history, session_id)
+            return result
         finally:
             reset_llm_session_id(token)
+            if result is None or result.get("status") not in {"success", "waiting_user"}:
+                self._background_manager.cancel_all()
 
     def _run_bound(self, user_message: str, history: Optional[List[Dict[str, Any]]] = None, session_id: str = "") -> Dict[str, Any]:
         """Run the ReAct loop with the LLM session already bound.
@@ -557,9 +578,8 @@ class AgentLoop(ToolCallLifecycle):
                 self._run_iteration += 1
                 current_iter = self._run_iteration
 
-                # Inject background task notifications
-                bg = get_background_manager()
-                notifs = bg.drain_notifications()
+                # Inject background task notifications for this conversation.
+                notifs = self._background_manager.drain_notifications()
                 if notifs:
                     notif_text = "\n".join(f"[bg:{n['task_id']}] {n['status']}: {n['result']}" for n in notifs)
                     messages.append({"role": "user", "content": f"<background-results>\n{notif_text}\n</background-results>\n\n<system>Continue processing with the background results above.</system>"})
@@ -758,7 +778,7 @@ class AgentLoop(ToolCallLifecycle):
                 current_response_model = getattr(response, "response_model", None)
                 # `messages` is still exactly what this request sent.
                 self._context_meter.observe(
-                    usage.get("input_tokens") if isinstance(usage, dict) else None,
+                    usage.get("context_input_tokens", usage.get("input_tokens")) if isinstance(usage, dict) else None,
                     messages,
                     tool_schema_tokens=estimate_tokens(tool_defs) if tool_defs else 0,
                 )

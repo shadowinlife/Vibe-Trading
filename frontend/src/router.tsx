@@ -28,6 +28,9 @@ const StrategySchedules = lazy(() =>
 const Reports = lazy(() =>
   import("@/pages/Reports").then((m) => ({ default: m.Reports })),
 );
+const ResearchArtifacts = lazy(() =>
+  import("@/pages/ResearchArtifacts").then((m) => ({ default: m.ResearchArtifacts })),
+);
 const PaperTrading = lazy(() => import("@/pages/PaperTrading").then((m) => ({ default: m.PaperTrading })));
 const Portfolio = lazy(() =>
   import("@/pages/Portfolio").then((m) => ({ default: m.Portfolio })),
@@ -74,6 +77,7 @@ export const router = createBrowserRouter([
       { path: "/strategies", element: wrap(StrategyLibrary) },
       { path: "/strategy-schedules", element: wrap(StrategySchedules) },
       { path: "/reports", element: wrap(Reports) },
+      { path: "/research-artifacts", element: wrap(ResearchArtifacts) },
       { path: "/paper-trading", element: wrap(PaperTrading) },
       { path: "/portfolio", element: wrap(Portfolio) },
       { path: "/settings", element: wrap(Settings) },

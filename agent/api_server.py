@@ -8,8 +8,8 @@ infrastructure lives in ``src.api.{security,models,helpers,state}``.
 
 from __future__ import annotations
 
+import asyncio
 import logging
-import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
@@ -174,6 +174,16 @@ async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
     finally:
         await _stop_strategy_run_service()
         await _stop_scheduled_research_on_shutdown()
+        # Reap background work this host owns before its runtime disappears.
+        # Read the existing service rather than _get_session_service(): a
+        # shutdown must not create the very object it is trying to release.
+        import src.api.state as _api_state
+
+        service = getattr(_api_state, "_session_service", None)
+        if service is not None:
+            pending = await asyncio.to_thread(service.shutdown, timeout=5.0)
+            if pending:
+                logger.warning("Background cleanup incomplete at shutdown: %s", pending)
 
 
 app = FastAPI(
@@ -212,6 +222,9 @@ register_attribution_routes(app)
 from src.api.sessions_routes import register_sessions_routes  # noqa: E402
 register_sessions_routes(app)
 
+from src.api.research_artifact_routes import register_research_artifact_routes  # noqa: E402
+register_research_artifact_routes(app)
+
 from src.api.sessions_routes import (  # noqa: F401, E402
     _goal_store,
     _live_action_frame_from_tool_result,
@@ -241,29 +254,12 @@ from src.api.pixel_office_routes import register_pixel_office_routes  # noqa: E4
 register_pixel_office_routes(app, require_local_or_auth, require_settings_write_auth)
 from src.api.strategy_adaptation_routes import register_strategy_adaptation_routes  # noqa: E402
 register_strategy_adaptation_routes(app, require_settings_write_auth)
-from src.api.strategy_library_routes import register_strategy_library_routes  # noqa: E402
-register_strategy_library_routes(app)
+from src.api.strategy_surfaces import (  # noqa: F401, E402
+    STRATEGY_RUN_ENABLED as _VT_STRATEGY_RUN_ENABLED,
+    register_strategy_surfaces,
+)
 
-# F9 strategy-schedule REST surface, default OFF: the in-box entry
-# (``agent/strategy_run_server.py``) must never expose a second scheduling
-# source, since time-based triggering belongs to the RM control plane alone.
-# Opt in only for VT's own dev API.
-_VT_STRATEGY_SCHEDULE_ROUTES_ENABLED = os.environ.get(  # noqa: env-gate — default-off operator switch
-    "VT_STRATEGY_SCHEDULE_ROUTES_ENABLED", ""
-).lower() in {"1", "true", "yes", "on"}
-if _VT_STRATEGY_SCHEDULE_ROUTES_ENABLED:
-    from src.api.strategy_schedule_routes import register_strategy_schedule_routes  # noqa: E402
-    register_strategy_schedule_routes(app)
-
-# RM service entry, default OFF: the dedicated in-box entry
-# (``agent/strategy_run_server.py``) is the production mount point, so the
-# full API surface stays free of these routes unless an operator opts in.
-_VT_STRATEGY_RUN_ENABLED = os.environ.get(  # noqa: env-gate — default-off operator switch
-    "VT_STRATEGY_RUN_ENABLED", ""
-).lower() in {"1", "true", "yes", "on"}
-if _VT_STRATEGY_RUN_ENABLED:
-    from src.api.strategy_run_routes import register_strategy_run_routes  # noqa: E402
-    register_strategy_run_routes(app)
+register_strategy_surfaces(app)
 
 # --- Uploads ---
 from src.api.uploads_routes import register_uploads_routes  # noqa: E402

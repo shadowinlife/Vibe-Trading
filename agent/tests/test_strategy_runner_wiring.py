@@ -230,6 +230,13 @@ class _DummyIndex:
         del session_id, role, content
 
 
+class _StubChatLLM:
+    """ChatLLM stand-in; the loop is stubbed, only ``aclose`` is reached."""
+
+    async def aclose(self) -> None:
+        """Release nothing: this stub owns no provider."""
+
+
 class _CapturingLoop:
     """AgentLoop stand-in that records the registry and prompt it received."""
 
@@ -245,8 +252,16 @@ class _CapturingLoop:
         max_iterations,
         persistent_memory,
         cancel_event=None,
+        background_manager=None,
     ) -> None:
-        del llm, event_callback, max_iterations, persistent_memory, cancel_event
+        del (
+            llm,
+            event_callback,
+            max_iterations,
+            persistent_memory,
+            cancel_event,
+            background_manager,
+        )
         _CapturingLoop.registries.append(registry)
 
     def run(self, *, user_message: str, history, session_id: str) -> dict[str, str]:
@@ -268,7 +283,7 @@ def _install_agent_stubs(
         return real_build_registry(**kwargs)
 
     monkeypatch.setattr(tools_module, "build_registry", _recording_build_registry)
-    monkeypatch.setattr("src.providers.chat.ChatLLM", lambda: object())
+    monkeypatch.setattr("src.providers.chat.ChatLLM", _StubChatLLM)
     monkeypatch.setattr("src.memory.persistent.PersistentMemory", lambda: object())
     monkeypatch.setattr("src.agent.loop.AgentLoop", _CapturingLoop)
     monkeypatch.setattr(

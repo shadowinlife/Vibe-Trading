@@ -138,7 +138,7 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (94)
+## Available MCP Tools (96)
 
 | Tool | Description | API Key |
 |------|-------------|---------|
@@ -147,6 +147,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `start_research_goal` | Create an auditable research goal | None |
 | `get_research_goal` | Read the current research goal | None |
 | `add_goal_evidence` | Attach evidence to a research goal | None |
+| `update_research_goal` | Edit a research goal's objective or summary in place | None |
 | `update_research_goal_status` | Update goal lifecycle status | None |
 | `scheduled_research` | Inspect scheduled research; prepare create/cancel proposals (human confirms on the surface) | None |
 | `backtest` | Run vectorized backtest engine | None* |
@@ -190,6 +191,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `write_file` | Write files (config, strategy code) | None |
 | `read_file` | Read file contents | None |
 | `read_run_artifact` | Structured run-artifact reads (rows / downsample / meta) | None |
+| `list_backtest_runs` | Discover earlier backtest runs (paged, per session or all) and their `run_dir`s | None |
 | `list_strategies` | Browse discoverable strategies (Alpha Zoo + SDM store) | None |
 | `query_strategies` | Evidence-gated query: regime / Sharpe / quality / cost filters | None |
 | `get_strategy_evidence` | Per-regime evidence rows for one strategy | None |

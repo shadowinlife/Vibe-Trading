@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 94 tools (99 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
+Surfaces 96 tools (101 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
 backtest/factor/options/pattern
 analysis, deterministic paper-trading matching (paper_trade_step), market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_southbound_flow /
@@ -84,6 +84,7 @@ from src.market_data import (
     detect_source,
     get_loader,
 )
+from src.factors.research_contract import RESEARCH_MODES, RESEARCH_STAGES
 
 mcp = FastMCP("Vibe-Trading", version=APP_VERSION)
 
@@ -731,6 +732,36 @@ def add_goal_evidence(
 
 
 @mcp.tool
+def update_research_goal(
+    objective: str | None = None,
+    ui_summary: str | None = None,
+    goal_id: str = "",
+    expected_goal_id: str = "",
+    session_id: str = "",
+    ctx: Context | None = None,
+) -> str:
+    """Edit the current research goal without discarding criteria or evidence.
+
+    Args:
+        objective: Replacement objective; omit to keep the current text.
+        ui_summary: Replacement display summary; omit to keep it.
+        goal_id: Optional current goal id.
+        expected_goal_id: Optional stale-write guard, defaulting to goal_id.
+        session_id: Optional conversation id; defaults to this MCP connection.
+        ctx: MCP request context supplied by the server.
+
+    Returns:
+        Updated snapshot or a structured validation/stale-goal error.
+    """
+    from src.tools.goal_tool import UpdateResearchGoalTool
+
+    return UpdateResearchGoalTool(
+        default_session_id=_resolve_session_id(session_id, ctx), store=_get_goal_store()
+    ).execute(objective=objective, ui_summary=ui_summary, goal_id=goal_id,
+              expected_goal_id=expected_goal_id)
+
+
+@mcp.tool
 def update_research_goal_status(
     status: str,
     goal_id: str = "",
@@ -1085,7 +1116,7 @@ async def backtest(run_dir: str, ctx: Context | None = None) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Paper-trading step tool (pt-v1.1, hand-written wrapper)
+# Paper-trading step tool (pt-v1.1/pt-v1.2, VD-12 hand-written wrapper)
 # ---------------------------------------------------------------------------
 
 
@@ -1099,14 +1130,18 @@ def paper_trade_step(
     orders: _lenient_dict_list_opt = None,
     strategy_path: str | None = None,
     fee_model: _lenient_dict_any_opt = None,
+    interval: str | None = None,
+    session: str | None = None,
+    path_model: str | None = None,
+    fill_model: str | None = None,
 ) -> str:
     """Run one step of the deterministic paper-trading matching engine; never places real orders.
 
-    Matches the injected ``orders`` (or a ``strategy_path``'s per-day orders)
-    against daily bars under the market's frozen rules (T+1, price limits,
-    board lots, fees) and returns ONE in-band JSON document on
-    ``result.content[0].text``: the pt-v1.1 success result, or an error
-    envelope (``PAPER_DATA_NOT_READY`` retryable / ``INVALID_REQUEST``
+    Matches the injected ``orders`` (or, in Step 7, a ``strategy_path``'s
+    per-day orders) against bars under the market's frozen rules (T+1, price
+    limits, board lots, fees) and returns ONE in-band JSON document on
+    ``result.content[0].text``: the pt-v1.1/pt-v1.2 success result, or an AM-5
+    error envelope (``PAPER_DATA_NOT_READY`` retryable / ``INVALID_REQUEST``
     non-retryable) on the SAME channel — never a transport error. Research-only:
     it reads market data and the injected ledger, matches on paper, and writes
     nothing; no broker or trading-connector order path exists here.
@@ -1127,7 +1162,15 @@ def paper_trade_step(
             per-day orders are matched. Exactly one of ``orders`` /
             ``strategy_path``.
         fee_model: Optional per-key fee overrides merged over the market
-            defaults.
+            defaults (AM-4-3: RM always injects it explicitly).
+        interval: Optional pt-v1.2 bar interval — ``1d`` (default) or ``5m``;
+            ``5m`` is cn_a-only.
+        session: Optional pt-v1.2 session selector — ``auto`` (default) or
+            ``cn_a``; ``cn_a`` requires market ``cn_a``.
+        path_model: Optional pt-v1.2 reference-price model — ``bar_median``
+            (default) or ``bar_close``; ignored for ``1d``.
+        fill_model: Optional pt-v1.2 fill model — ``all_or_none`` (default and
+            only P0 value).
     """
     from src.tools.paper_trade.tool import run_paper_trade_step
 
@@ -1144,6 +1187,14 @@ def paper_trade_step(
         payload["strategy_path"] = strategy_path
     if fee_model is not None:
         payload["fee_model"] = fee_model
+    if interval is not None:
+        payload["interval"] = interval
+    if session is not None:
+        payload["session"] = session
+    if path_model is not None:
+        payload["path_model"] = path_model
+    if fill_model is not None:
+        payload["fill_model"] = fill_model
     return run_paper_trade_step(payload)
 
 
@@ -1223,6 +1274,8 @@ def alpha_bench(
     top: int = 20,
     horizon: int = 1,
     output_dir: str | None = None,
+    research_stage: str = "single_factor_evaluation",
+    research_mode: str = "explore",
 ) -> str:
     """Benchmark one Alpha Zoo alpha or a complete zoo on a universe.
 
@@ -1237,6 +1290,8 @@ def alpha_bench(
             non-overlapping (end-anchored); 21 ≈ monthly, the conventional
             horizon for fundamental factors. Range 1-252.
         output_dir: Optional directory for the generated HTML report.
+        research_stage: Stage recorded in the factor-research contract.
+        research_mode: Declared mode; metadata only, not locked-evaluation enforcement.
     """
     if not alpha_id and not zoo:
         return json.dumps(
@@ -1296,6 +1351,15 @@ def alpha_bench(
             ensure_ascii=False,
         )
 
+    if research_stage not in RESEARCH_STAGES or research_mode not in RESEARCH_MODES:
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "MCP alpha_bench research_stage or research_mode is not supported",
+            },
+            ensure_ascii=False,
+        )
+
     params: dict[str, Any] = {
         "universe": universe,
         "period": period,
@@ -1306,6 +1370,12 @@ def alpha_bench(
         params["alpha_id"] = alpha_id
     if zoo is not None:
         params["zoo"] = zoo
+    # Keep the legacy wire payload byte-for-byte stable when callers use the
+    # default stage; newer clients can opt into the additive research contract.
+    if research_stage != "single_factor_evaluation":
+        params["research_stage"] = research_stage
+    if research_mode != "explore":
+        params["research_mode"] = research_mode
 
     if output_dir:
         from src.config.paths import get_runtime_root
@@ -1489,7 +1559,7 @@ def read_document(file_path: str) -> str:
 
 @mcp.tool
 def web_search(query: str, max_results: int = 5) -> str:
-    """Search the web via DuckDuckGo and return top results.
+    """Search the web with configured providers and free search engines.
 
     Returns titles, URLs, and snippets. Use read_url() to fetch full content
     from any result URL. Free, no API key required.
@@ -1595,6 +1665,25 @@ def read_run_artifact(
             "max_rows": max_rows,
             "columns": columns,
         },
+    )
+
+
+@mcp.tool
+def list_backtest_runs(scope: str = "all", run_id: str = "", limit: int = 5, offset: int = 0) -> str:
+    """List earlier backtest runs (newest first, paged) so their artifacts can be read, not re-run.
+
+    Each run carries the absolute ``run_dir`` of its backtests for ``read_run_artifact``.
+    Without an active session, ``scope="session"`` also lists every run.
+
+    Args:
+        scope: "all" (default) or "session".
+        run_id: Only this bare run directory name.
+        limit: Runs per page [1, 20] (default 5).
+        offset: Runs to skip; use ``next_offset`` from the previous page.
+    """
+    registry = _get_registry()
+    return registry.execute(
+        "list_backtest_runs", {"scope": scope, "run_id": run_id or None, "limit": limit, "offset": offset}
     )
 
 
