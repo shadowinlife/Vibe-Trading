@@ -1,8 +1,8 @@
 # opencode-serve 镜像使用说明书
 
-> **版本**: v3.2.0-mymain  
-> **架构**: AMD64 (Linux)  
-> **基础镜像**: Ubuntu 22.04 + Python 3.12 + Node.js 20
+> - **版本**: 见 §12.1「当前交付」；§5/§7/§11 命令示例中的旧 tag 为示例值，按当前交付替换
+> - **架构**: AMD64 (Linux)
+> - **基础镜像**: Ubuntu 22.04 + Python 3.12 + Node.js 20
 
 ---
 
@@ -84,22 +84,22 @@
 ### 镜像分层策略
 
 ```
-┌──────────────────────────────────────────────────────┐
-│ opencode-serve:v3.8.2-mymain  (5.39GB)               │
-│ ├── OMO plugin 预烘焙缓存 (~/.cache/opencode/packages,│
-│ │   oh-my-openagent@5.1.35, ~241MB) + models.json    │
-│ ├── Vibe-Trading mymain (editable install)           │
-│ ├── 项目文件 (configs, skills, scripts)               │
-│ └── entrypoint.sh (渲染配置 + 后台预热)               │
-├──────────────────────────────────────────────────────┤
-│ opencode-serve-base:latest  (2.98GB)                 │
-│ ├── Ubuntu 22.04                                     │
-│ ├── Python 3.12 (deadsnakes PPA)                     │
-│ ├── Node.js 20                                       │
-│ ├── OpenCode CLI (pin 1.19.3)                        │
-│ ├── playwright + chromium                            │
-│ └── pip 预装包 (plotly, ta, loguru, etc.)            │
-└──────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│ opencode-serve:v3.17.0-upstream-align-20261102 (4.33GB)│
+│ ├── OMO plugin 预烘焙缓存 (~/.cache/opencode/packages, │
+│ │   oh-my-openagent@5.1.35, ~241MB) + models.json      │
+│ ├── Vibe-Trading mymain (editable install)             │
+│ ├── 项目文件 (configs, skills, scripts)                │
+│ └── entrypoint.sh (渲染配置 + 后台预热)                │
+├────────────────────────────────────────────────────────┤
+│ opencode-serve-base:latest  (3.02GB)                   │
+│ ├── Ubuntu 22.04                                       │
+│ ├── Python 3.12 (deadsnakes PPA)                       │
+│ ├── Node.js 20                                         │
+│ ├── OpenCode CLI (pin 1.19.3)                          │
+│ ├── playwright + chromium                              │
+│ └── pip 预装包 (plotly, ta, loguru, etc.)              │
+└────────────────────────────────────────────────────────┘
 ```
 
 > **v3.2.0 零下载启动**：插件与模型目录已在构建期预烘焙，容器启动与首次请求**不访问 npm / models.dev / posthog**（离线 E2E 验证通过）。app 层不再重复安装 opencode-ai（旧版 ~594MB 冗余层已移除）。
@@ -557,10 +557,19 @@ print(f'MemoryGuard: OK' if hasattr(mcp, '_middleware') else 'MemoryGuard: MISSI
 ```bash
 cd OpencodeAgent
 ./scripts/check_startup_readiness.sh                    # 默认镜像与 60s 预算
-IMAGE=opencode-serve:v3.8.2-mymain \
-  STARTUP_BUDGET_S=300 ./scripts/check_startup_readiness.sh
+IMAGE=opencode-serve:v3.17.0-upstream-align-20261102 \
+  STARTUP_BUDGET_S=300 REQUIRE_IMAGE=1 ./scripts/check_startup_readiness.sh
 ```
 
+> 2026-11-02 v3.17.0-upstream-align-20261102（opencode 1.19.3 + OMO 5.1.35）QEMU 离线实测
+> （`OFFLINE=1`、`STARTUP_BUDGET_S=300`、`REQUIRE_IMAGE=1`，命令见上）：
+> 门禁四条标记齐全：listening **6.6s**、`warmup complete`（首次 `/config` 200）**24.9s**、
+> VT MCP connected **29.3s**、`strategy-run entry listening` **32.6s**；
+> 另复核 entry `/health` 200 **35.1s**。PASS。
+> 与上一次有记录的交付 v3.13.0（`/config` 26.6s、`/health` 32.3s）相比，`/config` 快 1.7s、
+> `/health` 慢 2.8s。QEMU 数字只用于同环境前后对比，不代表 native amd64 生产时延；
+> 生产预算仍按 §10.4 的 startupProbe 口径。
+>
 > 2026-10-23 v3.8.2（opencode 1.19.3 + OMO 5.1.35）QEMU 离线实测：
 > listening 6.8s，首次 `/config` 200 = 164.3s；`STARTUP_BUDGET_S=300` 通过。
 > 首启 bootstrap 明显慢于 v3.8.0 的 8.0s；production startupProbe 300s 仍覆盖。
@@ -710,7 +719,23 @@ VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
 | 镜像 | 地址 |
 |------|------|
 | 基础镜像 | `${IMAGE_REGISTRY}-base:latest`（`BASE_IMAGE_REGISTRY` 可覆盖） |
-| App 镜像 | `${IMAGE_REGISTRY}:v3.3.0-mymain` |
+| App 镜像（示例） | `${IMAGE_REGISTRY}:v3.17.0-upstream-align-20261102` |
+
+构建默认无 hardcode 兜底 registry；下表是已交付产物的实际地址，命令示例中的 tag 按当前交付替换。
+
+当前交付（2026-11-02）：
+
+| 项 | 值 |
+|------|------|
+| Tag | `v3.17.0-upstream-align-20261102`（linux/amd64，4.33GB） |
+| 源码 | `mymain` HEAD `b504f292`（上游 `78fab6b3` 对齐 merge `86996c83` 之后） |
+| 主仓 | `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode:v3.17.0-upstream-align-20261102` |
+| 副本 | `registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode:v3.17.0-upstream-align-20261102` |
+| Digest | 双仓同 digest `sha256:9c40a61f32484fab1e5644697ef3b6d76e36300c55d86b06aaba35bf2b0358f9`（image ID `sha256:f19e7cab…`） |
+| 血统 | 3 个关键文件与 HEAD 逐字节一致：`agent/src/api/strategy_surfaces.py`（`4fd8e32b…`）、`OpencodeAgent/AGENTS.md`（`d5f4010c…`）、`config/oh-my-openagent.json`（`8eb16910…`） |
+| 预烘 / 预加载 | `@opencode-ai/plugin` 双目录（`~/.config/opencode` 与 `~/.opencode`）、`oh-my-openagent@5.1.35` 缓存、`models.json` 5.96MB / 235 providers 均在位；`OPENCODE_DISABLE_MODELS_FETCH=1` |
+| 启动就绪 | `check_startup_readiness.sh`（`OFFLINE=1`、预算 300s）PASS：listening 6.6s、`/config` 200 24.9s、MCP 29.3s、entry listening 32.6s、entry `/health` 200 35.1s |
+| OMO | 24/24 条目为 `alibaba-cn/deepseek-v4.1-flash-1017`（14 agents + 10 categories） |
 
 ### 12.2 推送镜像
 
@@ -720,17 +745,17 @@ VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
 docker login <registry-host>
 
 # 推荐：构建并推送（IMAGE_REGISTRY 解析顺序：环境变量 → OpencodeAgent/.env）
-./build.sh --app --tag v3.3.0-mymain --push
+./build.sh --app --tag v3.17.0-upstream-align-20261102 --push
 
 # 手动推送（等效）
-docker tag opencode-serve:v3.3.0-mymain "${IMAGE_REGISTRY}:v3.3.0-mymain"
-docker push "${IMAGE_REGISTRY}:v3.3.0-mymain"
+docker tag opencode-serve:v3.17.0-upstream-align-20261102 "${IMAGE_REGISTRY}:v3.17.0-upstream-align-20261102"
+docker push "${IMAGE_REGISTRY}:v3.17.0-upstream-align-20261102"
 ```
 
 ### 12.3 拉取镜像
 
 ```bash
-docker pull "${IMAGE_REGISTRY}:v3.3.0-mymain"
+docker pull "${IMAGE_REGISTRY}:v3.17.0-upstream-align-20261102"
 ```
 
 ---
