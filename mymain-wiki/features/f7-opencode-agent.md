@@ -44,6 +44,8 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 
 ## 验证
 
+- 需求探索实验：显式调用 `research-discovery` 后使用渐进/用户选择的深度模式、研究路线与 brief v2；未启用时保留既有行为。不恢复领域子代理，不启用未经准入的执行门控。能力/契约/多轮产物评测与隔离 hook canary 见 [RESEARCH-DISCOVERY.md](../../OpencodeAgent/docs/RESEARCH-DISCOVERY.md)。
+
 - 冷启动耗时与项目作用域插件安装（2026-10-30）：项目侧配置带上 `plugin` 列表会让 opencode 在 `/workspace/.opencode/node_modules` 现场装 63 MB（70-82s）；去掉后 8.75s 连上 VT MCP。度量方法、证据与复核命令 → [f7-boot-cost.md](f7-boot-cost.md)
 
 - `OpencodeAgent/tests/test_config_render.py` **24 passed**（2026-09-27 净化后：渲染 / 治理清单编译 / agent scoping / 模型统一 / AGENTS.md 450 行护栏 / research-scenarios 技能契约）；nano-search-mcp 回归 193 passed 随目录删除退役

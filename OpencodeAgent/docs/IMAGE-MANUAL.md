@@ -67,7 +67,7 @@
 │  └──────────┘  └──────────┘  └─────────┼────────┘  │
 │                                         │            │
 │  ┌──────────────────┐   ┌───────────────▼──────────┐ │
-│  │  Skills (13)      │   │  /workspace/.vt-memory/  │ │
+│  │  Skills (14)      │   │  /workspace/.vt-memory/  │ │
 │  │  ~/.config/opencode│  │  - reflections/          │ │
 │  │   /skills (global)│   │  - persistent store      │ │
 │  │  （挂载不受影响）  │   │  - quality scoring       │ │
