@@ -4,7 +4,7 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F9
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-10-27
+updated: 2026-11-02
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -203,6 +203,17 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 | R2 ✅ | **A 股结构化检索替换引擎**（2026-09-27 立项，**2026-10-31 完成**：F13 以 6 个零 key skill 承接全部五类，gov.cn 政策用站内检索打通，不引入 DashScope/第三方 key；见 [F13 卡片](../features/f13-ashare-evidence-skills.md)） | nano-search-mcp 回退后（§5 2026-09-27 条），年报/半年报/季报全文、公告检索、监管处罚、机构调研/业绩说明会、gov.cn 行业政策失去专用通道；`web_search`（ddgs 多引擎）+ `get_research_reports` / `get_stock_news` 只覆盖通用检索与研报/新闻。候选方向：akshare 结构化接口（公告/研报已有部分封装）、tushare 扩展权限、自建 RSSHub 实例、或第三方金融检索 API。判据：可自部署、结构化返回（非仅网页快照）、覆盖上述五类、维护成本低于 nano-search 实测水平 |
 
 ## 5. 迭代笔记
+
+### 2026-11-02 镜像交付 `v3.17.0-upstream-align-20261102`（上游对齐后首次重建）
+
+- **动机**：2026-11-01 merge 条明确「镜像未重建」。分支上最后一次已推送的镜像构建于 2026-10-31 23:52（本地 tag `v3.16.3-capability-map-20261031`，双仓 `docker manifest inspect` 可复核；该版本未在 tracked 文档留下交付记录，属历史遗漏），其内容缺 `agent/src/api/strategy_surfaces.py`，落后于 `86996c83`；本轮以 `mymain` HEAD `b504f292` 重建。
+- **构建**：`DOCKER_PLATFORM=linux/amd64 IMAGE_REGISTRY=registry.cn-huhehaote.aliyuncs.com/gm_1/opencode ./build.sh --tag v3.17.0-upstream-align-20261102 --push`；base 复用 `opencode-serve-base:latest`（`a15af069e67b`，2026-10-25）；全程约 10.2 min（13:25:59→13:36:13，614s），pip 层 247.8s。既有告警不变：pip resolver 报 `alpaca-trade-api` 对 `urllib3<2` / `websockets<11` 的冲突（安装仍 exit 0），npm `EBADENGINE`（Node 20 vs 少数传递依赖）。
+- **推送**：主仓 `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode` + 副本 `registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode`，双仓同 digest `sha256:9c40a61f32484fab1e5644697ef3b6d76e36300c55d86b06aaba35bf2b0358f9`（image ID `sha256:f19e7cab…`，4.33 GB），`docker manifest inspect` 双仓通过。
+- **血统验证**：镜像内 `agent/src/api/strategy_surfaces.py`（仅 merge 引入，`4fd8e32b…`）、`OpencodeAgent/AGENTS.md`（`d5f4010c…`）、`OpencodeAgent/config/oh-my-openagent.json`（`8eb16910…`）三文件 sha256 与 HEAD 逐字节一致；`agent/src/research_artifacts/` 在位；VT MCP `list_tools()` = **101**（`VT_MEMORY_MCP_TOOLS=1` 口径）。
+- **OMO 配置**：`/workspace/.opencode/oh-my-openagent.json` 共 **24 条（14 agents + 10 categories），全部 `alibaba-cn/deepseek-v4.1-flash-1017`**；`opencode.json.tmpl` 默认 model 与 `provider.alibaba-cn` 唯一声明模型同值；opencode 1.19.3 + OMO 5.1.35。
+- **预烘 / 预加载**：`@opencode-ai/plugin` 在 `/home/opencode/.config/opencode` 与 `/home/opencode/.opencode` 双目录在位；OMO 缓存 `oh-my-openagent@5.1.35` 在位；`models.json` 5.96 MB / 235 providers 在位；`OPENCODE_DISABLE_MODELS_FETCH=1`、`OPENCODE_DISABLE_AUTOUPDATE=1`、`OMO_DISABLE_POSTHOG=1` 生效。
+- **启动就绪**：`check_startup_readiness.sh`（`OFFLINE=1`、`STARTUP_BUDGET_S=300`、`REQUIRE_IMAGE=1`）PASS。门禁四标记齐全：listening **6.6s**、`warmup complete`（首次 `/config` 200）**24.9s**、VT MCP connected **29.3s**、`strategy-run entry listening` **32.6s**；entry `/health` 200 复核 **35.1s**，`/mcp` 中 `vibe-trading=connected`。与上一次有记录的交付 v3.13.0（`/config` 26.6s、`/health` 32.3s）相比，`/config` 快 1.7s、`/health` 慢 2.8s。QEMU 数字只作同环境对比，不代表 native amd64 生产时延。
+- **未做**：真实凭据下的 E2E 会话（需 ClickHouse 与 `OPENCODE_SERVER_PASSWORD`）；`feat/research-discovery`（`d71e25ce`）未合入主干，故不在镜像内。
 
 ### 2026-11-01 merge 对齐（基线 `78fab6b3`，99 commit）——后台任务子系统并入 + 研究资料面
 

@@ -4,7 +4,7 @@ description: mymain 分支每次对齐/发布的 changelog——上游基线、�
 type: reference
 status: active
 created: 2026-08-11
-updated: 2026-10-29
+updated: 2026-11-02
 tags: [branch, release, changelog]
 related: [MYMAIN_DIVERGENCE.md]
 ---
@@ -33,6 +33,17 @@ related: [MYMAIN_DIVERGENCE.md]
   「发布 commit」字段，即可随时 `git diff <sha>` 追溯任意历史版本。
 
 ## 发布记录（新 → 旧）
+
+---
+
+### 镜像交付 · 2026-11-02 — v3.17.0-upstream-align-20261102（上游对齐后首次重建）
+
+- **发布 commit**：不适用——本条只记录镜像交付，`release/mymain` tag 不移动（仍为 `0104bb38`）；交付 tag `v3.17.0-upstream-align-20261102`（与镜像 tag 同名，指向本记录 commit）
+- **基线**：`mymain` HEAD `b504f292`（上游 `78fab6b3` 对齐 merge `86996c83` 之后；`feat/research-discovery` 的 `d71e25ce` 未合入主干，不在镜像内）
+- **镜像**：`opencode-serve:v3.17.0-upstream-align-20261102`（linux/amd64，4.33 GB，image ID `sha256:f19e7cab…`），复用 base `opencode-serve-base:latest`；主仓 `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode` + 副本 `registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode` 同步推送，双仓同 digest `sha256:9c40a61f32484fab1e5644697ef3b6d76e36300c55d86b06aaba35bf2b0358f9`，远端 manifest inspect 验证通过
+- **内容**：2026-11-01 上游 99 commit 对齐（后台任务子系统、research artifacts 前端面、Parallel 搜索）+ 合并暴露的两处修复（F9 router 移入 `src/api/strategy_surfaces.py`；auto 链 resolver 替换不再记 `source_unavailable`）
+- **验证**：镜像内 3 个关键文件与 HEAD 逐字节一致（`agent/src/api/strategy_surfaces.py` `4fd8e32b…` / `OpencodeAgent/AGENTS.md` `d5f4010c…` / `OpencodeAgent/config/oh-my-openagent.json` `8eb16910…`）；`agent/src/research_artifacts/` 在位；VT MCP `asyncio.run(mcp.list_tools())` = **101**；OMO **24/24** = `alibaba-cn/deepseek-v4.1-flash-1017`；opencode 1.19.3 + OMO 5.1.35；插件 SDK 双目录预烘、OMO 缓存与 `models.json`（235 providers）预加载在位
+- **启动就绪**：`check_startup_readiness.sh`（`OFFLINE=1`、预算 300s、`REQUIRE_IMAGE=1`）PASS。门禁四标记：listening **6.6s**、`warmup complete`（`/config` 200）**24.9s**、VT MCP connected **29.3s**、`strategy-run entry listening` **32.6s**；entry `/health` 200 复核 **35.1s**
 
 ---
 
