@@ -2,29 +2,43 @@
 
 from __future__ import annotations
 
-from typing import Any
+import json
+from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from src.research_artifacts import ResearchArtifactStore
+
+# The content field already caps the conclusion; evidence references and ids
+# were unbounded, so one authenticated request could store an arbitrarily
+# large row.
+_MAX_EVIDENCE_ITEMS = 1000
+_MAX_EVIDENCE_CHARS = 1_000_000
 
 
 class ResearchArtifactSaveRequest(BaseModel):
     """Create a series or append an explicitly linked revision."""
 
-    artifact_id: str | None = None
+    artifact_id: str | None = Field(default=None, max_length=200)
     subject: str | None = Field(default=None, max_length=5000)
     universe: str | None = Field(default=None, max_length=1000)
     content: str = Field(..., min_length=1, max_length=500_000)
     data_as_of: str = Field(..., min_length=1, max_length=100)
-    evidence: list[dict[str, Any]] | None = None
+    evidence: list[dict[str, Any]] | None = Field(default=None, max_length=_MAX_EVIDENCE_ITEMS)
     verification_status: str | None = Field(default=None, max_length=100)
     completeness: str | None = Field(default=None, max_length=100)
-    hypothesis_id: str | None = None
-    goal_id: str | None = None
-    session_id: str | None = None
-    run_id: str | None = None
+    hypothesis_id: str | None = Field(default=None, max_length=200)
+    goal_id: str | None = Field(default=None, max_length=200)
+    session_id: str | None = Field(default=None, max_length=200)
+    run_id: str | None = Field(default=None, max_length=200)
+
+    @field_validator("evidence")
+    @classmethod
+    def _bound_evidence_size(cls, value: list[dict[str, Any]] | None) -> list[dict[str, Any]] | None:
+        if value is not None and len(json.dumps(value, ensure_ascii=False, default=str)) > _MAX_EVIDENCE_CHARS:
+            raise ValueError(f"evidence must serialize to at most {_MAX_EVIDENCE_CHARS} characters")
+        return value
 
 
 def register_research_artifact_routes(app: FastAPI) -> None:
@@ -80,6 +94,19 @@ def register_research_artifact_routes(app: FastAPI) -> None:
         finally:
             store.close()
 
+    @app.get("/api/research-artifacts/{artifact_id}/export", dependencies=[Depends(require_auth)])
+    def export_research_artifact(
+        artifact_id: str,
+        format: Literal["json", "markdown"] = Query(default="json"),
+    ):
+        store = ResearchArtifactStore()
+        try:
+            return store.export_series(artifact_id, format).to_dict()
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        finally:
+            store.close()
+
     @app.get("/api/research-artifacts/revision/{revision_id}", dependencies=[Depends(require_auth)])
     def get_research_revision(revision_id: str):
         store = ResearchArtifactStore()
@@ -88,6 +115,25 @@ def register_research_artifact_routes(app: FastAPI) -> None:
             if revision is None:
                 raise HTTPException(status_code=404, detail=f"research revision not found: {revision_id}")
             return {"revision": revision.to_dict()}
+        finally:
+            store.close()
+
+    @app.get("/api/research-artifacts/{artifact_id}/compare", dependencies=[Depends(require_auth)])
+    def compare_research_revisions(
+        artifact_id: str,
+        from_revision_id: str = Query(min_length=1, max_length=200),
+        to_revision_id: str = Query(min_length=1, max_length=200),
+    ):
+        store = ResearchArtifactStore()
+        try:
+            comparison = store.compare_revisions(
+                artifact_id=artifact_id,
+                from_revision_id=from_revision_id,
+                to_revision_id=to_revision_id,
+            )
+            return {"comparison": comparison}
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         finally:
             store.close()
 

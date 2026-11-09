@@ -107,10 +107,42 @@ no row at all while its daily bar exists is a provider omission and returns
 | `path_model` | `bar_median`, `bar_close` | `bar_median` | reference price from each bar |
 | `fill_model` | `all_or_none` | `all_or_none` | no partial fills |
 
-A market order fills at the first continuous bar whose fill gates pass; a
-limit order rests until a bar satisfies its price and is canceled at session end
-(15:00 on a complete session) if none does. Every fill is all-or-none; partial
-fills and volume share are Phase 3.
+A market order fills at the first continuous bar whose fill gates pass. If a
+buy is blocked at the upper price limit or a sell at the lower limit, it is
+canceled immediately and cannot fill on a later bar even if the price reopens.
+The result contains one `canceled_orders` entry with the existing
+`canceled_after_failed_match` reason and a detail naming `limit_up` or
+`limit_down`, plus a `price_limit` event; it is not a rejected order. A limit
+order blocked by the price band instead stays open until it fills or expires at
+the end of the session ([JoinQuant API guide, order processing](https://cdn.joinquant.com/help/img/JoinQuantAPI.pdf)).
+The default daily pt-v1.1 contract is unchanged and
+continues to report its established rejection reasons.
+
+A resting limit follows JoinQuant's bar matching: a buy triggers only when
+`bar.low < limit` (its 委托价 above the bar's low) and a sell only when
+`bar.high > limit` (its 委托价 below the bar's high), and a triggered fill
+executes at the order's 委托价 rather than the bar reference. Equality does not
+fill, so a bar that only touches the limit leaves the order resting, and a limit
+that never triggers is canceled at session end (15:00 on a complete session). On
+the first bar with volume, an already-marketable reference (`ref < limit` for a
+buy, `ref > limit` for a sell) fills at that strictly better price instead,
+which wins over the 委托价 even when the bar also crosses. Every fill is
+all-or-none; volume share is Phase 3.
+
+Inside the five-minute session (the daily path builds no order book), order
+statuses use JoinQuant's `OrderStatus` vocabulary: `held` means fully filled
+and terminal, `canceled` and `rejected` are also terminal, and `new`, `open`
+and `pending_cancel` are not. JoinQuant's `filled` (partially filled, residual
+still in `open_orders()`) exists in the lifecycle but is not reached while
+every fill is all-or-none. These statuses are internal; no result field or
+surface exposes them.
+
+The matcher walks a shared chronological timeline across the supplied symbol
+frames, so later proceeds cannot fund an earlier order. At a shared timestamp,
+orders are evaluated in caller submission order, including the cash check;
+there is no implicit sell-first priority. Each symbol tracks its own first
+positive-volume bar for the better-price rule. This engine behavior does not
+relax the public tool's single-symbol provider limit below.
 
 The 5m leg uses Tushare `stk_mins` and is resolved separately from the daily
 chain: Tencent's raw loader serves daily bars only. The measured provider limit
@@ -134,9 +166,10 @@ branch (`paper-trade-v12-persistence`) and is not wired to any CLI, API or MCP
 surface in this PR.
 
 Daily data supplies the prior close for price-limit bands and the final NAV.
-The current 5m reference is checked against those bands; an order waits while
-its side is blocked by a price limit. Zero-volume bars cannot fill. Corporate
-actions remain fail-closed.
+The band and cash gates check the price the fill would execute at, so a 5m
+market order is gated at its bar reference and a resting limit at its 委托价;
+an order waits while its side is blocked by a price limit. Zero-volume bars
+cannot fill. Corporate actions remain fail-closed.
 
 ## Known limits
 
@@ -166,6 +199,14 @@ actions remain fail-closed.
 - **5m strategy UNIVERSE is strict.** An order on a position outside the
   declared `UNIVERSE` fails the whole call, so such a position cannot be reduced
   by a 5m strategy step; use the 1d step for that.
+- **Matching changes are versioned.** `pt-rules-v4` identifies chronological
+  matching across symbols and submission order at shared timestamps.
+  `pt-rules-v3` identified the immediate price-limit market cancellation;
+  `pt-rules-v2` identified the corrected
+  full/partial order statuses and 5m limit-fill rules. Each rule version has a
+  different engine fingerprint even with identical bars and model settings;
+  archived results retain their original version.
+
 
 ## Data and model limits
 

@@ -46,7 +46,7 @@ it("keeps every feature directly reachable and distinguishes tasks from tools an
   expect(screen.getByRole("link", { name: "Strategy library" })).toHaveAttribute("href", "/strategies");
   expect(screen.getByRole("link", { name: "Strategy schedules" })).toHaveAttribute("href", "/strategy-schedules");
   expect(within(screen.getByRole("region", { name: "Specialized analysis" })).getAllByRole("link").map((link) => link.getAttribute("href")))
-    .toEqual(["/alpha-zoo", "/options", "/correlation"]);
+    .toEqual(["/alpha-zoo", "/research-lab", "/options", "/correlation"]);
   expect(within(screen.getByRole("region", { name: "Automation & setup" })).getAllByRole("link").map((link) => link.getAttribute("href")))
     .toEqual(["/pixel-office", "/scheduled", "/runtime", "/settings"]);
   expect(screen.getByRole("link", { name: "Research assistant" })).toHaveAttribute("aria-current", "page");
@@ -149,8 +149,8 @@ it("opens a labeled feature menu in compact mode and returns focus on Escape", (
   expect(within(menu).getByText("Options analysis")).toBeVisible();
   expect(within(menu).getByText("Pixel Office")).toBeVisible();
   expect(within(menu).getByText("Trading status")).toBeVisible();
-  // One link per NAVIGATION_GROUPS item: 5 research + 2 strategy + 3 analysis + 4 automation.
-  expect(within(menu).getAllByRole("link")).toHaveLength(14);
+  // One link per NAVIGATION_GROUPS item: 5 research + 2 strategy + 4 analysis + 4 automation.
+  expect(within(menu).getAllByRole("link")).toHaveLength(15);
   fireEvent.keyDown(document, { key: "Escape" });
   expect(screen.queryByRole("navigation", { name: "Browse features" })).not.toBeInTheDocument();
   expect(trigger).toHaveFocus();

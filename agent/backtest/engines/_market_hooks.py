@@ -63,6 +63,8 @@ _CN_FUTURES_PRODUCTS = {
     "p",
     "jd",
     "lh",
+    "rr",
+    "pg",
     "cf",
     "sr",
     "ta",
@@ -70,6 +72,9 @@ _CN_FUTURES_PRODUCTS = {
     "ap",
     "rm",
     "oi",
+    "cj",
+    "pk",
+    "cy",
     "pp",
     "l",
     "v",
@@ -372,11 +377,13 @@ def _detect_market(code: str) -> str:
         ``=F`` (futures) and ``=X`` (forex) notations are recognized;
         any other unknown format defaults to ``a_share``.
     """
+    return matched_market(code) or "a_share"
+
+
+def matched_market(code: str) -> str | None:
+    """Return the market matched by a routing rule, or None for unknown symbols."""
     symbol = strip_local_prefix(code)
-    for pattern, market in _MARKET_PATTERNS:
-        if pattern.match(symbol):
-            return market
-    return "a_share"
+    return next((market for pattern, market in _MARKET_PATTERNS if pattern.match(symbol)), None)
 
 
 def _is_china_futures(code: str) -> bool:

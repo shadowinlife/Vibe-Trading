@@ -223,3 +223,7 @@ bench_report_tier2.json
 
 # Runtime background command previews and restart outcomes
 /background-tasks/
+
+# Prerendered docs pages (written by wiki/scripts/prerender_docs.mjs at deploy time)
+wiki/docs/latest/
+wiki/docs/zh/

@@ -7,12 +7,10 @@ inside the implementation's 48 KiB budget (4 KiB under the host's 50 KiB cap).
 
 Usage::
 
-    RUN_DIR=~/.vibe-trading/runs/<run> \\
-    VT_MCP_CMD="python /path/to/agent/mcp_server.py" \\
-    python agent/scripts/verify_backtest_result.py
+    python agent/scripts/verify_backtest_result.py \\
+        --run-dir ~/.vibe-trading/runs/<run>
 
-``--run-dir`` and ``--mcp-cmd`` override ``RUN_DIR`` and ``VT_MCP_CMD``. When
-``VT_MCP_CMD`` is unset, the script starts this repository's own
+``--mcp-cmd`` overrides the default, which starts this repository's own
 ``agent/mcp_server.py`` with the current interpreter.
 """
 
@@ -85,17 +83,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--run-dir",
-        default=os.environ.get("RUN_DIR", ""),
+        default="",
         help="Run directory a successful backtest will complete in.",
     )
     parser.add_argument(
         "--mcp-cmd",
-        default=os.environ.get("VT_MCP_CMD") or _default_mcp_cmd(),
+        default=_default_mcp_cmd(),
         help="Command that starts the VT MCP server over stdio.",
     )
     args = parser.parse_args()
     if not args.run_dir:
-        parser.error("--run-dir or RUN_DIR is required")
+        parser.error("--run-dir is required")
 
     raw = asyncio.run(_call_backtest(args.run_dir, args.mcp_cmd))
     print(raw)

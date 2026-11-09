@@ -426,7 +426,7 @@ async function errorFromResponse(res: Response): Promise<ApiError> {
   return new ApiError(detail, res.status, code);
 }
 
-async function request<T>(path: string, options?: RequestInit, timeoutMs?: number): Promise<T> {
+export async function request<T>(path: string, options?: RequestInit, timeoutMs?: number): Promise<T> {
   const { headers, ...rest } = options ?? {};
   const mergedHeaders: Record<string, string> = { "Content-Type": "application/json", ...authHeaders() };
   if (headers) {
@@ -494,6 +494,50 @@ export interface ResearchArtifactRevision {
   run_id: string | null;
 }
 
+export interface ResearchArtifactComparison {
+  artifact_id: string;
+  from: {
+    revision_id: string;
+    revision_number: number;
+    created_at: string;
+    content_hash: string;
+    provenance_hash: string;
+  };
+  to: {
+    revision_id: string;
+    revision_number: number;
+    created_at: string;
+    content_hash: string;
+    provenance_hash: string;
+  };
+  content: {
+    changed: boolean;
+    from_hash: string;
+    to_hash: string;
+    from_line_count: number;
+    to_line_count: number;
+    from_newline_style: string;
+    to_newline_style: string;
+    diff: string[];
+    truncated: boolean;
+  };
+  evidence: {
+    added: Array<Record<string, unknown>>;
+    removed: Array<Record<string, unknown>>;
+    unchanged_count: number;
+    order_changed: boolean;
+    changed: boolean;
+  };
+  metadata: Record<string, { from: unknown; to: unknown }>;
+}
+
+export interface ResearchArtifactExport {
+  filename: string;
+  media_type: string;
+  content: string;
+  sha256: string;
+}
+
 export interface ResearchArtifactSaveResult {
   revision: ResearchArtifactRevision;
   created: boolean;
@@ -514,7 +558,29 @@ export interface SaveResearchArtifactRequest {
   run_id?: string;
 }
 
+export type LabAction = "cost_sensitivity" | "walk_forward" | "factor_audit" | "replay";
+export interface LabCatalog {
+  runs: Array<{ id: string; codes: string[]; start_date: string; end_date: string; has_prices: boolean; has_trace: boolean; parameters: Record<string, string | number | boolean | null> }>;
+  cases: Array<{ id: string; scenario: string; prompt: string; checks: string[] }>;
+}
+interface LabMetrics { total_return: number; max_drawdown: number; sharpe: number }
+interface LabFold { fold: number; name: string; parameters: Record<string, unknown>; test_start: string; test_end: string; test: { metrics: LabMetrics; run_dir: string } }
+export type LabResult =
+  | { kind: "cost_sensitivity"; rows: Array<LabMetrics & { name: string; fee_multiplier: number; extra_slippage_bps: number }>; break_even_brackets: Array<{ fee_multiplier_interval: number[]; extra_slippage_bps: number }> }
+  | { kind: "walk_forward"; folds: LabFold[]; oos_total_return: number; holdout: (LabFold & { total_return: number }) | null }
+  | { kind: "factor_audit"; count: number; finding_count: number; rows: Array<{ id: string; minimum_bars: number; policy: "full_window" | "recursive_seed" | "partial_window" | "conditional_sample"; valid: boolean; findings?: string[] }> }
+  | { kind: "replay"; evaluation_status: "passed" | "failed" | "not_evaluable" | "invalid_artifact"; summary: { evaluation_coverage: number }; reports: Array<{ case_id: string; verdicts: Array<{ status: string; code: string; detail?: string }> }> };
+export interface LabJob {
+  id: string; action: LabAction; status: "pending" | "running" | "completed" | "failed";
+  progress?: { completed: number; total: number; phase: string; label?: string };
+  result?: LabResult; error?: string; request?: Record<string, unknown>;
+}
+
 export const api = {
+  getResearchLabCatalog: () => request<LabCatalog>("/api/research-lab/catalog"),
+  startResearchLabJob: (action: LabAction, body: Record<string, unknown>) =>
+    request<LabJob>("/api/research-lab/jobs", { method: "POST", body: JSON.stringify({ action, request: body }) }),
+  getResearchLabJob: (id: string) => request<LabJob>(`/api/research-lab/jobs/${encodeURIComponent(id)}`),
   getPixelOffice: () => request<OfficeSnapshot>("/api/pixel-office"),
   updatePixelOffice: (action: "create" | "assign" | "complete" | "rank", arguments_: Record<string, unknown>) =>
     request<OfficeSnapshot>("/api/pixel-office/actions", { method: "POST", body: JSON.stringify({ action, arguments: arguments_ }) }),
@@ -527,10 +593,16 @@ export const api = {
     const suffix = search.toString();
     return request<{ count: number; artifacts: ResearchArtifactRevision[] }>(`/api/research-artifacts${suffix ? `?${suffix}` : ""}`);
   },
+  compareResearchArtifactRevisions: (artifactId: string, fromRevisionId: string, toRevisionId: string) => {
+    const search = new URLSearchParams({ from_revision_id: fromRevisionId, to_revision_id: toRevisionId });
+    return request<{ comparison: ResearchArtifactComparison }>(`/api/research-artifacts/${encodeURIComponent(artifactId)}/compare?${search}`);
+  },
   getResearchArtifact: (artifactId: string) =>
     request<{ artifact: ResearchArtifactRevision; revisions: ResearchArtifactRevision[] }>(`/api/research-artifacts/${encodeURIComponent(artifactId)}`),
   getResearchRevision: (revisionId: string) =>
     request<{ revision: ResearchArtifactRevision }>(`/api/research-artifacts/revision/${encodeURIComponent(revisionId)}`),
+  exportResearchArtifact: (artifactId: string, format: "json" | "markdown" = "json") =>
+    request<ResearchArtifactExport>(`/api/research-artifacts/${encodeURIComponent(artifactId)}/export?format=${format}`),
   saveResearchArtifact: (body: SaveResearchArtifactRequest) =>
     request<ResearchArtifactSaveResult>("/api/research-artifacts", { method: "POST", body: JSON.stringify(body) }),
   getCorrelationAnalysis: (codes: string, days: number, method: "pearson" | "spearman", includeRegime: boolean, signal?: AbortSignal) =>
@@ -1317,7 +1389,21 @@ export interface SourceOrderUpdate {
   order?: string[] | null;
 }
 
+export const gildataFeatures = [
+  "fin_query",
+  "stock_selection",
+  "symbol_search",
+  "shannon",
+  "market_quotes",
+  "fund_nav",
+  "macro_series",
+  "announcements",
+  "broker_reports",
+] as const;
+export type GildataFeature = typeof gildataFeatures[number];
+
 export interface DataSourceSettings {
+  gildata_features?: GildataFeature[];
   tushare_token_configured: boolean;
   tushare_token_hint?: string | null;
   gildata_token_configured: boolean;
@@ -1330,6 +1416,7 @@ export interface DataSourceSettings {
 }
 
 export interface UpdateDataSourceSettingsRequest {
+  gildata_features?: GildataFeature[];
   tushare_token?: string;
   clear_tushare_token?: boolean;
   gildata_token?: string;
@@ -1531,8 +1618,7 @@ export interface ValidationData {
     n_trades: number;
     sharpe_samples?: number[];
     equity_paths?: MonteCarloEquityPaths;
-    error?: string;
-  };
+  } | { error: string };
   bootstrap?: {
     observed_sharpe: number;
     ci_lower: number;
@@ -1642,7 +1728,7 @@ export interface FactorReportPayload {
 
 export interface AttributionBenchmarkInfo {
   ticker: string | null;
-  mode: "auto_equal_weight" | "explicit";
+  mode: "auto_equal_weight" | "auto_market" | "explicit";
 }
 
 export interface AttributionRollingPoint {

@@ -6,7 +6,7 @@ Zero API key required for HK/US/crypto research markets (yfinance, OKX,
 AKShare are free). Trading connector tools are profile-scoped and require the
 selected connector's own local app or OAuth setup.
 
-Surfaces 96 tools (101 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
+Surfaces 94 tools (99 when VT_MEMORY_MCP_TOOLS=1): skills, research goals, scheduled research, strategy discovery,
 backtest/factor/options/pattern
 analysis, deterministic paper-trading matching (paper_trade_step), market data, fundamentals & capital-flow & news & discovery
 (get_fund_flow / get_dragon_tiger / get_northbound_flow / get_southbound_flow /
@@ -14,8 +14,7 @@ get_margin_trading /
 get_block_trades / get_shareholder_count / get_lockup_expiry / get_sector_info /
 get_research_reports / get_stock_news / get_sec_filings /
 get_financial_statements / get_options_chain / get_stock_profile /
-screen_market / search_symbol / get_macro_series / iwencai_search /
-qveris_search / qveris_inspect / qveris_execute),
+screen_market / search_symbol / get_macro_series / iwencai_search),
 institutional-research and alternative data (get_institutional_holdings /
 etf_holdings / prediction_market / research_papers), read-only finance math and
 market analytics (quantlib_call / cashflow_performance / orderbook_depth /
@@ -26,9 +25,7 @@ trading-connector reads, swarm orchestration, trade-journal and shadow-account
 analysis. Every exposed tool is read-only or research-only except
 refresh_strategy_evidence, which writes ONLY the disposable facade-owned
 strategy-evidence cache from local run artifacts; no order-placing or
-order-cancelling tool is ever surfaced via MCP. The QVeris tools additionally
-require QVeris paid routing (QVERIS_API_KEY + paid mode), and qveris_execute
-is billable research-data execution only — it never places orders.
+order-cancelling tool is ever surfaced via MCP.
 
 Usage:
     python mcp_server.py                    # stdio transport (default)
@@ -75,6 +72,8 @@ if str(AGENT_DIR) not in sys.path:
     sys.path.insert(0, str(AGENT_DIR))
 
 from fastmcp import Context, FastMCP
+from fastmcp.exceptions import ToolError
+from fastmcp.server.middleware import Middleware
 from pydantic import BeforeValidator
 
 from cli._version import __version__ as APP_VERSION
@@ -89,6 +88,33 @@ from src.factors.research_contract import RESEARCH_MODES, RESEARCH_STAGES
 mcp = FastMCP("Vibe-Trading", version=APP_VERSION)
 
 logger = logging.getLogger(__name__)
+
+
+class _ToolPolicyMiddleware(Middleware):
+    """Apply the tool deny-list to every MCP tool.
+
+    The registry refuses denied names, but many MCP tools call their code
+    directly; screening here covers those and keeps denied tools out of the
+    advertised list. Like the registry check, a convenience filter, not a
+    security boundary.
+    """
+
+    async def on_list_tools(self, context: Any, call_next: Any) -> Any:
+        from src.providers.tool_policy import _deny_prefixes
+
+        prefixes = _deny_prefixes()
+        return [tool for tool in await call_next(context) if not tool.name.startswith(prefixes)]
+
+    async def on_call_tool(self, context: Any, call_next: Any) -> Any:
+        from src.providers.tool_policy import _deny_prefixes
+
+        name = context.message.name
+        if name.startswith(_deny_prefixes()):
+            raise ToolError(f"{name} is disabled by the active tool policy")
+        return await call_next(context)
+
+
+mcp.add_middleware(_ToolPolicyMiddleware())
 
 
 # ---------------------------------------------------------------------------
@@ -2545,6 +2571,7 @@ def get_market_data(
     - "akshare": A-shares, US, HK, futures, forex (free, e.g. 000001.SZ, AAPL.US)
     - "ccxt": crypto from 100+ exchanges (free, e.g. BTC/USDT)
     - "mt5": forex/metals from a local MetaTrader 5 terminal (Windows; e.g. EUR/USD, XAUUSD.FX)
+    - "gildata": only on user request, with token and market quotes enabled; no fallback
     - "auto": auto-detect based on symbol format (with fallback)
 
     Args:
@@ -2600,12 +2627,11 @@ def get_market_data(
 # Each wrapper delegates to the auto-discovered local registry, exactly like
 # factor_analysis / pattern_recognition above. The registry returns a clean
 # JSON error envelope when a key-gated tool (get_macro_series needs
-# FRED_API_KEY, iwencai_search needs VIBE_TRADING_IWENCAI_KEY, the qveris_*
-# tools need QVeris paid routing: QVERIS_API_KEY + paid mode) is absent — see
+# FRED_API_KEY, iwencai_search needs VIBE_TRADING_IWENCAI_KEY) is absent — see
 # ``_execute_key_gated`` below, which honours that contract even though the
 # tool is excluded from the registry by ``check_available()``. Every tool below
 # is read-only or research-only data — no order/trading tool is ever surfaced
-# via MCP (qveris_execute spends QVeris credits on data calls, never orders).
+# via MCP.
 # ---------------------------------------------------------------------------
 
 
@@ -2616,7 +2642,6 @@ def get_market_data(
 # contract above (a clean, env-var-named error). For these tools we therefore
 # fall through to the tool's own ``execute()`` — whose missing-key envelope
 # names the exact env var (``FRED_API_KEY`` / ``VIBE_TRADING_IWENCAI_KEY``),
-# or the missing QVeris paid-routing setup (``QVERIS_API_KEY`` + paid mode).
 def _key_gated_tool_classes() -> dict[str, Any]:
     """Return the {tool_name: tool_class} map for key-gated MCP tools.
 
@@ -2634,11 +2659,6 @@ def _key_gated_tool_classes() -> dict[str, Any]:
         SearchBrokerReportsTool,
     )
     from src.tools.iwencai_tool import IWenCaiSearchTool
-    from src.tools.qveris_tool import (
-        QVerisExecuteTool,
-        QVerisInspectTool,
-        QVerisSearchTool,
-    )
 
     return {
         "get_macro_series": FredMacroTool,
@@ -2647,25 +2667,16 @@ def _key_gated_tool_classes() -> dict[str, Any]:
         "get_cn_announcements": GetCnAnnouncementsTool,
         "search_broker_reports": SearchBrokerReportsTool,
         "iwencai_search": IWenCaiSearchTool,
-        "qveris_search": QVerisSearchTool,
-        "qveris_inspect": QVerisInspectTool,
-        "qveris_execute": QVerisExecuteTool,
     }
 
 
 def _execute_key_gated(name: str, params: dict[str, Any]) -> str:
     """Run a key-gated MCP tool, preserving its env-var-named error.
 
-    Prefers the auto-discovered registry (present when the API key is set and,
-    for the qveris_* tools, paid mode is on). When the gating is absent the
-    tool is excluded from the registry, so we invoke its concrete ``execute()``
-    directly to surface the documented missing-key error that names the exact
-    env var — or the missing QVeris paid routing — never a generic "Tool not
-    found".
+    If a credential is missing, use the tool's own actionable error response.
 
     Args:
-        name: MCP tool name (``get_macro_series``, ``iwencai_search``,
-            ``qveris_search``, ``qveris_inspect`` or ``qveris_execute``).
+        name: Registered key-gated tool name.
         params: Keyword arguments forwarded to the tool.
 
     Returns:
@@ -3082,8 +3093,7 @@ def get_fund_nav(
     NAV (复权净值) and the daily growth rate per fund, over an optional date
     window. Codes are bare 6-digit ('110022') or '.OF'-suffixed
     ('110022.OF'). Exchange-listed ETF/LOF are OHLCV instruments — use
-    get_market_data for those. Requires the commercial GILDATA_TOKEN; without
-    it the tool returns a not-available error.
+    get_market_data for those. Requires GILDATA_TOKEN and the fund_nav opt-in.
 
     Args:
         funds: Fund codes, e.g. ["110022", "000198.OF"].
@@ -3108,7 +3118,7 @@ def get_cn_macro_series(query: str, limit: int = 50) -> str:
     GDP, CPI, PPI, PMI, money supply, rates, trade, 31 industry series and
     regional data — dated observations with unit and frequency, asked for in
     natural language. Complements get_macro_series (FRED, US/global).
-    Requires GILDATA_TOKEN; without it the tool returns a not-available error.
+    Requires GILDATA_TOKEN and the macro_series opt-in.
 
     Args:
         query: Natural-language indicator request, e.g. "2024年中国月度CPI同比".
@@ -3125,7 +3135,7 @@ def get_cn_announcements(query: str, limit: int = 50) -> str:
 
     Annual reports, earnings, dividends, buybacks, restructuring, inquiry
     letters — with title, publish date and a highlighted excerpt. For US
-    filings use get_sec_filings. Requires GILDATA_TOKEN.
+    filings use get_sec_filings. Requires GILDATA_TOKEN and the announcements opt-in.
 
     Args:
         query: Natural-language announcement request, e.g. "贵州茅台2024年年度分红公告".
@@ -3142,7 +3152,7 @@ def search_broker_reports(query: str, limit: int = 50) -> str:
 
     Title, broker, industry, rating and a highlighted excerpt of the argument
     — for company deep-dives, industry views and macro commentary. Coexists
-    with get_research_reports (eastmoney-backed). Requires GILDATA_TOKEN.
+    with get_research_reports (eastmoney-backed). Requires GILDATA_TOKEN and the broker_reports opt-in.
 
     Args:
         query: Natural-language research request, e.g. "最近三个月白酒行业的券商研报观点".
@@ -3169,100 +3179,6 @@ def iwencai_search(query: str, limit: int = 20) -> str:
         limit: Maximum securities to return.
     """
     return _execute_key_gated("iwencai_search", {"query": query, "limit": limit})
-
-
-@mcp.tool
-def qveris_search(query: str, limit: int = 20, session_id: str | None = None) -> str:
-    """Search the QVeris premium data/tool marketplace for capabilities.
-
-    Discovery is free. Returns candidate tools with ``tool_id``, ``provider``,
-    ``parameters``, ``expected_cost`` and ``stats.success_rate``; choose by
-    expected cost and success rate before any paid execute. Requires QVeris
-    paid routing (``QVERIS_API_KEY`` and paid mode via ``vibe-trading data
-    mode paid`` or Settings -> QVeris) — without it the tool returns a
-    not-available error.
-
-    Args:
-        query: Capability search query, e.g. "US listed options chain implied
-            volatility Greeks AAPL".
-        limit: Maximum candidates to return.
-        session_id: Optional QVeris session id linking follow-up calls.
-    """
-    params: dict[str, Any] = {"query": query, "limit": limit}
-    if session_id:
-        params["session_id"] = session_id
-    return _execute_key_gated("qveris_search", params)
-
-
-@mcp.tool
-def qveris_inspect(
-    tool_ids: list[str],
-    search_id: str | None = None,
-    session_id: str | None = None,
-) -> str:
-    """Inspect full parameter schemas of QVeris tools before executing them.
-
-    Fetches the complete descriptors for one or more ``tool_ids`` returned by
-    ``qveris_search``. Inspection is free: verify required parameters, enum
-    values, date formats and output shape before a paid call. Requires QVeris
-    paid routing (``QVERIS_API_KEY`` and paid mode via ``vibe-trading data
-    mode paid`` or Settings -> QVeris) — without it the tool returns a
-    not-available error.
-
-    Args:
-        tool_ids: QVeris tool ids taken from ``qveris_search`` results.
-        search_id: Optional search id from the ``qveris_search`` response.
-        session_id: Optional QVeris session id linking follow-up calls.
-    """
-    params: dict[str, Any] = {"tool_ids": tool_ids}
-    if search_id:
-        params["search_id"] = search_id
-    if session_id:
-        params["session_id"] = session_id
-    return _execute_key_gated("qveris_inspect", params)
-
-
-@mcp.tool
-def qveris_execute(
-    tool_id: str,
-    parameters: dict[str, Any],
-    search_id: str | None = None,
-    session_id: str | None = None,
-    model: str | None = None,
-    max_response_size: int = 20480,
-) -> str:
-    """Execute one QVeris capability after discovery and inspection.
-
-    Runs the ``tool_id`` selected via ``qveris_search`` / ``qveris_inspect``.
-    MAY BE BILLABLE — provider calls are charged by QVeris when billable
-    (failed or empty calls are not charged), and the tool enforces the local
-    per-session credit budget before sending the request; the result preserves
-    ``cost`` and ``remaining_credits``. Research/data execution only — it
-    never places orders. Requires QVeris paid routing (``QVERIS_API_KEY`` and
-    paid mode via ``vibe-trading data mode paid`` or Settings -> QVeris) —
-    without it the tool returns a not-available error.
-
-    Args:
-        tool_id: QVeris tool id to execute.
-        parameters: Provider call parameters matching the inspected schema.
-        search_id: Optional search id from the ``qveris_search`` response.
-        session_id: Optional QVeris session id used for budget accounting.
-        model: Optional provider model override.
-        max_response_size: Provider response truncation budget (default
-            20480; -1 disables truncation).
-    """
-    params: dict[str, Any] = {
-        "tool_id": tool_id,
-        "parameters": parameters,
-        "max_response_size": max_response_size,
-    }
-    if search_id:
-        params["search_id"] = search_id
-    if session_id:
-        params["session_id"] = session_id
-    if model:
-        params["model"] = model
-    return _execute_key_gated("qveris_execute", params)
 
 
 # ---------------------------------------------------------------------------
@@ -3891,6 +3807,22 @@ def scan_shadow_signals(
     if date:
         params["date"] = date
     return registry.execute("scan_shadow_signals", params)
+
+
+# ---------------------------------------------------------------------------
+# Research Lab
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool
+def research_lab(action: str, request: dict | None = None) -> str:
+    """Run sealed cost/OOS experiments, factor audits, or offline task replay.
+
+    Args:
+        action: catalog, show, cost_sensitivity, walk_forward, factor_audit, replay.
+        request: Shared Research Lab request; catalog lists available inputs.
+    """
+    return _get_registry().execute("research_lab", {"action": action, "request": request or {}})
 
 
 # ---------------------------------------------------------------------------
