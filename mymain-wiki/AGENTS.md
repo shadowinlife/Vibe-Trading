@@ -4,7 +4,7 @@ description: mymain 分支持久知识库的路由层与使用协议：任务/�
 type: index
 status: active
 created: 2026-09-27
-updated: 2026-10-31
+updated: 2026-11-09
 tags: [index, routing, mymain]
 related: [INDEX.md, README.md, branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -68,6 +68,7 @@ mymain = **纯粹的 opencode + omo + VT MCP 路线**：opencode 作为 harness 
 | `clickhouse/` | `README.md` + 语义层 RESEARCH / REPORT / ITERATION_PLAN / SYNC_DIAGNOSIS | active |
 | `multitenant/` | 多租户服务化差距台账（engine-bridge 线动机文档） | **archived（墓碑，随引擎桥线移出）** |
 | `harness-evolution/` | 17 份 `HARNESS_EVOLUTION_*` 裁决文档 + `evals/`（研究代码与 jsonl 证据） | **archived（冻结）** |
+| `harness-migration/` | harness 迁移评估（opencode+omo → DeepSeek Harness 可行性：依赖面 / 能力面 / G1-G3 门槛） | active |
 | `history/` | `timeline.md` 分支编年史（倒序） | active |
 | `INDEX.md` / `README.md` | 全量文档索引 / 人类入口 | active |
 

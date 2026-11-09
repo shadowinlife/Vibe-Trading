@@ -4,7 +4,7 @@ description: wiki 内每份文档的一行式索引（路径 + 一句话 + 状�
 type: reference
 status: active
 created: 2026-08-30
-updated: 2026-10-31
+updated: 2026-11-03
 tags: [index]
 ---
 
@@ -72,6 +72,10 @@ tags: [index]
 ## agent-ux/ — 产品与交互研究
 
 - [agent-ux/2026-10-27-novice-onboarding-guidance.md](agent-ux/2026-10-27-novice-onboarding-guidance.md) — 小白用户的意图引导：7 个方案（AGENTS.md / Skill / Subagent / question 工具 / hook / UI / 组合）、本分支实验证据、外部产品与论文、代价与分阶段路线 — active
+
+## harness-migration/ — harness 迁移评估
+
+- [harness-migration/2026-11-03-dsh-migration-assessment.md](harness-migration/2026-11-03-dsh-migration-assessment.md) — opencode+omo → DeepSeek Harness 迁移可行性：当前依赖面、dsh 能力面、逐项对照、好处/风险、G1-G3 验证门槛与分阶段建议 — active
 
 ## multitenant/ — 多租户服务化
 
