@@ -4,7 +4,7 @@ description: 把记忆生命周期五个操作经 MCP 面暴露为 memory_save/r
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-08-30
+updated: 2026-11-09
 tags: [memory, mcp, tools, lifecycle]
 related: [../branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -27,21 +27,21 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 | `agent/src/memory/mcp_adapter.py` | 适配层实现（本分支新增） |
 | `agent/mcp_server.py` | 五工具注册段（含门控判断） |
 | `agent/src/skills/memory-lifecycle/SKILL.md` | 生命周期工作流文档 |
-| `VT_MEMORY_MCP_TOOLS` | 注册开关，默认 OFF；当前分支计数 OFF=77 / ON=82（其中 3 个为不回流的 ch_* 语义层工具，见 F5 卡） |
+| `VT_MEMORY_MCP_TOOLS` | 注册开关，默认 OFF；当前分支计数 OFF=94 / ON=99（上游基数 82 + 12 个本地增量；其中 3 个为不回流的 ch_* 语义层工具，见 F5 卡） |
 
 ## 开发历史
 
 - 2026-07-27 首次落地（pre-carve `90095124`）；五-agent 评审移除从未被调用的死代码 `build_default_adapter()`（[../branch/MYMAIN_DIVERGENCE.md](../branch/MYMAIN_DIVERGENCE.md) §5 2026-07-27 条）。
 - 2026-08-07 rebase：memory-lifecycle 使 skills 89→90、Tool 类 10→11，五份 README + SKILL.md 同步过上游 pin 测试（§5 2026-08-07 条）。
 - 2026-08-11 merge+carve 重整为 `08c579bb`（当前分支 SHA）。
-- 2026-08-17 起上游新增第六份 README（README_es.md），本分支自行保持六份同步（上游 pin 只锚定五份）。
+- 2026-08-17 起上游新增第六份 README（README_es.md）；2026-09 再加第七份（README_id.md），七份均由上游 pin 锚定（2026-11-09 对齐为准）。
 - 2026-08-28 rebase：本 commit 与 Phase 2 同为冲突集中点（六 README + SKILL.md + mcp_server.py 计数区），按「上游内容 + 本 commit 增量」逐层解决（§5 2026-08-28 条）。
 
 ## 验证
 
-- MCP 计数门控冒烟：OFF=77 / ON=82（命令见 DIVERGENCE §3.2）
+- MCP 计数门控冒烟：OFF=94 / ON=99（命令见 DIVERGENCE §3.2）
 - 工具往返：`memory_save → memory_recall → memory_status` 应返回 ok 包络（DIVERGENCE §3.2）
-- memory 套件 **309 passed / 3 skipped**；README/SKILL 计数门禁 **70 passed**（DIVERGENCE §3.1）
+- memory 套件 **353 passed / 3 skipped**；README/SKILL 计数门禁 **122 passed**（DIVERGENCE §3.1）
 
 ## 状态与上游关系
 

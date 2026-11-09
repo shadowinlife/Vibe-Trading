@@ -4,20 +4,20 @@ description: mymain 与上游 main 的权威差异台账——独有功能 F1-F9
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-11-02
+updated: 2026-11-09
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
 
 # mymain 分支差异说明
 
-> 维护者：shadowinlife ｜ 基线：HKUDS/Vibe-Trading `main` @ `78fab6b3`（2026-11-01 对齐；自 `3cbb167e` 前进 99 commit / 61 非 merge。本轮为增量 merge，上游历史未被重写。历史沿革：2026-10-17 上游曾 force-push 重写历史，旧基线 `b1f6ce71` 不再是 origin/main 祖先，见 §5 2026-10-17 条）
+> 维护者：shadowinlife ｜ 基线：HKUDS/Vibe-Trading `main` @ `c6aaacc5`（2026-11-09 对齐；自 `78fab6b3` 前进 115 commit / 98 非 merge。本轮为增量 merge，上游历史未被重写。历史沿革：2026-10-17 上游曾 force-push 重写历史，旧基线 `b1f6ce71` 不再是 origin/main 祖先，见 §5 2026-10-17 条）
 
 ## 1. 分支定位
 
 `mymain` 是 shadowinlife 个人维护的**锁定演进分支**，承载记忆系统 T4 迭代、本地 ClickHouse A 股数据源与纯 opencode+omo+VT MCP harness（F7），功能上领先于社区 `main`。**2026-09-27 路线裁决**：本分支定位为纯粹的 opencode + omo + VT MCP 集成路线——12 领域子代理层与 nano-search-mcp 经验证不够有效已回退，F8 引擎桥与多租户基础设施（前端兼容路线）整体移出至 `mymain-engine-bridge` 分支独立演进，两线零兼容/零相互索引；**2026-10-10 该线废弃封存**（opencode 作为桥接 agents 的方式被证明不可行，见 §5）。本分支作为个人生产/验证环境的稳定基线，所有改动最终以社区 PR 形式回流上游；PR 合入后相应条目从本文档移除，全部合入后本分支回归纯跟踪分支。
 
-相对 `origin/main`（基线 `78fab6b3`）的差异总量：**1151 个文件、+197810/−476 行**（含 `mymain-wiki/` 知识库及其 harness-evolution 归档、分支级 AGENTS.md 扩展、ClickHouse 语义层 Phase 0–2、F9 策略库/调度与 `OpencodeAgent/` harness 层；2026-09-27 回退后不再含 F8 引擎桥与多租户基础设施）。功能历史组织为 **29 个本地 commit**（25 个非 merge + 4 个 merge；F1→F4 memory、F5 ClickHouse+语义层、scheduled_research wrapper、FE-1 本地增量、F7 OpencodeAgent、F9 策略库/调度、wiki docs、OpencodeAgent 版本/交付跟进、本地 gitignore/AGENTS 约定——F1-F4 与 wrapper 可独立作为社区 PR 候选，F5/F7/F9/wiki 个人部署独有）。2026-10-22 对齐起，paper-trade 本地线已废弃（见 §2.2），后续直接采用上游实现。
+相对 `origin/main`（基线 `c6aaacc5`）的差异总量：**1155 个文件、+198612/−449 行**（含 `mymain-wiki/` 知识库及其 harness-evolution / harness-migration 归档、分支级 AGENTS.md 扩展、ClickHouse 语义层 Phase 0–2、F9 策略库/调度与 `OpencodeAgent/` harness 层；2026-09-27 回退后不再含 F8 引擎桥与多租户基础设施）。功能历史组织为 **34 个本地 commit**（28 个非 merge + 6 个 merge；F1→F4 memory、F5 ClickHouse+语义层、scheduled_research wrapper、FE-1 本地增量、F7 OpencodeAgent、F9 策略库/调度、wiki docs、harness-migration 评估、OpencodeAgent 版本/交付跟进、本地 gitignore/AGENTS 约定——F1-F4 与 wrapper 可独立作为社区 PR 候选，F5/F7/F9/wiki 个人部署独有）。2026-10-22 对齐起，paper-trade 本地线已废弃（见 §2.2），后续直接采用上游实现。
 
 ## 2. 核心功能差异
 
@@ -26,7 +26,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | # | Feature | 能力 | 核心文件 | 开关 | 上游关系 |
 |---|---|---|---|---|---|
 | **F1** | 反思课程存储 | 按策略类型 append-only JSONL 课程库；标签/子串检索；置信度更新；`auto_reflect_from_run_dir` | `agent/src/memory/reflections.py`（新增）+ 测试 | `VT_MEMORY_REFLECTIONS`（被 `VT_MEMORY=full` 预设隐含） | 上游无对应（remember_tool / memory CLI 是不同暴露面） |
-| **F2** | MCP 记忆工具 | 五个 MCP 工具 memory_save / recall / reinforce / reflect / status；never-raise dict 包络适配层；memory-lifecycle SKILL 工作流 | `agent/src/memory/mcp_adapter.py`（新增）、`agent/mcp_server.py`（注册段）、`agent/src/skills/memory-lifecycle/SKILL.md` | `VT_MEMORY_MCP_TOOLS`（默认 OFF；当前分支 OFF=96 / ON=101 = 上游基数 84 + 3 个语义层 ch_* 工具 + 1 个 scheduled_research wrapper + 3 个策略库工具 promote/evaluate/schedule + 5 个 RM 调度工具 list/pause/resume/delete/retarget；ON 另加 5 个 memory_* 工具） | 上游无 MCP 面记忆工具（上游 MCP 面现为 84） |
+| **F2** | MCP 记忆工具 | 五个 MCP 工具 memory_save / recall / reinforce / reflect / status；never-raise dict 包络适配层；memory-lifecycle SKILL 工作流 | `agent/src/memory/mcp_adapter.py`（新增）、`agent/mcp_server.py`（注册段）、`agent/src/skills/memory-lifecycle/SKILL.md` | `VT_MEMORY_MCP_TOOLS`（默认 OFF；当前分支 OFF=94 / ON=99 = 上游基数 82 + 3 个语义层 ch_* 工具 + 1 个 scheduled_research wrapper + 3 个策略库工具 promote/evaluate/schedule + 5 个 RM 调度工具 list/pause/resume/delete/retarget；ON 另加 5 个 memory_* 工具） | 上游无 MCP 面记忆工具（上游 MCP 面现为 82，含 research_lab） |
 | **F3** | 回测反思钩子 | `run_backtest` 成功后 fire-and-forget 提取 run_card 课程（MCP 与 in-process 入口均覆盖，非致命）；附延迟基准（bench marker，p50<200ms / p95<500ms）与 5 会话并发测试 | `agent/src/tools/backtest_tool.py`（钩子段）、`agent/tests/memory/test_latency_bench.py`、`test_concurrent_mcp.py`、`conftest.py`、`pyproject.toml` | 随 F1 联动 | 上游 post-backtest attribution 是 prompt 驱动，机制不同 |
 | **F4** | MemoryGuard + 项目目录存储 | FastMCP middleware：工具调用后自动 memory_save + memory_reflect（零 LLM）；`VT_MEMORY_BASE_DIR` 支持记忆存项目目录；默认路径跟随 `get_runtime_root()`（`VIBE_TRADING_HOME` 感知） | `agent/src/memory/memory_guard.py`（新增）、`agent/src/memory/persistent.py`（`_default_memory_base`）、`agent/src/config/env_schema.py`（`MemoryConfig.base_dir`） | middleware **无条件注册**（债务 D1） | 上游 memory 仍锚定 `~/.vibe-trading`（上游对 persistent.py 的改动——FTS5 排序衰减、FTS5 tokenizer 下限——均不同关注面，两者并存） |
 | **F5** | ClickHouse A 股数据源 + 语义层 | CH HTTP connector + OHLCV loader（DataLoaderProtocol）+ 基本面 Provider（回退 Tushare）+ 四只资金流工具 CH 优先回退；A 股 chain 与路由以 clickhouse 为首选。**语义层 Phase 0–2**（2026-08-12，2026-10-29 扩展为 v2）：57 表（55 业务 + 2 运维）DDL 快照 + 9 表 444 列 COMMENT + 单位 registry（`clickhouse_units.py`）+ 显式 199 列（`clickhouse_columns.py`）+ `get_valuation` + llm_role 受约束灵活性通道（`ch_list_tables` / `ch_describe_table` / `ch_query`，sqlglot AST 守卫） | `agent/src/clickhouse_connector.py`、`agent/backtest/loaders/clickhouse.py`、`agent/src/tools/clickhouse_fallbacks.py`、`schema/clickhouse/`、`agent/src/tools/clickhouse_query_tool.py`、`agent/src/tools/clickhouse_explore_tools.py`、`agent/src/tools/valuation_tool.py` 等 168 文件（含 2026-10-29 语义层 v2） | `CLICKHOUSE_*`（DataConfig）；灵活性通道 `CLICKHOUSE_LLM_USER` / `CLICKHOUSE_LLM_PASSWORD` | 个人部署独有，不回流 |
@@ -35,7 +35,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **F9** | 策略库与调度 | 版本化策略快照 + code/workflow 双门就绪 + 复用定时研究的排程；Web 策略库与排程页 | `agent/src/strategy_library/`、`agent/src/api/strategy_library_routes.py` / `strategy_schedule_routes.py`、`frontend/src/pages/StrategyLibrary.tsx` / `StrategySchedules.tsx` | 见功能卡 | 本地 `mymain` 已合入（81df3a992）；P1 入口/状态/工具 2026-10-28 合入（`585845ad` / `d90d5308` / `f036c6b9`，见 F10-F12）；未回上游 HKUDS |
 | **F13** | A 股外部证据取数 skills（OpencodeAgent 侧） | 六类公开信息取数：定期报告全文 / 临时公告 / 监管处罚 / 机构调研 / 券商研报 / gov.cn 政策。6 个 skill + 9 个零 key 脚本（纯标准库 + bs4），装到 `/home/opencode/.config/opencode/skills/`；全文类用 `--grep` / `--max-chars` 分片，失败契约沿用 `workspace/scripts/AGENTS.md` | `OpencodeAgent/skills/ashare-*/`、`OpencodeAgent/skills/_lib/nanofetch/` | 无 env 开关；`ashare-policy` 不可达时返回 `available:false` | 个人部署独有，不回流；关闭 §4.6 R2 |
 
-> F9 于 2026-10-25 合入本地 `mymain`（81df3a992），新增 3 个 MCP 工具（promote/evaluate/schedule_strategy）与 4 个 agent tools（含 list_strategy_library）；本表计数已于 2026-10-28 发布轮刷新为 MCP 94/99、agent tools 121。最新运行计数见 [timeline](../history/timeline.md) 的 2026-10-22/10-25/10-27 条。
+> F9 于 2026-10-25 合入本地 `mymain`（81df3a992），新增 3 个 MCP 工具（promote/evaluate/schedule_strategy）与 4 个 agent tools（含 list_strategy_library）；本表计数以 §3.2 实测为准（2026-11-09：MCP 94/99、agent tools 129）。最新运行计数见 [timeline](../history/timeline.md) 的 2026-11-09 条。
 
 ### 2.2 已随对齐消除的历史分歧（上游已承接）
 
@@ -50,7 +50,8 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | FE-1 R1 backtest 结构化 summary + R2 `read_run_artifact` | shadowinlife PR [#1646](https://github.com/HKUDS/Vibe-Trading/pull/1646)/[#1647](https://github.com/HKUDS/Vibe-Trading/pull/1647) 于 **2026-10-04 合入上游**（R2 为 manifest 驱动版）；mymain 经 2026-10-10 对齐按「上游机制优先」切换：`backtest_summary.py`/`run_artifact_tool.py`/`backtest_tool.py` 采上游版，本地仅存 R5' 增量（progress.json sidecar + 心跳 wrapper + `progress` 别名超集），见 §2.3 ⑧ 销账记录 |
 | 北向 tushare fallback 单位与语义（#1481/#1484） | shadowinlife PR [#1484](https://github.com/HKUDS/Vibe-Trading/pull/1484) 合入上游：tushare `moneyflow_hsgt` 原生单位=**百万元**（经 HKEX 官方 Stock Connect 统计逐位交叉验证），2024-08-19 披露改革后为**成交额语义**（turnover_* 字段、净额字段置 null）。本地 P1.4「万元」判定系误读换手时代值，2026-10-10 对齐轮修正 CH 语义层（comments.yaml/clickhouse_units/clickhouse_fallbacks 全套切换百万口径 + 边界逻辑，与上游 tushare 路径同契约） |
 | 南向资金工具 | 本地 feat/southbound-flow-tool 分支经 PR [#1486](https://github.com/HKUDS/Vibe-Trading/pull/1486) 合入上游（`get_southbound_flow`，Eastmoney 百万 HKD 缩放修复）；mymain 经本轮对齐继承，无需本地实现 |
-| mootdx 退出默认 A 股链（#1729/#1730） | 上游裁决：TDX 服务器不再响应 mootdx/tdxpy 客户端协议，loader 保留注册仅供显式 `source="mootdx"`；本地 clickhouse-led 链随上游收敛为**八源排列**（clickhouse · tencent · eastmoney · baostock · akshare · tushare · gildata · local） |
+| mootdx 退出默认 A 股链（#1729/#1730） | 上游裁决：TDX 服务器不再响应 mootdx/tdxpy 客户端协议，loader 保留注册仅供显式 `source="mootdx"`；本地 clickhouse-led 链随上游收敛为**七源排列**（clickhouse · tencent · eastmoney · baostock · akshare · tushare · local） |
+| A 股链尾部 gildata（上游 0.1.19 opt-in 化） | 上游把 Gildata 九项能力改为显式 opt-in（仅存 token 不再启用任何能力），gildata 退出 A 股/HK/index 默认链；本地 clickhouse-led 链随 2026-11-09 对齐收敛为上述七源排列。F5 语义层与 Gildata 无依赖，不受影响 |
 | paper-trade 本地实现（pt-v1.1） | 2026-10-22 对齐轮按用户裁决废弃：删除 mymain 的 `feat(paper-trade): scaffold pt-v1.1...` 与 `test(paper-trade): land VD-14...` 两个 commit；上游 PR [#1939](https://github.com/HKUDS/Vibe-Trading/pull/1939) 已合入（`paper_trade_step`），[#1961](https://github.com/HKUDS/Vibe-Trading/pull/1961)（pt-v1.2 5m step）仍 OPEN；后续直接基于上游能力开发 |
 
 **2026-08-11 核查结论**：上游自 `6c44732` 前进 120 commit（v0.1.13 发布），逐项核对 F1–F5 均**未被上游取代**——上游本轮新增能力（quantlib_call / alpha zoo MCP 工具 / 机构持仓 / ETF 穿透 / 预测市场 / 论文检索 / 加拿大市场 / eToro / 桌面端等）与本地五项能力无重叠；本地 F4 的 `_default_memory_base()` 继续复用上游共享基础设施 `get_runtime_root()`，F5 沿用上游 loader 注册模式（`VALID_SOURCES` + `_loader_modules` + `FALLBACK_CHAINS`），无重复实现需要移除。
@@ -61,6 +62,8 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 
 **2026-10-27 核查结论**：上游自 `11cff3f3` 前进 **119 commit（72 个非 merge）**（paper-trade/quantlib/factors/loaders/backtest 正确性批次、memory frontmatter UTC、session/swarm/scheduled 修复等），逐项核对 F1–F5/F7/F9 均**未被上游取代**；上游新增 MCP 工具 **0**、skills **0**、loaders **0**，MCP 基数维持 **82**。计数随本轮对齐校正：MCP 上游基数 **82**（本分支 OFF=**94** / ON=**99**，2026-10-28 加入 5 个 RM 调度工具）、agent tools 上游 **113**（本分支 **121** = +3 ch_* +1 get_valuation +4 策略库工具）、skills 91（上游 90 + memory-lifecycle）、数据源 30（上游 29 + clickhouse）。
 
+**2026-11-09 核查结论**：上游自 `78fab6b3` 前进 **115 commit（98 个非 merge，含 v0.1.19 发布）**（versioned research artifacts + Research Lab MCP 工具、QVeris 整体退役、Gildata 九项能力 opt-in、paper-trade 5m、quantlib IV surface、README 拆分为 `guides/` 等），逐项核对 F1–F5/F7/F9/F13 均**未被上游取代**。上游 MCP 面净变化 84 → **82**（退役 qveris_search/inspect/execute，新增 research_lab）；skills 90 → **89**（qveris skill 退役）；loaders 29 → **28**（qveris source 退役，gildata 保留为 opt-in）；engines **12**。计数随本轮对齐校正：MCP 上游基数 **82**（本分支 OFF=**94** / ON=**99** = +3 ch_* +1 scheduled_research +3 策略库 +5 RM 调度；ON 另加 5 memory_*）、agent tools 上游 **121**（本分支 **129** = +3 ch_* +1 get_valuation +4 策略库）、skills 90（上游 89 + memory-lifecycle）、数据源 29（上游 28 + clickhouse）。QVeris 退役属上游机制变更，本地无对应能力需要保留。
+
 **2026-10-10 核查结论**：上游自 `9a27a6e7` 前进 **253 commit**（v0.1.16 后开发段至 `b1f6ce71`：十三 PR 正确性批次、options/causal 定价修复、channel 热更新与 URL userinfo 系列、mootdx 退役、KIS/grounding/PDF 加密等），逐项核对 F1–F5/F7 均**未被上游取代**——上游对 reflections/mcp_adapter/memory_guard/memory-lifecycle/clickhouse 面零触碰；FE-1 R1/R2 被上游吸收（#1646/#1647，见上表）并按「上游机制优先」完成本地调和；本地北向 CH 路径切换上游 #1484 百万 CNY 契约。计数随本轮对齐更新：MCP 上游基数 **76**（本分支 OFF=**80** / ON=**85**）、agent tools 上游 **109**（本分支 **113** = +3 ch_* +1 get_valuation）、skills 91（上游 90 + memory-lifecycle）、数据源 29（上游 28 + clickhouse）。
 
 ### 2.3 上游贡献队列（含代码点，按依赖序逐步推入以缩小分歧）
@@ -69,7 +72,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 |---|---|---|---|
 | **① F4 路径部分** | memory 路径跟随 `VIBE_TRADING_HOME` | `persistent.py::_default_memory_base()`（改调用期求值）；新增旧路径 `~/.vibe-trading/memory` → 新根目录的一次性迁移 + 启动告警；新增 `VIBE_TRADING_HOME` 覆盖/迁移测试 | 同步更新上游文档"memory 仍锚定 ~/.vibe-trading"表述；`MemoryConfig.base_dir` 声明已就绪 |
 | **② F1** | 反思课程存储 | `reflections.py` 整文件新增；`env_schema.py` 增加 `VT_MEMORY_REFLECTIONS` 与 `VT_MEMORY=full` 预设语义；`.env.example`；测试套件 | 顺手实施迭代笔记中的非阻塞建议（`_iter_lessons` 重命名、逐行读、自定义 encoder）减少 PR 往返 |
-| **③ F2** | MCP 记忆工具 | `mcp_adapter.py` 整文件新增；`mcp_server.py` 五工具注册段（含 `VT_MEMORY_MCP_TOOLS` 门控）；`memory-lifecycle/SKILL.md`；**六份 README**（含 2026-08-16 新增 README_es.md；skills 89→90、Tool 类 10→11 及相关 prose）；`agent/SKILL.md`（skills=90、Finance Skills 小节标题）；测试 | README 计数更新必须随 PR 一并提交（上游 pin 测试强制）；注意上游 MCP 基数为 70（本分支头注释 73/78 含 3 个不回流的 ch_* 工具，PR 需按当时上游基数重述） |
+| **③ F2** | MCP 记忆工具 | `mcp_adapter.py` 整文件新增；`mcp_server.py` 五工具注册段（含 `VT_MEMORY_MCP_TOOLS` 门控）；`memory-lifecycle/SKILL.md`；**七份 README + `guides/`**（上游 2026-09 新增 README_id.md；上游 0.1.19 起能力清单拆入 `guides/capabilities.md` / `guides/mcp.md`；skills 89→90、Tool 类 10→11 及相关 prose）；`agent/SKILL.md`（skills=90、Finance Skills 小节标题）；测试 | README 计数更新必须随 PR 一并提交（上游 pin 测试强制）；注意上游 MCP 基数为 82（本分支头注释 94/99 含 12 个不回流的本地工具，PR 需按当时上游基数重述） |
 | **④ F3** | 回测反思钩子 | `backtest_tool.py` daemon 线程钩子；`conftest.py` bench marker；`pyproject.toml` markers；bench/并发测试 | 依赖 ②（反思存储 API） |
 | **⑤ F4 中间件部分** | MemoryGuard | `memory_guard.py` 整文件新增；`mcp_server.py` 注册段 | **必须先解决 D1（加 env 门控开关）与 D2（dedup/增长）**，否则过不了社区评审 |
 | **⑥ 领域子代理层**（issue #1267 piece 2+3） | load_skill 技能白名单修复 + 内置 agent 子代理委派层 | **已提交 PR [#1286](https://github.com/HKUDS/Vibe-Trading/pull/1286)（Draft，2026-08-31）**：`feat/domain-subagents` 分支基于上游 899d3c75；commit 1 = load_skill allowlist（可独立 cherry-pick），commit 2 = `src/specialists/` 包（12 准入定义）+ `delegate_to_specialist` + `VIBE_TRADING_SPECIALISTS_ENABLED` 门控（默认关）；全量套件 11694 通过；2026-08-31 评审发现 B1-B5 并已修复推送（commit 范围 38e04d88..5a26eacc）；PR 维持 Draft 待 #1267 方向确认；**2026-09-04 specialist-arch-iter2 完成本地 E2E 量化验证**：pr1286-fix 三个修复 commit（quantlib_call 留主面 + 直算例外 + 反拼凑、无主工具划归批 A/B，本地未推送）+ 全量重跑，冻结门槛 G1-G6 = 4 PASS / 1 FAIL（G4 唯一违规 = valuation-zh-1「取数前置计算」盲区），超时对 45→19，详见 §5 2026-09-04 迭代笔记 | **已终结（2026-09-06 iter3 终局：built-in loop 移植放弃，PR #1286 已关闭，见 §5）**；2026-09-27 本分支 OpencodeAgent 的 12 领域子代理层亦经验证裁决回退（opencode 子代理与 built-in loop 移植是两套机制，前者曾于 D 批生产落地，本轮一并回退，见 §5 2026-09-27 条） |
@@ -90,12 +93,12 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 ### 3.1 测试套件与静态门禁（conda env `legonanobot`，macOS arm64 / Python 3.12）
 
 ```bash
-# memory 套件（含上游孤儿恢复/GC/pin 测试与上游新增 FTS5 衰减/tokenizer/hierarchy/UTC 时间戳修复测试）——基线 353 passed / 3 skipped（2026-10-27 实测；历史条目中的 375/2 为旧环境口径）
+# memory 套件（含上游孤儿恢复/GC/pin 测试与上游新增 FTS5 衰减/tokenizer/hierarchy/UTC 时间戳修复测试）——基线 353 passed / 3 skipped（2026-11-09 实测；历史条目中的 375/2 为旧环境口径）
 python -m pytest agent/tests/memory/ agent/tests/test_persistent_memory.py \
   agent/tests/test_memory_orphan_recovery.py agent/tests/test_memory_gc.py \
   agent/tests/test_env_schema.py -q
 
-# ClickHouse 套件（F5 原始 3 文件 + 语义层 Phase 0–2 + 连接器健康/日期漂移回归）——基线 166 passed / 11 skipped（skip = 需真实 CH 连接；2026-10-30 实测）
+# ClickHouse 套件（F5 原始 3 文件 + 语义层 Phase 0–2 + 连接器健康/日期漂移回归）——基线 166 passed / 11 skipped（skip = 需真实 CH 连接；2026-11-09 实测）
 python -m pytest agent/tests/test_clickhouse_loader.py \
   agent/tests/test_clickhouse_connector_health.py \
   agent/tests/test_clickhouse_fundamentals.py agent/tests/test_clickhouse_flow.py \
@@ -104,22 +107,26 @@ python -m pytest agent/tests/test_clickhouse_loader.py \
   agent/tests/test_clickhouse_units.py agent/tests/test_tushare_fallbacks.py \
   agent/tests/test_valuation_tool.py -q
 
-# ClickHouse schema 门禁（DDL 导出/注释门禁单测 + comments.yaml 覆盖门禁）——基线 53 passed / 1 skipped + exit 0（2026-10-27 实测）
+# ClickHouse schema 门禁（DDL 导出/注释门禁单测 + comments.yaml 覆盖门禁）——基线 53 passed / 1 skipped + exit 0（2026-11-09 实测）
 python -m pytest tools/test_ci_clickhouse_comments_gate.py \
   tools/test_clickhouse_apply_comments.py tools/test_clickhouse_export_ddl.py -q
 python tools/ci_clickhouse_comments_gate.py
 
-# 语义层一致性门禁（57 表契约 vs metadata vs 生成物）——基线 6 passed / 0 violations（2026-10-29 实测）
+# 语义层一致性门禁（57 表契约 vs metadata vs 生成物）——基线 6 passed / 0 violations（2026-11-09 实测）
 python -m pytest tools/test_semantic_layer_gate.py -q
 python tools/ci_semantic_layer_gate.py
 
 # 2026-10-29 子集：loader / market_data 92 passed / 3 skipped（全量 CH 10 文件套件本轮未重跑）
 # 2026-10-30 全量 CH 套件（含新增 connector health）：166 passed / 11 skipped
 
-# README/SKILL.md 计数门禁——基线 122 passed（2026-10-27 实测持平；七份 README + manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
+# README/SKILL.md 计数门禁——基线 122 passed（2026-11-09 实测持平；上游已把能力清单拆入 `guides/{capabilities,mcp,cli-and-api}.md`，pin 测试读取 README + guides 合并文本；七份 README + manifest 全套 pin，含 quantlib badge 函数/模块数双锚定）
 python -m pytest agent/tests/test_readme_counts.py agent/tests/test_distribution_skill_manifest.py -q
 
-# env-var AST 门禁——基线 exit 0（4 条 WARN 来自上游 llm.py，与本分支无关）
+# 前端门禁（Navigation / Layout / i18n）——基线 26 + 26 + 43 passed（2026-11-09 实测）
+cd frontend && npx vitest run src/components/layout/__tests__/Navigation.test.tsx \
+  src/components/layout/__tests__/Layout.test.tsx src/i18n/__tests__/i18n.test.ts
+
+# env-var AST 门禁——基线 exit 0（4 条 WARN 来自上游 llm.py，与本分支无关；2026-11-09 复跑）
 python tools/ci_env_var_gate.py
 
 # 延迟基准（默认跳过，显式运行）
@@ -129,7 +136,7 @@ python -m pytest agent/tests/memory/test_latency_bench.py -m bench
 ### 3.2 端到端冒烟（本地）
 
 ```bash
-# MCP 工具计数门控：OFF=96 / ON=101（上游基数 84（78fab6b3 实测）+ 本分支 3 个 ch_* 语义层工具 + 1 个 scheduled_research wrapper + 3 个策略库工具 promote/evaluate/schedule_strategy + 5 个 RM 调度工具；ON 另加 5 个 memory_* 工具）
+# MCP 工具计数门控：OFF=94 / ON=99（上游基数 82（c6aaacc5 实测：84 减去退役的 qveris_search/inspect/execute，加上 research_lab）+ 本分支 3 个 ch_* 语义层工具 + 1 个 scheduled_research wrapper + 3 个策略库工具 promote/evaluate/schedule_strategy + 5 个 RM 调度工具；ON 另加 5 个 memory_* 工具）
 cd agent
 python -c "import asyncio, mcp_server; print(len(asyncio.run(mcp_server.mcp.list_tools())))"
 VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.run(mcp_server.mcp.list_tools())))"
@@ -175,7 +182,7 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 
 ### 4.3 上游 pin 测试带来的持续义务
 
-- **README/SKILL.md 计数**（`test_readme_counts.py`、`test_distribution_skill_manifest.py`）：每增删一个 skill / loader / MCP 顶层工具，必须同步**七份** README（上游 2026-09 新增 README_id.md 印尼语版）+ `agent/SKILL.md` 计数（当前：skills=91、Tool 类=11、sources=30（上游 29 + clickhouse）、本分支 MCP 头注释 96/101、SKILL.md `Available MCP Tools (96)` 与 `Finance Skills (91)` 小节标题、README 树行 agent tools=126（上游 118 + 3 ch_* + 1 get_valuation + 4 策略库工具）与 mcp_server.py 树行=96）。注：上游 `test_readme_counts.py` 的 READMES 元组现已锚定**全部七份**（en/zh/ja/ko/ar/es/id），翻译滞后不再被容忍——本地增量（clickhouse 行、ch_*/scheduled_research/strategy 工具清单、计数）必须同步进每一份。
+- **README/SKILL.md 计数**（`test_readme_counts.py`、`test_distribution_skill_manifest.py`）：每增删一个 skill / loader / MCP 顶层工具，必须同步**七份** README（上游 2026-09 新增 README_id.md 印尼语版）+ `agent/SKILL.md` + 上游拆分后的 `guides/capabilities.md` / `guides/mcp.md` 计数（当前：skills=90、Tool 类=11、sources=29（上游 28 + clickhouse）、本分支 MCP 头注释 94/99、`guides/mcp.md` 工具清单与 prose=94、SKILL.md `Available MCP Tools (94)` 与 `Finance Skills (90)` 小节标题、guides 树行 agent tools=129（上游 121 + 3 ch_* + 1 get_valuation + 4 策略库工具）与 mcp_server.py 树行=94）。注：上游 `test_readme_counts.py` 的 READMES 元组锚定**全部七份**（en/zh/ja/ko/ar/es/id），且 `test_data_sources_prose_states_the_real_source_count` 单独钉住每份 README 的首句源数量——本地增量（clickhouse 行、ch_*/scheduled_research/strategy 工具清单、计数）必须同步进七份 README 与两份 guides。
 - **命名一致性**（`test_recovered_orphan_and_new_write_agree_on_the_same_path`）：routed 条目命名保持 `<category>/<slug>.md`，不得改回带类型前缀方案。
 - **env-var AST 门禁**（`tools/ci_env_var_gate.py`）：新增环境变量必须声明进 `env_schema.py` 并经 config accessor 读取，禁止裸 `os.getenv` / `os.environ`。
 
@@ -203,6 +210,19 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 | R2 ✅ | **A 股结构化检索替换引擎**（2026-09-27 立项，**2026-10-31 完成**：F13 以 6 个零 key skill 承接全部五类，gov.cn 政策用站内检索打通，不引入 DashScope/第三方 key；见 [F13 卡片](../features/f13-ashare-evidence-skills.md)） | nano-search-mcp 回退后（§5 2026-09-27 条），年报/半年报/季报全文、公告检索、监管处罚、机构调研/业绩说明会、gov.cn 行业政策失去专用通道；`web_search`（ddgs 多引擎）+ `get_research_reports` / `get_stock_news` 只覆盖通用检索与研报/新闻。候选方向：akshare 结构化接口（公告/研报已有部分封装）、tushare 扩展权限、自建 RSSHub 实例、或第三方金融检索 API。判据：可自部署、结构化返回（非仅网页快照）、覆盖上述五类、维护成本低于 nano-search 实测水平 |
 
 ## 5. 迭代笔记
+
+### 2026-11-09 merge 对齐（基线 `c6aaacc5`，115 commit）——v0.1.19、QVeris 退役与研究资料面
+
+- **动机与方式**：root `AGENTS.md` §8.1 周期对齐义务。沿用直合先例，不重写历史：回退点 `backup/mymain-20261109`（`5aceaa0a`）+ `git bundle create .git/backup/mymain-20261109.bundle --all` → `git merge --no-ff origin/main` 一次解冲突 → merge commit `12789196`（DCO、单一作者、零 AI trailer），普通推送；`fork/mymain` 的 force-push 保护未放开。
+- **上游增量**：自 `78fab6b3` 前进 **115 commit（98 非 merge，含 v0.1.19 发布）**：versioned research artifacts + revision comparison/export、`research_lab` MCP 工具、shared research studies、QVeris 整体退役（工具 / source / Settings / REST / CLI / `QVERIS_*`）、Gildata 九项能力改为显式 opt-in（token 单独不再启用，gildata 退出 A/HK/index 默认链）、paper-trade 5m、quantlib IV surface、backtest/futures/grounding 正确性批次、README 能力清单拆入 `guides/`。
+- **冲突面（25 文件，历轮中等偏上）**：文档/计数 11（七份 README + `agent/SKILL.md` + `agent/mcp_server.py` + `CHANGELOG.md`）、构建 1（`test.yml`）、后端 2（`runner.py`、`test_settings_api.py`）、前端 12（`Navigation.test.tsx` + 11 locale）。解冲突原则：**上游机制优先 + 本地增量重放**；README 整取上游结构，本地计数迁入 `guides/`。
+- **代码面**：`runner.py` 保留本地 `_StageProgress` / `progress.json` 阶段写，同时采用上游 `frozen_data_manifest` 条件（有冻结清单时跳过 fundamentals 注入，`data_load` 进度照写）；`mcp_server.py` 保留本地 12 个工具注册、采用上游 `_ToolPolicyMiddleware` 与 `research_lab`、随上游删除 QVeris；`test.yml` 保留本地 Linux/3.12-only、safety-gates 与 CH gates，采用上游 setup-python / setup-node v7.1.0 固定。
+- **文档重整**：上游把能力清单拆入 `guides/{capabilities,mcp,cli-and-api}.md`；本地 clickhouse 行、A 股七源链、skills=90、sources=29、MCP=94、agent tools=129 迁入两份 guides，七份 README 的源数量首句同步 29。`CHANGELOG.md` 采用 0.1.19 结构，本地两条（strategy library / backtest summary local delta）回填 Unreleased。
+- **吸收核查**：`gh pr list --author shadowinlife` 本窗口无新合入（#2128 DRAFT、#2127 CLOSED）；`get_valuation`、`promote/evaluate/schedule_strategy`、`MemoryGuard`/`memory_*`、`ch_*`、clickhouse loader 在 `origin/main` 命中均为 **0** → 无本地 hunk 需丢弃。QVeris 退役属上游机制变更，本地无对应能力。
+- **合并暴露的五处适配**：① 七份 README 的源数量首句由 `test_data_sources_prose_states_the_real_source_count` 钉住 → 全部改 29；② `test_source_order_overrides.py` 的 auto-merge 混入旧 gildata 链 + 上游断言 → 重写为 clickhouse 七源置换；③ 上游 env gate 新增扫描 `agent/scripts/`，暴露本地 `verify_backtest_result.py` 的 `RUN_DIR`/`VT_MCP_CMD` 裸读 → 移除 env 兜底；④ locale 合并把上游已删除的 `qveris.*` / `tools.qveris_*` 死键带回来 → 11 份 locale 清理（2571 键对齐）；⑤ OpencodeAgent 指令与 `test_agents_md.py` 的 VT skills 计数 91 → 90。
+- **计数校正（运行时实测）**：MCP **OFF=94 / ON=99**（上游基数 82 + 3 `ch_*` + 1 `scheduled_research` + 3 策略库 + 5 RM 调度；ON 另加 5 `memory_*`）；agent tools **129**（上游 121 + 8）；skills **90**（上游 89 + memory-lifecycle）；sources **29**（上游 28 + clickhouse）；engines **12**；alphas 478；quantlib 310/25；brokers 19；presets 30。
+- **验证基线（legonanobot / macOS arm64 / Python 3.12）**：memory **353/3**、ClickHouse **166/11**、CH schema 门禁 **53/1 + comments gate exit 0**、语义层门禁 **6/0**、README/manifest pin **122**、env gate **exit 0**（4 WARN 来自上游 llm.py）、OpencodeAgent **219 passed / 1 skipped**、前端 **Navigation+Layout 26 + i18n 43 = 69 passed**（locale 2571 键 × 11 对齐）、`compileall` + `ruff` clean。**全量套件**（agent/tests）：**22435 passed / 42 failed / 172 skipped**（39m25s）——42 失败全数归因：**19 个本地 D5 既有**（CH-first flow×15、loader 契约/健康×3、metrics bars_per_year×1）、**22 个上游/环境既有**（阿语 PDF `bidi`×8、OU `statsmodels`×3、anthropic×4、binance×5、provider-header×1、custom-provider typer×1）、**1 个新上游测试的环境性失败**（`test_cli_package_bootstrap`：本机 editable install 指向 `/Users/mgong/LegoNanoBot/Vibe-Trading` 主 worktree；该测试在 upstream 树通过，CI 不受影响）；**本轮对齐零回归**。
+- **未做**：镜像未重建（沿用 v3.17.0-upstream-align-20261102）；`release/mymain` tag 不移动；`OpencodeAgent/config/vibe-trading-tools.json` 的 `qveris_*` deny 前缀保留（无害死配置，测试与历史 smoke 脚本仍引用）。
 
 ### 2026-11-02 镜像交付 `v3.17.0-upstream-align-20261102`（上游对齐后首次重建）
 

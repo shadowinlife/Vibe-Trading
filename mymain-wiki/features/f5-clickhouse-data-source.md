@@ -4,7 +4,7 @@ description: mymain 的 A 股数据底座：ClickHouse 首选数据源 + 语义�
 type: delta
 status: active
 created: 2026-07-28
-updated: 2026-10-29
+updated: 2026-11-09
 tags: [clickhouse, data-source, semantic-layer, a-share]
 related: [../branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -15,7 +15,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 
 ## 能力
 
-- CH HTTP connector + OHLCV loader（实现 DataLoaderProtocol）；A 股检测与回退链以 clickhouse 为链首，断 CH 静默回退 tencent/eastmoney 网络链（mootdx 已随上游 #1729 于 2026-10 退出默认链，八源排列）
+- CH HTTP connector + OHLCV loader（实现 DataLoaderProtocol）；A 股检测与回退链以 clickhouse 为链首，断 CH 静默回退 tencent/eastmoney 网络链（mootdx 已随上游 #1729 于 2026-10 退出默认链；gildata 于 2026-11-09 对齐随上游 opt-in 化退出默认链，**七源排列**）
 - 基本面 Provider（回退 Tushare）+ 资金流/龙虎榜/融资融券/北向四只 flow 工具 CH 优先回退
 - 语义层 Phase 0：`schema/clickhouse/` 57 表（55 业务 + 2 运维）DDL 快照 + 9 表 444 列 COMMENT + CI 门禁（生产库 COMMENT 444/444 已应用）
 - 语义层 Phase 1：显式 199 列消除 `SELECT *`、`_provenance` 单位元数据、`get_valuation` 工具、`clickhouse_units.py` 单位 registry（移除 ×10⁴ 与北向 ×100 硬编码）

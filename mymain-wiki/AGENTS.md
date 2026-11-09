@@ -53,8 +53,8 @@ mymain = **纯粹的 opencode + omo + VT MCP 路线**：opencode 作为 harness 
 
 | 问题 | 单一答案位置 |
 |---|---|
-| 全量测试基线现在是多少 | DIVERGENCE §3.1 / §5 最新一轮（2026-10-27 对齐：routing 184、memory 353/3；2026-10-29 F5 子集 92/3 + 语义层门禁 6） |
-| MCP 工具计数被什么钉着 | DIVERGENCE §4.3 上游 pin 测试（本分支 OFF=96 / ON=101，**七份** README + SKILL.md 同步义务） |
+| 全量测试基线现在是多少 | DIVERGENCE §3.1 / §5 最新一轮（2026-11-09 对齐：memory 353/3、CH 166/11、schema 53/1、语义层 6/0、pin 122、前端 69；全量套件见 §5） |
+| MCP 工具计数被什么钉着 | DIVERGENCE §4.3 上游 pin 测试（本分支 OFF=94 / ON=99，**七份** README + `guides/` + SKILL.md 同步义务） |
 | 子代理/nano-search 为什么回退、证据在哪 | DIVERGENCE §5 2026-09-27 条 + 2026-09-06 specialist-arch iter3 终局条 |
 | A 股结构化检索从哪取（R2 已关闭） | [features/f13-ashare-evidence-skills.md](features/f13-ashare-evidence-skills.md) → `OpencodeAgent/AGENTS.md`「外部证据取数」→ 各 skill 的 `SKILL.md` |
 | 本分支跟踪的上游缺陷 | DIVERGENCE §2.4 |

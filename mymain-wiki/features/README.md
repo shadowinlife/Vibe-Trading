@@ -4,7 +4,7 @@ description: mymain 分支相对上游的独有功能索引。改代码前确认
 type: index
 status: active
 created: 2026-08-30
-updated: 2026-10-31
+updated: 2026-11-09
 tags: [index, features, mymain]
 related: [../branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -38,5 +38,5 @@ F6 不曾是独立特性：ClickHouse 语义层（Phase 0-2）在 2026-08-12 落
 ## 阅读建议
 
 - 改某个功能前：先读对应卡片的「关键文件与开关」与「状态与上游关系」两节，再回 DIVERGENCE 查最新计数基线与贡献队列细节。
-- 验证基线数字以 DIVERGENCE §3 与各发布记录为准，卡片只引用当前最新一轮（2026-10-29 F5 子集 92/3 + 语义层门禁 6；2026-10-28 聚焦回归 324 passed、镜像 smoke 26/26）。
+- 验证基线数字以 DIVERGENCE §3 与各发布记录为准，卡片只引用当前最新一轮（2026-11-09 对齐：memory 353/3、CH 166/11、pin 122、语义层 6/0）。
 - 分支级大事顺序见 [../history/timeline.md](../history/timeline.md)。
