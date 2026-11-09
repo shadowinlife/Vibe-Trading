@@ -2145,10 +2145,7 @@
     "update_hypothesis": "更新研究假设",
     "update_research_goal_status": "更新目标状态",
     "web_search": "搜索网页",
-    "write_file": "生成代码",
-    "qveris_execute": "执行QVeris操作",
-    "qveris_inspect": "检查QVeris操作",
-    "qveris_search": "搜索QVeris"
+    "write_file": "生成代码"
   },
   "runDashboard": {
     "eyebrow": "量化研究 · 策略回测",
@@ -2729,29 +2726,6 @@
     "rolling": "滚动窗口",
     "expanding": "扩展窗口",
     "invalidChoices": "请填写每个候选值，逗号之间不能留空。"
-  },
-  "qveris": {
-    "title": "QVeris 工具市场",
-    "subtitle": "默认继续使用免费公开数据；需要专业付费数据时再启用 QVeris。",
-    "enabled": "启用 QVeris 付费通道",
-    "baseUrl": "基础 URL",
-    "apiKey": "API 密钥",
-    "apiKeyPlaceholder": "留空以保留当前密钥",
-    "mode": "模式",
-    "modeFree": "仅使用免费公开数据",
-    "modePaid": "启用 QVeris 付费",
-    "budget": "每会话预算 Credits",
-    "budgetHint": "达到本会话预算后将停止付费执行。",
-    "balance": "剩余 Credits",
-    "recentUsage": "近期用量",
-    "noUsage": "暂无近期用量",
-    "signupCta": "打开注册",
-    "signupHint": "创建 QVeris 账户时使用此邀请码。",
-    "inviteCode": "邀请码",
-    "save": "保存 QVeris 设置",
-    "saved": "QVeris 设置已保存",
-    "testFailed": "QVeris 请求失败",
-    "notConfigured": "未配置"
   },
   "strategyLibrary": {
     "title": "策略库",

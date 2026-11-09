@@ -2145,10 +2145,7 @@
     "update_hypothesis": "Actualizar hipótesis de investigación",
     "update_research_goal_status": "Actualizar estado del objetivo",
     "web_search": "Buscar en la web",
-    "write_file": "Generar código",
-    "qveris_execute": "Ejecutar acción de QVeris",
-    "qveris_inspect": "Inspeccionar acción de QVeris",
-    "qveris_search": "Buscar en QVeris"
+    "write_file": "Generar código"
   },
   "runDashboard": {
     "eyebrow": "Investigación cuantitativa · Backtest",
@@ -2729,29 +2726,6 @@
     "rolling": "Móvil",
     "expanding": "Expansiva",
     "invalidChoices": "Introduce un valor para cada opción."
-  },
-  "qveris": {
-    "title": "Mercado de herramientas QVeris",
-    "subtitle": "Mantén los datos públicos gratuitos como predeterminados, o habilita la ejecución paga de QVeris para herramientas de datos especializadas.",
-    "enabled": "Habilitar ruta paga de QVeris",
-    "baseUrl": "URL base",
-    "apiKey": "Clave de API",
-    "apiKeyPlaceholder": "Déjalo en blanco para conservar la clave actual",
-    "mode": "Modo",
-    "modeFree": "Solo datos públicos gratuitos",
-    "modePaid": "QVeris paga habilitado",
-    "budget": "Créditos de presupuesto por sesión",
-    "budgetHint": "La ejecución paga se detiene al alcanzar este presupuesto de sesión.",
-    "balance": "Créditos restantes",
-    "recentUsage": "Uso reciente",
-    "noUsage": "Sin uso reciente",
-    "signupCta": "Abrir registro",
-    "signupHint": "Usa este código de invitación al crear tu cuenta de QVeris.",
-    "inviteCode": "Código de invitación",
-    "save": "Guardar configuración de QVeris",
-    "saved": "Configuración de QVeris guardada",
-    "testFailed": "La solicitud a QVeris falló",
-    "notConfigured": "No configurado"
   },
   "strategyLibrary": {
     "title": "Biblioteca de estrategias",

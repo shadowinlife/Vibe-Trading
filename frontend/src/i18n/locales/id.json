@@ -2145,10 +2145,7 @@
     "update_hypothesis": "Perbarui hipotesis riset",
     "update_research_goal_status": "Perbarui status tujuan",
     "web_search": "Cari di web",
-    "write_file": "Buat kode",
-    "qveris_execute": "Jalankan aksi QVeris",
-    "qveris_inspect": "Periksa aksi QVeris",
-    "qveris_search": "Cari QVeris"
+    "write_file": "Buat kode"
   },
   "runDashboard": {
     "eyebrow": "Riset kuantitatif · Backtest",
@@ -2729,29 +2726,6 @@
     "rolling": "Bergulir",
     "expanding": "Meluas",
     "invalidChoices": "Masukkan nilai untuk setiap pilihan."
-  },
-  "qveris": {
-    "title": "Marketplace Tool QVeris",
-    "subtitle": "Gunakan data publik gratis sebagai pilihan bawaan, atau aktifkan eksekusi QVeris berbayar untuk tool data khusus.",
-    "enabled": "Aktifkan rute QVeris berbayar",
-    "baseUrl": "URL Dasar",
-    "apiKey": "API key",
-    "apiKeyPlaceholder": "Biarkan kosong untuk mempertahankan key saat ini",
-    "mode": "Mode",
-    "modeFree": "Hanya data publik gratis",
-    "modePaid": "QVeris berbayar diaktifkan",
-    "budget": "Anggaran kredit per sesi",
-    "budgetHint": "Eksekusi berbayar berhenti saat anggaran sesi ini tercapai.",
-    "balance": "Sisa kredit",
-    "recentUsage": "Penggunaan terbaru",
-    "noUsage": "Belum ada penggunaan terbaru",
-    "signupCta": "Buka pendaftaran",
-    "signupHint": "Gunakan kode undangan ini saat membuat akun QVeris.",
-    "inviteCode": "Kode undangan",
-    "save": "Simpan pengaturan QVeris",
-    "saved": "Pengaturan QVeris tersimpan",
-    "testFailed": "Permintaan QVeris gagal",
-    "notConfigured": "Belum dikonfigurasi"
   },
   "strategyLibrary": {
     "title": "Pustaka strategi",

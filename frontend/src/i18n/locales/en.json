@@ -2145,10 +2145,7 @@
     "update_hypothesis": "Update research hypothesis",
     "update_research_goal_status": "Update goal status",
     "web_search": "Search the web",
-    "write_file": "Generate code",
-    "qveris_execute": "Execute QVeris action",
-    "qveris_inspect": "Inspect QVeris action",
-    "qveris_search": "Search QVeris"
+    "write_file": "Generate code"
   },
   "runDashboard": {
     "eyebrow": "Quantitative research · Backtest",
@@ -2729,29 +2726,6 @@
     "rolling": "Rolling",
     "expanding": "Expanding",
     "invalidChoices": "Enter a value for every choice."
-  },
-  "qveris": {
-    "title": "QVeris Tool Marketplace",
-    "subtitle": "Keep free public data as the default, or enable paid QVeris execution for specialized data tools.",
-    "enabled": "Enable paid QVeris route",
-    "baseUrl": "Base URL",
-    "apiKey": "API key",
-    "apiKeyPlaceholder": "Leave blank to keep the current key",
-    "mode": "Mode",
-    "modeFree": "Free public data only",
-    "modePaid": "Paid QVeris enabled",
-    "budget": "Budget credits per session",
-    "budgetHint": "Paid execution stops when this session budget is reached.",
-    "balance": "Remaining credits",
-    "recentUsage": "Recent usage",
-    "noUsage": "No recent usage",
-    "signupCta": "Open signup",
-    "signupHint": "Use this invitation code when creating your QVeris account.",
-    "inviteCode": "Invitation code",
-    "save": "Save QVeris settings",
-    "saved": "QVeris settings saved",
-    "testFailed": "QVeris request failed",
-    "notConfigured": "Not configured"
   },
   "strategyLibrary": {
     "title": "Strategy library",

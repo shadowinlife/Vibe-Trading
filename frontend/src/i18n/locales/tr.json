@@ -2100,10 +2100,7 @@
     "update_hypothesis": "Araştırma hipotezini güncelle",
     "update_research_goal_status": "Hedef durumunu güncelle",
     "web_search": "Web’de ara",
-    "write_file": "Kod üret",
-    "qveris_execute": "QVeris işlemini yürüt",
-    "qveris_inspect": "QVeris işlemini incele",
-    "qveris_search": "QVeris’te ara"
+    "write_file": "Kod üret"
   },
   "runDashboard": {
     "eyebrow": "Nicel araştırma · Geriye dönük test",
@@ -2729,29 +2726,6 @@
     "rolling": "Kayan",
     "expanding": "Genişleyen",
     "invalidChoices": "Her seçenek için bir değer girin."
-  },
-  "qveris": {
-    "title": "QVeris araç pazarı",
-    "subtitle": "Ücretsiz açık veriyi varsayılan tutun veya özel veri araçları için ücretli QVeris kullanımını etkinleştirin.",
-    "enabled": "Ücretli QVeris yolunu etkinleştir",
-    "baseUrl": "Temel URL",
-    "apiKey": "API anahtarı",
-    "apiKeyPlaceholder": "Mevcut anahtarı korumak için boş bırakın",
-    "mode": "Mod",
-    "modeFree": "Yalnızca ücretsiz açık veri",
-    "modePaid": "Ücretli QVeris etkin",
-    "budget": "Oturum başına kredi bütçesi",
-    "budgetHint": "Bu oturum bütçesine ulaşıldığında ücretli işlemler durur.",
-    "balance": "Kalan kredi",
-    "recentUsage": "Son kullanım",
-    "noUsage": "Yakın zamanda kullanım yok",
-    "signupCta": "Kayıt sayfasını aç",
-    "signupHint": "QVeris hesabınızı oluştururken bu davet kodunu kullanın.",
-    "inviteCode": "Davet kodu",
-    "save": "QVeris ayarlarını kaydet",
-    "saved": "QVeris ayarları kaydedildi",
-    "testFailed": "QVeris isteği başarısız",
-    "notConfigured": "Yapılandırılmadı"
   },
   "strategyLibrary": {
     "title": "Strateji kitaplığı",

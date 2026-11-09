@@ -2145,10 +2145,7 @@
     "update_hypothesis": "Forschungshypothese aktualisieren",
     "update_research_goal_status": "Zielstatus aktualisieren",
     "web_search": "Web durchsuchen",
-    "write_file": "Code generieren",
-    "qveris_execute": "QVeris-Aktion ausführen",
-    "qveris_inspect": "QVeris-Aktion inspizieren",
-    "qveris_search": "QVeris durchsuchen"
+    "write_file": "Code generieren"
   },
   "runDashboard": {
     "eyebrow": "Quantitative Forschung · Backtest",
@@ -2729,29 +2726,6 @@
     "rolling": "Rollierend",
     "expanding": "Erweiternd",
     "invalidChoices": "Geben Sie für jede Auswahl einen Wert ein."
-  },
-  "qveris": {
-    "title": "QVeris-Tool-Marktplatz",
-    "subtitle": "Behalten Sie kostenlose öffentliche Daten als Standard, oder aktivieren Sie kostenpflichtige QVeris-Ausführung für spezielle Datenwerkzeuge.",
-    "enabled": "Kostenpflichtige QVeris-Route aktivieren",
-    "baseUrl": "Basis-URL",
-    "apiKey": "API-Schlüssel",
-    "apiKeyPlaceholder": "Leer lassen, um den aktuellen Schlüssel beizubehalten",
-    "mode": "Modus",
-    "modeFree": "Nur kostenlose öffentliche Daten",
-    "modePaid": "Kostenpflichtiges QVeris aktiviert",
-    "budget": "Budget-Kreditpunkte pro Sitzung",
-    "budgetHint": "Die kostenpflichtige Ausführung stoppt, wenn das Sitzungsbudget erreicht ist.",
-    "balance": "Verbleibende Kreditpunkte",
-    "recentUsage": "Letzte Nutzung",
-    "noUsage": "Keine letzte Nutzung",
-    "signupCta": "Registrierung öffnen",
-    "signupHint": "Verwenden Sie diesen Einladungscode bei der Erstellung Ihres QVeris-Kontos.",
-    "inviteCode": "Einladungscode",
-    "save": "QVeris-Einstellungen speichern",
-    "saved": "QVeris-Einstellungen gespeichert",
-    "testFailed": "QVeris-Anfrage fehlgeschlagen",
-    "notConfigured": "Nicht konfiguriert"
   },
   "strategyLibrary": {
     "title": "Strategiebibliothek",

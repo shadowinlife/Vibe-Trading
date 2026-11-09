@@ -2145,10 +2145,7 @@
     "update_hypothesis": "리서치 가설 업데이트",
     "update_research_goal_status": "목표 상태 업데이트",
     "web_search": "웹 검색",
-    "write_file": "코드 생성",
-    "qveris_execute": "QVeris 작업 실행",
-    "qveris_inspect": "QVeris 작업 점검",
-    "qveris_search": "QVeris 검색"
+    "write_file": "코드 생성"
   },
   "runDashboard": {
     "eyebrow": "계량 리서치 · 백테스트",
@@ -2729,29 +2726,6 @@
     "rolling": "이동 구간",
     "expanding": "확장 구간",
     "invalidChoices": "모든 후보 값을 입력하세요."
-  },
-  "qveris": {
-    "title": "QVeris 도구 마켓플레이스",
-    "subtitle": "무료 공개 데이터 경로를 기본으로 두고, 필요할 때만 QVeris 유료 실행을 켭니다.",
-    "enabled": "QVeris 유료 경로 활성화",
-    "baseUrl": "기본 URL",
-    "apiKey": "API 키",
-    "apiKeyPlaceholder": "비우면 현재 키 유지",
-    "mode": "모드",
-    "modeFree": "무료 공개 데이터만 사용",
-    "modePaid": "QVeris 유료 활성화",
-    "budget": "세션당 예산 Credits",
-    "budgetHint": "이 세션 예산에 도달하면 유료 실행을 중지합니다.",
-    "balance": "남은 Credits",
-    "recentUsage": "최근 사용량",
-    "noUsage": "최근 사용량 없음",
-    "signupCta": "가입 열기",
-    "signupHint": "QVeris 계정을 만들 때 이 초대 코드를 사용하세요.",
-    "inviteCode": "초대 코드",
-    "save": "QVeris 설정 저장",
-    "saved": "QVeris 설정이 저장되었습니다",
-    "testFailed": "QVeris 요청 실패",
-    "notConfigured": "구성되지 않음"
   },
   "strategyLibrary": {
     "title": "전략 라이브러리",

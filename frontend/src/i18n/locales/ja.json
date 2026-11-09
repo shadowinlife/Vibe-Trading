@@ -2145,10 +2145,7 @@
     "update_hypothesis": "リサーチ仮説を更新",
     "update_research_goal_status": "目標の状態を更新",
     "web_search": "Web を検索",
-    "write_file": "コードを生成",
-    "qveris_execute": "QVeris アクションを実行",
-    "qveris_inspect": "QVeris アクションを確認",
-    "qveris_search": "QVeris を検索"
+    "write_file": "コードを生成"
   },
   "runDashboard": {
     "eyebrow": "定量リサーチ · バックテスト",
@@ -2729,29 +2726,6 @@
     "rolling": "ローリング",
     "expanding": "拡張",
     "invalidChoices": "各候補に値を入力してください。"
-  },
-  "qveris": {
-    "title": "QVeris ツールマーケットプレイス",
-    "subtitle": "無料の公開データを既定のまま使い、必要なときだけ QVeris の有料実行を有効にします。",
-    "enabled": "QVeris 有料ルートを有効化",
-    "baseUrl": "ベース URL",
-    "apiKey": "API キー",
-    "apiKeyPlaceholder": "空欄で現在のキーを保持",
-    "mode": "モード",
-    "modeFree": "無料公開データのみ",
-    "modePaid": "QVeris 有料を有効化",
-    "budget": "セッションごとの予算 Credits",
-    "budgetHint": "このセッション予算に達すると有料実行を停止します。",
-    "balance": "残り Credits",
-    "recentUsage": "最近の使用量",
-    "noUsage": "最近の使用量はありません",
-    "signupCta": "登録を開く",
-    "signupHint": "QVeris アカウント作成時にこの招待コードを使用してください。",
-    "inviteCode": "招待コード",
-    "save": "QVeris 設定を保存",
-    "saved": "QVeris 設定を保存しました",
-    "testFailed": "QVeris リクエストに失敗しました",
-    "notConfigured": "未設定"
   },
   "strategyLibrary": {
     "title": "ストラテジーライブラリ",

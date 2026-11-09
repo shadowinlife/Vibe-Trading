@@ -2145,10 +2145,7 @@
     "update_hypothesis": "به‌روزرسانی فرضیه پژوهشی",
     "update_research_goal_status": "به‌روزرسانی وضعیت هدف",
     "web_search": "جستجوی وب",
-    "write_file": "تولید کد",
-    "qveris_execute": "اجرای کنش QVeris",
-    "qveris_inspect": "بازرسی کنش QVeris",
-    "qveris_search": "جستجوی QVeris"
+    "write_file": "تولید کد"
   },
   "runDashboard": {
     "eyebrow": "پژوهش کمّی · بک‌تست",
@@ -2729,29 +2726,6 @@
     "rolling": "غلتان",
     "expanding": "گسترش‌یابنده",
     "invalidChoices": "برای هر گزینه یک مقدار وارد کنید."
-  },
-  "qveris": {
-    "title": "بازار ابزار QVeris",
-    "subtitle": "داده عمومی رایگان را پیش‌فرض نگه دارید، یا اجرای پولی QVeris را برای ابزارهای داده تخصصی فعال کنید.",
-    "enabled": "فعال‌سازی مسیر پولی QVeris",
-    "baseUrl": "URL پایه",
-    "apiKey": "کلید API",
-    "apiKeyPlaceholder": "برای حفظ کلید فعلی خالی بگذارید",
-    "mode": "حالت",
-    "modeFree": "فقط داده عمومی رایگان",
-    "modePaid": "اجرای پولی QVeris فعال",
-    "budget": "اعتبار بودجه هر نشست",
-    "budgetHint": "اجرای پولی با رسیدن به بودجه این نشست متوقف می‌شود.",
-    "balance": "اعتبار باقی‌مانده",
-    "recentUsage": "مصرف اخیر",
-    "noUsage": "مصرف اخیری وجود ندارد",
-    "signupCta": "ثبت‌نام",
-    "signupHint": "هنگام ساخت حساب QVeris از این کد دعوت استفاده کنید.",
-    "inviteCode": "کد دعوت",
-    "save": "ذخیره تنظیمات QVeris",
-    "saved": "تنظیمات QVeris ذخیره شد",
-    "testFailed": "درخواست QVeris ناموفق بود",
-    "notConfigured": "پیکربندی نشده"
   },
   "strategyLibrary": {
     "title": "کتابخانه استراتژی",
