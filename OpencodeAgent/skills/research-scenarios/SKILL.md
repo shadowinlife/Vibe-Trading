@@ -266,7 +266,7 @@ triggers:
 | SWARM 团队 | `vibe-trading_run_swarm`（30 预设；路由见 AGENTS.md「Swarm 预设」） | 多空辩论、投委会、组合复盘、风险审计、跨市场配置、多方法技术共振 |
 | 跨市场数据 | `vibe-trading_get_market_data` | clickhouse、tencent、akshare、yfinance、tushare、okx、auto |
 | 回测产物读取 | `vibe-trading_read_run_artifact` | equity/trades/metrics/positions/ohlcv:&lt;CODE&gt;/run_card/progress 的分页·降采样结构化读取；读 run 产物 CSV 时**优先于** `read_file`（省 token、不截断） |
-| Finance Skills | `vibe-trading_list_skills/load_skill`（91 个） | factor、strategy、risk、technical |
+| Finance Skills | `vibe-trading_list_skills/load_skill`（90 个） | factor、strategy、risk、technical |
 | **选股策略** | **fundamental-filter + multi-factor + 场景 E** | **选股、筛选、选美、资金流选股、多因子选股** |
 | 技术分析 | `technical-basic` / `candlestick` / `ichimoku` / `elliott-wave` / `harmonic` / `smc` / `chanlun` (VT) | 技术面、K线形态、缠论 |
 | 风险管理 | `risk-analysis` (VT) | VaR、CVaR、最大回撤、压力测试 |

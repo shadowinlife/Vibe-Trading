@@ -378,7 +378,7 @@ class TestProductIndex:
             f"AGENTS.md had {CAPABILITY_INDEX_DATA_ROWS} (±2)"
         )
         assert "vibe-trading_read_run_artifact" in text
-        assert "91 个" in text
+        assert "90 个" in text
         assert "memory-lifecycle" in text
         assert "vibe-trading_read_run_artifact" not in _read(AGENTS_MD_PATH)
 

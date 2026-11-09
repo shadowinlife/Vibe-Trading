@@ -89,7 +89,7 @@ triggers:
 
 ## 加载机制
 - 本 skill 由 **AGENTS.md 指令 + 文件读取**加载，路径 `skills/intake/SKILL.md`。
-- 与 VT `load_skill`（`vibe-trading_load_skill`，91 个金融 skill）是**两套系统**：不要尝试用 VT 工具加载本文件，也不要指望它出现在 `vibe-trading_list_skills` 的结果里。
+- 与 VT `load_skill`（`vibe-trading_load_skill`，90 个金融 skill）是**两套系统**：不要尝试用 VT 工具加载本文件，也不要指望它出现在 `vibe-trading_list_skills` 的结果里。
 - 非交互会话（cron / IM / `opencode run`）不得依赖交互式提问；无法提问时直接按上述默认值执行。
 
 ## 单向指针
