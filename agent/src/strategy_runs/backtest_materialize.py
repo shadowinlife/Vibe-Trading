@@ -71,6 +71,7 @@ PrepareErrorKind = Literal[
     "idempotency_conflict",
     "storage_unavailable",
 ]
+ReplayState = Literal["missing", "complete", "tampered"]
 
 
 class _FrozenModel(BaseModel):
@@ -212,15 +213,11 @@ class BacktestMaterializer:
         except ControlStoreError as exc:
             raise BacktestPrepareError("storage_unavailable") from exc
 
-        if claim.replayed:
-            stored = _stored_response(claim.row.declaration_json)
-            _verify_replay(run_dir, stored)
-            return stored
-        try:
-            _materialize(run_dir, config_bytes, source_bytes)
-        except OSError as exc:
-            raise BacktestPrepareError("storage_unavailable") from exc
-        return response
+        expected = (
+            _stored_response(claim.row.declaration_json) if claim.replayed else response
+        )
+        _publish_or_verify(run_dir, expected, config_bytes, source_bytes)
+        return expected
 
 
 def _prepare_run_dir(value: str) -> Path:
@@ -346,20 +343,56 @@ def recheck_backtest_inputs(declaration_json: str) -> BacktestPrepareResponse | 
     return stored
 
 
-def _verify_replay(run_dir: Path, stored: BacktestPrepareResponse) -> None:
-    """Read frozen bytes without changing them; absence/drift is never success."""
-    try:
-        config_bytes = (run_dir / "config.json").read_bytes()
-        source_bytes = (run_dir / "code" / "signal_engine.py").read_bytes()
-    except FileNotFoundError as exc:
-        raise BacktestPrepareError("input_digest_mismatch") from exc
-    except OSError as exc:
-        raise BacktestPrepareError("storage_unavailable") from exc
-    matches = hmac.compare_digest(
-        sha256_hex(config_bytes), stored.config_sha256
-    ) and hmac.compare_digest(sha256_hex(source_bytes), stored.source_sha256)
-    if not matches:
+def _publish_or_verify(
+    run_dir: Path,
+    expected: BacktestPrepareResponse,
+    config_bytes: bytes,
+    source_bytes: bytes,
+) -> None:
+    """Replay a complete tree or atomically publish the one a prior attempt lost.
+
+    A dispatch claim becomes visible before its run directory does, and a failed
+    attempt removes its staging tree. An absent directory therefore means either
+    an in-flight first attempt or a retry after a transient failure: publish the
+    same frozen bytes instead of treating absence as tampering. If another
+    attempt publishes first, its tree is verified and never rewritten.
+    """
+    for _ in range(2):
+        state = _frozen_state(run_dir, expected)
+        if state == "complete":
+            return
+        if state == "tampered":
+            raise BacktestPrepareError("input_digest_mismatch")
+        try:
+            _materialize(run_dir, config_bytes, source_bytes)
+        except FileExistsError:
+            continue
+        except OSError as exc:
+            raise BacktestPrepareError("storage_unavailable") from exc
+        return
+    if _frozen_state(run_dir, expected) != "complete":
         raise BacktestPrepareError("input_digest_mismatch")
+
+
+def _frozen_state(run_dir: Path, expected: BacktestPrepareResponse) -> ReplayState:
+    """Classify frozen bytes without writes: absent, complete, or tampered."""
+    if not run_dir.exists():
+        return "missing"
+    missing = False
+    for relative, digest in (
+        ("config.json", expected.config_sha256),
+        ("code/signal_engine.py", expected.source_sha256),
+    ):
+        try:
+            data = (run_dir / relative).read_bytes()
+        except FileNotFoundError:
+            missing = True
+            continue
+        except OSError as exc:
+            raise BacktestPrepareError("storage_unavailable") from exc
+        if not hmac.compare_digest(sha256_hex(data), digest):
+            raise BacktestPrepareError("input_digest_mismatch")
+    return "tampered" if missing else "complete"
 
 
 def _materialize(run_dir: Path, config_bytes: bytes, source_bytes: bytes) -> None:

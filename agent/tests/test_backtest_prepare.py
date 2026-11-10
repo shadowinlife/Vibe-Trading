@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import stat
+import threading
 from pathlib import Path
 from typing import Final
 
@@ -20,7 +21,11 @@ import strategy_run_server
 from backtest.loaders import local_loader
 from src.strategy_library import paths as strategy_paths
 from src.strategy_runs import backtest_materialize as materialize_module
-from src.strategy_runs.backtest_materialize import BacktestMaterializer
+from src.strategy_runs.backtest_materialize import (
+    BacktestMaterializer,
+    BacktestPrepareRequest,
+    BacktestPrepareResponse,
+)
 from src.strategy_runs.control_contract import CONTRACT_VERSION, JsonValue
 from src.strategy_runs.control_store import ControlStore
 from tests.module_os_helpers import patch_module_os
@@ -276,6 +281,106 @@ def test_replay_returns_stored_response_without_rewriting(
     row = store.get_dispatch(DISPATCH_KEY)
     assert row is not None and row.remote_id == RUN_ID
     assert row.input_digest == first.json()["input_digest"]
+
+
+def test_concurrent_same_key_prepare_replays_without_false_conflict(
+    materializer: BacktestMaterializer,
+    store: ControlStore,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given a first same-key prepare still inside its atomic materialization.
+    payload = _payload(tmp_path)
+    request = BacktestPrepareRequest.model_validate(payload)
+    real_materialize = materialize_module._materialize
+    entered = threading.Event()
+    release = threading.Event()
+    calls = 0
+
+    def blocking_materialize(*args: JsonValue, **kwargs: JsonValue) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            entered.set()
+            assert release.wait(timeout=10)
+        assert real_materialize(*args, **kwargs) is None
+
+    monkeypatch.setattr(materialize_module, "_materialize", blocking_materialize)
+    first_result: list[object] = []
+    first = threading.Thread(
+        target=lambda: first_result.append(materializer.prepare(request))
+    )
+    first.start()
+    assert entered.wait(timeout=10)
+    try:
+        # When a second same-key prepare arrives before the first publishes.
+        second = materializer.prepare(request)
+    finally:
+        release.set()
+        first.join(timeout=10)
+    # Then both return the same response with exactly one complete run directory.
+    assert len(first_result) == 1
+    expected = BacktestPrepareResponse.model_validate(_expected_response(payload))
+    assert first_result[0] == second == expected
+    run_dir = _run_dir(tmp_path)
+    assert sorted(
+        path.relative_to(run_dir).as_posix()
+        for path in run_dir.rglob("*")
+        if path.is_file()
+    ) == ["code/signal_engine.py", "config.json"]
+    assert [path.name for path in (tmp_path / "runs").iterdir()] == [RUN_ID]
+    row = store.get_dispatch(DISPATCH_KEY)
+    assert row is not None and row.status == "dispatched" and row.remote_id == RUN_ID
+    # And a later complete replay still keeps every frozen byte and mtime.
+    before = _file_state(run_dir)
+    assert materializer.prepare(request) == expected
+    assert _file_state(run_dir) == before
+
+
+@pytest.mark.parametrize("failure", ["write", "rename"])
+def test_transient_materialize_failure_does_not_burn_the_dispatch_key(
+    client: TestClient,
+    store: ControlStore,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: str,
+) -> None:
+    # Given a materialization that fails once after the dispatch claim commits.
+    payload = _payload(tmp_path)
+    real_operation = getattr(os, failure)
+    calls = 0
+
+    def fail_once(*args: JsonValue, **kwargs: JsonValue) -> object:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise OSError("secret transient failure")
+        return real_operation(*args, **kwargs)
+
+    patch_module_os(monkeypatch, materialize_module, **{failure: fail_once})
+    failed = _post(client, payload)
+    # Then the failure is redacted and leaves a claim without a run directory.
+    assert failed.status_code == 503
+    assert failed.json() == {
+        "error": "storage_unavailable",
+        "contract_version": CONTRACT_VERSION,
+    }
+    assert "secret" not in failed.text
+    row = store.get_dispatch(DISPATCH_KEY)
+    assert row is not None and row.status == "dispatched"
+    assert not _run_dir(tmp_path).exists()
+    # When the same key and input retry after the transient fault clears.
+    retried = _post(client, payload)
+    # Then the stored declaration is re-materialized and replayed, never 409.
+    assert retried.status_code == 200, retried.text
+    assert retried.json() == _expected_response(payload)
+    assert (run_dir := _run_dir(tmp_path)).is_dir()
+    assert sorted(
+        path.relative_to(run_dir).as_posix()
+        for path in run_dir.rglob("*")
+        if path.is_file()
+    ) == ["code/signal_engine.py", "config.json"]
+    assert [path.name for path in (tmp_path / "runs").iterdir()] == [RUN_ID]
 
 
 def test_changed_input_conflicts_and_preserves_original(
