@@ -23,6 +23,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import BinaryIO, Final, Literal, TypedDict
 
+from src.config.accessor import get_env_value
 from src.strategy_runs.control_contract import CONTRACT_VERSION, JsonValue
 from src.strategy_runs.control_store import (
     ControlStore,
@@ -147,7 +148,7 @@ class NativeSupervisor:
 
         env = {**os.environ, **(spec.env or {})}
         if not env.get("PATH"):
-            env["PATH"] = os.environ.get("PATH") or os.defpath
+            env["PATH"] = get_env_value("PATH") or os.defpath
         try:
             proc = self._popen(
                 spec.argv,
@@ -252,6 +253,11 @@ class NativeSupervisor:
             dispatch_key, remote_id, stop_key, deadline_at, CONTRACT_VERSION
         )
         if claim.replayed:
+            if claim.row.state == "requested":
+                record = self._terminal_record_evidence(dispatch_key)
+                if record is not None:
+                    row = self._confirm_stop(stop_key, "terminal_record", record)
+                    return StopClaim(replayed=True, row=row)
             return claim
 
         record = self._terminal_record_evidence(dispatch_key)

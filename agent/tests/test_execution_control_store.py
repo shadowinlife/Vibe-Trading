@@ -477,6 +477,22 @@ def test_confirmed_stop_persists_evidence_and_never_downgrades(tmp_path: Path) -
     assert store.get_stop("stop-a") == confirmed
 
 
+def test_unknown_stop_short_circuits_a_new_stop_key(tmp_path: Path) -> None:
+    # Given a dispatch whose only stop is final unknown
+    store = ControlStore(tmp_path / DEFAULT_DB_FILENAME)
+    _claim(store)
+    _begin_stop(store)
+    unknown = store.resolve_stop("stop-a", "unknown", resolved_at=_NOW + 2)
+    # When another stop key is begun for the same dispatch
+    replay = store.begin_stop(
+        "dispatch-a", "remote-a", "stop-b", _NOW + 20_000, CONTRACT_VERSION
+    )
+    # Then the final unknown row is reused and cannot become a new confirmation
+    assert replay.replayed is True
+    assert replay.row == unknown
+    assert _count(store.path, "execution_stops") == 1
+
+
 def test_unknown_stop_never_upgrades_to_confirmed(tmp_path: Path) -> None:
     # Given a stop resolved as unknown without evidence
     store = ControlStore(tmp_path / DEFAULT_DB_FILENAME)

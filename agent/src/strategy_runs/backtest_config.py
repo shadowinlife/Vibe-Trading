@@ -100,7 +100,7 @@ class NeutralBacktestConfig(BaseModel):
     currency: _NON_EMPTY_TEXT
     commission_bps: Decimal = Field(ge=0)
     tax_bps: Decimal = Field(ge=0)
-    slippage_bps: Decimal = Field(ge=0)
+    slippage_bps: Decimal = Field(ge=0, lt=10000)
 
     @field_validator("symbols")
     @classmethod

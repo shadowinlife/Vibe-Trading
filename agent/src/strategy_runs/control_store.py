@@ -563,6 +563,13 @@ class ControlStore(StrategyRunStore):
             ).fetchone()
             if confirmed is not None:
                 return StopClaim(replayed=True, row=StopRow.from_row(confirmed))
+            unknown = conn.execute(
+                "SELECT * FROM execution_stops WHERE dispatch_key = ? AND state = 'unknown' "
+                "ORDER BY requested_at ASC, stop_key ASC LIMIT 1",
+                (dispatch_key,),
+            ).fetchone()
+            if unknown is not None:
+                return StopClaim(replayed=True, row=StopRow.from_row(unknown))
             row = StopRow(
                 stop_key=stop_key,
                 dispatch_key=dispatch_key,

@@ -154,6 +154,15 @@ def test_decimal_costs_are_finite_non_negative_and_cash_is_positive() -> None:
             adapt_backtest_config(config)
 
 
+def test_slippage_cannot_reach_or_exceed_the_fill_price() -> None:
+    """A 100%+ slippage rate would invert the directional execution price."""
+    for value in ("10000", "20000"):
+        config = _neutral_config()
+        config["slippage_bps"] = value
+        with pytest.raises(ValidationError):
+            adapt_backtest_config(config)
+
+
 def test_iso_dates_enforce_start_before_end_no_later_than_snapshot() -> None:
     for dates in (
         ("2026-01-03", "2026-01-03", "2026-01-03"),

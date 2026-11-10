@@ -21,6 +21,7 @@ from src.config.paths import get_runs_dir
 from src.scheduled_research.models import ScheduledResearchJob
 from src.strategy_library import execute_code, run_code_entry
 from src.strategy_library.paths import version_code_path, version_config_path
+from tests.module_os_helpers import patch_module_os
 
 _STRATEGY_ID = "buyhold"
 _VERSION = "v1-abc12345"
@@ -244,7 +245,7 @@ def test_poll_waits_for_the_entry_before_reading_a_nested_terminal_state(
         assert waited_pid == pid
         return (0, 0) if entry_running else (pid, 0)
 
-    monkeypatch.setattr(execute_code.os, "waitpid", _waitpid)
+    patch_module_os(monkeypatch, execute_code, waitpid=_waitpid)
     try:
         assert execute_code.poll_code_run(handle) is None
 

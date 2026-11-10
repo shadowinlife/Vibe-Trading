@@ -26,6 +26,7 @@ from src.strategy_runs.control_store import (
     StopConflict,
 )
 from src.strategy_runs.execution_worker import WorkerSpec
+from tests.module_os_helpers import patch_module_os
 
 AGENT_ROOT = Path(__file__).resolve().parents[1]
 TERMINAL_KEYS = {
@@ -278,7 +279,7 @@ def test_terminal_json_is_replaced_atomically_without_temp_files(
         replacements.append((source_path, target_path))
         real_replace(source, target)
 
-    monkeypatch.setattr(native.os, "replace", checked_replace)
+    patch_module_os(monkeypatch, native, replace=checked_replace)
     threads, thread_factory = _threads()
     supervisor = native.NativeSupervisor(store, thread_factory=thread_factory)
     supervisor.start("dispatch-a", spec)
@@ -308,7 +309,7 @@ def test_restart_reconcile_does_not_signal_replay_or_rewrite_dispatched_row(
     def forbidden(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("restart must not spawn or signal")
 
-    monkeypatch.setattr(native.os, "killpg", forbidden)
+    patch_module_os(monkeypatch, native, killpg=forbidden)
     supervisor = native.NativeSupervisor(store, popen=forbidden)
     try:
         supervisor.reconcile_on_start()
@@ -403,7 +404,7 @@ def test_getpgid_failure_kills_new_session_without_terminal(
     def fail_getpgid(pid: int) -> int:
         raise ProcessLookupError(pid)
 
-    monkeypatch.setattr(native.os, "getpgid", fail_getpgid)
+    patch_module_os(monkeypatch, native, getpgid=fail_getpgid)
     supervisor = native.NativeSupervisor(store, popen=checked_popen)
     try:
         with pytest.raises(native.SupervisorError) as caught:
@@ -500,7 +501,7 @@ def test_stop_persists_requested_before_first_signal(
         observed.append((pgid, sig, stop.state))
         real_killpg(pgid, sig)
 
-    monkeypatch.setattr(native.os, "killpg", checked_killpg)
+    patch_module_os(monkeypatch, native, killpg=checked_killpg)
     claim = supervisor.stop(
         "dispatch-a", started.remote_id, "stop-a", deadline_at=60_000
     )
@@ -529,7 +530,7 @@ def test_live_stop_cancels_and_sends_one_term_kill_sequence(
         signals.append((pgid, sig))
         real_killpg(pgid, sig)
 
-    monkeypatch.setattr(native.os, "killpg", recording_killpg)
+    patch_module_os(monkeypatch, native, killpg=recording_killpg)
     stopped = supervisor.stop(
         "dispatch-a", started.remote_id, "stop-a", deadline_at=60_000
     )
@@ -563,7 +564,7 @@ def test_replay_same_stop_key_does_not_signal_again(
         calls.append((pgid, sig))
         real_killpg(pgid, sig)
 
-    monkeypatch.setattr(native.os, "killpg", recording_killpg)
+    patch_module_os(monkeypatch, native, killpg=recording_killpg)
     first = supervisor.stop("dispatch-a", started.remote_id, "stop-a", 60_000)
     _join(threads)
     count = len(calls)
@@ -589,7 +590,7 @@ def test_stop_key_reuse_for_other_remote_conflicts_without_signal(
         calls.append((pgid, sig))
         raise AssertionError("conflicting stop must not signal")
 
-    monkeypatch.setattr(native.os, "killpg", forbidden)
+    patch_module_os(monkeypatch, native, killpg=forbidden)
     with pytest.raises(StopConflict):
         supervisor.stop("dispatch-b", "remote-dispatch-b", "stop-a", deadline_at=60_000)
     assert store.get_stop("stop-a") == requested.row
@@ -606,7 +607,7 @@ def test_restart_without_handle_expires_unknown_without_signal(
     def forbidden(pgid: int, sig: int) -> None:
         raise AssertionError(f"restart must not signal {(pgid, sig)}")
 
-    monkeypatch.setattr(native.os, "killpg", forbidden)
+    patch_module_os(monkeypatch, native, killpg=forbidden)
     requested = supervisor.stop(
         "dispatch-a", "remote-dispatch-a", "stop-a", deadline_at=60_000
     )
@@ -643,7 +644,7 @@ def test_recycled_recorded_identity_never_signals_unrelated_sleeper(
         def forbidden(called_pgid: int, sig: int) -> None:
             raise AssertionError(f"recycled identity signaled {(called_pgid, sig)}")
 
-        monkeypatch.setattr(native.os, "killpg", forbidden)
+        patch_module_os(monkeypatch, native, killpg=forbidden)
         requested = supervisor.stop(
             "dispatch-a", "remote-dispatch-a", "stop-a", deadline_at=60_000
         )
@@ -675,7 +676,7 @@ def test_terminal_record_resolves_without_signal_and_never_downgrades(
     def forbidden(pgid: int, sig: int) -> None:
         raise AssertionError(f"terminal record must not signal {(pgid, sig)}")
 
-    monkeypatch.setattr(native.os, "killpg", forbidden)
+    patch_module_os(monkeypatch, native, killpg=forbidden)
     stopped = supervisor.stop(
         "dispatch-a", "remote-dispatch-a", "stop-a", deadline_at=60_000
     )

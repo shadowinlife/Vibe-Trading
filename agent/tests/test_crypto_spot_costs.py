@@ -5,6 +5,7 @@ import pytest
 
 from backtest.engines.composite import CompositeEngine
 from backtest.engines.crypto import CryptoEngine
+from backtest.engines.forex import ForexEngine
 from backtest.models import Position
 from backtest.runner import _create_market_engine
 
@@ -96,3 +97,75 @@ def test_neutral_spot_uses_exact_declared_costs_without_hidden_defaults() -> Non
     )
     assert engine.capital == 10000
     assert engine._engine_diagnostics()["crypto_funding_pnl"] == 0
+
+
+def test_neutral_perpetual_disables_funding_and_uses_declared_liquidation_slippage():
+    from src.strategy_runs.backtest_config import adapt_backtest_config
+
+    config = adapt_backtest_config(
+        {
+            "strategy_id": "crypto-perp",
+            "strategy_version": "v1",
+            "market": "crypto",
+            "symbols": ["BTC-USDT-PERP"],
+            "start_date": "2026-01-01",
+            "end_date": "2026-01-03",
+            "bar_interval": "1D",
+            "data_source": "okx",
+            "data_as_of": "2026-01-03",
+            "snapshot_basis": "fixture-v1",
+            "initial_cash": "10000",
+            "currency": "USDT",
+            "commission_bps": "10.00",
+            "tax_bps": "20.00",
+            "slippage_bps": "25.00",
+        }
+    )
+    engine = CryptoEngine(config)
+    timestamp = pd.Timestamp("2026-01-01 08:00")
+    engine.positions["BTC-USDT-PERP"] = Position(
+        symbol="BTC-USDT-PERP",
+        direction=1,
+        size=1.0,
+        entry_price=100.0,
+        entry_time=timestamp - pd.Timedelta(hours=1),
+    )
+
+    engine.on_bar(
+        "BTC-USDT-PERP",
+        pd.Series({"open": 100.0, "close": 100.0, "funding_rate": 0.1}),
+        timestamp,
+    )
+
+    assert engine.funding_enabled("BTC-USDT-PERP") is False
+    assert engine.capital == 10000
+    assert engine._engine_diagnostics()["crypto_funding_pnl"] == 0
+    assert engine.apply_slippage(100.0, 1) == pytest.approx(100.25)
+
+
+def test_neutral_forex_disables_default_swap():
+    from src.strategy_runs.backtest_config import adapt_backtest_config
+
+    engine = ForexEngine(
+        adapt_backtest_config(
+            {
+                "strategy_id": "fx",
+                "strategy_version": "v1",
+                "market": "forex",
+                "symbols": ["EURUSD"],
+                "start_date": "2026-01-01",
+                "end_date": "2026-01-03",
+                "bar_interval": "1D",
+                "data_source": "yfinance",
+                "data_as_of": "2026-01-03",
+                "snapshot_basis": "fixture-v1",
+                "initial_cash": "10000",
+                "currency": "USD",
+                "commission_bps": "0",
+                "tax_bps": "0",
+                "slippage_bps": "10.00",
+            }
+        )
+    )
+
+    assert engine.swap_enabled is False

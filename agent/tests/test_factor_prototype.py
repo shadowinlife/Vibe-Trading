@@ -372,12 +372,13 @@ def test_real_close_only_candidate_masks_exact_label_boundaries(
         ("in_sample", dates[0], dates[299], "sample_coverage"),
         ("out_of_sample", dates[300], dates[380], "oos_sample_coverage"),
     ):
-        factor = pd.read_csv(base / phase / "factor.csv", index_col=0)
-        returns = pd.read_csv(base / phase / "returns.csv", index_col=0)
-        selected = (factor.index >= str(first.date())) & (
-            factor.index <= str(last.date())
+        factor = pd.read_csv(
+            base / phase / "analysis_inputs" / "factor.csv", index_col=0
         )
-        paired = factor.loc[selected].notna() & returns.loc[selected].notna()
+        returns = pd.read_csv(
+            base / phase / "analysis_inputs" / "returns.csv", index_col=0
+        )
+        paired = factor.notna() & returns.notna()
         expected = paired.to_numpy().sum() / paired.size
         assert metrics[coverage_key] == pytest.approx(round(expected, 6))
         analysis_factor = pd.read_csv(

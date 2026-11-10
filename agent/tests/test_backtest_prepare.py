@@ -23,6 +23,7 @@ from src.strategy_runs import backtest_materialize as materialize_module
 from src.strategy_runs.backtest_materialize import BacktestMaterializer
 from src.strategy_runs.control_contract import CONTRACT_VERSION, JsonValue
 from src.strategy_runs.control_store import ControlStore
+from tests.module_os_helpers import patch_module_os
 
 STRATEGY_ID: Final = "momentum-alpha"
 VERSION: Final = "v1-abcdef12"
@@ -541,9 +542,9 @@ def test_filesystem_failure_leaves_no_run_or_staging_directory(
         raise OSError("secret /sql/path failure")
 
     if failure == "write":
-        monkeypatch.setattr(materialize_module.os, "write", fail_operation)
+        patch_module_os(monkeypatch, materialize_module, write=fail_operation)
     else:
-        monkeypatch.setattr(materialize_module.os, "rename", fail_operation)
+        patch_module_os(monkeypatch, materialize_module, rename=fail_operation)
     # When materialization fails after its short dispatch claim.
     response = _post(client, _payload(tmp_path))
     # Then storage failure is fixed/redacted and no half run/staging tree remains.

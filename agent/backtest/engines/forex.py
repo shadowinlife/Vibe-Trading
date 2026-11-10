@@ -102,7 +102,11 @@ class ForexEngine(BaseEngine):
         super().__init__(config)
         self.spread_override = config.get("spread_pips_override")
         self.lot_size: float = config.get("lot_size", STANDARD_LOT)
-        self.swap_enabled: bool = config.get("swap_enabled", True)
+        self.swap_enabled: bool = (
+            False
+            if config.get("neutral_execution_costs") is not None
+            else config.get("swap_enabled", True)
+        )
         self.slippage_pips: float = config.get("slippage_pips", 0.3)
         self._last_swap_dates: dict = {}  # per-symbol swap tracking
 

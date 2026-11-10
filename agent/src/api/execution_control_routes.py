@@ -22,6 +22,7 @@ either ``available`` or ``unavailable``. Unknown identities answer
 from __future__ import annotations
 
 import logging
+import threading
 from collections.abc import Callable
 from typing import Any
 
@@ -59,6 +60,7 @@ router = APIRouter(tags=["execution-control"])
 _PROVIDER_ATTR = "execution_control_service_provider"
 _START_PROVIDER_ATTR = "execution_start_service_provider"
 _STOP_PROVIDER_ATTR = "execution_stop_service_provider"
+_SHARED_SUPERVISOR_ATTR = "execution_control_native_supervisor"
 
 #: Fixed status for each projection failure kind.
 _ERROR_STATUS = {
@@ -131,27 +133,86 @@ def default_control_service_provider(app: FastAPI) -> ControlProvider:
     return provider
 
 
-def default_execution_start_service_provider() -> ExecutionStartProvider:
-    """Build the lazy production start provider with native supervision."""
+def _shared_native_supervisor_provider(app: FastAPI) -> Callable[[], Any]:
+    """Return one lazy process-wide supervisor shared by start and stop.
+
+    Args:
+        app: Host application that owns the supervisor instance.
+
+    Returns:
+        A zero-argument callable that creates the supervisor once and reuses it
+        for every start and stop request.
+    """
+    lock = threading.Lock()
+
+    def provider() -> Any:
+        supervisor = getattr(app.state, _SHARED_SUPERVISOR_ATTR, None)
+        if supervisor is not None:
+            return supervisor
+        with lock:
+            supervisor = getattr(app.state, _SHARED_SUPERVISOR_ATTR, None)
+            if supervisor is None:
+                from src.strategy_runs.control_store import ControlStore
+                from src.strategy_runs.native_supervisor import NativeSupervisor
+
+                supervisor = NativeSupervisor(ControlStore())
+                setattr(app.state, _SHARED_SUPERVISOR_ATTR, supervisor)
+        return supervisor
+
+    return provider
+
+
+def default_execution_start_service_provider(
+    supervisor_provider: Callable[[], Any] | None = None,
+) -> ExecutionStartProvider:
+    """Build the lazy production start provider with native supervision.
+
+    Args:
+        supervisor_provider: Optional process-wide supervisor factory. ``None``
+            keeps the legacy per-request supervisor construction.
+
+    Returns:
+        A zero-argument callable returning an ``ExecutionStartService``.
+    """
 
     def provider() -> ExecutionStartService:
         from src.strategy_runs.control_store import ControlStore
         from src.strategy_runs.native_supervisor import NativeSupervisor
 
-        return ExecutionStartService(ControlStore(), NativeSupervisor(ControlStore()))
+        supervisor = (
+            supervisor_provider()
+            if supervisor_provider is not None
+            else NativeSupervisor(ControlStore())
+        )
+        return ExecutionStartService(ControlStore(), supervisor)
 
     return provider
 
 
-def default_execution_stop_service_provider() -> ExecutionStopProvider:
-    """Build the lazy production stop provider with native supervision."""
+def default_execution_stop_service_provider(
+    supervisor_provider: Callable[[], Any] | None = None,
+) -> ExecutionStopProvider:
+    """Build the lazy production stop provider with native supervision.
+
+    Args:
+        supervisor_provider: Optional process-wide supervisor factory. ``None``
+            keeps the legacy per-request supervisor construction.
+
+    Returns:
+        A zero-argument callable returning an ``ExecutionStopService``.
+    """
 
     def provider() -> ExecutionStopService:
         from src.strategy_runs.control_store import ControlStore
         from src.strategy_runs.native_supervisor import NativeSupervisor
 
         store = ControlStore()
-        return ExecutionStopService(store, NativeSupervisor(store))
+        supervisor = (
+            supervisor_provider()
+            if supervisor_provider is not None
+            else NativeSupervisor(store)
+        )
+        return ExecutionStopService(store, supervisor)
 
     return provider
 
@@ -403,6 +464,11 @@ def register_execution_control_routes(
     stop_provider: ExecutionStopProvider | None = None,
 ) -> None:
     """Mount execution-instance reads, starts and stops with lazy providers."""
+    shared_supervisor = (
+        _shared_native_supervisor_provider(app)
+        if start_provider is None or stop_provider is None
+        else None
+    )
     setattr(
         app.state,
         _PROVIDER_ATTR,
@@ -411,12 +477,12 @@ def register_execution_control_routes(
     setattr(
         app.state,
         _START_PROVIDER_ATTR,
-        start_provider or default_execution_start_service_provider(),
+        start_provider or default_execution_start_service_provider(shared_supervisor),
     )
     setattr(
         app.state,
         _STOP_PROVIDER_ATTR,
-        stop_provider or default_execution_stop_service_provider(),
+        stop_provider or default_execution_stop_service_provider(shared_supervisor),
     )
     app.include_router(router)
 

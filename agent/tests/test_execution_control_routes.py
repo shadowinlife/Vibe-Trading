@@ -423,3 +423,31 @@ def test_legacy_status_body_is_unchanged(
         "error": "legacy failure",
         "error_kind": "runner_error",
     }
+
+
+def test_default_start_and_stop_providers_share_one_supervisor(
+    legacy_service: _LegacyService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import src.strategy_runs.control_store as control_store_module
+    import src.strategy_runs.native_supervisor as native_module
+
+    created: list[object] = []
+
+    class _Store:
+        pass
+
+    class _Supervisor:
+        def __init__(self, store: object) -> None:
+            self.store = store
+            created.append(self)
+
+    monkeypatch.setattr(control_store_module, "ControlStore", _Store)
+    monkeypatch.setattr(native_module, "NativeSupervisor", _Supervisor)
+    app = strategy_run_server.create_app(lambda: legacy_service)
+
+    start = app.state.execution_start_service_provider()
+    stop = app.state.execution_stop_service_provider()
+    again = app.state.execution_start_service_provider()
+
+    assert start._supervisor is stop._supervisor is again._supervisor
+    assert len(created) == 1

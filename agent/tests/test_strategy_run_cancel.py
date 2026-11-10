@@ -25,6 +25,7 @@ from src.strategy_library.paths import version_code_path, version_config_path
 from src.strategy_runs import service as service_module
 from src.strategy_runs.service import StrategyRunService
 from src.strategy_runs.store import StrategyRunStore
+from tests.module_os_helpers import patch_module_os
 
 NOW = 1_700_000_000_000
 TOKEN = "dummy-service-token-cancel-0002"
@@ -369,7 +370,7 @@ def test_real_code_cancel_kills_one_group_and_replays_terminal_body(
             signals.append(sig)
         real_killpg(pgid, sig)
 
-    monkeypatch.setattr(execute_code.os, "killpg", recording_killpg)
+    patch_module_os(monkeypatch, execute_code, killpg=recording_killpg)
     expected = {
         "vt_run_id": claim.row.vt_run_id,
         "status": "cancelled",

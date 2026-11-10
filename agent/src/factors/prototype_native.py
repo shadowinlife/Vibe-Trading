@@ -57,7 +57,7 @@ def _declared_analysis_artifacts(
 def _write_analysis_inputs(request: PhaseRequest) -> tuple[Path, Path]:
     """Write atomic phase-local inputs without modifying frozen bench CSVs."""
     input_dir = request.output_dir / "analysis_inputs"
-    paths = []
+    frames: dict[str, pd.DataFrame] = {}
     for filename in ("factor.csv", "returns.csv"):
         frame = pd.read_csv(
             request.output_dir / filename, index_col=0, parse_dates=True
@@ -65,10 +65,21 @@ def _write_analysis_inputs(request: PhaseRequest) -> tuple[Path, Path]:
         selected = (frame.index >= pd.Timestamp(request.start_date)) & (
             frame.index <= pd.Timestamp(request.end_date)
         )
+        frames[filename] = frame.loc[selected]
+    # Label-crossing rows are masked to NaN by the frozen bench. They are
+    # excluded from observations, IC and coverage, so trim the unusable tail
+    # instead of counting it as missing input.
+    usable = frames["returns.csv"].notna().any(axis=1)
+    if not bool(usable.all()):
+        positions = usable.to_numpy().nonzero()[0]
+        cutoff = int(positions[-1]) if positions.size else -1
+        frames = {name: frame.iloc[: cutoff + 1] for name, frame in frames.items()}
+    paths = []
+    for filename, frame in frames.items():
         path = input_dir / filename
         atomic_write_text(
             path,
-            frame.loc[selected].to_csv(index_label="date", date_format="%Y-%m-%d"),
+            frame.to_csv(index_label="date", date_format="%Y-%m-%d"),
         )
         paths.append(path)
     return paths[0], paths[1]
