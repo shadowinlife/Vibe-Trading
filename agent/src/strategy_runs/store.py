@@ -64,6 +64,10 @@ _DEFAULT_BUSY_TIMEOUT_MS = 5000
 #: File mode for the ledger, the WAL and the SHM files.
 _PRIVATE_MODE = 0o600
 
+#: The first opener may race another process switching a legacy ledger to WAL.
+_WAL_SWITCH_ATTEMPTS = 20
+_WAL_SWITCH_DELAY_S = 0.05
+
 _TABLE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS strategy_runs (
     vt_run_id        TEXT PRIMARY KEY,
@@ -453,7 +457,7 @@ class StrategyRunStore:
             conn.execute("PRAGMA foreign_keys=ON")
             mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
             if str(mode).lower() != "wal":
-                conn.execute("PRAGMA journal_mode=WAL")
+                _switch_to_wal(conn)
         except BaseException:
             conn.close()
             raise
@@ -475,6 +479,32 @@ class StrategyRunStore:
             return cursor.rowcount == 1
         finally:
             conn.close()
+
+
+def _switch_to_wal(conn: sqlite3.Connection) -> None:
+    """Switch a freshly opened ledger to WAL despite concurrent first opens.
+
+    SQLite does not apply the busy handler to a journal-mode change, so two
+    openers of a legacy rollback-journal database can race: one gets
+    ``database is locked`` while the other finishes its switch. Retry only that
+    transient lock; every other failure propagates unchanged.
+
+    Args:
+        conn: Open ledger connection in autocommit mode.
+
+    Raises:
+        sqlite3.OperationalError: If the switch stays locked or fails otherwise.
+    """
+    for attempt in range(_WAL_SWITCH_ATTEMPTS):
+        try:
+            conn.execute("PRAGMA journal_mode=WAL")
+            return
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc).lower():
+                raise
+            if attempt + 1 == _WAL_SWITCH_ATTEMPTS:
+                raise
+            time.sleep(_WAL_SWITCH_DELAY_S)
 
 
 def _migrate_legacy_status_check(conn: sqlite3.Connection) -> None:
