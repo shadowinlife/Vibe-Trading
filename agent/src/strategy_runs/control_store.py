@@ -556,20 +556,13 @@ class ControlStore(StrategyRunStore):
                 if same:
                     return StopClaim(replayed=True, row=existing)
                 raise StopConflict(stop_key, dispatch_key, existing.remote_id)
-            confirmed = conn.execute(
-                "SELECT * FROM execution_stops WHERE dispatch_key = ? AND state = 'confirmed' "
-                "ORDER BY requested_at ASC, stop_key ASC LIMIT 1",
+            resolved = conn.execute(
+                "SELECT * FROM execution_stops WHERE dispatch_key = ? AND state != 'requested' "
+                "ORDER BY state = 'confirmed' DESC, stop_key ASC LIMIT 1",
                 (dispatch_key,),
             ).fetchone()
-            if confirmed is not None:
-                return StopClaim(replayed=True, row=StopRow.from_row(confirmed))
-            unknown = conn.execute(
-                "SELECT * FROM execution_stops WHERE dispatch_key = ? AND state = 'unknown' "
-                "ORDER BY requested_at ASC, stop_key ASC LIMIT 1",
-                (dispatch_key,),
-            ).fetchone()
-            if unknown is not None:
-                return StopClaim(replayed=True, row=StopRow.from_row(unknown))
+            if resolved is not None:
+                return StopClaim(replayed=True, row=StopRow.from_row(resolved))
             row = StopRow(
                 stop_key=stop_key,
                 dispatch_key=dispatch_key,
