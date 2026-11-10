@@ -20,7 +20,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md, f10-strategy-run-entry.md, f12-rm-sche
 
 | 路由 | 作用 | 关键成功形状 |
 |---|---|---|
-| `GET /execution-instances?dispatch_key=...` | 按派发键找回原实例 | `not_dispatched` / `dispatched` / `absent` |
+| `GET /execution-instances?dispatch_key=...` | 按派发键找回原实例 | `not_dispatched` / `dispatched` / `absent`，三态 body 均带 `contract_version` |
 | `GET /execution-instances/{remote_id}` | 读五态状态 | `running|completed|failed|cancelled|unknown` |
 | `GET /execution-instances/{remote_id}/result` | 读有界结果 | `result_status=available|unavailable`，`has_more=false` |
 | `POST /execution-instances` | 通用启动/重放 | 202，`replayed` 区分新启动与原声明重放 |
@@ -34,6 +34,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md, f10-strategy-run-entry.md, f12-rm-sche
 
 ## 关键合同
 
+- **合同版本**：每个新 execution-control 响应（find 三态、status、result、start、stop、prepare、execute、factor-prototype）与每个新 error body（400/404/409/503）都带 `contract_version="mcp-execution-control-v1"`。字段是可加性的，消费方忽略未知字段即可。legacy 0001/0002 body 逐字不变、按设计不带该字段（0001 兼容）。
 - **canonical JSON**：`sort_keys=True`、紧凑分隔符、ASCII 转义、禁止 NaN。所有摘要都是 UTF-8 canonical bytes 的 64 位小写 sha256。
 - **D-3**：`sha256(canonical_json({schema:"backtest-input-v1",config_sha256,source_sha256,data_source,data_as_of,snapshot_basis}))`。**不包含** RM 的 `declared_digest`/`build_fingerprint`。
 - **D-6**：`factor-registry-v1` 文档，candidate 按 id 排序，`tool_schema_version="alpha-zoo-v1+alpha-bench-v1+factor-analysis-v1"`。客户端 `registry_digest` 只用于校验，服务端必须重算，不符即 `409 input_digest_mismatch`。
@@ -109,7 +110,7 @@ python tools/ci_private_files_gate.py
 5. **Carhart warmup 漂移**：RM fixture 仍是 `academic_carhart_mom.min_warmup_bars=252`，当前 VT 注册表是 `253`。RM 必须冻结 VT 新发布的 metadata 与 digest，否则 D-6 重算会 409。
 6. **dispatch_key 语法**：prepare 接受 `:`，start/stop/find 不接受。RM 应只使用 `A-Za-z0-9._~-`。
 7. **factor split 边界**：VT 接受 `split_date == end_date`，RM 0013 文字写严格小于；RM 应按严格边界发送或先对齐。
-8. **find 不带 contract_version**：status/start/stop/result 带；find 与 legacy 0001/0002 body 不带。RM 不得要求 find 回显版本。
+8. **find 与所有新 body 都带 contract_version**：find 三态（`not_dispatched`/`dispatched`/`absent`）、status、result、start、stop、prepare、execute、factor-prototype 的成功体，以及这些路由的每个新 error body（400/404/409/503），都带 `contract_version="mcp-execution-control-v1"`。字段是可加性的，RM 的 find 解析器忽略未知字段即可，不得把字段存在解释成版本不符。legacy 0001 `GET /strategy-runs/{vt_run_id}` 与 0002 cancel body 按 0001 兼容要求逐字不变、按设计不带该字段；401/403 仍是共享 auth 的固定 `{"detail":...}` body。
 
 ## 状态与上游关系
 
