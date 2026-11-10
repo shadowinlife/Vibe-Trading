@@ -290,7 +290,11 @@ def test_changed_input_conflicts_and_preserves_original(
     response = _post(client, changed)
     # Then the conflict names the original id and cannot replace frozen bytes.
     assert response.status_code == 409
-    assert response.json() == {"error": "idempotency_conflict", "remote_id": RUN_ID}
+    assert response.json() == {
+        "error": "idempotency_conflict",
+        "remote_id": RUN_ID,
+        "contract_version": CONTRACT_VERSION,
+    }
     assert _file_state(_run_dir(tmp_path)) == before
     assert [path.name for path in (tmp_path / "runs").iterdir()] == [RUN_ID]
 
@@ -313,7 +317,10 @@ def test_replay_with_unreadable_frozen_input_is_honest_conflict(
     response = _post(client, payload)
     # Then missing/drifted bytes are an integrity failure, never false success or repair.
     assert response.status_code == 409
-    assert response.json() == {"error": "input_digest_mismatch"}
+    assert response.json() == {
+        "error": "input_digest_mismatch",
+        "contract_version": CONTRACT_VERSION,
+    }
     if mutation == "missing":
         assert not target.exists()
     else:
@@ -348,7 +355,10 @@ def test_run_dir_fence_rejects_relative_outside_and_malformed_paths(
     response = _post(client, payload)
     # Then no dispatch or filesystem identity is created.
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_input"}
+    assert response.json() == {
+        "error": "invalid_input",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert store.get_dispatch(DISPATCH_KEY) is None
     assert not _run_dir(tmp_path).exists()
 
@@ -362,7 +372,10 @@ def test_missing_strategy_is_404_without_run_dir(
     response = _post(client, payload)
     # Then the stable error is strategy_not_found and nothing is materialized.
     assert response.status_code == 404
-    assert response.json() == {"error": "strategy_not_found"}
+    assert response.json() == {
+        "error": "strategy_not_found",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert not _run_dir(tmp_path).exists()
 
 
@@ -379,7 +392,10 @@ def test_missing_version_snapshot_file_is_404(
     response = _post(client, _payload(tmp_path))
     # Then it reports version_not_found without creating a run.
     assert response.status_code == 404
-    assert response.json() == {"error": "version_not_found"}
+    assert response.json() == {
+        "error": "version_not_found",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert not _run_dir(tmp_path).exists()
 
 
@@ -400,7 +416,10 @@ def test_source_not_equal_to_version_is_conflict_and_never_overwrites_snapshot(
         STRATEGY_ID, VERSION, runtime_root=tmp_path / "runtime"
     )
     assert response.status_code == 409
-    assert response.json() == {"error": "input_digest_mismatch"}
+    assert response.json() == {
+        "error": "input_digest_mismatch",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert snapshot.read_bytes() == SOURCE_BYTES
     assert not _run_dir(tmp_path).exists()
 
@@ -415,7 +434,10 @@ def test_declared_source_hash_mismatch_is_invalid_input(
     response = _post(client, payload)
     # Then it is rejected before any snapshot/run write.
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_input"}
+    assert response.json() == {
+        "error": "invalid_input",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert not _run_dir(tmp_path).exists()
 
 
@@ -442,7 +464,10 @@ def test_invalid_chronology_provenance_or_contract_is_400(
     response = _post(client, payload)
     # Then invalid input has no durable or filesystem side effect.
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_input"}
+    assert response.json() == {
+        "error": "invalid_input",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert store.get_dispatch(DISPATCH_KEY) is None
     assert not _run_dir(tmp_path).exists()
 
@@ -457,7 +482,10 @@ def test_extra_fields_are_forbidden(
     response = _post(client, payload)
     # Then extras are rejected instead of silently dropped.
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_input"}
+    assert response.json() == {
+        "error": "invalid_input",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert store.get_dispatch(DISPATCH_KEY) is None
 
 
@@ -503,7 +531,11 @@ def test_local_data_mutation_conflicts_without_rewriting_run(
     response = _post(client, payload)
     # Then the changed declaration conflicts and cannot rewrite the original run.
     assert response.status_code == 409
-    assert response.json() == {"error": "idempotency_conflict", "remote_id": RUN_ID}
+    assert response.json() == {
+        "error": "idempotency_conflict",
+        "remote_id": RUN_ID,
+        "contract_version": CONTRACT_VERSION,
+    }
     assert _file_state(_run_dir(tmp_path)) == before
 
 
@@ -549,7 +581,10 @@ def test_filesystem_failure_leaves_no_run_or_staging_directory(
     response = _post(client, _payload(tmp_path))
     # Then storage failure is fixed/redacted and no half run/staging tree remains.
     assert response.status_code == 503
-    assert response.json() == {"error": "storage_unavailable"}
+    assert response.json() == {
+        "error": "storage_unavailable",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert "secret" not in response.text
     assert not _run_dir(tmp_path).exists()
     run_root = tmp_path / "runs"
@@ -592,5 +627,8 @@ def test_provider_failure_is_fixed_storage_unavailable(tmp_path: Path) -> None:
         response = _post(test_client, _payload(tmp_path))
     # Then no internal detail crosses the fixed 503 boundary.
     assert response.status_code == 503
-    assert response.json() == {"error": "storage_unavailable"}
+    assert response.json() == {
+        "error": "storage_unavailable",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert "secret" not in response.text

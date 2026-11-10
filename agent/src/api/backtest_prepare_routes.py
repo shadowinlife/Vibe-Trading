@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Callable
-from typing import assert_never
+from typing import Any, assert_never
 
 from fastapi import APIRouter, Depends, FastAPI, Request, status
 from fastapi.responses import JSONResponse
@@ -18,7 +18,10 @@ from src.strategy_runs.backtest_materialize import (
     BacktestPrepareError,
     BacktestPrepareRequest,
 )
-from src.strategy_runs.control_contract import ContractValidationError
+from src.strategy_runs.control_contract import (
+    CONTRACT_VERSION,
+    ContractValidationError,
+)
 from src.strategy_runs.control_store import ControlStore
 
 logger = logging.getLogger(__name__)
@@ -35,7 +38,7 @@ __all__ = [
 
 
 def _json(status_code: int, error: str, remote_id: str | None = None) -> JSONResponse:
-    body = {"error": error}
+    body: dict[str, Any] = {"error": error, "contract_version": CONTRACT_VERSION}
     if remote_id is not None:
         body["remote_id"] = remote_id
     return JSONResponse(status_code=status_code, content=body)

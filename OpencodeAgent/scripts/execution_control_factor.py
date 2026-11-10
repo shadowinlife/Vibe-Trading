@@ -50,7 +50,11 @@ def verify_factor(h: Harness) -> FactorEvidence:
     h.expect(
         h.request("A1", "factor-conflict", "POST", "/factor/prototype", changed),
         409,
-        {"error": "idempotency_conflict", "original_remote_id": factor_id},
+        {
+            "error": "idempotency_conflict",
+            "original_remote_id": factor_id,
+            "contract_version": CONTRACT,
+        },
     )
     require(
         h.wait_terminal("A8", factor_id)["status"] == "completed",
@@ -114,7 +118,7 @@ def verify_factor(h: Harness) -> FactorEvidence:
         h.expect(
             h.request("A8", label, "POST", "/factor/prototype", body),
             expected,
-            {"error": error},
+            {"error": error, "contract_version": CONTRACT},
         )
         require(h.dispatch("factor.invalid") is None, f"{label} claimed dispatch")
         empty = h.expect(
@@ -132,7 +136,7 @@ def verify_factor(h: Harness) -> FactorEvidence:
     h.expect(
         h.request("A8", "caller-run-dir", "POST", "/factor/prototype", extra),
         400,
-        {"error": "invalid_request"},
+        {"error": "invalid_request", "contract_version": CONTRACT},
     )
     require(h.dispatch("factor.invalid") is None, "caller run_dir claimed dispatch")
     return FactorEvidence(accepted, outer, len(invalid_cases) + 1)

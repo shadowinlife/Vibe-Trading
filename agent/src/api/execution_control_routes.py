@@ -13,8 +13,10 @@ fragment, filesystem path or token never reaches a response or a log line.
 
 Response shapes are exact: find is one of ``not_dispatched``,
 ``dispatched`` or ``absent``; status carries the five-state view; result is
-either ``available`` or ``unavailable``. Unknown identities answer
-``404 {"error": "not_found"}``.
+either ``available`` or ``unavailable``. Every new body — the three read
+projections, the start/stop acceptances and every error body — carries
+``contract_version``; unknown identities answer
+``404 {"error": "not_found", "contract_version": ...}``.
 
 # noqa: SIZE_OK - one authenticated execution-control router and its fixed wire map.
 """
@@ -32,6 +34,7 @@ from pydantic import TypeAdapter
 
 from src.api.strategy_run_auth import require_strategy_run_token
 from src.strategy_runs.control_contract import (
+    CONTRACT_VERSION,
     BacktestStartRequest,
     ExecutionStartRequest,
     StopRequest,
@@ -93,16 +96,27 @@ def _error_response(
 ) -> JSONResponse:
     """Map a typed projection failure onto its fixed body and status."""
     kind = error.kind if error.kind in _ERROR_STATUS else _STORAGE_UNAVAILABLE
-    body: dict[str, Any] = {"error": kind}
+    body: dict[str, Any] = {"error": kind, "contract_version": CONTRACT_VERSION}
     original = getattr(error, "original_remote_id", None)
     if original is not None:
         body["original_remote_id"] = original
     return _json(_ERROR_STATUS[kind], body)
 
 
+def _invalid_request() -> JSONResponse:
+    """Return the fixed 400 for a malformed or inconsistent declaration."""
+    return _json(
+        status.HTTP_400_BAD_REQUEST,
+        {"error": "invalid_request", "contract_version": CONTRACT_VERSION},
+    )
+
+
 def _unavailable() -> JSONResponse:
     """Return the fixed 503 used when the provider cannot be constructed."""
-    return _json(status.HTTP_503_SERVICE_UNAVAILABLE, {"error": _STORAGE_UNAVAILABLE})
+    return _json(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        {"error": _STORAGE_UNAVAILABLE, "contract_version": CONTRACT_VERSION},
+    )
 
 
 def default_control_service_provider(app: FastAPI) -> ControlProvider:
@@ -272,6 +286,7 @@ def _find_payload(projection: FindProjection) -> dict[str, Any]:
             "started_at": projection.started_at,
             "finished_at": projection.finished_at,
             "error_kind": projection.error_kind,
+            "contract_version": CONTRACT_VERSION,
         }
     if projection.state == "absent":
         return {
@@ -281,8 +296,13 @@ def _find_payload(projection: FindProjection) -> dict[str, Any]:
             "last_status": projection.last_status,
             "absence_evidence": projection.absence_evidence,
             "observed_at": projection.observed_at,
+            "contract_version": CONTRACT_VERSION,
         }
-    return {"state": projection.state, "dispatch_key": projection.dispatch_key}
+    return {
+        "state": projection.state,
+        "dispatch_key": projection.dispatch_key,
+        "contract_version": CONTRACT_VERSION,
+    }
 
 
 def _status_payload(projection: StatusProjection) -> dict[str, Any]:
@@ -321,7 +341,7 @@ async def _start_with_adapter(
     try:
         start_request = adapter.validate_python(await request.json())
     except (TypeError, ValueError):
-        return _json(status.HTTP_400_BAD_REQUEST, {"error": "invalid_request"})
+        return _invalid_request()
     try:
         result = _resolve_start_service(request).start(
             start_request, require_frozen_backtest=require_frozen_backtest
@@ -378,9 +398,9 @@ async def stop_execution_instance(remote_id: str, request: Request) -> JSONRespo
     try:
         stop_request = _STOP_ADAPTER.validate_python(await request.json())
     except (TypeError, ValueError):
-        return _json(status.HTTP_400_BAD_REQUEST, {"error": "invalid_request"})
+        return _invalid_request()
     if stop_request.remote_id != remote_id:
-        return _json(status.HTTP_400_BAD_REQUEST, {"error": "invalid_request"})
+        return _invalid_request()
     try:
         result = _resolve_stop_service(request).stop(stop_request)
     except ExecutionStopError as exc:

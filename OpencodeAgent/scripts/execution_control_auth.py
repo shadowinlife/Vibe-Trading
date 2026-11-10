@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from execution_control_common import CONTRACT
 from execution_control_harness import Harness
 from execution_control_payloads import stop_payload
 
@@ -25,14 +26,14 @@ def verify_auth_and_unknown_ids(h: Harness) -> None:
     h.expect(
         h.request("A10", "missing-id", "GET", "/execution-instances/missing"),
         404,
-        {"error": "not_found"},
+        {"error": "not_found", "contract_version": CONTRACT},
     )
     h.expect(
         h.request(
             "A10", "missing-result", "GET", "/execution-instances/missing/result"
         ),
         404,
-        {"error": "not_found"},
+        {"error": "not_found", "contract_version": CONTRACT},
     )
     h.expect(
         h.request(
@@ -43,5 +44,5 @@ def verify_auth_and_unknown_ids(h: Harness) -> None:
             stop_payload("missing", "missing", "missing-stop", "2000-01-01T00:00:00Z"),
         ),
         404,
-        {"error": "not_found"},
+        {"error": "not_found", "contract_version": CONTRACT},
     )

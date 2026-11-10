@@ -43,7 +43,12 @@ def verify_backtests(
         200,
     )
     require(
-        not_found == {"state": "not_dispatched", "dispatch_key": key},
+        not_found
+        == {
+            "state": "not_dispatched",
+            "dispatch_key": key,
+            "contract_version": CONTRACT,
+        },
         "not_dispatched shape",
     )
     prepared = prepare(h, "A5", key, run_id, config, source)
@@ -113,7 +118,11 @@ def verify_backtests(
             "A1", "prepare-conflict", "POST", "/backtest/prepare", changed_prepare
         ),
         409,
-        {"error": "idempotency_conflict", "remote_id": run_id},
+        {
+            "error": "idempotency_conflict",
+            "remote_id": run_id,
+            "contract_version": CONTRACT,
+        },
     )
     unknown = h.expect(
         h.request("A3", "prepared-unknown", "GET", f"/execution-instances/{run_id}"),
@@ -226,7 +235,11 @@ def verify_backtests(
     h.expect(
         h.request("A1", "execute-conflict", "POST", "/backtest/execute", changed_start),
         409,
-        {"error": "idempotency_conflict", "original_remote_id": run_id},
+        {
+            "error": "idempotency_conflict",
+            "original_remote_id": run_id,
+            "contract_version": CONTRACT,
+        },
     )
 
     verify_drifts(h, config, source, run_id, outer)

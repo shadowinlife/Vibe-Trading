@@ -353,6 +353,7 @@ def test_pre_spawn_drift_fails_closed_and_remains_visible(
     assert response.json() == {
         "error": "input_digest_mismatch",
         "original_remote_id": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
     row = store.get_dispatch(_DISPATCH_KEY)
     assert row is not None and row.status == "failed"
@@ -389,6 +390,7 @@ def test_digest_failure_replay_is_409_not_an_accept(
     assert replay.json() == {
         "error": "input_digest_mismatch",
         "original_remote_id": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
     assert supervisor.calls == []
 
@@ -428,6 +430,7 @@ def test_declaration_run_dir_swap_cannot_verify_another_run(
     assert response.json() == {
         "error": "input_digest_mismatch",
         "original_remote_id": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
     assert supervisor.calls == []
     row = store.get_dispatch(_DISPATCH_KEY)
@@ -463,6 +466,7 @@ def test_terminal_cas_race_is_not_misreported_as_digest_drift(
     assert response.json() == {
         "error": "idempotency_conflict",
         "original_remote_id": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
     assert supervisor.calls == []
     row = store.get_dispatch(_DISPATCH_KEY)
@@ -504,7 +508,8 @@ def test_invalid_execute_body_is_fixed_400(
     response = _execute(client, _start_body(prepared), **changes)
     # Then validation detail and execution side effects stay contained.
     assert response.status_code == 400 and response.json() == {
-        "error": "invalid_request"
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
     }
     assert supervisor.calls == []
 
@@ -550,7 +555,8 @@ def test_missing_prepare_is_409(client: TestClient, tmp_path: Path) -> None:
     response = _execute(client, body)
     # Then it refuses to invent an execution.
     assert response.status_code == 409 and response.json() == {
-        "error": "prepare_required"
+        "error": "prepare_required",
+        "contract_version": CONTRACT_VERSION,
     }
 
 
@@ -575,7 +581,10 @@ def test_execute_rejects_abbreviated_legacy_declaration(
     response = _execute(client, _start_body(declaration))
     # Then legacy generic-start compatibility cannot bypass frozen verification.
     assert response.status_code == 409
-    assert response.json() == {"error": "prepare_required"}
+    assert response.json() == {
+        "error": "prepare_required",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert supervisor.calls == []
 
 
@@ -591,6 +600,7 @@ def test_binding_mismatch_returns_original_id(
     assert response.json() == {
         "error": "idempotency_conflict",
         "original_remote_id": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
     assert supervisor.calls == []
 
@@ -608,7 +618,8 @@ def test_spawn_failure_is_fixed_503_without_secret_leakage(
     response = _execute(client, _start_body(prepared))
     # Then the fixed failure leaves an unknown dispatched row, not a terminal success.
     assert response.status_code == 503 and response.json() == {
-        "error": "worker_start_failed"
+        "error": "worker_start_failed",
+        "contract_version": CONTRACT_VERSION,
     }
     assert "secret executable" not in response.text
     row = store.get_dispatch(_DISPATCH_KEY)
@@ -621,7 +632,10 @@ def test_unknown_result_identity_is_404(client: TestClient) -> None:
     # Given no execution with the requested id.
     response = client.get("/execution-instances/missing/result", headers=_AUTH)
     # When the read projection resolves it Then the fixed 404 is returned.
-    assert response.status_code == 404 and response.json() == {"error": "not_found"}
+    assert response.status_code == 404 and response.json() == {
+        "error": "not_found",
+        "contract_version": CONTRACT_VERSION,
+    }
 
 
 def test_completed_backtest_result_preserves_native_summary_and_provenance(

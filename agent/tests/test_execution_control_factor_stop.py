@@ -205,7 +205,10 @@ def test_factor_registry_digest_mismatch_is_409_without_claim_or_spawn(
 
     # Then the frozen registry wins and nothing is claimed or spawned
     assert response.status_code == 409
-    assert response.json() == {"error": "input_digest_mismatch"}
+    assert response.json() == {
+        "error": "input_digest_mismatch",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert store.get_dispatch(_FACTOR_DISPATCH_KEY) is None
     assert supervisor.calls == []
 
@@ -226,7 +229,10 @@ def test_factor_unknown_candidate_is_400_without_claim_or_spawn(
 
     # Then the request is rejected as invalid with no side effects
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_request"}
+    assert response.json() == {
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert store.get_dispatch(_FACTOR_DISPATCH_KEY) is None
     assert supervisor.calls == []
 
@@ -250,7 +256,10 @@ def test_factor_invalid_wire_body_is_400_without_side_effects(
 
     # Then strict validation never claims a dispatch or spawns a worker
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_request"}
+    assert response.json() == {
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert store.get_dispatch(_FACTOR_DISPATCH_KEY) is None
     assert supervisor.calls == []
 
@@ -274,6 +283,7 @@ def test_changed_factor_spec_conflicts_with_original_remote_id(
     assert response.json() == {
         "error": "idempotency_conflict",
         "original_remote_id": first.json()["remote_id"],
+        "contract_version": CONTRACT_VERSION,
     }
     assert len(supervisor.calls) == 1
     assert store.get_dispatch(_FACTOR_DISPATCH_KEY) == started
@@ -292,7 +302,10 @@ def test_factor_spawn_failure_is_503_and_leaves_dispatched_row(
 
     # Then the fixed 503 leaks nothing and the row stays dispatched/unknown
     assert response.status_code == 503
-    assert response.json() == {"error": "worker_start_failed"}
+    assert response.json() == {
+        "error": "worker_start_failed",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert "secret factor executable path" not in response.text
     row = store.get_dispatch(_FACTOR_DISPATCH_KEY)
     assert row is not None
@@ -554,6 +567,7 @@ def test_stop_key_reuse_on_another_remote_conflicts_with_original_id(
     assert response.json() == {
         "error": "idempotency_conflict",
         "original_remote_id": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
     assert stop_supervisor.signals == [(_STOP_KEY, "requested")]
 
@@ -572,7 +586,10 @@ def test_stop_path_and_body_remote_mismatch_is_400(
 
     # Then validation stops before any stop write or signal
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_request"}
+    assert response.json() == {
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert stop_supervisor.stop_calls == []
     assert store.get_stop(_STOP_KEY) is None
 
@@ -591,7 +608,10 @@ def test_stop_rejects_extra_body_fields(
 
     # Then the strict body contract rejects it before any side effect
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_request"}
+    assert response.json() == {
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert stop_supervisor.stop_calls == []
 
 
@@ -607,7 +627,10 @@ def test_stop_unknown_remote_is_404(
 
     # Then the route answers not found and never signals
     assert response.status_code == 404
-    assert response.json() == {"error": "not_found"}
+    assert response.json() == {
+        "error": "not_found",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert stop_supervisor.signals == []
 
 
@@ -679,7 +702,10 @@ def test_stop_storage_fault_is_fixed_503(
 
     # Then only the fixed body escapes
     assert response.status_code == 503
-    assert response.json() == {"error": "storage_unavailable"}
+    assert response.json() == {
+        "error": "storage_unavailable",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert "secret SQL" not in response.text
 
 

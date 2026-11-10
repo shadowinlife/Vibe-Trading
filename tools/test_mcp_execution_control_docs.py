@@ -273,6 +273,7 @@ def test_response_examples_have_exact_field_sets() -> None:
     assert set(_json_block_after("### 3.1 `not_dispatched`")) == {
         "state",
         "dispatch_key",
+        "contract_version",
     }
     assert set(_json_block_after("### 3.2 `dispatched`")) == {
         "state",
@@ -283,6 +284,7 @@ def test_response_examples_have_exact_field_sets() -> None:
         "started_at",
         "finished_at",
         "error_kind",
+        "contract_version",
     }
     assert set(_json_block_after("### 3.3 `absent`")) == {
         "state",
@@ -291,6 +293,7 @@ def test_response_examples_have_exact_field_sets() -> None:
         "last_status",
         "absence_evidence",
         "observed_at",
+        "contract_version",
     }
     assert set(_json_block_after("## 4. Status")) == {
         "remote_id",

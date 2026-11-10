@@ -64,7 +64,10 @@ def test_missing_prepare_returns_409_without_spawning(
 
     # When the start is rejected Then no dispatch or worker is invented
     assert response.status_code == 409
-    assert response.json() == {"error": "prepare_required"}
+    assert response.json() == {
+        "error": "prepare_required",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert store.get_dispatch(_DISPATCH_KEY) is None
     assert supervisor.calls == []
 
@@ -83,7 +86,10 @@ def test_non_backtest_dispatch_requires_a_new_prepare(
 
     # Then the original row is untouched and no worker starts
     assert response.status_code == 409
-    assert response.json() == {"error": "prepare_required"}
+    assert response.json() == {
+        "error": "prepare_required",
+        "contract_version": CONTRACT_VERSION,
+    }
     _assert_no_side_effects(store, before, supervisor, run_dir)
 
 
@@ -116,6 +122,7 @@ def test_prepared_binding_mismatch_conflicts_without_side_effects(
     assert response.json() == {
         "error": "idempotency_conflict",
         "original_remote_id": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
     _assert_no_side_effects(store, before, supervisor, run_dir)
 
@@ -134,7 +141,10 @@ def test_wrong_prompt_is_400_without_side_effects(
 
     # Then validation stops before the start declaration is stored
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_request"}
+    assert response.json() == {
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
+    }
     _assert_no_side_effects(store, before, supervisor, run_dir)
 
 
@@ -159,7 +169,10 @@ def test_invalid_start_wire_body_is_400_without_side_effects(
 
     # Then framework details never leak and execution has no side effects
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_request"}
+    assert response.json() == {
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
+    }
     _assert_no_side_effects(store, before, supervisor, run_dir)
 
 
@@ -216,6 +229,7 @@ def test_changed_start_declaration_conflicts_without_respawning(
     assert response.json() == {
         "error": "idempotency_conflict",
         "original_remote_id": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
     assert store.get_dispatch(_DISPATCH_KEY) == started
     assert len(supervisor.calls) == 1
@@ -262,7 +276,10 @@ def test_spawn_failure_is_fixed_503_and_leaves_dispatched_row(
 
     # Then the durable row stays dispatched/unknown, never terminal or absent
     assert response.status_code == 503
-    assert response.json() == {"error": "worker_start_failed"}
+    assert response.json() == {
+        "error": "worker_start_failed",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert "secret executable path" not in response.text
     row = store.get_dispatch(_DISPATCH_KEY)
     assert row is not None
@@ -292,7 +309,10 @@ def test_storage_fault_is_fixed_503_without_detail_leakage(
 
     # Then no internal text or spawn escapes
     assert response.status_code == 503
-    assert response.json() == {"error": "storage_unavailable"}
+    assert response.json() == {
+        "error": "storage_unavailable",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert "secret SQL" not in response.text
     assert supervisor.calls == []
     assert before.start_digest is None

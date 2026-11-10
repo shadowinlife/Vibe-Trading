@@ -141,7 +141,11 @@ def test_find_not_dispatched_has_exact_body(client: TestClient) -> None:
         "/execution-instances", params={"dispatch_key": "missing"}, headers=AUTH
     )
     assert response.status_code == 200
-    assert response.json() == {"state": "not_dispatched", "dispatch_key": "missing"}
+    assert response.json() == {
+        "state": "not_dispatched",
+        "dispatch_key": "missing",
+        "contract_version": CONTRACT_VERSION,
+    }
 
 
 def test_find_dispatched_has_exact_body(
@@ -163,6 +167,7 @@ def test_find_dispatched_has_exact_body(
         "started_at": "1970-01-01T00:00:02.000Z",
         "finished_at": "1970-01-01T00:00:03.000Z",
         "error_kind": None,
+        "contract_version": CONTRACT_VERSION,
     }
 
 
@@ -184,6 +189,7 @@ def test_find_absent_has_exact_body(client: TestClient, store: ControlStore) -> 
         "last_status": "cancelled",
         "absence_evidence": "terminal_record",
         "observed_at": "1970-01-01T00:00:05.000Z",
+        "contract_version": CONTRACT_VERSION,
     }
 
 
@@ -205,6 +211,7 @@ def test_find_legacy_run_key_is_dispatched(
         "started_at": "1970-01-01T00:00:01.000Z",
         "finished_at": "1970-01-01T00:00:03.000Z",
         "error_kind": None,
+        "contract_version": CONTRACT_VERSION,
     }
 
 
@@ -255,7 +262,10 @@ def test_unobservable_legacy_running_is_unknown(
 def test_unknown_remote_id_is_fixed_404(client: TestClient, suffix: str) -> None:
     response = client.get(f"/execution-instances/unknown{suffix}", headers=AUTH)
     assert response.status_code == 404
-    assert response.json() == {"error": "not_found"}
+    assert response.json() == {
+        "error": "not_found",
+        "contract_version": CONTRACT_VERSION,
+    }
 
 
 def test_result_available_has_exact_body(
@@ -324,7 +334,10 @@ def test_result_path_escape_is_rejected_without_disclosure(
     _finish(store, row, "completed", run_dir / ".." / foreign.name)
     response = client.get(f"/execution-instances/{row.remote_id}/result", headers=AUTH)
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_request"}
+    assert response.json() == {
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert str(foreign) not in response.text
     assert "do-not-read" not in response.text
 
@@ -334,7 +347,10 @@ def test_invalid_dispatch_key_is_fixed_400(client: TestClient) -> None:
         "/execution-instances", params={"dispatch_key": "../escape"}, headers=AUTH
     )
     assert response.status_code == 400
-    assert response.json() == {"error": "invalid_request"}
+    assert response.json() == {
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
+    }
 
 
 @pytest.mark.parametrize("path", READ_PATHS)
@@ -357,7 +373,7 @@ def test_typed_errors_have_fixed_bodies_without_disclosure(
     with TestClient(app) as client:
         response = client.get(path, headers=AUTH)
     assert response.status_code == expected_status
-    assert response.json() == {"error": kind}
+    assert response.json() == {"error": kind, "contract_version": CONTRACT_VERSION}
     assert "secret" not in response.text
 
 
@@ -375,7 +391,11 @@ def test_provider_failure_is_per_request_503(
         response = client.get(path, headers=AUTH)
         second = client.get(path, headers=AUTH)
     assert response.status_code == second.status_code == 503
-    assert response.json() == second.json() == {"error": "storage_unavailable"}
+    assert (
+        response.json()
+        == second.json()
+        == {"error": "storage_unavailable", "contract_version": CONTRACT_VERSION}
+    )
     assert "secret" not in response.text
 
 

@@ -216,6 +216,7 @@ def test_factor_prototype_http_changed_spec_conflicts_with_original_id(
     assert response.json() == {
         "error": "idempotency_conflict",
         "original_remote_id": first.json()["remote_id"],
+        "contract_version": CONTRACT_VERSION,
     }
     assert len(supervisor.calls) == 1
     assert store.get_dispatch(_HTTP_DISPATCH_KEY) == started
@@ -230,7 +231,10 @@ def test_factor_prototype_http_spawn_failure_is_503_with_dispatched_row(
     response = _post_http(client)
 
     assert response.status_code == 503
-    assert response.json() == {"error": "worker_start_failed"}
+    assert response.json() == {
+        "error": "worker_start_failed",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert "secret factor worker path" not in response.text
     row = store.get_dispatch(_HTTP_DISPATCH_KEY)
     assert row is not None
@@ -297,11 +301,10 @@ def test_factor_prototype_http_invalid_input_has_no_side_effects(
     response = _post_http(client, body)
 
     assert response.status_code == expected
-    expected_body = (
-        {"error": "input_digest_mismatch"}
-        if expected == 409
-        else {"error": "invalid_request"}
-    )
+    expected_body = {
+        "error": "input_digest_mismatch" if expected == 409 else "invalid_request",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert response.json() == expected_body
     assert store.get_dispatch(_HTTP_DISPATCH_KEY) is None
     assert supervisor.calls == []

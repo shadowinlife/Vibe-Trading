@@ -31,7 +31,7 @@ from src.api.execution_control_routes import (
     default_execution_start_service_provider,
 )
 from src.api.strategy_run_auth import require_strategy_run_token
-from src.strategy_runs.control_contract import FactorStartRequest
+from src.strategy_runs.control_contract import CONTRACT_VERSION, FactorStartRequest
 from src.strategy_runs.execution_start_service import (
     ExecutionStartError,
     ExecutionStartService,
@@ -66,16 +66,27 @@ def _json(status_code: int, payload: dict[str, Any]) -> JSONResponse:
 def _error_response(error: ExecutionStartError) -> JSONResponse:
     """Map a typed start failure onto its fixed body and status."""
     kind = error.kind if error.kind in _ERROR_STATUS else _STORAGE_UNAVAILABLE
-    body: dict[str, Any] = {"error": kind}
+    body: dict[str, Any] = {"error": kind, "contract_version": CONTRACT_VERSION}
     original = getattr(error, "original_remote_id", None)
     if original is not None:
         body["original_remote_id"] = original
     return _json(_ERROR_STATUS[kind], body)
 
 
+def _invalid_request() -> JSONResponse:
+    """Return the fixed 400 for a malformed or inconsistent declaration."""
+    return _json(
+        status.HTTP_400_BAD_REQUEST,
+        {"error": "invalid_request", "contract_version": CONTRACT_VERSION},
+    )
+
+
 def _unavailable() -> JSONResponse:
     """Return the fixed 503 used when the provider cannot be constructed."""
-    return _json(status.HTTP_503_SERVICE_UNAVAILABLE, {"error": _STORAGE_UNAVAILABLE})
+    return _json(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        {"error": _STORAGE_UNAVAILABLE, "contract_version": CONTRACT_VERSION},
+    )
 
 
 def _resolve_start_service(request: Request) -> ExecutionStartService:
@@ -102,7 +113,7 @@ async def start_factor_prototype(request: Request) -> JSONResponse:
     try:
         start_request = _FACTOR_START_ADAPTER.validate_python(await request.json())
     except (TypeError, ValueError):
-        return _json(status.HTTP_400_BAD_REQUEST, {"error": "invalid_request"})
+        return _invalid_request()
     try:
         result = _resolve_start_service(request).start(start_request)
     except ExecutionStartError as exc:

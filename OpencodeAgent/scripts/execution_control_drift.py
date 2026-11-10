@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from execution_control_common import JsonValue, require
+from execution_control_common import CONTRACT, JsonValue, require
 from execution_control_harness import Harness
 from execution_control_payloads import execute, prepare, prepare_payload
 
@@ -32,7 +32,11 @@ def verify_drifts(
         h.expect(
             execute(h, "A6", key, drift_id, prepared),
             409,
-            {"error": "input_digest_mismatch", "original_remote_id": drift_id},
+            {
+                "error": "input_digest_mismatch",
+                "original_remote_id": drift_id,
+                "contract_version": CONTRACT,
+            },
         )
         row = h.dispatch(key)
         require(
@@ -75,7 +79,7 @@ def verify_drifts(
             prepare_payload("bad.chronology", "mcp-long-chronology-1", bad, source),
         ),
         400,
-        {"error": "invalid_input"},
+        {"error": "invalid_input", "contract_version": CONTRACT},
     )
     require(
         h.dispatch("bad.chronology") is None

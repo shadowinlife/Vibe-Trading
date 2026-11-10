@@ -463,7 +463,10 @@ def test_malformed_prepare_is_fixed_400_before_side_effects(
     response = client.post("/backtest/prepare", json=payload, headers=_AUTH)
     # Then the fixed body names no detail and creates no dispatch or run directory.
     assert response.status_code == 400, response.text
-    assert response.json() == {"error": "invalid_input"}
+    assert response.json() == {
+        "error": "invalid_input",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert store.get_dispatch(_DISPATCH_KEY) is None
     assert not (tmp_path / "runs" / _RUN_ID).exists()
     assert list((tmp_path / "runs").glob(".*.staging")) == []
@@ -475,7 +478,10 @@ def test_malformed_prepare_json_is_fixed_400(client: TestClient) -> None:
         content=b'{"dispatch_key":',
         headers={**_AUTH, "Content-Type": "application/json"},
     )
-    assert response.status_code == 400 and response.json() == {"error": "invalid_input"}
+    assert response.status_code == 400 and response.json() == {
+        "error": "invalid_input",
+        "contract_version": CONTRACT_VERSION,
+    }
 
 
 @pytest.mark.parametrize("case", _EXECUTE_INVALID)
@@ -494,7 +500,10 @@ def test_malformed_execute_is_fixed_400_before_side_effects(
     response = client.post("/backtest/execute", json=body, headers=_AUTH)
     # Then no spawn or lifecycle mutation occurs.
     assert response.status_code == 400, response.text
-    assert response.json() == {"error": "invalid_request"}
+    assert response.json() == {
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert supervisor.calls == []
     row = store.get_dispatch(_DISPATCH_KEY)
     assert row is not None and row.status == "dispatched" and row.start_digest is None
@@ -507,7 +516,8 @@ def test_malformed_execute_json_is_fixed_400(client: TestClient) -> None:
         headers={**_AUTH, "Content-Type": "application/json"},
     )
     assert response.status_code == 400 and response.json() == {
-        "error": "invalid_request"
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
     }
 
 
@@ -537,6 +547,7 @@ def test_prepare_idempotency_conflict_names_the_original_id(
     assert response.json() == {
         "error": "idempotency_conflict",
         "remote_id": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
     assert {name: (run_dir / name).read_bytes() for name in before} == before
     assert [path.name for path in (tmp_path / "runs").iterdir()] == [_RUN_ID]
@@ -566,6 +577,7 @@ def test_execute_field_mismatch_names_the_original_id(
         assert response.json() == {
             "error": "idempotency_conflict",
             "original_remote_id": _RUN_ID,
+            "contract_version": CONTRACT_VERSION,
         }
     assert supervisor.calls == []
 
@@ -590,6 +602,7 @@ def test_execute_drift_names_the_original_id_before_spawn(
     assert response.json() == {
         "error": "input_digest_mismatch",
         "original_remote_id": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
     assert supervisor.calls == []
     row = store.get_dispatch(_DISPATCH_KEY)
@@ -611,14 +624,22 @@ def test_unknown_and_cross_namespace_ids_do_not_leak_existence(
     )
     # Then 404s are fixed and the wrong-namespace find reports not_dispatched only.
     assert unknown.status_code == unknown_result.status_code == 404
-    assert unknown.json() == unknown_result.json() == {"error": "not_found"}
+    assert (
+        unknown.json()
+        == unknown_result.json()
+        == {"error": "not_found", "contract_version": CONTRACT_VERSION}
+    )
     assert "missing" not in unknown.text
     assert key_as_remote.status_code == 404
-    assert key_as_remote.json() == {"error": "not_found"}
+    assert key_as_remote.json() == {
+        "error": "not_found",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert remote_as_key.status_code == 200
     assert remote_as_key.json() == {
         "state": "not_dispatched",
         "dispatch_key": _RUN_ID,
+        "contract_version": CONTRACT_VERSION,
     }
 
 
@@ -635,7 +656,8 @@ def test_malformed_identifiers_are_fixed_400(
 ) -> None:
     response = client.get(path, params=params, headers=_AUTH)
     assert response.status_code == 400 and response.json() == {
-        "error": "invalid_request"
+        "error": "invalid_request",
+        "contract_version": CONTRACT_VERSION,
     }
 
 
@@ -675,7 +697,10 @@ def test_provider_failure_is_fixed_503_without_disclosure(
         response = _request(client, route, tmp_path, _AUTH)
     # Then the fixed body and the log name only the exception type.
     assert response.status_code == 503, response.text
-    assert response.json() == {"error": "storage_unavailable"}
+    assert response.json() == {
+        "error": "storage_unavailable",
+        "contract_version": CONTRACT_VERSION,
+    }
     for fragment in ("secret_table", "/secret/absolute/path", "super-secret", "SELECT"):
         assert fragment not in response.text
         assert fragment not in caplog.text
@@ -706,7 +731,10 @@ def test_service_read_failure_is_fixed_503_without_disclosure(
     with TestClient(app) as client:
         response = _request(client, route, tmp_path, _AUTH)
     assert response.status_code == 503
-    assert response.json() == {"error": "storage_unavailable"}
+    assert response.json() == {
+        "error": "storage_unavailable",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert _SECRET not in response.text and _SECRET not in caplog.text
 
 

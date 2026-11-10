@@ -70,7 +70,7 @@ def verify_fail_closed(h: Harness, invalid_count: int) -> None:
             h.expect(
                 h.request("A10", f"storage-{label}", "GET", path),
                 503,
-                {"error": "storage_unavailable"},
+                {"error": "storage_unavailable", "contract_version": CONTRACT},
             )
     finally:
         db.rmdir()

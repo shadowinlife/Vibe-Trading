@@ -546,6 +546,7 @@ def test_source_tamper_and_chronology_refuse_before_new_engine(
     assert refusal.json() == {
         "error": "input_digest_mismatch",
         "original_remote_id": tampered.run_id,
+        "contract_version": CONTRACT_VERSION,
     }
     row = harness.store.get_dispatch(tampered.dispatch_key)
     assert row is not None and row.status == "failed"
@@ -568,7 +569,10 @@ def test_source_tamper_and_chronology_refuse_before_new_engine(
 
     # Then validation refuses before claim, loader, engine, or post-as_of consumption.
     assert chronology.status_code == 400
-    assert chronology.json() == {"error": "invalid_input"}
+    assert chronology.json() == {
+        "error": "invalid_input",
+        "contract_version": CONTRACT_VERSION,
+    }
     assert harness.store.get_dispatch(_CHRONOLOGY[1]) is None
     assert not chronology_run.exists()
     assert len(harness.watchers) == 1

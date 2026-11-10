@@ -58,6 +58,12 @@ Error bodies from execution and control routes are fixed text. A projection
 detail, SQL fragment, filesystem path or token never reaches the body or a log
 line. Unknown failure kinds fail closed as `storage_unavailable`.
 
+Every **new** execution-control response body carries `contract_version`
+(`"mcp-execution-control-v1"`): find, status, result, start, stop, prepare,
+execute, factor prototype, and every error body those routes return. The field is
+additive; consumers must ignore unknown fields and must not require it on the
+legacy VT-STRAT-0001/0002 bodies, which stay byte-for-byte exact by design.
+
 ## 2. Route map
 
 | Method and path | Purpose | Success | Principal failures |
@@ -93,11 +99,15 @@ record and starts no work.
 ### 3.1 `not_dispatched`
 
 ```json
-{"state":"not_dispatched","dispatch_key":"user-1.job-9.1"}
+{
+  "state":"not_dispatched",
+  "dispatch_key":"user-1.job-9.1",
+  "contract_version":"mcp-execution-control-v1"
+}
 ```
 
 Returned only when both the dispatch table and the legacy run table lack the key
-and the read succeeded. A storage fault is `503 {"error":"storage_unavailable"}`.
+and the read succeeded. A storage fault is `503 {"error":"storage_unavailable","contract_version":"mcp-execution-control-v1"}`.
 An unreadable or unknown store is never downgraded to `not_dispatched`.
 
 ### 3.2 `dispatched`
@@ -111,15 +121,17 @@ An unreadable or unknown store is never downgraded to `not_dispatched`.
   "run_dir":"/home/opencode/.vibe-trading/runs/mcp-long-demo-1",
   "started_at":"2026-11-10T00:00:02.000Z",
   "finished_at":null,
-  "error_kind":null
+  "error_kind":null,
+  "contract_version":"mcp-execution-control-v1"
 }
 ```
 
 `status` is one of `running`, `completed`, `failed`, `cancelled`, `unknown`.
 `run_dir` is null for a legacy strategy-run row. `started_at`, `finished_at` and
 `error_kind` are null when not observed. `error_kind` is non-null only for
-`failed`, and unknown stored error text normalizes to `runner_error`. The find body
-does not echo `contract_version`; the contract is fixed by the entry.
+`failed`, and unknown stored error text normalizes to `runner_error`. Every find
+body carries `contract_version`; it is additive and a consumer that ignores
+unknown fields keeps parsing it.
 
 ### 3.3 `absent`
 
@@ -130,7 +142,8 @@ does not echo `contract_version`; the contract is fixed by the entry.
   "remote_id":"mcp-long-demo-1",
   "last_status":"cancelled",
   "absence_evidence":"terminal_record",
-  "observed_at":"2026-11-10T00:05:00.000Z"
+  "observed_at":"2026-11-10T00:05:00.000Z",
+  "contract_version":"mcp-execution-control-v1"
 }
 ```
 
@@ -143,7 +156,7 @@ not produce `absent`. A bare `404` from another lookup is not absence evidence.
 ### 3.4 Cross-table collision
 
 If a native dispatch and a legacy run share the same key but name different remote
-identities, find returns `503 {"error":"identity_conflict"}`. The response carries
+identities, find returns `503 {"error":"identity_conflict","contract_version":"mcp-execution-control-v1"}`. The response carries
 no remote id, run path or detail. If both tables name the same remote identity,
 the native dispatch projection wins.
 
@@ -151,9 +164,9 @@ the native dispatch projection wins.
 
 The read resolves a native dispatch by `remote_id` first, then a legacy
 `strategy_runs.vt_run_id`. A row that exists but cannot be observed is `unknown`,
-not `404`. `404 {"error":"not_found"}` means neither table has the identity.
-Malformed identifiers are `400 {"error":"invalid_request"}`. Storage faults are
-`503 {"error":"storage_unavailable"}`.
+not `404`. `404 {"error":"not_found","contract_version":"mcp-execution-control-v1"}` means neither table has the identity.
+Malformed identifiers are `400 {"error":"invalid_request","contract_version":"mcp-execution-control-v1"}`. Storage faults are
+`503 {"error":"storage_unavailable","contract_version":"mcp-execution-control-v1"}`.
 
 Response body:
 
@@ -208,8 +221,9 @@ The body has exactly seven fields:
 `result_status` is `available` or `unavailable`. An unavailable body has
 `result: null` and `progress: null`. `has_more` is always `false`; the result read
 is not paginated. A malformed identifier or a result path that resolves outside
-the server-declared run directory is `400 {"error":"invalid_request"}`. An unknown
-remote id is `404 {"error":"not_found"}`. A storage fault is `503`.
+the server-declared run directory is `400 {"error":"invalid_request","contract_version":"mcp-execution-control-v1"}`. An unknown
+remote id is `404 {"error":"not_found","contract_version":"mcp-execution-control-v1"}`. A storage fault is
+`503 {"error":"storage_unavailable","contract_version":"mcp-execution-control-v1"}`.
 
 Availability by row kind:
 
@@ -318,19 +332,19 @@ was executed.
   response and rewrites nothing. The replay still verifies the frozen files; drift
   is `409 input_digest_mismatch`.
 - The same `dispatch_key` with a different declaration is
-  `409 {"error":"idempotency_conflict","remote_id":"<original>"}`. Prepare uses
+  `409 {"error":"idempotency_conflict","remote_id":"<original>","contract_version":"mcp-execution-control-v1"}`. Prepare uses
   `remote_id`; start uses `original_remote_id`.
 
 ### 6.4 Prepare failures
 
 | Condition | Status | Body |
 |---|---|---|
-| Schema, key grammar, relative or outside run dir, bad run-id segment, chronology, duplicate provenance, source sha mismatch, extra field | `400` | `{"error":"invalid_input"}` |
-| Strategy directory absent | `404` | `{"error":"strategy_not_found"}` |
-| Version config or source absent | `404` | `{"error":"version_not_found"}` |
-| Source bytes differ from the frozen version | `409` | `{"error":"input_digest_mismatch"}` |
-| Same key, different declaration | `409` | `{"error":"idempotency_conflict","remote_id":"..."}` |
-| Storage or filesystem failure | `503` | `{"error":"storage_unavailable"}` |
+| Schema, key grammar, relative or outside run dir, bad run-id segment, chronology, duplicate provenance, source sha mismatch, extra field | `400` | `{"error":"invalid_input","contract_version":"mcp-execution-control-v1"}` |
+| Strategy directory absent | `404` | `{"error":"strategy_not_found","contract_version":"mcp-execution-control-v1"}` |
+| Version config or source absent | `404` | `{"error":"version_not_found","contract_version":"mcp-execution-control-v1"}` |
+| Source bytes differ from the frozen version | `409` | `{"error":"input_digest_mismatch","contract_version":"mcp-execution-control-v1"}` |
+| Same key, different declaration | `409` | `{"error":"idempotency_conflict","remote_id":"...","contract_version":"mcp-execution-control-v1"}` |
+| Storage or filesystem failure | `503` | `{"error":"storage_unavailable","contract_version":"mcp-execution-control-v1"}` |
 
 ## 7. Backtest execute: `POST /backtest/execute`
 
@@ -371,15 +385,15 @@ Binding rules:
 - The frozen inputs are revalidated before a new start: config bytes, source bytes,
   D-3 digest and, when prepare reported `verified`, the local data digest. Drift
   is recorded durably as `failed/input_digest_mismatch` before any start, and the
-  request answers `409 {"error":"input_digest_mismatch","original_remote_id":"..."}`.
+  request answers `409 {"error":"input_digest_mismatch","original_remote_id":"...","contract_version":"mcp-execution-control-v1"}`.
   A repeated request after that failure returns the same conflict, never an accept.
 - `begin_start` writes the full canonical start declaration and its digest before
   any process is spawned. The start row must still be `dispatched` and have no
   prior start digest. An identical start declaration replays the original remote
   id with `replayed=true`; a different one is
-  `409 {"error":"idempotency_conflict","original_remote_id":"..."}`.
+  `409 {"error":"idempotency_conflict","original_remote_id":"...","contract_version":"mcp-execution-control-v1"}`.
 - Only a new claim spawns `backtest/runner.py <run_dir>` with a 3600 second
-  timeout. Spawn failure answers `503 {"error":"worker_start_failed"}` and leaves
+  timeout. Spawn failure answers `503 {"error":"worker_start_failed","contract_version":"mcp-execution-control-v1"}` and leaves
   the dispatch nonterminal with no second worker.
 - Crash window: if the process dies after `begin_start` but before the worker is
   spawned, a later identical start replays the stored start digest and does not
@@ -464,7 +478,7 @@ factor_id = "factor-" + sha256(canonical_json({"dispatch_key": dispatch_key, "sp
 `<runtime_root>/runs/<factor_id>`. The canonical `spec.json` is written before any
 worker starts. The same dispatch key and identical canonical declaration returns
 the same remote id and does not spawn again. A changed declaration under the same
-key is `409 {"error":"idempotency_conflict","original_remote_id":"..."}`.
+key is `409 {"error":"idempotency_conflict","original_remote_id":"...","contract_version":"mcp-execution-control-v1"}`.
 
 The accepted response is the six-field body in section 7.2 with `kind:"factor"`.
 For the example, `remote_id` is `factor-817d4e829783d7f27df13621bc7e0aa5`.
@@ -558,9 +572,9 @@ The path `remote_id` and body `remote_id` must be equal. A mismatch is
 `deadline_at` is a required timezone-aware ISO-8601 string. The server stores it
 as epoch milliseconds. The same `stop_key` with the same tuple replays the stored
 state without a second signal. Reusing a `stop_key` on a different remote or
-dispatch is `409 {"error":"idempotency_conflict","original_remote_id":"..."}`.
-An unknown remote id is `404 {"error":"not_found"}`. Storage or supervisor faults
-are `503 {"error":"storage_unavailable"}`.
+dispatch is `409 {"error":"idempotency_conflict","original_remote_id":"...","contract_version":"mcp-execution-control-v1"}`.
+An unknown remote id is `404 {"error":"not_found","contract_version":"mcp-execution-control-v1"}`. Storage or supervisor faults
+are `503 {"error":"storage_unavailable","contract_version":"mcp-execution-control-v1"}`.
 
 ### 9.2 Response
 
@@ -854,7 +868,7 @@ Find treats a legacy `run_key` as a dispatch key:
 | Legacy only | `dispatched` with `remote_id = vt_run_id`, `run_dir = null`, legacy timestamps and status |
 | Native only | Native dispatch projection |
 | Both, same remote id | Native dispatch projection |
-| Both, different remote ids | `503 {"error":"identity_conflict"}` |
+| Both, different remote ids | `503 {"error":"identity_conflict","contract_version":"mcp-execution-control-v1"}` |
 
 The collision response exposes no remote id or detail. A key that exists only in
 the legacy table is not a native instance; it has no prepare row, no frozen
@@ -885,12 +899,13 @@ receipt.
 | A7 frozen execute | Worker consumes only the frozen directory; replay does not recompute; result carries provenance | `test_backtest_execute.py`, `test_backtest_http_contract.py` |
 | A8 factor input validation | Empty, duplicate, unknown, over-limit, bad dates and bad bounds are rejected before claim | `test_execution_control_contract.py`, `test_factor_prototype.py` |
 | A9 factor output and progress | Completion counts match real rows; reasons are preserved; quality is unavailable when unmeasured; no fabricated progress | `test_factor_prototype.py`, `test_factor_prototype_local_integration.py` |
-| A10 auth and version | Token enforced on every new route; write, status, result and stop bodies echo the contract version; find and legacy bodies do not; no token or path is logged | `test_backtest_http_contract.py`, `test_execution_control_routes.py` |
+| A10 auth and version | Token enforced on every new route; every new body (find, write, status, result, stop, prepare, execute, factor prototype) and its error bodies echo the contract version; legacy 0001/0002 bodies stay exact; no token or path is logged | `test_backtest_http_contract.py`, `test_execution_control_routes.py` |
 | A11 legacy contracts | `run_key`, 0002 cancel, 0003 precheck and 0012 summary/artifact behavior stay unchanged | `test_strategy_run_routes.py`, `test_strategy_run_cancel.py`, `test_backtest_execute.py` |
 
-A10 is deliberately not "every response echoes the version": find returns the
-frozen three-state shape without `contract_version`, and the legacy 0001/0002
-bodies stay as they were. RM must not require a version field on those bodies.
+A10 means every **new** body echoes the version. Find carries it on all three
+states, and every new error body carries it. The legacy 0001/0002 bodies stay
+exactly as they were and intentionally have no `contract_version`; RM must not
+require the field on those legacy bodies.
 
 ## 15. RM integration prerequisites and known mismatches
 
@@ -931,9 +946,10 @@ that any of them is resolved.
 7. **Factor split boundary.** VT accepts `split_date == end_date` in the factor
    spec. RM 0013 prose says `start_date < split_date < end_date`. RM should send a
    strict split earlier than `end_date` unless the boundary is explicitly aligned.
-8. **Find version echo.** Find bodies do not carry `contract_version`. RM must
-   treat the contract version as fixed by the entry and must not require the field
-   on find. Status, start, stop and result do carry it.
+8. **Find version echo.** Find bodies carry `contract_version` on all three states
+   (`not_dispatched`, `dispatched`, `absent`), and every new error body carries it.
+   The field is additive, so a parser that ignores unknown fields keeps working.
+   Legacy 0001/0002 bodies deliberately do not carry it.
 9. **`unknown` is not stopped.** The dedicated entry may report `unknown` for a
    live native dispatch because no cross-request handle provider is registered.
    RM must keep the execution slot, query find and stop, and must not read
