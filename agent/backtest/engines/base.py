@@ -19,6 +19,7 @@ from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -682,15 +683,34 @@ class BaseEngine(ABC):
             Rounded size.
         """
 
-    def _execution_commission(self, size: float, price: float, direction: int, is_open: bool) -> float:
-        """Apply the declared experiment multiplier to execution fees and taxes."""
+    def _execution_commission(
+        self, size: float, price: float, direction: int, is_open: bool
+    ) -> float:
+        """Apply exact neutral costs, or the legacy fee multiplier."""
+        neutral_costs = self.config.get("neutral_execution_costs")
+        if neutral_costs is not None:
+            notional = Decimal(str(size)) * Decimal(str(price))
+            commission = (
+                notional * Decimal(neutral_costs["commission_bps"]) / Decimal(10000)
+            )
+            if is_open is False:
+                commission += (
+                    notional * Decimal(neutral_costs["tax_bps"]) / Decimal(10000)
+                )
+            return float(commission)
         multiplier = float(self.config.get("execution_cost_multiplier", 1.0))
         if not math.isfinite(multiplier) or multiplier < 0:
-            raise ValueError("execution_cost_multiplier must be finite and non-negative")
+            raise ValueError(
+                "execution_cost_multiplier must be finite and non-negative"
+            )
         return self.calc_commission(size, price, direction, is_open) * multiplier
 
     def _execution_price(self, price: float, direction: int) -> float:
-        """Apply extra adverse slippage before the venue's tick-grid rounding."""
+        """Apply exact neutral slippage, or legacy adverse slippage."""
+        neutral_costs = self.config.get("neutral_execution_costs")
+        if neutral_costs is not None:
+            rate = Decimal(neutral_costs["slippage_bps"]) / Decimal(10000)
+            return float(Decimal(str(price)) * (Decimal(1) + Decimal(direction) * rate))
         bps = float(self.config.get("extra_slippage_bps", 0.0))
         if not math.isfinite(bps) or not 0 <= bps < 10000:
             raise ValueError("extra_slippage_bps must be finite and in [0, 10000)")

@@ -47,3 +47,52 @@ def test_composite_spot_has_no_default_funding():
     engine.on_bar("BTC-USDT", pd.Series({"open": 100.0, "close": 100.0, "funding_rate": 0.1}), timestamp)
     assert engine.capital == 10000
     assert engine._engine_diagnostics()["crypto_funding_pnl"] == 0
+
+
+def test_neutral_spot_uses_exact_declared_costs_without_hidden_defaults() -> None:
+    from src.strategy_runs.backtest_config import adapt_backtest_config
+
+    engine = CryptoEngine(
+        adapt_backtest_config(
+            {
+                "strategy_id": "crypto-spot",
+                "strategy_version": "v1",
+                "market": "crypto",
+                "symbols": ["BTC-USDT"],
+                "start_date": "2026-01-01",
+                "end_date": "2026-01-03",
+                "bar_interval": "1D",
+                "data_source": "okx",
+                "data_as_of": "2026-01-03",
+                "snapshot_basis": "fixture-v1",
+                "initial_cash": "10000",
+                "currency": "USDT",
+                "commission_bps": "10.00",
+                "tax_bps": "20.00",
+                "slippage_bps": "25.00",
+            }
+        )
+    )
+    assert engine._execution_price(100, 1) == pytest.approx(100.25)
+    assert engine._execution_price(100, -1) == pytest.approx(99.75)
+    assert engine._execution_commission(2, 100.25, 1, True) == pytest.approx(0.2005)
+    assert engine._execution_commission(2, 99.75, 1, False) == pytest.approx(0.5985)
+    assert engine._execution_commission(0.01, 100.25, 1, True) == pytest.approx(
+        0.0010025
+    )
+
+    timestamp = pd.Timestamp("2026-01-02")
+    engine.positions["BTC-USDT"] = Position(
+        symbol="BTC-USDT",
+        direction=1,
+        size=1.0,
+        entry_price=100.0,
+        entry_time=timestamp - pd.Timedelta(days=1),
+    )
+    engine.on_bar(
+        "BTC-USDT",
+        pd.Series({"open": 100.0, "close": 100.0, "funding_rate": 0.1}),
+        timestamp,
+    )
+    assert engine.capital == 10000
+    assert engine._engine_diagnostics()["crypto_funding_pnl"] == 0
