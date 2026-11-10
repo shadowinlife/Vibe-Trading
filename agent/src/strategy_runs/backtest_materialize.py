@@ -11,6 +11,7 @@ symbol participate; missing/unreadable sources are explicitly ``unavailable``.
 
 from __future__ import annotations
 
+import errno
 import hmac
 import json
 import os
@@ -355,7 +356,9 @@ def _publish_or_verify(
     attempt removes its staging tree. An absent directory therefore means either
     an in-flight first attempt or a retry after a transient failure: publish the
     same frozen bytes instead of treating absence as tampering. If another
-    attempt publishes first, its tree is verified and never rewritten.
+    attempt publishes first, its tree is verified and never rewritten. A rename
+    that loses the same race reports ENOTEMPTY (or EEXIST) because the winning
+    run directory is non-empty, which is the same published-by-another signal.
     """
     for _ in range(2):
         state = _frozen_state(run_dir, expected)
@@ -368,7 +371,9 @@ def _publish_or_verify(
         except FileExistsError:
             continue
         except OSError as exc:
-            raise BacktestPrepareError("storage_unavailable") from exc
+            if exc.errno not in (errno.EEXIST, errno.ENOTEMPTY):
+                raise BacktestPrepareError("storage_unavailable") from exc
+            continue
         return
     if _frozen_state(run_dir, expected) != "complete":
         raise BacktestPrepareError("input_digest_mismatch")

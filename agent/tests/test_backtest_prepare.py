@@ -337,6 +337,60 @@ def test_concurrent_same_key_prepare_replays_without_false_conflict(
     assert _file_state(run_dir) == before
 
 
+def test_simultaneous_same_key_publish_replays_instead_of_storage_failure(
+    materializer: BacktestMaterializer,
+    store: ControlStore,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given two same-key prepares that reach the atomic publish window together.
+    payload = _payload(tmp_path)
+    request = BacktestPrepareRequest.model_validate(payload)
+    real_rename = os.rename
+    barrier = threading.Barrier(2, timeout=30)
+    lock = threading.Lock()
+    arrivals = 0
+
+    def rendezvous_rename(*args: JsonValue, **kwargs: JsonValue) -> None:
+        nonlocal arrivals
+        with lock:
+            arrivals += 1
+            first_pair = arrivals <= 2
+        if first_pair:
+            barrier.wait()
+        assert real_rename(*args, **kwargs) is None
+
+    patch_module_os(monkeypatch, materialize_module, rename=rendezvous_rename)
+    results: list[BacktestPrepareResponse] = []
+    errors: list[Exception] = []
+
+    def prepare_once() -> None:
+        try:
+            results.append(materializer.prepare(request))
+        except Exception as exc:  # noqa: BLE001 - the losing 503 must fail this test
+            errors.append(exc)
+
+    threads = [threading.Thread(target=prepare_once) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=30)
+    # Then the losing rename is replayed instead of reported as a storage failure.
+    assert errors == []
+    expected = BacktestPrepareResponse.model_validate(_expected_response(payload))
+    assert results == [expected, expected]
+    # And exactly one complete run directory exists with no staging leftovers.
+    run_dir = _run_dir(tmp_path)
+    assert sorted(
+        path.relative_to(run_dir).as_posix()
+        for path in run_dir.rglob("*")
+        if path.is_file()
+    ) == ["code/signal_engine.py", "config.json"]
+    assert [path.name for path in (tmp_path / "runs").iterdir()] == [RUN_ID]
+    row = store.get_dispatch(DISPATCH_KEY)
+    assert row is not None and row.status == "dispatched" and row.remote_id == RUN_ID
+
+
 @pytest.mark.parametrize("failure", ["write", "rename"])
 def test_transient_materialize_failure_does_not_burn_the_dispatch_key(
     client: TestClient,
