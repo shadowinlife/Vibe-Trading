@@ -306,8 +306,12 @@ def _find_payload(projection: FindProjection) -> dict[str, Any]:
 
 
 def _status_payload(projection: StatusProjection) -> dict[str, Any]:
-    """Project one status read onto its exact eight-field body."""
-    return {
+    """Project one status read onto its exact eight-field body.
+
+    Factor rows add ``batch_status`` as a ninth field; every other row kind
+    keeps the eight-field body byte for byte.
+    """
+    payload: dict[str, Any] = {
         "remote_id": projection.remote_id,
         "dispatch_key": projection.dispatch_key,
         "status": projection.status,
@@ -317,11 +321,18 @@ def _status_payload(projection: StatusProjection) -> dict[str, Any]:
         "run_dir": projection.run_dir,
         "contract_version": projection.contract_version,
     }
+    if projection.batch_status is not None:
+        payload["batch_status"] = projection.batch_status
+    return payload
 
 
 def _result_payload(projection: ResultProjection) -> dict[str, Any]:
-    """Project one bounded artifact read onto its exact seven-field body."""
-    return {
+    """Project one bounded artifact read onto its exact seven-field body.
+
+    Factor rows add ``batch_status`` as an eighth field; every other row kind
+    keeps the seven-field body byte for byte.
+    """
+    payload: dict[str, Any] = {
         "remote_id": projection.remote_id,
         "status": projection.status,
         "result_status": projection.result_status,
@@ -330,6 +341,9 @@ def _result_payload(projection: ResultProjection) -> dict[str, Any]:
         "has_more": projection.has_more,
         "contract_version": projection.contract_version,
     }
+    if projection.batch_status is not None:
+        payload["batch_status"] = projection.batch_status
+    return payload
 
 
 async def _start_with_adapter(

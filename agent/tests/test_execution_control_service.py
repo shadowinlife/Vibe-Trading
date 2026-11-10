@@ -13,6 +13,7 @@ from unittest import mock
 
 import pytest
 
+from src.factors.registry_freeze import TOOL_SCHEMA_VERSION
 from src.strategy_runs.control_contract import CONTRACT_VERSION
 from src.strategy_runs.control_service import (
     ControlProjectionError,
@@ -76,6 +77,63 @@ def _finish_dispatch(
         result_path=str(result_path) if result_path is not None else None,
         now_ms=3_000,
     )
+
+
+_FACTOR_REGISTRY_DIGEST = "a" * 64
+
+
+def _factor_document(row: DispatchRow, status: str) -> dict[str, object]:
+    completed = {"completed": 2, "partial": 1}.get(status, 0)
+    return {
+        "remote_id": row.remote_id,
+        "dispatch_key": row.dispatch_key,
+        "registry_digest": _FACTOR_REGISTRY_DIGEST,
+        "tool_schema_version": TOOL_SCHEMA_VERSION,
+        "contract_version": CONTRACT_VERSION,
+        "status": status,
+        "completed": completed,
+        "total": 2,
+        "candidates": [
+            {
+                "candidate_id": f"candidate_{index}",
+                "status": "completed",
+                "reasons": [],
+                "metrics": {},
+                "artifacts": {},
+            }
+            for index in range(completed)
+        ],
+        "quality_bounds": {},
+        "artifacts": {"ic_series": None, "ic_summary": None, "group_equity": None},
+        "artifact_paths": [],
+    }
+
+
+def _claim_factor(
+    store: ControlStore, tmp_path: Path, name: str
+) -> tuple[DispatchRow, Path]:
+    run_dir = tmp_path / f"factor-{name}"
+    run_dir.mkdir()
+    row = store.claim_dispatch(
+        f"factor-{name}-key",
+        "factor",
+        {
+            "run_dir": str(run_dir),
+            "start": {"spec": {"registry_digest": _FACTOR_REGISTRY_DIGEST}},
+        },
+        f"factor-{name}",
+        CONTRACT_VERSION,
+        now_ms=1_000,
+    ).row
+    return row, run_dir
+
+
+def _finish_factor(store: ControlStore, tmp_path: Path, status: str) -> DispatchRow:
+    row, run_dir = _claim_factor(store, tmp_path, status)
+    result_path = run_dir / "result.json"
+    result_path.write_text(json.dumps(_factor_document(row, status)), encoding="utf-8")
+    _finish_dispatch(store, row, "completed", result_path)
+    return row
 
 
 def test_find_not_dispatched_has_exact_json_ready_shape(
@@ -263,6 +321,7 @@ def test_status_native_terminal_states_are_stable(
         "finished_at": "1970-01-01T00:00:03.000Z",
         "error_kind": "timeout" if status == "failed" else None,
         "run_dir": "/server/run",
+        "batch_status": None,
         "contract_version": CONTRACT_VERSION,
     }
 
@@ -341,6 +400,7 @@ def test_result_available_returns_bounded_json_and_progress(
         "result": {"summary": {"metrics": {"sharpe": 1.5}}},
         "progress": {"completed": 1, "total": 1},
         "has_more": False,
+        "batch_status": None,
         "contract_version": CONTRACT_VERSION,
     }
 
@@ -355,6 +415,86 @@ def test_result_without_persisted_path_is_unavailable(store: ControlStore) -> No
     assert projection.result is None
     assert projection.progress is None
     assert projection.has_more is False
+
+
+def test_factor_cancelled_worker_is_not_projected_as_completed(
+    store: ControlStore, tmp_path: Path
+) -> None:
+    row = _finish_factor(store, tmp_path, "cancelled")
+    service = ExecutionControlService(store)
+
+    status = service.status(row.remote_id)
+    result = service.result(row.remote_id)
+
+    assert (status.status, status.batch_status) == ("cancelled", "cancelled")
+    assert (result.status, result.batch_status) == ("cancelled", "cancelled")
+    assert result.result_status == "available"
+    assert result.result == _factor_document(row, "cancelled")
+
+
+def test_factor_partial_worker_is_unknown_with_partial_batch_status(
+    store: ControlStore, tmp_path: Path
+) -> None:
+    row = _finish_factor(store, tmp_path, "partial")
+    service = ExecutionControlService(store)
+
+    status = service.status(row.remote_id)
+    result = service.result(row.remote_id)
+
+    assert (status.status, status.batch_status) == ("unknown", "partial")
+    assert (result.status, result.batch_status) == ("unknown", "partial")
+    assert result.result_status == "available"
+    assert result.result == _factor_document(row, "partial")
+
+
+def test_factor_completed_worker_stays_completed(
+    store: ControlStore, tmp_path: Path
+) -> None:
+    row = _finish_factor(store, tmp_path, "completed")
+    service = ExecutionControlService(store)
+
+    status = service.status(row.remote_id)
+    result = service.result(row.remote_id)
+
+    assert (status.status, status.batch_status) == ("completed", "completed")
+    assert (result.status, result.batch_status) == ("completed", "completed")
+    assert result.result == _factor_document(row, "completed")
+
+
+def test_factor_failed_worker_carries_runner_error(
+    store: ControlStore, tmp_path: Path
+) -> None:
+    row = _finish_factor(store, tmp_path, "failed")
+
+    status = ExecutionControlService(store).status(row.remote_id)
+
+    assert (status.status, status.batch_status) == ("failed", "failed")
+    assert status.error_kind == "runner_error"
+
+
+def test_factor_without_result_document_keeps_row_status(
+    store: ControlStore, tmp_path: Path
+) -> None:
+    row, _ = _claim_factor(store, tmp_path, "no-result")
+    _finish_dispatch(store, row, "completed")
+
+    status = ExecutionControlService(store).status(row.remote_id)
+
+    assert (status.status, status.batch_status) == ("completed", None)
+
+
+def test_factor_result_outside_run_dir_is_ignored(
+    store: ControlStore, tmp_path: Path
+) -> None:
+    row, run_dir = _claim_factor(store, tmp_path, "linked")
+    foreign = tmp_path / "foreign.json"
+    foreign.write_text(json.dumps(_factor_document(row, "cancelled")), encoding="utf-8")
+    (run_dir / "result.json").symlink_to(foreign)
+    _finish_dispatch(store, row, "completed")
+
+    status = ExecutionControlService(store).status(row.remote_id)
+
+    assert (status.status, status.batch_status) == ("completed", None)
 
 
 def test_failure_find_storage_error_is_not_absence(

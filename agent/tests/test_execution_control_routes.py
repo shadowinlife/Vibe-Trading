@@ -14,6 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import strategy_run_server
+from src.factors.registry_freeze import TOOL_SCHEMA_VERSION
 from src.strategy_runs.control_contract import CONTRACT_VERSION, ERROR_KINDS
 from src.strategy_runs.control_service import (
     ControlProjectionError,
@@ -321,6 +322,92 @@ def test_result_unavailable_has_exact_body(
         "has_more": False,
         "contract_version": CONTRACT_VERSION,
     }
+
+
+@pytest.mark.parametrize(
+    ("batch_status", "expected"), [("cancelled", "cancelled"), ("partial", "unknown")]
+)
+def test_factor_reads_expose_batch_status(
+    client: TestClient,
+    store: ControlStore,
+    tmp_path: Path,
+    batch_status: str,
+    expected: str,
+) -> None:
+    registry_digest = "a" * 64
+    run_dir = tmp_path / f"factor-{batch_status}"
+    run_dir.mkdir()
+    remote_id = f"factor-{batch_status}"
+    row = store.claim_dispatch(
+        f"factor-{batch_status}-key",
+        "factor",
+        {
+            "run_dir": str(run_dir),
+            "start": {"spec": {"registry_digest": registry_digest}},
+        },
+        remote_id,
+        CONTRACT_VERSION,
+        now_ms=1_000,
+    ).row
+    completed = 1 if batch_status == "partial" else 0
+    document = {
+        "remote_id": row.remote_id,
+        "dispatch_key": row.dispatch_key,
+        "registry_digest": registry_digest,
+        "tool_schema_version": TOOL_SCHEMA_VERSION,
+        "contract_version": CONTRACT_VERSION,
+        "status": batch_status,
+        "completed": completed,
+        "total": 2,
+        "candidates": [
+            {
+                "candidate_id": f"candidate_{index}",
+                "status": "completed",
+                "reasons": [],
+                "metrics": {},
+                "artifacts": {},
+            }
+            for index in range(completed)
+        ],
+        "quality_bounds": {},
+        "artifacts": {"ic_series": None, "ic_summary": None, "group_equity": None},
+        "artifact_paths": [],
+    }
+    result_path = run_dir / "result.json"
+    result_path.write_text(json.dumps(document), encoding="utf-8")
+    _finish(store, row, "completed", result_path)
+
+    status_body = client.get(f"/execution-instances/{remote_id}", headers=AUTH).json()
+    result_body = client.get(
+        f"/execution-instances/{remote_id}/result", headers=AUTH
+    ).json()
+
+    assert set(status_body) == {
+        "remote_id",
+        "dispatch_key",
+        "status",
+        "started_at",
+        "finished_at",
+        "error_kind",
+        "run_dir",
+        "batch_status",
+        "contract_version",
+    }
+    assert status_body["status"] == expected
+    assert status_body["batch_status"] == batch_status
+    assert set(result_body) == {
+        "remote_id",
+        "status",
+        "result_status",
+        "result",
+        "progress",
+        "has_more",
+        "batch_status",
+        "contract_version",
+    }
+    assert result_body["status"] == expected
+    assert result_body["batch_status"] == batch_status
+    assert result_body["result"] == document
 
 
 def test_result_path_escape_is_rejected_without_disclosure(

@@ -57,6 +57,14 @@ _RESULT_BYTE_CAP: Final = 50 * 1024
 _PROTOTYPE_RESULT_BYTE_CAP: Final = 8 * 1024 * 1024
 _BACKTEST_RUN_CARD_BYTE_CAP: Final = 8 * 1024 * 1024
 _ERROR_KINDS: Final = frozenset(ERROR_KINDS)
+_TERMINAL_STATUSES: Final = frozenset({"completed", "failed", "cancelled"})
+_BATCH_STATUSES: Final = frozenset({"completed", "partial", "cancelled", "failed"})
+_BATCH_TO_STATUS: Final = {
+    "completed": "completed",
+    "partial": "unknown",
+    "cancelled": "cancelled",
+    "failed": "failed",
+}
 
 
 class ControlProjectionError(ValueError):
@@ -109,6 +117,7 @@ class StatusProjection:
     finished_at: str | None
     error_kind: str | None
     run_dir: str | None
+    batch_status: str | None = None
     contract_version: str = CONTRACT_VERSION
 
 
@@ -122,6 +131,7 @@ class ResultProjection:
     result: JsonValue
     progress: JsonValue
     has_more: bool
+    batch_status: str | None = None
     contract_version: str = CONTRACT_VERSION
 
 
@@ -392,7 +402,13 @@ def _available_result(
         result = payload["result"]
         progress = payload.get("progress")
     return ResultProjection(
-        row.remote_id, status.status, "available", result, progress, False
+        row.remote_id,
+        status.status,
+        "available",
+        result,
+        progress,
+        False,
+        status.batch_status,
     )
 
 
@@ -415,6 +431,10 @@ def _status_projection(
     match row:
         case DispatchRow():
             status, error_kind = _observed_status(row, is_live)
+            batch_status = (
+                _factor_batch_status(row) if status in _TERMINAL_STATUSES else None
+            )
+            status, error_kind = _batch_outcome(status, error_kind, batch_status)
             return StatusProjection(
                 row.remote_id,
                 row.dispatch_key,
@@ -423,6 +443,7 @@ def _status_projection(
                 _iso(row.terminal_at),
                 error_kind,
                 row.run_dir,
+                batch_status,
             )
         case RunRow():
             status, error_kind = _observed_status(row, is_live)
@@ -438,6 +459,39 @@ def _status_projection(
             )
         case unreachable:
             assert_never(unreachable)
+
+
+def _factor_batch_status(row: DispatchRow) -> str | None:
+    """Return the batch outcome the worker recorded in its own result document."""
+    identity = _factor_result_identity(row)
+    if identity is None or row.run_dir is None:
+        return None
+    try:
+        run_dir = safe_run_dir(row.run_dir)
+        result_path = (run_dir / "result.json").resolve()
+        if not result_path.is_relative_to(run_dir):
+            return None
+    except (OSError, ValueError):
+        return None
+    payload = _read_bounded_json(result_path, _PROTOTYPE_RESULT_BYTE_CAP)
+    if not valid_prototype_result(payload, identity):
+        return None
+    status = payload["status"]
+    return status if isinstance(status, str) and status in _BATCH_STATUSES else None
+
+
+def _batch_outcome(
+    status: str, error_kind: str | None, batch_status: str | None
+) -> tuple[str, str | None]:
+    """Fold a recorded batch outcome into the five-state outer status."""
+    if batch_status is None:
+        return status, error_kind
+    projected = _BATCH_TO_STATUS[batch_status]
+    if projected == "completed" and status != "completed":
+        return status, error_kind
+    if projected == "failed":
+        return "failed", error_kind or "runner_error"
+    return projected, error_kind
 
 
 def _observed_status(
@@ -462,7 +516,9 @@ def _observed_status(
 
 
 def _unavailable_result(s: StatusProjection) -> ResultProjection:
-    return ResultProjection(s.remote_id, s.status, "unavailable", None, None, False)
+    return ResultProjection(
+        s.remote_id, s.status, "unavailable", None, None, False, s.batch_status
+    )
 
 
 def _invalid_result() -> ControlProjectionError:

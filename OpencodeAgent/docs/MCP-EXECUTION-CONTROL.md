@@ -201,10 +201,15 @@ Rules:
   `input_digest_mismatch`.
 - Timestamps are UTC ISO-8601 with millisecond precision and a `Z` suffix, or null.
 - `run_dir` is null for legacy rows.
+- A native factor row folds the batch outcome its worker recorded into `status`
+  and adds `batch_status`. A `partial` batch reads `unknown` with
+  `batch_status:"partial"`, never `completed`. The mapping and the reason are in
+  `5.1`.
 
 ## 5. Result read: `GET /execution-instances/{remote_id}/result`
 
-The body has exactly seven fields:
+The body has exactly seven fields for every row kind except a native factor row,
+which adds `batch_status` as an eighth field:
 
 ```json
 {
@@ -238,6 +243,54 @@ Size bounds are fail-closed: the factor `result.json` cap is 8 MiB, progress is
 50 KiB, the backtest `run_card.json` cap is 8 MiB, and a generic result file is
 50 KiB. An oversized file is unavailable or ignored; it is never truncated into a
 partial success.
+
+### 5.1 Factor batch outcomes
+
+A factor prototype worker exits zero for `completed`, `partial` and `cancelled`
+outcomes, so the supervisor terminal record alone cannot tell a full PASS from a
+batch that stopped early. For `kind=factor` rows both the status read and the
+result read re-read the complete 0013 `run_dir/result.json` under the same
+identity, registry digest, tool schema and contract version checks that gate
+`result_status`, then fold its `status` into the projection:
+
+| `result.json` status | `status` | `batch_status` | `error_kind` |
+|---|---|---|---|
+| `completed` | `completed` | `completed` | null |
+| `cancelled` | `cancelled` | `cancelled` | null |
+| `partial` | `unknown` | `partial` | null |
+| `failed` | `failed` | `failed` | `runner_error` |
+
+`status` keeps the five-state vocabulary and never gains a sixth value.
+`partial` maps to `unknown` on purpose: the batch did produce evidence, but it is
+not a full PASS, and `unknown` is the only existing state that withholds a
+completed claim instead of inventing one. `batch_status` carries the honest batch
+outcome, and consumers that must distinguish a partial batch from an unobservable
+one read it instead of inferring from `status`. A `partial` batch still has
+`finished_at` set: `unknown` there means not a full PASS, not still running.
+
+`batch_status` is present only when a complete result document matches the
+dispatch identity. If `result.json` is missing, unreadable, oversized or bound to
+a different identity, the field is absent and `status` falls back to the terminal
+record. Other row kinds never carry `batch_status`, so their bodies stay the exact
+eight-field status and seven-field result shapes. A non-`completed` terminal
+record is never upgraded to `completed` by this fold. The worker document, merged
+artifacts and quality bounds are never rewritten.
+
+Example status body for a partial factor batch:
+
+```json
+{
+  "remote_id":"factor-817d4e829783d7f27df13621bc7e0aa5",
+  "dispatch_key":"user-1.factor-9.1",
+  "status":"unknown",
+  "started_at":"2026-11-10T00:00:02.000Z",
+  "finished_at":"2026-11-10T00:04:41.000Z",
+  "error_kind":null,
+  "run_dir":"/home/opencode/.vibe-trading/runs/factor-817d4e829783d7f27df13621bc7e0aa5",
+  "batch_status":"partial",
+  "contract_version":"mcp-execution-control-v1"
+}
+```
 
 ## 6. Backtest prepare: `POST /backtest/prepare`
 
