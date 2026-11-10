@@ -10,8 +10,8 @@ from execution_control_common import (
     CANDIDATE_ID,
     CONTRACT,
     FACTOR_KEYS,
+    FACTOR_RESULT_KEYS,
     REGISTRY_DIGEST,
-    RESULT_KEYS,
     JsonValue,
     mapping,
     require,
@@ -68,7 +68,10 @@ def verify_factor(h: Harness) -> FactorEvidence:
     )
     result = mapping(outer["result"])
     require(
-        set(outer) == RESULT_KEYS and set(result) == FACTOR_KEYS, "factor result shape"
+        set(outer) == FACTOR_RESULT_KEYS
+        and outer["batch_status"] == "completed"
+        and set(result) == FACTOR_KEYS,
+        "factor result shape",
     )
     require(
         result["registry_digest"] == REGISTRY_DIGEST

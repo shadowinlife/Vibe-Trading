@@ -105,6 +105,45 @@ def verify_fail_closed(h: Harness, invalid_count: int) -> None:
     )
 
 
+def verify_version_coverage(h: Harness) -> None:
+    """A10: every recorded find state and new error body echoes the contract."""
+    find_states: set[str] = set()
+    error_bodies = 0
+    for line in (h.evidence / "requests.jsonl").read_text().splitlines():
+        record = json.loads(line)
+        path = str(record["path"])
+        body = record["response_body"]
+        if not isinstance(body, dict):
+            continue
+        if path.startswith("/execution-instances?dispatch_key=") and (
+            "state" in body or "error" in body
+        ):
+            require(
+                body.get("contract_version") == CONTRACT,
+                f"find body lacks contract_version: {path} {body!r}",
+            )
+            if "state" in body:
+                find_states.add(str(body["state"]))
+        if (
+            path.startswith(("/backtest/", "/execution-instances", "/factor/prototype"))
+            and "error" in body
+        ):
+            require(
+                body.get("contract_version") == CONTRACT,
+                f"error body lacks contract_version: {path} {body!r}",
+            )
+            error_bodies += 1
+    require(
+        find_states == {"not_dispatched", "dispatched", "absent"},
+        f"find states observed: {sorted(find_states)}",
+    )
+    require(error_bodies >= 20, f"only {error_bodies} new error bodies observed")
+    h.save(
+        "a10-version-coverage.json",
+        {"find_states": sorted(find_states), "new_error_bodies": error_bodies},
+    )
+
+
 def finalize(
     h: Harness,
     backtest: BacktestEvidence,
@@ -160,6 +199,7 @@ def finalize(
         },
     )
     verify_fail_closed(h, factor.invalid_count)
+    verify_version_coverage(h)
     for group in (f"A{index}" for index in range(1, 12)):
         h.mark(group)
 

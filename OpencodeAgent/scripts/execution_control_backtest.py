@@ -141,7 +141,8 @@ def verify_backtests(
     require(
         found["state"] == "dispatched"
         and found["remote_id"] == run_id
-        and found["status"] == "unknown",
+        and found["status"] == "unknown"
+        and found["contract_version"] == CONTRACT,
         "dispatched shape",
     )
 

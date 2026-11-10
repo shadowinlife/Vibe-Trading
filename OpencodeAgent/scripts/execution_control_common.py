@@ -39,6 +39,7 @@ RESULT_KEYS: Final = {
     "has_more",
     "contract_version",
 }
+FACTOR_RESULT_KEYS: Final = RESULT_KEYS | {"batch_status"}
 FACTOR_KEYS: Final = {
     "remote_id",
     "dispatch_key",

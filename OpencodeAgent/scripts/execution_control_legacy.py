@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from execution_control_auth import verify_auth_and_unknown_ids
 from execution_control_cancel import save_legacy_ordered, verify_live_cancel
-from execution_control_common import JsonValue, mapping, require
+from execution_control_common import CONTRACT, JsonValue, mapping, require
 from execution_control_harness import Harness
 from execution_control_payloads import execute, prepare, prepare_payload, stop_payload
 
@@ -69,7 +69,8 @@ def verify_legacy(
     require(
         legacy_find["state"] == "dispatched"
         and legacy_find["remote_id"] == legacy_id
-        and legacy_find["run_dir"] is None,
+        and legacy_find["run_dir"] is None
+        and legacy_find["contract_version"] == CONTRACT,
         "run_key projection",
     )
     cancelled: dict[str, JsonValue] = {}
@@ -132,7 +133,7 @@ def verify_legacy(
                 ),
             ),
             code,
-            {"error": error},
+            {"error": error, "contract_version": CONTRACT},
         )
 
     setup_legacy = """

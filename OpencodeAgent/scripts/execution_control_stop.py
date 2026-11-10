@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 
-from execution_control_common import JsonValue, require
+from execution_control_common import CONTRACT, JsonValue, require
 from execution_control_harness import Harness
 from execution_control_payloads import execute, prepare, stop_payload
 
@@ -76,10 +76,10 @@ def verify_confirmed_stop(
     prepared = prepare(h, "A9", stop_key, stop_id, stop_config, long_source)
     h.expect(execute(h, "A9", stop_key, stop_id, prepared), 202)
     observe = stop_payload(stop_key, stop_id, "stop-observe", "2100-01-01T00:00:00Z")
-    requested = h.expect(
+    owned = h.expect(
         h.request(
             "A9",
-            "live-stop-requested",
+            "live-stop-owned",
             "POST",
             f"/execution-instances/{stop_id}/stop",
             observe,
@@ -87,8 +87,10 @@ def verify_confirmed_stop(
         202,
     )
     require(
-        requested["stop_state"] == "requested" and requested["evidence_kind"] is None,
-        "unowned live handle fabricated stop evidence",
+        owned["stop_state"] == "confirmed"
+        and owned["evidence_kind"] == "terminal_record"
+        and owned["replayed"] is False,
+        "owned live handle did not confirm from the terminal record",
     )
     terminal = h.wait_terminal("A9", stop_id)
     require(
@@ -105,8 +107,9 @@ def verify_confirmed_stop(
     )
     require(
         stopped["stop_state"] == "confirmed"
-        and stopped["evidence_kind"] == "terminal_record",
-        "stop not confirmed",
+        and stopped["evidence_kind"] == "terminal_record"
+        and stopped["replayed"] is True,
+        "earlier confirmed stop not replayed",
     )
     replay = h.expect(
         h.request(
@@ -119,8 +122,8 @@ def verify_confirmed_stop(
         202,
     )
     require(
-        replay["stop_state"] == "confirmed" and replay["replayed"] is True,
-        "confirmed downgrade",
+        replay == stopped,
+        "confirmed stop changed on replay",
     )
     absent = h.expect(
         h.request(
@@ -131,24 +134,26 @@ def verify_confirmed_stop(
     require(
         absent["state"] == "absent"
         and absent["absence_evidence"] == "terminal_record"
-        and absent["last_status"] == terminal["status"],
+        and absent["last_status"] == terminal["status"]
+        and absent["contract_version"] == CONTRACT,
         "absent shape",
     )
     rows = _stop_rows(h)
     require(
-        len(rows) == 2
-        and rows[0]["state"] == "requested"
-        and rows[1]["state"] == "confirmed",
+        len(rows) == 1
+        and rows[0]["stop_key"] == "stop-observe"
+        and rows[0]["state"] == "confirmed"
+        and rows[0]["evidence_kind"] == "terminal_record",
         f"stop order {rows}",
     )
     require(
-        rows[0]["requested_at"] <= rows[1]["resolved_at"],
+        rows[0]["requested_at"] <= rows[0]["resolved_at"],
         "requested not before evidence",
     )
     h.save(
         "a9-stop-ordered.json",
         {
-            "http_order": [requested, terminal, stopped],
+            "http_order": [owned, terminal, stopped],
             "ledger_order": rows,
             "absent": absent,
         },
