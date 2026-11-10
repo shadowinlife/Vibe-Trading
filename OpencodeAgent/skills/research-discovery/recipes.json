@@ -1,0 +1,60 @@
+{
+  "strategy_catalog": {
+    "markets": ["a", "us", "crypto"],
+    "tools": ["list_strategies", "query_strategies", "get_strategy_evidence"],
+    "skills": ["strategy-discovery"],
+    "cost": "catalog",
+    "requires_data": false
+  },
+  "strategy_test": {
+    "markets": ["a", "us", "crypto"],
+    "tools": ["list_strategies", "query_strategies", "get_strategy_evidence", "adapt_strategy", "load_skill", "write_file", "backtest", "read_run_artifact", "refresh_strategy_evidence"],
+    "skills": ["strategy-discovery", "strategy-generate", "backtest-diagnose"],
+    "cost": "backtest",
+    "requires_data": true
+  },
+  "technical_structure": {
+    "markets": ["a", "us", "crypto"],
+    "tools": ["search_symbol", "get_market_data", "technical_indicators", "pattern_recognition", "load_skill", "quantlib_call"],
+    "skills": ["technical-basic", "chanlun", "candlestick"],
+    "cost": "symbol_analysis",
+    "requires_data": true
+  },
+  "ashare_top_risk": {
+    "markets": ["a"],
+    "tools": ["ch_list_tables", "ch_describe_table", "ch_query", "get_market_data"],
+    "skills": [],
+    "local_skills": ["escape-top-microstructure", "semantic-layer"],
+    "cost": "market_analysis",
+    "requires_data": true
+  },
+  "thesis_review": {
+    "markets": ["a", "us", "crypto"],
+    "tools": ["list_swarm_presets", "run_swarm", "get_swarm_status", "get_run_result", "load_skill"],
+    "skills": ["research-goal"],
+    "cost": "swarm",
+    "requires_data": true
+  },
+  "opportunity_screen": {
+    "markets": ["a", "us", "crypto"],
+    "tools": ["search_symbol", "screen_market", "get_market_data", "get_financial_statements", "get_sector_info", "ch_list_tables", "ch_describe_table", "ch_query", "factor_analysis", "load_skill"],
+    "skills": ["fundamental-filter", "multi-factor"],
+    "cost": "market_analysis",
+    "requires_data": true
+  },
+  "event_risk": {
+    "markets": ["a", "us", "crypto"],
+    "tools": ["search_symbol", "get_stock_news", "get_cn_announcements", "get_sec_filings", "get_market_data", "get_macro_series", "get_cn_macro_series", "web_search", "read_url", "quantlib_call", "load_skill"],
+    "skills": ["event-driven", "macro-analysis", "geopolitical-risk"],
+    "local_skills": ["ashare-events", "ashare-filings", "ashare-policy"],
+    "cost": "research",
+    "requires_data": true
+  },
+  "allocation_review": {
+    "markets": ["a", "us", "crypto", "cross"],
+    "tools": ["search_symbol", "get_market_data", "etf_holdings", "quantlib_call", "load_skill", "list_swarm_presets", "run_swarm", "get_swarm_status", "get_run_result"],
+    "skills": ["risk-analysis", "asset-allocation", "cross-market-strategy"],
+    "cost": "research",
+    "requires_data": true
+  }
+}

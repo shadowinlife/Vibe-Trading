@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Experimental research discovery brief v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["intake_version", "revision", "original_request", "objective", "mode", "status", "constraints", "decisions", "routes", "selected_route", "acceptance_criteria", "out_of_scope", "assumptions", "approval", "tool_plan", "files"],
+  "properties": {
+    "intake_version": {"const": "2.0"},
+    "revision": {"type": "integer", "minimum": 1},
+    "original_request": {"$ref": "#/$defs/text"},
+    "objective": {"$ref": "#/$defs/text"},
+    "mode": {"enum": ["progressive", "deep"]},
+    "status": {"enum": ["exploring", "waiting_user", "ready", "blocked", "cancelled"]},
+    "constraints": {
+      "type": "object",
+      "propertyNames": {"enum": ["market", "symbols", "investment_horizon", "risk", "position", "cost_basis", "position_size", "sample_start", "sample_end", "warmup_bars", "interval", "benchmark", "cost_model"]},
+      "properties": {
+        "market": {
+          "allOf": [
+            {"$ref": "#/$defs/slot"},
+            {"properties": {"value": {"enum": [null, "a", "us", "crypto", "cross"]}}}
+          ]
+        }
+      },
+      "additionalProperties": {"$ref": "#/$defs/slot"}
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "question", "depends_on", "answer"],
+        "properties": {
+          "id": {"$ref": "#/$defs/text"},
+          "question": {"$ref": "#/$defs/text"},
+          "depends_on": {"$ref": "#/$defs/texts"},
+          "answer": {"$ref": "#/$defs/slot"}
+        }
+      }
+    },
+    "routes": {"$ref": "#/$defs/texts"},
+    "selected_route": {"type": ["string", "null"], "minLength": 1},
+    "acceptance_criteria": {"$ref": "#/$defs/texts"},
+    "out_of_scope": {"$ref": "#/$defs/texts"},
+    "assumptions": {"$ref": "#/$defs/texts"},
+    "approval": {
+      "description": "Untrusted reference only. A client must verify the actual user event and revision before execution.",
+      "anyOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["message_id", "revision"],
+          "properties": {
+            "message_id": {"$ref": "#/$defs/text"},
+            "revision": {"type": "integer", "minimum": 1}
+          }
+        }
+      ]
+    },
+    "tool_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "tool", "args", "depends_on"],
+        "properties": {
+          "id": {"$ref": "#/$defs/text"},
+          "tool": {"$ref": "#/$defs/text"},
+          "args": {"type": "object"},
+          "depends_on": {"$ref": "#/$defs/texts"}
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "kind", "content"],
+        "properties": {
+          "path": {"$ref": "#/$defs/text"},
+          "kind": {"enum": ["config", "signal"]},
+          "content": {"type": ["object", "string"]}
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "ready"}}},
+      "then": {
+        "properties": {
+          "selected_route": {"$ref": "#/$defs/text"},
+          "acceptance_criteria": {"type": "array", "minItems": 1},
+          "approval": {"type": "object"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "cancelled"}}},
+      "then": {
+        "properties": {
+          "approval": {"type": "null"},
+          "tool_plan": {"maxItems": 0}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "texts": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/text"}},
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "source", "reason"],
+      "properties": {
+        "value": {"type": ["string", "number", "boolean", "array", "object", "null"]},
+        "source": {"enum": ["user", "tool", "default", "unknown"]},
+        "reason": {"$ref": "#/$defs/text"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"source": {"const": "unknown"}}},
+          "then": {"properties": {"value": {"type": "null"}}}
+        },
+        {
+          "if": {"properties": {"source": {"enum": ["user", "tool", "default"]}}},
+          "then": {"properties": {"value": {"type": ["string", "number", "boolean", "array", "object"]}}}
+        }
+      ]
+    }
+  }
+}
