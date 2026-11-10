@@ -1267,6 +1267,23 @@ def _default_output_dir() -> Path:
 
 def run_alpha_bench(**kwargs: Any) -> dict[str, Any]:
     """Run the bench and return a parsed envelope (dict, not JSON string)."""
+    frozen_fields = {
+        "candidate_id",
+        "phase",
+        "symbols",
+        "start_date",
+        "end_date",
+        "split_date",
+        "as_of",
+        "source",
+        "horizon",
+        "output_dir",
+    }
+    if kwargs.get("source") == "alpha_zoo" or frozen_fields.issubset(kwargs):
+        from src.tools.alpha_bench_frozen import run_frozen_bench
+
+        return run_frozen_bench(kwargs)
+
     universe = kwargs.get("universe")
     period = kwargs.get("period")
     if not universe or not isinstance(universe, str):

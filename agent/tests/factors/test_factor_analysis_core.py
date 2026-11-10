@@ -36,10 +36,13 @@ def test_compute_group_equity_rejects_nonpositive_n_groups() -> None:
     assert list(eq.columns) == ["Group_1"]
 
 
-def test_run_factor_analysis_nonpositive_n_groups_returns_json_error() -> None:
+def test_run_factor_analysis_nonpositive_n_groups_returns_json_error(
+    monkeypatch,
+) -> None:
     factor, ret = _panel()
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
+        monkeypatch.setenv("VIBE_TRADING_ALLOWED_RUN_ROOTS", str(root))
         factor.to_csv(root / "f.csv")
         ret.to_csv(root / "r.csv")
         out = json.loads(
@@ -54,11 +57,12 @@ def test_run_factor_analysis_nonpositive_n_groups_returns_json_error() -> None:
         assert "n_groups" in out["error"]
 
 
-def test_run_factor_analysis_single_day_ic_std_is_finite_json() -> None:
+def test_run_factor_analysis_single_day_ic_std_is_finite_json(monkeypatch) -> None:
     """One IC date must not emit NaN ic_std (ddof=1) into the JSON summary."""
     factor, ret = _panel(n_dates=1, n_codes=8, seed=3)
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
+        monkeypatch.setenv("VIBE_TRADING_ALLOWED_RUN_ROOTS", str(root))
         factor.to_csv(root / "f.csv")
         ret.to_csv(root / "r.csv")
         raw = run_factor_analysis(
