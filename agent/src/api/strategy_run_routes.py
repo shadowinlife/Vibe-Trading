@@ -1,8 +1,9 @@
 """Frozen HTTP surface for RM-triggered strategy runs.
 
-Two routes only: ``POST /strategy-runs`` starts one version-pinned run and
-returns its opaque ``vt_run_id``; ``GET /strategy-runs/{vt_run_id}`` returns
-the three-field status view. Handlers here do exactly four things — service
+``POST /strategy-runs`` starts one version-pinned run and returns its opaque
+``vt_run_id``; ``GET /strategy-runs/{vt_run_id}`` returns the three-field status
+view; the additive ``POST .../cancel`` route returns its cancellation evidence.
+Handlers here do exactly four things — service
 token auth (via :mod:`src.api.strategy_run_auth`), request-model validation,
 one call into an injected service object, and mapping the result onto the
 frozen response shape. Business logic (idempotency claim, runner dispatch,
@@ -32,7 +33,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, NoReturn, Protocol, runtime_checkable
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
@@ -101,6 +102,10 @@ class StrategyRunService(Protocol):
 
     def status(self, vt_run_id: str) -> Any | None:
         """Return the persisted status row, or ``None`` for an unknown id."""
+        ...
+
+    def cancel(self, vt_run_id: str) -> Any:
+        """Return the cancellation projection for one persisted run."""
         ...
 
 
@@ -220,7 +225,7 @@ def _status_payload(row: Any) -> dict[str, Any]:
     fields, so the wire shape cannot depend on a service bug.
     """
     run_status = getattr(row, "status", None)
-    if run_status in {"running", "completed"}:
+    if run_status in {"running", "completed", "cancelled"}:
         return {"status": run_status, "error": None, "error_kind": None}
     if run_status != "failed":
         return {
@@ -303,11 +308,57 @@ def get_strategy_run(vt_run_id: str, request: Request) -> JSONResponse:
     return _json(status.HTTP_200_OK, _status_payload(row))
 
 
+@router.get(
+    "/strategy-runs/{vt_run_id}/cancel",
+    include_in_schema=False,
+    response_model=None,
+)
+def get_strategy_run_cancel_is_not_registered() -> NoReturn:
+    """Keep the pre-0002 unregistered GET path as a framework 404."""
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+
+@router.post(
+    "/strategy-runs/{vt_run_id}/cancel",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(require_strategy_run_token)],
+    response_model=None,
+)
+def cancel_strategy_run(vt_run_id: str, request: Request) -> JSONResponse:
+    """Cancel one run and return its durable stop evidence projection."""
+    service = _resolve_service(request)
+    try:
+        result = service.cancel(vt_run_id)
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001 — a cancel fault is an entry fault
+        logger.error("strategy-run cancel failed (%s)", type(exc).__name__)
+        raise _entry_unavailable() from exc
+    result_id = _vt_run_id(result)
+    run_status = getattr(result, "status", None)
+    stop_state = getattr(result, "stop_state", None)
+    if (
+        not result_id
+        or run_status not in {"running", "completed", "failed", "cancelled"}
+        or stop_state not in {"confirmed", "unknown"}
+    ):
+        logger.error("strategy-run cancel returned an invalid projection")
+        raise _entry_unavailable()
+    return _json(
+        status.HTTP_202_ACCEPTED,
+        {
+            "vt_run_id": result_id,
+            "status": run_status,
+            "stop_state": stop_state,
+        },
+    )
+
+
 def register_strategy_run_routes(
     app: FastAPI,
     service_provider: ServiceProvider | None = None,
 ) -> None:
-    """Mount the two routes and remember how to build their service.
+    """Mount the start, status and cancel routes with their service provider.
 
     Args:
         app: Host application.

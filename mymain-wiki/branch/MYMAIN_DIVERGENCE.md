@@ -1,10 +1,10 @@
 ---
 title: mymain 分支差异说明（DIVERGENCE）
-description: mymain 与上游 main 的权威差异台账——独有功能 F1-F9、F10-F13、上游贡献队列、验证门禁、维护约定、已知债务。改代码/发 PR/rebase 前必读。触发词：分支差异、上游、回流、rebase、门禁、D1-D4、engine-bridge。
+description: mymain 与上游 main 的权威差异台账——独有功能 F1-F9、F10-F14、上游贡献队列、验证门禁、维护约定、已知债务。改代码/发 PR/rebase 前必读。触发词：分支差异、上游、回流、rebase、门禁、D1-D4、engine-bridge。
 type: delta
 status: active
 created: 2026-07-27
-updated: 2026-11-09
+updated: 2026-11-10
 tags: [branch, divergence, upstream, gates]
 related: [MYMAIN_README.md, ../AGENTS.md]
 ---
@@ -34,6 +34,7 @@ related: [MYMAIN_README.md, ../AGENTS.md]
 | **F8** | ~~opencode 引擎桥~~ **已移出本分支（2026-09-27）** | SessionService 接缝置换 + 多租户基础设施 = 前端兼容路线，整体移至 `mymain-engine-bridge` 分支独立演进（两线零兼容/零相互索引）；mymain 树内不再含 `agent/src/opencode_bridge/`、tenant 容器栈与相关 env。原 F8 附带产出 `scheduled_research` MCP wrapper 作为纯 MCP 面增量**保留本分支**（见队列 ⑦） | 历史代码见 `backup/mymain-pre-rebase-20260926` 与引擎桥线；本 wiki f8 卡为冻结墓碑。**2026-10-10 线废弃封存**：worktree 已移除，`mymain-engine-bridge`/`backup/engine-bridge-pre-rebase-20260918`/`wip/opencode-llm-proxy-20261010`（含渲染事故修复 WIP 封存提交 `1b9a1140`）为只读档案 | — | 分支特有，不回流；上游候选 ⑦①③ 随引擎桥线**一并废弃**（② wrapper 已留存本分支） |
 | **F9** | 策略库与调度 | 版本化策略快照 + code/workflow 双门就绪 + 复用定时研究的排程；Web 策略库与排程页 | `agent/src/strategy_library/`、`agent/src/api/strategy_library_routes.py` / `strategy_schedule_routes.py`、`frontend/src/pages/StrategyLibrary.tsx` / `StrategySchedules.tsx` | 见功能卡 | 本地 `mymain` 已合入（81df3a992）；P1 入口/状态/工具 2026-10-28 合入（`585845ad` / `d90d5308` / `f036c6b9`，见 F10-F12）；未回上游 HKUDS |
 | **F13** | A 股外部证据取数 skills（OpencodeAgent 侧） | 六类公开信息取数：定期报告全文 / 临时公告 / 监管处罚 / 机构调研 / 券商研报 / gov.cn 政策。6 个 skill + 9 个零 key 脚本（纯标准库 + bs4），装到 `/home/opencode/.config/opencode/skills/`；全文类用 `--grep` / `--max-chars` 分片，失败契约沿用 `workspace/scripts/AGENTS.md` | `OpencodeAgent/skills/ashare-*/`、`OpencodeAgent/skills/_lib/nanofetch/` | 无 env 开关；`ashare-policy` 不可达时返回 `available:false` | 个人部署独有，不回流；关闭 §4.6 R2 |
+| **F14** | MCP 长执行控制面 | 原实例 find/start/status/stop、冻结回测 prepare/execute、因子原型；D-3/D-6 摘要、固定提示词、停止证据与有界结果回读 | `agent/src/strategy_runs/`（control_contract/control_store/control_service/execution_start_service/execution_stop_service/native_supervisor/backtest_materialize/backtest_config）、`agent/src/api/{execution_control,factor_prototype,backtest_prepare}_routes.py`、`agent/strategy_run_server.py` | service token（`RM_VT_STRATEGY_RUN_TOKEN_FILE`）；`VIBE_TRADING_ALLOWED_RUN_ROOTS` 限定 run_dir | 个人部署与 RM 消费面独有，暂不回流；门 pending，交付候选 |
 
 > F9 于 2026-10-25 合入本地 `mymain`（81df3a992），新增 3 个 MCP 工具（promote/evaluate/schedule_strategy）与 4 个 agent tools（含 list_strategy_library）；本表计数以 §3.2 实测为准（2026-11-09：MCP 94/99、agent tools 129）。最新运行计数见 [timeline](../history/timeline.md) 的 2026-11-09 条。
 
@@ -210,6 +211,15 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 | R2 ✅ | **A 股结构化检索替换引擎**（2026-09-27 立项，**2026-10-31 完成**：F13 以 6 个零 key skill 承接全部五类，gov.cn 政策用站内检索打通，不引入 DashScope/第三方 key；见 [F13 卡片](../features/f13-ashare-evidence-skills.md)） | nano-search-mcp 回退后（§5 2026-09-27 条），年报/半年报/季报全文、公告检索、监管处罚、机构调研/业绩说明会、gov.cn 行业政策失去专用通道；`web_search`（ddgs 多引擎）+ `get_research_reports` / `get_stock_news` 只覆盖通用检索与研报/新闻。候选方向：akshare 结构化接口（公告/研报已有部分封装）、tushare 扩展权限、自建 RSSHub 实例、或第三方金融检索 API。判据：可自部署、结构化返回（非仅网页快照）、覆盖上述五类、维护成本低于 nano-search 实测水平 |
 
 ## 5. 迭代笔记
+
+### 2026-11-10 F14 MCP 执行控制合同（交付候选，门仍 pending）
+
+- 发布 `OpencodeAgent/docs/MCP-EXECUTION-CONTROL.md` 与功能卡 [F14](../features/f14-mcp-execution-control.md)：find/start/status/stop、`/backtest/prepare`、`/backtest/execute`、`/factor/prototype` 的路由、状态码、固定错误体、D-3/D-6 公式、canonical JSON、15 字段中立配置、成本语义、启动/停止身份绑定、legacy `run_key` 投影、结果回读与 horizon label-end 规则。
+- 交付状态明确为 **delivered-candidate / gates pending / human confirmation required**：`verified_by=pending`、`verified_at=pending`，G-control、G-backtest、G-factor 均未解锁；本记录不构成 receipt，也未执行 RM 端到端联调。
+- RM 侧已知差异登记在合同 §15：D-3 不含 `declared_digest`/`build_fingerprint`、prepare 不返回 `build_fingerprint`、receipt 枚举缺 `backtest.execute`、无 live adapter、Carhart fixture 252 对当前 VT 253、prepare/start 的 `dispatch_key` 冒号语法不一致、factor `split_date == end_date` 边界、find 不回显 `contract_version`。
+- 本地证据边界：合同文档内容/示例由 `tools/test_mcp_execution_control_docs.py` 校验；各路由与实现由 `agent/tests/test_execution_control_*`、`test_backtest_*`、`test_factor_prototype*` 覆盖。未改 RM 仓，未改上游合同中的 0001/0002/0003/0012 语义。
+- 固定镜像验证（2026-11-10，本地构建、未推送）：`opencode-serve:v3.18.0-mcp-execution-control-20261109`，ID `sha256:a6a6bbc74f6ad64cf6a7642573e761c12af0b655547b91984132e3fe3a5a8b60`（短 `a6a6bbc74f6a`），`linux/amd64`，无 RepoDigest。就绪：listening 5.6s、首次 `/config` 200 24.3s、VT MCP 28.7s、entry listening 32.0s、entry `/health` 200 34.9s（预算 300s）。真实 HTTP A1-A11 PASS，365 个响应、378 次 attempt、30 个负向响应、无 MCP/worker mock。全量离线回归 `42 failed, 23060 passed, 172 skipped in 39:47`，42 个 FAILED id 与 `fork/mymain` 基线逐行相同，新增失败 0。静态门除 `agent/backtest/runner.py` 的基线既有 Black 漂移外全部 clean。证据在未跟踪的 `.omo/evidence/vt-mcp-execution-control/20261109T151921Z/`，入口 `vt-owner-handoff.md` 与 `rm-integration-notes.md`。
+- 该固定镜像验证是 L2 本地证据，不是 RM E2E；`verified_by=pending`、`verified_at=pending` 与三门 `pending` 不变，未签发 receipt。
 
 ### 2026-11-09 merge 对齐（基线 `c6aaacc5`，115 commit）——v0.1.19、QVeris 退役与研究资料面
 

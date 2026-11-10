@@ -289,13 +289,23 @@ def test_dedicated_app_mounts_only_health_service_and_state_routes(
     service: _FakeService,
 ) -> None:
     app = strategy_run_server.create_app(lambda: service)
-    paths = set(app.openapi()["paths"])
+    route_document = app.openapi()["paths"]
+    paths = set(route_document)
     assert paths == {
+        "/backtest/execute",
+        "/backtest/prepare",
+        "/execution-instances",
+        "/execution-instances/{remote_id}",
+        "/execution-instances/{remote_id}/result",
+        "/execution-instances/{remote_id}/stop",
+        "/factor/prototype",
         "/strategy-runs",
         "/strategy-runs/{vt_run_id}",
+        "/strategy-runs/{vt_run_id}/cancel",
         "/state/export",
         "/state/import",
     }
+    assert set(route_document["/execution-instances"]) == {"get", "post"}
     assert not any(path.endswith("{path:path}") for path in paths)
 
 
