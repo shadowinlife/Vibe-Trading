@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import re
 import sqlite3
 import time
 import uuid
@@ -41,6 +42,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.config.paths import get_runtime_root
+from src.strategy_runs.control_schema import CONTROL_SCHEMA
 
 __all__ = [
     "DEFAULT_DB_FILENAME",
@@ -54,7 +56,7 @@ __all__ = [
 DEFAULT_DB_FILENAME = "strategy_runs.sqlite3"
 
 #: Terminal + in-flight states a row may hold.
-STATUSES = ("running", "completed", "failed")
+STATUSES = ("running", "completed", "failed", "cancelled")
 
 #: How long a writer waits for SQLite's lock before giving up, in milliseconds.
 _DEFAULT_BUSY_TIMEOUT_MS = 5000
@@ -62,11 +64,15 @@ _DEFAULT_BUSY_TIMEOUT_MS = 5000
 #: File mode for the ledger, the WAL and the SHM files.
 _PRIVATE_MODE = 0o600
 
-_SCHEMA = """
+#: The first opener may race another process switching a legacy ledger to WAL.
+_WAL_SWITCH_ATTEMPTS = 20
+_WAL_SWITCH_DELAY_S = 0.05
+
+_TABLE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS strategy_runs (
     vt_run_id        TEXT PRIMARY KEY,
     run_key          TEXT NOT NULL UNIQUE,
-    status           TEXT NOT NULL CHECK(status IN ('running','completed','failed')),
+    status           TEXT NOT NULL CHECK(status IN ('running','completed','failed','cancelled')),
     error            TEXT,
     error_kind       TEXT,
     strategy_id      TEXT NOT NULL,
@@ -77,14 +83,17 @@ CREATE TABLE IF NOT EXISTS strategy_runs (
     handle_json      TEXT,
     created_at       INTEGER NOT NULL,
     updated_at       INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_strategy_runs_status
-    ON strategy_runs(status);
-
-CREATE INDEX IF NOT EXISTS idx_strategy_runs_created_at
-    ON strategy_runs(created_at);
+)
 """
+
+_INDEX_SCHEMAS = (
+    "CREATE INDEX IF NOT EXISTS idx_strategy_runs_status ON strategy_runs(status)",
+    "CREATE INDEX IF NOT EXISTS idx_strategy_runs_created_at ON strategy_runs(created_at)",
+)
+
+_STATUS_CHECK_RE = re.compile(
+    r"CHECK\s*\(\s*status\s+IN\s*\((?P<statuses>[^)]*)\)\s*\)", re.IGNORECASE
+)
 
 _INSERT_SQL = """
 INSERT INTO strategy_runs (
@@ -106,7 +115,7 @@ class RunRow:
     Attributes:
         vt_run_id: Opaque, unpredictable run identifier (``uuid4().hex``).
         run_key: The caller's idempotency key, stored byte-for-byte.
-        status: ``running``, ``completed`` or ``failed``.
+        status: ``running``, ``completed``, ``failed`` or ``cancelled``.
         strategy_id: Strategy the run executes.
         strategy_version: Pinned strategy version at claim time.
         timeout_s: Wall-clock budget in seconds; the sweeper decides expiry.
@@ -197,13 +206,25 @@ class StrategyRunStore:
     # ------------------------------------------------------------------
 
     def ensure_schema(self) -> None:
-        """Create the table and indexes if they are missing.
+        """Create or additively migrate the ledger, preserving every old row.
 
-        Idempotent: safe to call from every process and every start.
+        The legacy CHECK replacement runs wholly inside ``BEGIN IMMEDIATE`` so
+        concurrent openers serialize their inspection and table swap. Control
+        tables remain additive and are initialized after that transaction.
         """
         conn = self._connect()
         try:
-            conn.executescript(_SCHEMA)
+            try:
+                conn.execute("BEGIN IMMEDIATE")
+                conn.execute(_TABLE_SCHEMA)
+                for statement in _INDEX_SCHEMAS:
+                    conn.execute(statement)
+                _migrate_legacy_status_check(conn)
+                conn.execute("COMMIT")
+            except BaseException:
+                _rollback_quietly(conn)
+                raise
+            conn.executescript(CONTROL_SCHEMA)
         finally:
             conn.close()
 
@@ -363,7 +384,7 @@ class StrategyRunStore:
         error_kind: str | None = None,
         now_ms: int | None = None,
     ) -> bool:
-        """Move a ``running`` row to ``completed`` or ``failed`` exactly once.
+        """Move a ``running`` row to a terminal state exactly once.
 
         Compare-and-swap on ``status='running'``: the first writer wins, every
         later writer (a second sweeper, a recovery pass, a duplicate poll)
@@ -371,9 +392,10 @@ class StrategyRunStore:
 
         Args:
             vt_run_id: Row to finish.
-            status: ``completed`` or ``failed``; ``running`` is rejected.
-            error: Bounded error text. Must be ``None`` for ``completed`` and
-                non-``None`` for ``failed``.
+            status: ``completed``, ``failed`` or ``cancelled``; ``running`` is
+                rejected.
+            error: Bounded error text. Must be ``None`` for ``completed`` or
+                ``cancelled`` and non-``None`` for ``failed``.
             error_kind: Machine-readable failure class. Same null-ness rule as
                 ``error``.
             now_ms: Epoch-millisecond write time; defaults to the wall clock.
@@ -387,14 +409,17 @@ class StrategyRunStore:
                 ``error``/``error_kind`` pair.
         """
         _require_non_empty_str("vt_run_id", vt_run_id)
-        if status not in ("completed", "failed"):
+        if status not in ("completed", "failed", "cancelled"):
             raise ValueError(
-                f"mark_terminal status must be 'completed' or 'failed', got {status!r}"
+                "mark_terminal status must be 'completed', 'failed' or "
+                f"'cancelled', got {status!r}"
             )
         _require_optional_str("error", error)
         _require_optional_str("error_kind", error_kind)
-        if status == "completed" and (error is not None or error_kind is not None):
-            raise ValueError("a completed run must not carry error or error_kind")
+        if status in ("completed", "cancelled") and (
+            error is not None or error_kind is not None
+        ):
+            raise ValueError(f"a {status} run must not carry error or error_kind")
         if status == "failed" and (error is None or error_kind is None):
             raise ValueError("a failed run requires both error and error_kind")
         stamp = _epoch_ms(now_ms)
@@ -432,7 +457,7 @@ class StrategyRunStore:
             conn.execute("PRAGMA foreign_keys=ON")
             mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
             if str(mode).lower() != "wal":
-                conn.execute("PRAGMA journal_mode=WAL")
+                _switch_to_wal(conn)
         except BaseException:
             conn.close()
             raise
@@ -454,6 +479,115 @@ class StrategyRunStore:
             return cursor.rowcount == 1
         finally:
             conn.close()
+
+
+def _switch_to_wal(conn: sqlite3.Connection) -> None:
+    """Switch a freshly opened ledger to WAL despite concurrent first opens.
+
+    SQLite does not apply the busy handler to a journal-mode change, so two
+    openers of a legacy rollback-journal database can race: one gets
+    ``database is locked`` while the other finishes its switch. Retry only that
+    transient lock; every other failure propagates unchanged.
+
+    Args:
+        conn: Open ledger connection in autocommit mode.
+
+    Raises:
+        sqlite3.OperationalError: If the switch stays locked or fails otherwise.
+    """
+    for attempt in range(_WAL_SWITCH_ATTEMPTS):
+        try:
+            conn.execute("PRAGMA journal_mode=WAL")
+            return
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc).lower():
+                raise
+            if attempt + 1 == _WAL_SWITCH_ATTEMPTS:
+                raise
+            time.sleep(_WAL_SWITCH_DELAY_S)
+
+
+def _migrate_legacy_status_check(conn: sqlite3.Connection) -> None:
+    """Rebuild only an old three-status table; newer tables are a no-op.
+
+    The caller owns the write transaction. Original column DDL and named index
+    SQL are reused verbatim apart from the table name and widened status CHECK.
+    Any failed verification rolls the complete swap back.
+    """
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'strategy_runs'"
+    ).fetchone()
+    if row is None or not isinstance(row[0], str):
+        raise RuntimeError("strategy_runs schema could not be inspected")
+    table_sql = row[0]
+    match = _STATUS_CHECK_RE.search(table_sql)
+    if match is not None and "'cancelled'" in match.group("statuses"):
+        return
+    if match is None:
+        raise RuntimeError("strategy_runs status CHECK is not recognized")
+
+    columns = [column[1] for column in conn.execute("PRAGMA table_info(strategy_runs)")]
+    if not columns:
+        raise RuntimeError("strategy_runs has no columns to migrate")
+    index_statements = [
+        index[0]
+        for index in conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type = 'index' "
+            "AND tbl_name = 'strategy_runs' AND sql IS NOT NULL ORDER BY name"
+        )
+    ]
+    replacement_sql = _STATUS_CHECK_RE.sub(
+        "CHECK(status IN ('running','completed','failed','cancelled'))",
+        table_sql,
+        count=1,
+    )
+    replacement_sql = re.sub(
+        r"^\s*CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?",
+        "CREATE TABLE ",
+        replacement_sql,
+        count=1,
+        flags=re.IGNORECASE,
+    )
+    replacement_sql = re.sub(
+        r"\bstrategy_runs\b", "strategy_runs_new", replacement_sql, count=1
+    )
+    column_sql = ", ".join(_quote_identifier(column) for column in columns)
+    before = conn.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0]
+
+    conn.execute(replacement_sql)
+    conn.execute(
+        f"INSERT INTO strategy_runs_new ({column_sql}) "
+        f"SELECT {column_sql} FROM strategy_runs"
+    )
+    copied = conn.execute("SELECT COUNT(*) FROM strategy_runs_new").fetchone()[0]
+    if copied != before:
+        raise RuntimeError("strategy_runs migration changed the row count")
+    conn.execute("DROP TABLE strategy_runs")
+    conn.execute("ALTER TABLE strategy_runs_new RENAME TO strategy_runs")
+    for statement in index_statements:
+        conn.execute(statement)
+    migrated = conn.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0]
+    if migrated != before:
+        raise RuntimeError("strategy_runs migration lost rows after the rename")
+    _require_run_key_unique(conn)
+
+
+def _quote_identifier(value: str) -> str:
+    """Quote one SQLite identifier obtained from schema metadata."""
+    return f'"{value.replace(chr(34), chr(34) * 2)}"'
+
+
+def _require_run_key_unique(conn: sqlite3.Connection) -> None:
+    """Require a single-column UNIQUE index on ``run_key`` before commit."""
+    for index in conn.execute("PRAGMA index_list(strategy_runs)"):
+        if not index["unique"]:
+            continue
+        info = conn.execute(
+            f"PRAGMA index_info({_quote_identifier(index['name'])})"
+        ).fetchall()
+        if [column["name"] for column in info] == ["run_key"]:
+            return
+    raise RuntimeError("strategy_runs migration lost the run_key UNIQUE constraint")
 
 
 def _chmod_private(path: Path) -> None:

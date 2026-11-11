@@ -21,8 +21,10 @@ import csv
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
+import threading
 import time
 import uuid
 from dataclasses import dataclass
@@ -46,6 +48,8 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 __all__ = [
     "CodeHandle",
     "PID_REGISTRY",
+    "PROCESS_REGISTRY",
+    "cancel_code_run",
     "poll_code_run",
     "start_code_run",
 ]
@@ -70,10 +74,14 @@ _ERROR_TAIL_LINES = 40
 _MAX_ERROR_CHARS = 1000
 _MAX_SUMMARY_CHARS = 500
 
-#: Live child pids keyed by run id. In memory only: a pid is meaningless
-#: after a restart (the process is gone and the number may be recycled), so
-#: it must never reach a handle or persisted state.
+#: Live child process groups keyed by run id. Both registries are process-local:
+#: after a restart they are empty, so no durable or recycled pid can be signalled.
+PROCESS_REGISTRY: dict[str, tuple[int, int]] = {}
+#: Legacy pid-only view retained for non-signalling poll/reap callers.
 PID_REGISTRY: dict[str, int] = {}
+_REGISTRY_LOCK = threading.Lock()
+_TERMINAL_GRACE_S = 2.0
+_GROUP_POLL_INTERVAL_S = 0.01
 
 
 @dataclass(frozen=True)
@@ -161,6 +169,7 @@ def _spawn_entry(run_dir: Path) -> int:
             stdout=stdout_handle,
             stderr=stderr_handle,
             close_fds=True,
+            start_new_session=True,
         )
     return process.pid
 
@@ -207,7 +216,9 @@ def start_code_run(
             {"status": "failed", "reason": f"could not start the run process: {exc}"},
         )
         raise
-    PID_REGISTRY[run_id] = pid
+    with _REGISTRY_LOCK:
+        PROCESS_REGISTRY[run_id] = (pid, pid)
+        PID_REGISTRY[run_id] = pid
     return CodeHandle(
         run_id=run_id,
         kind="code",
@@ -231,18 +242,94 @@ def _read_state(path: Path) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
-def _reap(run_id: str) -> None:
-    """Reap the child when it has already exited; never block."""
-    pid = PID_REGISTRY.get(run_id)
-    if pid is None:
-        return
+def _drop_registration(run_id: str) -> None:
+    PROCESS_REGISTRY.pop(run_id, None)
+    PID_REGISTRY.pop(run_id, None)
+
+
+def _reap(run_id: str) -> bool:
+    """Reap without blocking; return whether the entry has exited or is unknown."""
+    with _REGISTRY_LOCK:
+        pid = PID_REGISTRY.get(run_id)
+        if pid is None:
+            return True
+        try:
+            reaped, _ = os.waitpid(pid, os.WNOHANG)
+        except (ChildProcessError, OSError):
+            _drop_registration(run_id)
+            return True
+        if reaped == pid:
+            _drop_registration(run_id)
+            return True
+        return False
+
+
+def _group_is_absent(pid: int, pgid: int) -> bool:
     try:
-        reaped, _ = os.waitpid(pid, os.WNOHANG)
+        os.waitpid(pid, os.WNOHANG)
     except (ChildProcessError, OSError):
-        PID_REGISTRY.pop(run_id, None)
-        return
-    if reaped == pid:
-        PID_REGISTRY.pop(run_id, None)
+        pass
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return True
+    except OSError:
+        return False
+    return False
+
+
+def _wait_for_group_absence(pid: int, pgid: int, timeout_s: float) -> bool:
+    deadline = time.monotonic() + timeout_s
+    while True:
+        if _group_is_absent(pid, pgid):
+            return True
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return False
+        time.sleep(min(_GROUP_POLL_INTERVAL_S, remaining))
+
+
+def cancel_code_run(run_id: str) -> bool:
+    """Terminate one registered code run's process group, if still observable.
+
+    Args:
+        run_id: In-memory code-run identity, never a persisted or bare pid.
+
+    Returns:
+        ``True`` only after the registered process group is observably absent.
+        ``False`` leaves the caller responsible for an honest ``unknown`` state.
+    """
+    with _REGISTRY_LOCK:
+        registration = PROCESS_REGISTRY.get(run_id)
+        if registration is None:
+            return False
+        pid, pgid = registration
+        try:
+            os.waitpid(pid, os.WNOHANG)
+        except ChildProcessError:
+            _drop_registration(run_id)
+            return False
+        except OSError:
+            return False
+        try:
+            os.killpg(pgid, signal.SIGTERM)
+        except ProcessLookupError:
+            _drop_registration(run_id)
+            return True
+        except OSError:
+            return False
+        if not _wait_for_group_absence(pid, pgid, _TERMINAL_GRACE_S):
+            try:
+                os.killpg(pgid, signal.SIGKILL)
+            except ProcessLookupError:
+                _drop_registration(run_id)
+                return True
+            except OSError:
+                return False
+        if not _wait_for_group_absence(pid, pgid, _TERMINAL_GRACE_S):
+            return False
+        _drop_registration(run_id)
+        return True
 
 
 def _read_first_csv_row(path: Path) -> dict[str, str]:
@@ -344,8 +431,12 @@ def poll_code_run(
     """
     del runtime_root  # the persisted handle names the run directory absolutely
     run_id = getattr(handle, "run_id", "")
-    if isinstance(run_id, str) and run_id:
-        _reap(run_id)
+    if isinstance(run_id, str) and run_id and not _reap(run_id):
+        # The nested backtest writes its own terminal state before the entry can
+        # collect and publish the final diagnostics. Only the entry's exit makes
+        # that state safe to consume; rehydrated handles have no live registration
+        # and retain the state-only recovery path.
+        return None
 
     raw_dir = getattr(handle, "run_dir", None)
     if not raw_dir:

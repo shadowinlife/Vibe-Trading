@@ -16,6 +16,11 @@ import logging
 from typing import Any
 
 from src.agent.tools import BaseTool
+from src.factors.registry_freeze import (
+    RegistryFreezeError,
+    freeze_registry,
+    rows_from_registry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +110,12 @@ def run_alpha_zoo(**kwargs: Any) -> dict[str, Any]:
             "status": "error",
             "error": f"action must be list_alphas|get_alpha|health, got {action!r}",
         }
+    candidate_ids = kwargs.get("candidate_ids")
+    if candidate_ids is not None and action != "list_alphas":
+        return {
+            "status": "error",
+            "error": "candidate_ids is supported only for list_alphas",
+        }
 
     try:
         registry = _get_registry()
@@ -122,6 +133,14 @@ def run_alpha_zoo(**kwargs: Any) -> dict[str, Any]:
             if limit <= 0:
                 return {"status": "error", "error": "limit must be > 0"}
             limit = min(limit, _MAX_LIMIT)
+            try:
+                frozen = (
+                    freeze_registry(rows_from_registry(registry, candidate_ids))
+                    if candidate_ids is not None
+                    else None
+                )
+            except RegistryFreezeError as exc:
+                return {"status": "error", "error": str(exc)}
             result = _action_list(
                 registry,
                 zoo=kwargs.get("zoo"),
@@ -129,6 +148,16 @@ def run_alpha_zoo(**kwargs: Any) -> dict[str, Any]:
                 universe=kwargs.get("universe"),
                 limit=limit,
             )
+            if frozen is not None:
+                result.update(
+                    {
+                        "registry_digest": frozen.registry_digest,
+                        "tool_schema_version": frozen.tool_schema_version,
+                        "registry_candidates": [
+                            row.document() for row in frozen.candidates
+                        ],
+                    }
+                )
         elif action == "get_alpha":
             alpha_id = kwargs.get("alpha_id")
             if not alpha_id or not isinstance(alpha_id, str):
@@ -183,6 +212,16 @@ class AlphaZooTool(BaseTool):
                 "type": "integer",
                 "default": _DEFAULT_LIMIT,
                 "description": f"Cap on returned items (default {_DEFAULT_LIMIT}, max {_MAX_LIMIT}).",
+            },
+            "candidate_ids": {
+                "type": "array",
+                "items": {"type": "string"},
+                "minItems": 1,
+                "maxItems": 200,
+                "description": (
+                    "Optional exact candidate selection for list_alphas only; "
+                    "publishes a deterministic freeze over every selected id before limit."
+                ),
             },
         },
         "required": ["action"],

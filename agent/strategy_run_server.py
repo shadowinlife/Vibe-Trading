@@ -3,9 +3,12 @@
 
 This app exists so the box can answer the RM service routes without exposing
 the full VT REST surface and without starting a second F9 scheduler. It mounts
-``/health``, ``POST /strategy-runs``, ``GET /strategy-runs/{vt_run_id}``,
-``POST /state/export`` and ``POST /state/import`` and nothing else — there is
-deliberately no SPA fallback or catch-all, so an unregistered path (including
+``/health``, ``POST /strategy-runs``, ``GET /strategy-runs/{vt_run_id}``, the
+execution-instance read/start routes, ``POST /factor/prototype``,
+``POST /backtest/prepare``, ``POST /backtest/execute``, ``POST /state/export``
+and ``POST /state/import``
+and nothing else — there is deliberately no SPA
+fallback or catch-all, so an unregistered path (including
 ``/strategy-schedules``) stays a framework ``404``. No scheduler is started and
 no lifespan beyond this module's own is executed.
 
@@ -32,6 +35,17 @@ from fastapi import FastAPI
 # session-service lookup reads. Never call api_server._run_startup_preflight()
 # from here — it starts the F9 scheduler, which this entry must not run.
 import api_server  # noqa: F401
+from src.api.backtest_prepare_routes import (
+    PrepareProvider,
+    register_backtest_prepare_routes,
+)
+from src.api.execution_control_routes import (
+    ControlProvider,
+    ExecutionStartProvider,
+    ExecutionStopProvider,
+    register_execution_control_routes,
+)
+from src.api.factor_prototype_routes import register_factor_prototype_routes
 from src.api.state_routes import register_state_routes
 from src.api.strategy_run_auth import log_token_configuration, token_configured
 from src.api.strategy_run_routes import (
@@ -71,7 +85,13 @@ async def _call_lifecycle(service: object, method_name: str) -> None:
         await outcome
 
 
-def create_app(service_provider: ServiceProvider | None = None) -> FastAPI:
+def create_app(
+    service_provider: ServiceProvider | None = None,
+    control_service_provider: ControlProvider | None = None,
+    prepare_provider: PrepareProvider | None = None,
+    execution_start_service_provider: ExecutionStartProvider | None = None,
+    execution_stop_service_provider: ExecutionStopProvider | None = None,
+) -> FastAPI:
     """Build the dedicated entry app.
 
     The lifespan resolves the provider once, starts the service's sweeper (when
@@ -85,10 +105,22 @@ def create_app(service_provider: ServiceProvider | None = None) -> FastAPI:
         service_provider: Optional callable returning the strategy-run
             service; tests inject a fake. ``None`` selects the lazy
             production provider (``src.strategy_runs.service``).
+        control_service_provider: Optional callable returning the read-only
+            execution control service; tests inject a fake. ``None`` selects
+            the lazy production provider bound to this app.
+        prepare_provider: Optional callable returning the frozen backtest
+            materializer; tests inject a temporary-store instance. ``None``
+            selects the lazy production provider.
+        execution_start_service_provider: Optional callable returning the
+            prepared-backtest start service; tests inject a fake supervisor
+            through it. ``None`` selects native production supervision.
+        execution_stop_service_provider: Optional callable returning the
+            idempotent stop service; tests inject a fake supervisor through
+            it. ``None`` selects native production supervision.
 
     Returns:
-        An app carrying ``/health``, the two strategy-run routes and the two
-        state routes.
+        An app carrying ``/health``, the two strategy-run routes, the
+        execution-instance routes and the two state routes.
     """
     provider = (
         service_provider if service_provider is not None else default_service_provider
@@ -145,6 +177,14 @@ def create_app(service_provider: ServiceProvider | None = None) -> FastAPI:
         return _health_payload()
 
     register_strategy_run_routes(app, _service_for_request)
+    register_execution_control_routes(
+        app,
+        control_service_provider,
+        execution_start_service_provider,
+        execution_stop_service_provider,
+    )
+    register_factor_prototype_routes(app, execution_start_service_provider)
+    register_backtest_prepare_routes(app, prepare_provider)
     register_state_routes(app)
     log_token_configuration()
     return app

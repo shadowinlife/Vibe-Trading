@@ -129,6 +129,16 @@ ClickHouse 数据由外部同步进程维护，本容器内不包含同步逻辑
 
 成功结果继续携带 `schema_version: "1.0"` 的 `summary`，至少含 `run_id`、`metrics`、`equity_preview`、`codes`、`start_date`、`end_date`、`interval`、`artifact_paths`。成交/持仓可由控制面从 CSV 回填；不要用空值覆盖已有 summary 字段。
 
+# RM 长执行控制面合同（F14，CRITICAL）
+
+完整外部合同：[`docs/MCP-EXECUTION-CONTROL.md`](docs/MCP-EXECUTION-CONTROL.md)（`mcp-execution-control-v1`）。本文件只保留入口级约束，字段与状态码以该文档为准。
+
+1. **专用入口**：`agent/strategy_run_server.py` 挂载 `/execution-instances*`、`/backtest/prepare`、`/backtest/execute`、`/factor/prototype` 与 legacy `/strategy-runs*`。除 `/health` 外全部要求 `Authorization: Bearer $RM_VT_STRATEGY_RUN_TOKEN`（token 文件由 `RM_VT_STRATEGY_RUN_TOKEN_FILE` 指定，每请求重读；缺失/坏头 401，文件不可用或不匹配 403）。
+2. **冻结回测**：先 `POST /backtest/prepare` 物化 `run_dir`、`config.json`、`code/signal_engine.py` 与三组摘要；回读 sha256 一致后才可 `POST /backtest/execute`。execute 必须携带 prepare 返回的精确 `run_dir`、`input_digest`、`config_sha256`、`source_sha256`、由 run_dir 末段派生的 `run_id`、调用方 64-hex `build_fingerprint`，以及逐字节匹配的固定提示词。**不得改写 `config.json` 或 `code/signal_engine.py`，不得用 shell 直接跑回测。**
+3. **因子原型**：`POST /factor/prototype` 只接受冻结 `registry_digest` + 显式 candidates/symbols/dates/source/as_of/horizon/n_groups；服务端重算 D-6 摘要，客户端摘要不符即 409。结果经 `GET /execution-instances/{remote_id}/result` 读取，`result.json` 是唯一权威，不另造 HTML。
+4. **恢复与停止**：丢失启动响应先 `GET /execution-instances?dispatch_key=...`，禁止盲重发；停止用 `POST /execution-instances/{remote_id}/stop`，`unknown` 继续占用名额且不可升级，`confirmed` 不可降级。重启后无旧句柄，非终态读 `unknown`，不得按裸 pid 杀进程。
+5. **交付状态**：合同为 **delivered-candidate**，`verified_by=pending`、`verified_at=pending`，G-control/G-backtest/G-factor 均为 `pending`，需要人类确认；本地测试通过不等于 gate 解锁，不得对外宣称 E2E 或 receipt。RM 侧的 D-3 摘要、`build_fingerprint`、`backtest.execute` receipt 枚举、live adapter、Carhart warmup 252/253 等差异见合同 §15。
+
 # 问题处理协议（CRITICAL）
 
 所有用户请求在进入执行前，必须先经过本节的分流。协议目标：**多做事，少提问**；分类本身不向用户展示，分类后立即执行对应分支。

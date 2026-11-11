@@ -15,6 +15,7 @@ from src.config.accessor import get_env_config
 from src.config.limits import TOOL_RESULT_LIMIT
 from src.core.runner import Runner
 from src.core.state import RunStateStore
+from src.strategy_runs.backtest_config import adapt_backtest_config
 from src.strategy_store.models import BENCH_TYPES
 from src.tools.backtest_result import serialize_result
 from src.tools.backtest_summary import collect_ohlcv_paths, try_build_backtest_summary
@@ -233,8 +234,15 @@ def run_backtest(run_dir: str, *, byte_limit: int | None = None) -> str:
     except json.JSONDecodeError as e:
         return _error_result(f"config.json parse error: {e}")
 
+    try:
+        config = adapt_backtest_config(config)
+    except ValueError as exc:
+        return _error_result(f"Invalid config: {exc}", error_kind="invalid_config")
+
     if "source" not in config:
-        return _error_result("config.json missing 'source' field (tushare/okx/yfinance)")
+        return _error_result(
+            "config.json missing 'source' field (tushare/okx/yfinance)"
+        )
 
     if config["source"] not in VALID_SOURCES:
         return _error_result(f"source must be one of {VALID_SOURCES}, got: {config['source']}")

@@ -54,6 +54,7 @@ from backtest.engines._market_hooks import (  # noqa: F401  (re-exported)
 )
 from backtest.progress import write_progress
 from backtest.rebalance_mask import RebalanceMask, validate_rebalance_mask
+from src.strategy_runs.backtest_config import adapt_backtest_config
 
 logger = logging.getLogger(__name__)
 
@@ -1476,7 +1477,8 @@ def main(run_dir: Path) -> None:
     :mod:`backtest.progress`): ``validate``(5), ``signal``(15),
     ``data_load``(30), ``simulate``(50), then the engine's own
     ``matching``/``metrics``/``artifacts`` stages, ``done``(100) on success or
-    ``failed`` (last pct kept) on any error path.
+    ``failed`` (last pct kept) on any error path. The direct CLI also persists
+    ``state.json`` with the corresponding terminal success or failure status.
 
     Args:
         run_dir: Run directory containing ``config.json`` and ``code/signal_engine.py``.
@@ -1514,16 +1516,23 @@ def main(run_dir: Path) -> None:
         sys.exit(1)
 
     progress = _StageProgress(run_dir)
+    # NativeSupervisor invokes this entrypoint directly, without the
+    # run_backtest wrapper that otherwise owns this terminal-state contract.
+    from src.core.state import RunStateStore
+
+    state = RunStateStore()
     try:
         _execute_stages(run_dir, progress)
-    except BaseException:
+    except BaseException as exc:
         # Every error path — a raised exception, or an error envelope followed
         # by sys.exit(1) (SystemExit) — marks the run failed with the last
         # stage pct kept, then propagates unchanged so the subprocess exit
         # code and stdout envelope are exactly what they were before.
         progress.fail()
+        state.mark_failure(run_dir, f"{type(exc).__name__}: {exc}"[:500])
         raise
     progress.mark("done", 100.0)
+    state.mark_success(run_dir)
 
 
 def _execute_stages(run_dir: Path, progress: _StageProgress) -> None:
@@ -1547,6 +1556,7 @@ def _execute_stages(run_dir: Path, progress: _StageProgress) -> None:
 
     # Validate config schema
     try:
+        raw_config = adapt_backtest_config(raw_config)
         BacktestConfigSchema(**raw_config)
     except Exception as exc:
         errors = str(exc)

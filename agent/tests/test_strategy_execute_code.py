@@ -21,6 +21,7 @@ from src.config.paths import get_runs_dir
 from src.scheduled_research.models import ScheduledResearchJob
 from src.strategy_library import execute_code, run_code_entry
 from src.strategy_library.paths import version_code_path, version_config_path
+from tests.module_os_helpers import patch_module_os
 
 _STRATEGY_ID = "buyhold"
 _VERSION = "v1-abc12345"
@@ -217,6 +218,55 @@ def test_top_level_execution_is_rejected_and_reported_from_the_stderr_log(fake_h
         encoding="utf-8"
     )
     assert "Executable top-level statement" in stderr_log
+
+
+def test_poll_waits_for_the_entry_before_reading_a_nested_terminal_state(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+):
+    """A nested runner's early state must not hide the entry's final diagnostics."""
+    run_dir = tmp_path / "run"
+    (run_dir / "logs").mkdir(parents=True)
+    (run_dir / "state.json").write_text(
+        '{"status": "failed", "reason": "SystemExit: 1"}', encoding="utf-8"
+    )
+    handle = execute_code.CodeHandle(
+        run_id="nested-state",
+        kind="code",
+        session_id=None,
+        run_dir=str(run_dir),
+        started_at=1,
+    )
+    pid = 43210
+    entry_running = True
+    execute_code.PROCESS_REGISTRY[handle.run_id] = (pid, pid)
+    execute_code.PID_REGISTRY[handle.run_id] = pid
+
+    def _waitpid(waited_pid: int, _options: int) -> tuple[int, int]:
+        assert waited_pid == pid
+        return (0, 0) if entry_running else (pid, 0)
+
+    patch_module_os(monkeypatch, execute_code, waitpid=_waitpid)
+    try:
+        assert execute_code.poll_code_run(handle) is None
+
+        entry_running = False
+        (run_dir / "state.json").write_text(
+            '{"status": "failed", "reason": "backtest engine exited with code 1"}',
+            encoding="utf-8",
+        )
+        (run_dir / "logs" / "runner_stderr.txt").write_text(
+            "SignalEngine source error: Executable top-level statement Expr is not allowed\n",
+            encoding="utf-8",
+        )
+
+        outcome = execute_code.poll_code_run(handle)
+        assert outcome is not None
+        assert "Executable top-level statement" in outcome.error
+        assert handle.run_id not in execute_code.PROCESS_REGISTRY
+        assert handle.run_id not in execute_code.PID_REGISTRY
+    finally:
+        execute_code.PROCESS_REGISTRY.pop(handle.run_id, None)
+        execute_code.PID_REGISTRY.pop(handle.run_id, None)
 
 
 def test_missing_snapshot_raises_before_creating_the_run_directory(fake_home):

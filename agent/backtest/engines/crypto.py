@@ -59,7 +59,11 @@ class CryptoEngine(BaseEngine):
         self.maker_rate: float = config.get("maker_rate", config.get("commission", 0.0002))
         self.taker_rate: float = config.get("taker_rate", config.get("commission", 0.0005))
         self.slippage_rate: float = config.get("slippage", 0.0005)
-        self.funding_rate: float = config.get("funding_rate", 0.0001)
+        self.funding_rate: float = (
+            0.0
+            if config.get("neutral_execution_costs") is not None
+            else config.get("funding_rate", 0.0001)
+        )
         self.perpetual_strict = bool(config.get("perpetual_strict", False))
         self.funding_mode = str(config.get("funding_mode", "fixed"))
         self.margin_mode = str(config.get("margin_mode", "isolated"))
@@ -97,6 +101,8 @@ class CryptoEngine(BaseEngine):
             True for perpetual codes, strict mode, or an explicit nonzero
             funding-rate assumption used to model a perpetual with spot bars.
         """
+        if self.config.get("neutral_execution_costs") is not None:
+            return False
         return (
             self.perpetual_strict
             or symbol.upper().endswith(("-PERP", "-SWAP"))
@@ -154,7 +160,9 @@ class CryptoEngine(BaseEngine):
         return size * price * rate
 
     def apply_slippage(self, price: float, direction: int) -> float:
-        """Slippage: unfavourable direction."""
+        """Slippage: the declared neutral rate, or the legacy unfavourable rate."""
+        if self.config.get("neutral_execution_costs") is not None:
+            return self._execution_price(price, direction)
         if self.perpetual_strict and self.position_adjustment == "rebalance":
             return price
         return price * (1 + direction * self.slippage_rate)

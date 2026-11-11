@@ -41,6 +41,7 @@ from src.config.paths import get_runtime_root
 from src.scheduled_research.models import ScheduledResearchJob
 from src.scheduled_research.strategy_policy import InFlightHandle
 from src.strategy_library import store as strategy_store
+from src.strategy_library.execute_code import cancel_code_run
 from src.strategy_library.paths import (
     version_code_path,
     version_config_path,
@@ -57,6 +58,7 @@ __all__ = [
     "DEFAULT_SANDBOX_ID_PREFIX",
     "DEFAULT_SWEEP_INTERVAL_S",
     "MAX_ERROR_CHARS",
+    "CancelResult",
     "SubmitResult",
     "StrategyRunService",
     "TARGET_MISMATCH",
@@ -82,6 +84,15 @@ _IN_FLIGHT_KEYS = ("run_id", "kind", "session_id", "run_dir", "started_at")
 _RUN_KINDS = frozenset({"code", "workflow"})
 #: A valid interval string for the in-memory job; never scheduled or stored.
 _MEMORY_JOB_SCHEDULE_MS = "60000"
+
+
+@dataclass(frozen=True, slots=True)
+class CancelResult:
+    """Stable cancel projection returned by the additive 0002 route."""
+
+    vt_run_id: str
+    status: str
+    stop_state: str
 
 
 @dataclass(frozen=True)
@@ -214,6 +225,42 @@ class StrategyRunService:
     def status(self, vt_run_id: str) -> RunRow | None:
         """Read one ledger row without polling or writing anything."""
         return self._store.get(vt_run_id)
+
+    def cancel(self, vt_run_id: str) -> CancelResult:
+        """Cancel a live code run only with same-process group evidence.
+
+        Args:
+            vt_run_id: Durable strategy-run identity from the URL.
+
+        Returns:
+            A stable terminal projection, or ``running/unknown`` when no live
+            same-process code handle can be observed. Unobservable rows remain
+            durable ``running`` and no bare pid is signalled.
+
+        Raises:
+            HTTPException: ``404 strategy_run_not_found`` for an unknown id.
+        """
+        row = self._store.get(vt_run_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="strategy_run_not_found")
+        if row.status in ("completed", "failed", "cancelled"):
+            return CancelResult(row.vt_run_id, row.status, "confirmed")
+        handle = _rehydrate(row.handle_json) if row.handle_json is not None else None
+        if handle is None or handle.kind != "code":
+            return CancelResult(row.vt_run_id, "running", "unknown")
+        if not cancel_code_run(handle.run_id):
+            return CancelResult(row.vt_run_id, "running", "unknown")
+        if self._store.mark_terminal(row.vt_run_id, "cancelled", now_ms=self._now_ms()):
+            return CancelResult(row.vt_run_id, "cancelled", "confirmed")
+        current = self._store.get(row.vt_run_id)
+        if current is None:
+            raise HTTPException(status_code=404, detail="strategy_run_not_found")
+        stop_state = (
+            "confirmed"
+            if current.status in ("completed", "failed", "cancelled")
+            else "unknown"
+        )
+        return CancelResult(current.vt_run_id, current.status, stop_state)
 
     def sweep_once(self) -> None:
         """Poll every ``running`` row once; one broken row never stops the pass.

@@ -1239,12 +1239,14 @@ def factor_analysis(
     """Compute factor IC/IR analysis and layered backtest from prepared CSVs.
 
     Analyzes factor predictive power using Spearman rank IC, IR (IC/std),
-    and quantile group return spreads.
+    and quantile group return spreads. All CSV and output paths must be absolute
+    and inside the configured run roots. The additive response fields report
+    paired-observation coverage and alias the final-equity group spread.
 
     Args:
-        factor_csv: Path to factor values CSV (index=date, columns=codes).
-        return_csv: Path to returns CSV (same structure as factor_csv).
-        output_dir: Directory for output files (ic_series.csv, ic_summary.json, group_equity.csv).
+        factor_csv: Absolute factor values CSV inside allowed run roots (index=date, columns=codes).
+        return_csv: Absolute returns CSV inside allowed run roots (same structure as factor_csv).
+        output_dir: Absolute output directory inside allowed run roots for the three native artifacts.
         n_groups: Number of quantile groups (default 5).
     """
     registry = _get_registry()
@@ -1267,6 +1269,7 @@ def alpha_zoo(
     theme: str | None = None,
     universe: str | None = None,
     limit: int = 50,
+    candidate_ids: list[str] | None = None,
 ) -> str:
     """Browse the bundled Alpha Zoo registry.
 
@@ -1277,6 +1280,7 @@ def alpha_zoo(
         theme: Optional theme filter for ``list_alphas``.
         universe: Optional universe filter for ``list_alphas``.
         limit: Maximum number of alphas returned by ``list_alphas``.
+        candidate_ids: Optional exact candidates to freeze for ``list_alphas``.
     """
     registry = _get_registry()
     params: dict[str, Any] = {"action": action, "limit": limit}
@@ -1288,6 +1292,8 @@ def alpha_zoo(
         params["theme"] = theme
     if universe is not None:
         params["universe"] = universe
+    if candidate_ids is not None:
+        params["candidate_ids"] = candidate_ids
     return registry.execute("alpha_zoo", params)
 
 

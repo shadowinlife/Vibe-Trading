@@ -304,3 +304,167 @@ def test_alpha_bench_does_not_follow_preexisting_report_symlink(monkeypatch, tmp
     assert report_link.is_symlink()
     assert predictable_report_link.is_symlink()
     assert not external_target.exists()
+
+
+def test_alpha_zoo_candidate_ids_schema_is_bounded_and_optional() -> None:
+    # Given the existing alpha_zoo tool schema.
+    properties = AlphaZooTool.parameters["properties"]
+
+    # When the candidate_ids property is inspected.
+    candidate_ids = properties["candidate_ids"]
+
+    # Then it is a bounded string array outside the required action-only set.
+    assert candidate_ids["type"] == "array"
+    assert candidate_ids["items"] == {"type": "string"}
+    assert candidate_ids["minItems"] == 1
+    assert candidate_ids["maxItems"] == 200
+    assert AlphaZooTool.parameters["required"] == ["action"]
+
+
+def test_alpha_zoo_forwards_candidate_ids(monkeypatch) -> None:
+    # Given a recording MCP tool registry.
+    registry = _RecordingRegistry()
+    monkeypatch.setattr(mcp_server, "_get_registry", lambda: registry)
+    candidate_ids = ["academic_carhart_mom", "academic_bab"]
+
+    # When the existing wrapper receives an explicit candidate selection.
+    _ALPHA_ZOO(action="list_alphas", candidate_ids=candidate_ids)
+
+    # Then only that additive parameter is forwarded to alpha_zoo.
+    assert registry.calls == [
+        (
+            "alpha_zoo",
+            {
+                "action": "list_alphas",
+                "limit": 50,
+                "candidate_ids": candidate_ids,
+            },
+        )
+    ]
+
+
+def test_alpha_zoo_freezes_every_candidate_before_the_display_limit(
+    monkeypatch,
+) -> None:
+    # Given three real candidates in non-canonical request order and limit one.
+    from src.factors.registry import Registry
+    from src.factors.registry_freeze import freeze_registry, rows_from_registry
+    from src.tools import alpha_zoo_tool as alpha_zoo_module
+
+    registry = Registry()
+    monkeypatch.setattr(alpha_zoo_module, "_get_registry", lambda: registry)
+    candidate_ids = [
+        "academic_high52w",
+        "academic_carhart_mom",
+        "academic_bab",
+    ]
+    expected = freeze_registry(rows_from_registry(registry, candidate_ids))
+    legacy_result = alpha_zoo_module.run_alpha_zoo(
+        action="list_alphas",
+        limit=1,
+    )["result"]
+
+    # When the selected registry is listed with one display item.
+    envelope = alpha_zoo_module.run_alpha_zoo(
+        action="list_alphas",
+        candidate_ids=candidate_ids,
+        limit=1,
+    )
+
+    # Then all three rows are frozen while only the display items are truncated.
+    assert envelope["status"] == "ok"
+    result = envelope["result"]
+    assert result["registry_digest"] == expected.registry_digest
+    assert result["tool_schema_version"] == expected.tool_schema_version
+    assert result["registry_candidates"] == [
+        row.document() for row in expected.candidates
+    ]
+    for key in ("total", "returned", "truncated", "filters", "items"):
+        assert result[key] == legacy_result[key]
+    assert len(result["registry_candidates"]) == 3
+    assert len(result["items"]) == 1
+
+
+def test_alpha_zoo_without_candidate_ids_keeps_the_legacy_result_shape(
+    monkeypatch,
+) -> None:
+    # Given a real registry and no candidate_ids argument.
+    from src.factors.registry import Registry
+    from src.tools import alpha_zoo_tool as alpha_zoo_module
+
+    registry = Registry()
+    monkeypatch.setattr(alpha_zoo_module, "_get_registry", lambda: registry)
+
+    # When a legacy bounded list is run.
+    envelope = alpha_zoo_module.run_alpha_zoo(
+        action="list_alphas",
+        zoo="academic",
+        limit=1,
+    )
+
+    # Then no freeze metadata is added to the legacy result.
+    assert envelope["status"] == "ok"
+    assert set(envelope["result"]) == {
+        "total",
+        "returned",
+        "truncated",
+        "filters",
+        "items",
+    }
+
+
+@pytest.mark.parametrize(
+    ("candidate_ids", "expected_error"),
+    [
+        ([], "empty"),
+        (["academic_bab", "academic_bab"], "duplicate"),
+        (["academic_does_not_exist"], "unknown"),
+    ],
+)
+def test_alpha_zoo_rejects_invalid_candidate_ids(
+    monkeypatch,
+    candidate_ids: list[str],
+    expected_error: str,
+) -> None:
+    # Given a real registry and an invalid explicit candidate selection.
+    from src.factors.registry import Registry
+    from src.tools import alpha_zoo_tool as alpha_zoo_module
+
+    registry = Registry()
+    monkeypatch.setattr(alpha_zoo_module, "_get_registry", lambda: registry)
+
+    # When list_alphas resolves the selection.
+    envelope = alpha_zoo_module.run_alpha_zoo(
+        action="list_alphas",
+        candidate_ids=candidate_ids,
+    )
+
+    # Then a structured typed error replaces any list/fallback result.
+    assert envelope["status"] == "error"
+    assert expected_error in envelope["error"]
+    assert "result" not in envelope
+
+
+@pytest.mark.parametrize("action", ["get_alpha", "health"])
+def test_alpha_zoo_rejects_candidate_ids_outside_list_alphas(
+    monkeypatch,
+    action: str,
+) -> None:
+    # Given a real registry and candidate_ids on a non-list action.
+    from src.factors.registry import Registry
+    from src.tools import alpha_zoo_tool as alpha_zoo_module
+
+    registry = Registry()
+    monkeypatch.setattr(alpha_zoo_module, "_get_registry", lambda: registry)
+
+    # When the action is invoked with an otherwise valid alpha id.
+    envelope = alpha_zoo_module.run_alpha_zoo(
+        action=action,
+        alpha_id="academic_bab",
+        candidate_ids=["academic_bab"],
+    )
+
+    # Then the parameter is rejected as list_alphas-only.
+    assert envelope["status"] == "error"
+    assert "list_alphas" in envelope["error"]
+    assert "result" not in envelope

@@ -16,7 +16,7 @@ _compute_ic_series = compute_ic_series
 _compute_group_equity = compute_group_equity
 
 
-def run_factor_analysis(
+def _run_native_factor_analysis(
     factor_csv: str, return_csv: str, output_dir: str, n_groups: int = 5
 ) -> str:
     """Run the full factor analysis pipeline: IC/IR + layered backtest.
@@ -40,7 +40,14 @@ def run_factor_analysis(
         return json.dumps({"status": "error", "error": f"Failed to read CSV: {e}"}, ensure_ascii=False)
 
     if factor_df.empty or return_df.empty:
-        return json.dumps({"status": "error", "error": "Factor or return data is empty"}, ensure_ascii=False)
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "Factor or return data is empty",
+                "error_kind": "insufficient_data",
+            },
+            ensure_ascii=False,
+        )
 
     if n_groups < 1:
         return json.dumps(
@@ -51,7 +58,11 @@ def run_factor_analysis(
     ic_series = compute_ic_series(factor_df, return_df)
     if ic_series.empty:
         return json.dumps(
-            {"status": "error", "error": "IC computation failed: insufficient shared dates/assets (need at least 5 per day)"},
+            {
+                "status": "error",
+                "error": "IC computation failed: insufficient shared dates/assets (need at least 5 per day)",
+                "error_kind": "insufficient_data",
+            },
             ensure_ascii=False,
         )
 
@@ -79,7 +90,12 @@ def run_factor_analysis(
     equity_df = compute_group_equity(factor_df, return_df, n_groups)
     if equity_df.empty:
         return json.dumps(
-            {"status": "error", "error": "Layered backtest failed: insufficient valid cross-section dates"},
+            {
+                "status": "error",
+                "error": "Layered backtest failed: insufficient valid cross-section dates",
+                "error_kind": "insufficient_data",
+                "files": ["ic_series.csv", "ic_summary.json"],
+            },
             ensure_ascii=False,
         )
     equity_df.to_csv(out_path / "group_equity.csv")
@@ -101,8 +117,33 @@ def run_factor_analysis(
         },
         "output_dir": str(out_path),
         "files": ["ic_series.csv", "ic_summary.json", "group_equity.csv"],
+        "_ic_dates": [date.isoformat() for date in ic_series.index],
     }
     return json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False)
+
+
+def run_factor_analysis(
+    factor_csv: str, return_csv: str, output_dir: str, n_groups: int = 5
+) -> str:
+    """Run fenced factor analysis while preserving the legacy four-argument API.
+
+    Args:
+        factor_csv: Absolute factor-panel CSV inside an allowed run root.
+        return_csv: Absolute forward-return-panel CSV inside an allowed run root.
+        output_dir: Absolute artifact directory inside an allowed run root.
+        n_groups: Number of native quantile groups.
+
+    Returns:
+        JSON-formatted native analysis plus measured quality and artifact bounds.
+    """
+    from src.tools.factor_analysis_contract import run_factor_analysis_contract
+
+    return run_factor_analysis_contract(
+        factor_csv=factor_csv,
+        return_csv=return_csv,
+        output_dir=output_dir,
+        n_groups=n_groups,
+    )
 
 
 class FactorAnalysisTool(BaseTool):
@@ -115,11 +156,11 @@ class FactorAnalysisTool(BaseTool):
         "properties": {
             "factor_csv": {
                 "type": "string",
-                "description": "Factor values CSV path (index=date, columns=codes)",
+                "description": "Absolute factor values CSV path inside allowed run roots (index=date, columns=codes)",
             },
             "return_csv": {
                 "type": "string",
-                "description": "Returns CSV path (same structure)",
+                "description": "Absolute returns CSV path inside allowed run roots (same structure)",
             },
             "n_groups": {
                 "type": "integer",
@@ -128,7 +169,7 @@ class FactorAnalysisTool(BaseTool):
             },
             "output_dir": {
                 "type": "string",
-                "description": "Output directory for results",
+                "description": "Absolute output directory for results inside allowed run roots",
             },
         },
         "required": ["factor_csv", "return_csv", "output_dir"],
