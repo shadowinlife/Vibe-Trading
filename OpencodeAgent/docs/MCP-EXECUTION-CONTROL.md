@@ -46,13 +46,8 @@ Identifier grammars:
 
 | Field | Limit | Pattern | Notes |
 |---|---|---|---|
-| `dispatch_key` on prepare | 1..200 | `^[A-Za-z0-9._~:-]+$` | Colon is accepted by prepare only. |
-| `dispatch_key` on start, stop, find | 1..200 | `^[A-Za-z0-9._~-]+$` | Colon is rejected. Use the common safe set. |
-| `remote_id`, `run_id`, `stop_key` | 1..128 | `^[A-Za-z0-9._~-]+$` | URL path safe. |
-
-The prepare/start grammar difference is a real integration hazard. A key such as
-`user:1:job:9:1` is accepted by prepare and then rejected with `400` by start,
-stop or find. RM should use only `A-Za-z0-9._~-` until the grammars are unified.
+| `dispatch_key` on prepare, start, stop, find | 1..200 | `^[A-Za-z0-9._~:-]+$` | Colon is accepted uniformly. |
+| `remote_id`, `run_id`, `stop_key` | 1..128 | `^[A-Za-z0-9._~-]+$` | URL path safe; colon is rejected. |
 
 Error bodies from execution and control routes are fixed text. A projection
 detail, SQL fragment, filesystem path or token never reaches the body or a log
@@ -90,7 +85,7 @@ Request query:
 
 | Parameter | Required | Constraint |
 |---|---|---|
-| `dispatch_key` | yes | 1..200, `^[A-Za-z0-9._~-]+$` |
+| `dispatch_key` | yes | 1..200, `^[A-Za-z0-9._~:-]+$` |
 
 The read examines the native `execution_dispatches` table and the legacy
 `strategy_runs.run_key` column in one SQLite read transaction. It creates no run
@@ -510,7 +505,7 @@ Constraints:
   selected registry. Unknown, duplicate, blank or over-limit ids are
   `400 invalid_request`.
 - `symbols` is non-empty, unique, at most 500. Blank entries are rejected.
-- `start_date < split_date <= end_date` and `as_of >= end_date`.
+- `start_date < split_date < end_date` and `as_of >= end_date`.
 - `forward_return_horizon_days` is a strict integer from 1 to 252. The RM alias is
   accepted on the wire; booleans and strings are rejected.
 - `n_groups` is a strict integer from 2 to 20.
@@ -993,25 +988,19 @@ that any of them is resolved.
    `cc589e39c8a20cb1baca29f3da8cb82fb981d63ad4bc04df0739c47191d226a4`. RM must
    freeze the newly published VT metadata and digest. Reusing the old fixture
    will fail the D-6 recomputation with `409 input_digest_mismatch`.
-6. **Dispatch key grammar.** Prepare accepts colon (`:`), while start, stop and
-   find reject it. RM should use only `A-Za-z0-9._~-` in keys until VT unifies the
-   grammar. Do not depend on the prepare-only colon acceptance.
-7. **Factor split boundary.** VT accepts `split_date == end_date` in the factor
-   spec. RM 0013 prose says `start_date < split_date < end_date`. RM should send a
-   strict split earlier than `end_date` unless the boundary is explicitly aligned.
-8. **Find version echo.** Find bodies carry `contract_version` on all three states
+6. **Find version echo.** Find bodies carry `contract_version` on all three states
    (`not_dispatched`, `dispatched`, `absent`), and every new error body carries it.
    The field is additive, so a parser that ignores unknown fields keeps working.
    Legacy 0001/0002 bodies deliberately do not carry it.
-9. **`unknown` is not stopped.** The dedicated entry may report `unknown` for a
+7. **`unknown` is not stopped.** The dedicated entry may report `unknown` for a
    live native dispatch because no cross-request handle provider is registered.
    RM must keep the execution slot, query find and stop, and must not read
    `unknown` as a completed, failed or cancelled run.
-10. **Stop requires `deadline_at`.** The 0013 stop example lists only the three
+8. **Stop requires `deadline_at`.** The 0013 stop example lists only the three
    identity keys. The implemented `StopRequest` also requires a timezone-aware
    `deadline_at` and `contract_version`. The server does not compute a default
    30 second deadline. RM must send the full tuple in section 9.1.
-11. **Delivery state.** `verified_by` is `pending` and `verified_at` is `pending`.
+9. **Delivery state.** `verified_by` is `pending` and `verified_at` is `pending`.
    Status is delivered-candidate. G-control, G-backtest and G-factor are all
    `pending`. Human confirmation is required. No end-to-end RM run has been
    performed for this document, and no receipt exists.

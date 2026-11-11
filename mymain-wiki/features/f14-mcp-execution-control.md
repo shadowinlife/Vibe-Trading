@@ -108,9 +108,7 @@ python tools/ci_private_files_gate.py
 3. **receipt 枚举缺 `backtest.execute`**：RM `ExecutionCapability` 当前没有该成员；VT 路由已存在，但 RM 在扩展枚举前无法为它签发 receipt。
 4. **无 live adapter**：RM 只有 `BacktestBackend` / `StopBackend` / `ExecutionSignalClient` 等协议与测试 fake，没有具体 HTTP adapter；`BacktestBackend` 也不含 result-read 方法，需要单独适配。
 5. **Carhart warmup 漂移**：RM fixture 仍是 `academic_carhart_mom.min_warmup_bars=252`，当前 VT 注册表是 `253`。RM 必须冻结 VT 新发布的 metadata 与 digest，否则 D-6 重算会 409。
-6. **dispatch_key 语法**：prepare 接受 `:`，start/stop/find 不接受。RM 应只使用 `A-Za-z0-9._~-`。
-7. **factor split 边界**：VT 接受 `split_date == end_date`，RM 0013 文字写严格小于；RM 应按严格边界发送或先对齐。
-8. **find 与所有新 body 都带 contract_version**：find 三态（`not_dispatched`/`dispatched`/`absent`）、status、result、start、stop、prepare、execute、factor-prototype 的成功体，以及这些路由的每个新 error body（400/404/409/503），都带 `contract_version="mcp-execution-control-v1"`。字段是可加性的，RM 的 find 解析器忽略未知字段即可，不得把字段存在解释成版本不符。legacy 0001 `GET /strategy-runs/{vt_run_id}` 与 0002 cancel body 按 0001 兼容要求逐字不变、按设计不带该字段；401/403 仍是共享 auth 的固定 `{"detail":...}` body。
+6. **find 与所有新 body 都带 contract_version**：find 三态（`not_dispatched`/`dispatched`/`absent`）、status、result、start、stop、prepare、execute、factor-prototype 的成功体，以及这些路由的每个新 error body（400/404/409/503），都带 `contract_version="mcp-execution-control-v1"`。字段是可加性的，RM 的 find 解析器忽略未知字段即可，不得把字段存在解释成版本不符。legacy 0001 `GET /strategy-runs/{vt_run_id}` 与 0002 cancel body 按 0001 兼容要求逐字不变、按设计不带该字段；401/403 仍是共享 auth 的固定 `{"detail":...}` body。
 
 ## 状态与上游关系
 

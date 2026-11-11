@@ -72,16 +72,18 @@ def verify_confirmed_stop(
         "unknown not final",
     )
 
-    stop_key, stop_id = "stop.confirmed", "mcp-long-stop-1"
-    prepared = prepare(h, "A9", stop_key, stop_id, stop_config, long_source)
-    h.expect(execute(h, "A9", stop_key, stop_id, prepared), 202)
-    observe = stop_payload(stop_key, stop_id, "stop-observe", "2100-01-01T00:00:00Z")
+    dispatch_key, remote_id = "user:1:job:9:2", "mcp-long-stop-1"
+    prepared = prepare(h, "A9", dispatch_key, remote_id, stop_config, long_source)
+    h.expect(execute(h, "A9", dispatch_key, remote_id, prepared), 202)
+    observe = stop_payload(
+        dispatch_key, remote_id, "stop-observe", "2100-01-01T00:00:00Z"
+    )
     owned = h.expect(
         h.request(
             "A9",
             "live-stop-owned",
             "POST",
-            f"/execution-instances/{stop_id}/stop",
+            f"/execution-instances/{remote_id}/stop",
             observe,
         ),
         202,
@@ -92,16 +94,22 @@ def verify_confirmed_stop(
         and owned["replayed"] is False,
         "owned live handle did not confirm from the terminal record",
     )
-    terminal = h.wait_terminal("A9", stop_id)
+    terminal = h.wait_terminal("A9", remote_id)
     require(
         terminal["status"] in {"completed", "cancelled"},
         f"unexpected stop terminal {terminal}",
     )
 
-    body = stop_payload(stop_key, stop_id, "stop-confirmed", "2100-01-01T00:00:00Z")
+    body = stop_payload(
+        dispatch_key, remote_id, "stop-confirmed", "2100-01-01T00:00:00Z"
+    )
     stopped = h.expect(
         h.request(
-            "A9", "confirmed-stop", "POST", f"/execution-instances/{stop_id}/stop", body
+            "A9",
+            "confirmed-stop",
+            "POST",
+            f"/execution-instances/{remote_id}/stop",
+            body,
         ),
         202,
     )
@@ -116,7 +124,7 @@ def verify_confirmed_stop(
             "A9",
             "confirmed-replay",
             "POST",
-            f"/execution-instances/{stop_id}/stop",
+            f"/execution-instances/{remote_id}/stop",
             body,
         ),
         202,
@@ -127,7 +135,7 @@ def verify_confirmed_stop(
     )
     absent = h.expect(
         h.request(
-            "A3", "absent", "GET", f"/execution-instances?dispatch_key={stop_key}"
+            "A3", "absent", "GET", f"/execution-instances?dispatch_key={dispatch_key}"
         ),
         200,
     )
@@ -158,4 +166,4 @@ def verify_confirmed_stop(
             "absent": absent,
         },
     )
-    return StopEvidence(first_unknown, stop_id, stopped, absent)
+    return StopEvidence(first_unknown, remote_id, stopped, absent)

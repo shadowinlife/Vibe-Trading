@@ -35,7 +35,7 @@ class BacktestEvidence:
 def verify_backtests(
     h: Harness, config: dict[str, JsonValue], source: str
 ) -> BacktestEvidence:
-    key, run_id = "happy.backtest", "mcp-long-happy-1"
+    key, run_id = "user:1:job:9:1", "mcp-long-happy-1"
     not_found = h.expect(
         h.request(
             "A3", "not-dispatched", "GET", f"/execution-instances?dispatch_key={key}"

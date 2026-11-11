@@ -49,9 +49,10 @@ ERROR_KINDS: Final = (
 DATA_DIGEST_STATUSES: Final = ("verified", "unavailable")
 
 _URL_SAFE_PATTERN: Final = r"^[A-Za-z0-9._~-]+$"
+DISPATCH_KEY_PATTERN: Final = r"^[A-Za-z0-9._~:-]+$"
 _SHA256_RE: Final = re.compile(r"^[0-9a-f]{64}$")
 _DispatchKey = Annotated[
-    str, Field(min_length=1, max_length=200, pattern=_URL_SAFE_PATTERN)
+    str, Field(min_length=1, max_length=200, pattern=DISPATCH_KEY_PATTERN)
 ]
 _RemoteToken = Annotated[
     str, Field(min_length=1, max_length=128, pattern=_URL_SAFE_PATTERN)
@@ -62,6 +63,7 @@ _NonEmptyString = Annotated[str, Field(min_length=1)]
 __all__ = [
     "CONTRACT_VERSION",
     "DATA_DIGEST_STATUSES",
+    "DISPATCH_KEY_PATTERN",
     "ERROR_KINDS",
     "FIND_STATES",
     "RUN_STATES",
@@ -263,10 +265,10 @@ class FactorPrototypeSpec(_ContractModel):
 
     @model_validator(mode="after")
     def _chronology(self) -> FactorPrototypeSpec:
-        if not self.start_date < self.split_date <= self.end_date:
+        if not self.start_date < self.split_date < self.end_date:
             raise ContractValidationError(
                 field="split_date",
-                reason="require start_date < split_date <= end_date",
+                reason="require start_date < split_date < end_date",
             )
         if self.as_of < self.end_date:
             raise ContractValidationError(

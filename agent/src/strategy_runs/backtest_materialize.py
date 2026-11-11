@@ -38,6 +38,7 @@ from src.strategy_runs.backtest_config import (
 )
 from src.strategy_runs.control_contract import (
     CONTRACT_VERSION,
+    DISPATCH_KEY_PATTERN,
     ContractValidationError,
     canonical_json_bytes,
     backtest_input_digest,
@@ -59,7 +60,6 @@ __all__ = [
 ]
 
 _SHA256_PATTERN: Final = r"^[0-9a-f]{64}$"
-_DISPATCH_KEY_PATTERN: Final = r"^[A-Za-z0-9._~:-]+$"
 _RUN_ID_RE: Final = re.compile(r"mcp-long-[A-Za-z0-9._-]+-[1-9][0-9]*")
 _UNAVAILABLE: Final = "unavailable"
 _DATA_SCHEMA: Final = "backtest-local-data-v1"
@@ -88,7 +88,7 @@ class BacktestPrepareRequest(_FrozenModel):
     """The exact prepare wire body; no execution or output fields are accepted."""
 
     dispatch_key: str = Field(
-        min_length=1, max_length=200, pattern=_DISPATCH_KEY_PATTERN
+        min_length=1, max_length=200, pattern=DISPATCH_KEY_PATTERN
     )
     run_dir: str = Field(min_length=1)
     config: dict[str, ConfigInputValue]

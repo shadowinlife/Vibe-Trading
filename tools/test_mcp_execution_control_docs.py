@@ -167,6 +167,10 @@ def test_start_and_stop_identity_binding_is_documented() -> None:
     assert "cannot be upgraded to `confirmed`" in DOC
     assert "cannot be downgraded" in DOC
     assert "There is no bare\n  pid kill" in DOC
+    assert "`dispatch_key` on prepare, start, stop, find" in DOC
+    assert "Colon is accepted by prepare only" not in DOC
+    assert "prepare-only colon acceptance" not in DOC
+    assert "`remote_id`, `run_id`, `stop_key` | 1..128" in DOC
     assert "After a process restart" in DOC
     assert "reads `unknown`" in DOC
 
@@ -191,6 +195,8 @@ def test_result_and_horizon_semantics_are_documented() -> None:
         in DOC
     )
     assert "positional trading bars" in DOC
+    assert "start_date < split_date < end_date" in DOC
+    assert "VT accepts `split_date == end_date`" not in DOC
     assert "label_end < split_date" in DOC
     assert "factor_date >= split_date" in DOC
     assert "label_end <= end_date" in DOC

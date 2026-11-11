@@ -33,7 +33,7 @@ def verify_factor(h: Harness) -> FactorEvidence:
         / "agent/tests/fixtures/factor_prototype/VT00.csv"
     )
     dates = [line.split(",", 1)[0] for line in fixture.read_text().splitlines()[1:]]
-    factor_key = "happy.factor"
+    factor_key = "user:1:factor:9:1"
     factor_body = factor_payload(factor_key, dates)
     accepted = h.expect(
         h.request("A1", "factor-start", "POST", "/factor/prototype", factor_body), 202
@@ -109,6 +109,7 @@ def verify_factor(h: Harness) -> FactorEvidence:
         ("unknown-candidate", "candidate_ids", ["missing_candidate"], 400),
         ("empty-symbols", "symbols", [], 400),
         ("bad-chronology", "split_date", dates[240], 400),
+        ("split-equals-end", "split_date", dates[-1], 400),
         ("bad-horizon", "forward_return_horizon_days", 253, 400),
         ("bad-groups", "n_groups", 1, 400),
         ("bad-digest", "registry_digest", "0" * 64, 409),

@@ -180,17 +180,31 @@ def test_d3_digest_changes_per_input(field: str, changed_value: str) -> None:
     assert cc.backtest_input_digest(**changed_inputs) != original
 
 
-@pytest.mark.parametrize("value", ["", "bad:key", "bad/key", "x" * 201])
-def test_backtest_dispatch_key_must_be_bounded_and_url_safe(value: str) -> None:
+@pytest.mark.parametrize("value", ["", "bad/key", "x" * 201])
+def test_backtest_dispatch_key_rejects_empty_slash_and_over_length(value: str) -> None:
     # Given an invalid dispatch key, when parsed, then the whole request fails.
     _rejects(cc.BacktestStartRequest, {**_backtest_payload(), "dispatch_key": value})
 
 
-@pytest.mark.parametrize("field", ["dispatch_key", "remote_id", "stop_key"])
+@pytest.mark.parametrize("value", ["", "bad/key"])
+def test_stop_dispatch_key_rejects_empty_and_slash(value: str) -> None:
+    # Given an invalid dispatch key, when parsed, then stop validation fails.
+    _rejects(cc.StopRequest, {**_stop_payload(), "dispatch_key": value})
+
+
+@pytest.mark.parametrize("field", ["remote_id", "stop_key"])
 @pytest.mark.parametrize("value", ["", "bad:key", "bad/key"])
-def test_stop_tokens_must_be_url_safe(field: str, value: str) -> None:
-    # Given an invalid stop identity token, when parsed, then validation fails.
+def test_remote_and_stop_tokens_must_be_url_safe(field: str, value: str) -> None:
+    # Given an invalid remote/stop token, when parsed, then validation fails.
     _rejects(cc.StopRequest, {**_stop_payload(), field: value})
+
+
+@pytest.mark.parametrize(("model", "payload"), VERSIONED_CASES)
+def test_dispatch_key_accepts_colon(model: type[BaseModel], payload: Payload) -> None:
+    # Given an RM-shaped key, when parsed, then its exact value round-trips.
+    key = "user:1:job:9:1"
+    parsed = model(**{**payload, "dispatch_key": key})
+    assert parsed.model_dump()["dispatch_key"] == key
 
 
 @pytest.mark.parametrize(
@@ -289,6 +303,7 @@ def test_factor_source_and_registry_digest_are_validated(
     [
         {"start_date": "2025-06-01"},
         {"start_date": "2025-06-02"},
+        {"split_date": _factor_spec()["end_date"]},
         {"split_date": "2025-08-02"},
         {"as_of": "2025-07-31"},
     ],
@@ -338,11 +353,11 @@ def test_boundary_values_are_accepted() -> None:
     )
 
 
-def test_factor_accepts_rm_horizon_alias_and_inclusive_oos_boundary() -> None:
-    # Given RM's horizon name and split_date == end_date, when parsed.
+def test_factor_accepts_rm_horizon_alias_and_group_boundary() -> None:
+    # Given RM's horizon name and the smallest valid grouping, when parsed.
     spec = _factor_spec()
     spec.pop("horizon_days")
-    spec.update(forward_return_horizon_days=1, n_groups=2, split_date=spec["end_date"])
+    spec.update(forward_return_horizon_days=1, n_groups=2)
     parsed = cc.FactorPrototypeSpec(**spec)
 
     # Then the VT attribute and RM serialization retain the declared horizon.

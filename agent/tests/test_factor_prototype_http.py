@@ -278,6 +278,9 @@ _INVALID_CASES = [
     pytest.param(_spec_case(symbols=[]), 400, id="empty-symbols"),
     pytest.param(_spec_case(symbols=_TOO_MANY_SYMBOLS), 400, id="501-symbols"),
     pytest.param(_spec_case(split_date="2024-01-02"), 400, id="bad-chronology"),
+    pytest.param(
+        _spec_case(split_date=_http_spec()["end_date"]), 400, id="split-equals-end"
+    ),
     pytest.param(_spec_case(as_of="2024-12-30"), 400, id="as-of-before-end"),
     pytest.param(
         _spec_case(forward_return_horizon_days=253), 400, id="horizon-over-252"

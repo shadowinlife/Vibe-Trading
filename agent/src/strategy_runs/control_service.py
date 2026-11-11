@@ -29,6 +29,7 @@ from src.factors.prototype_result import (
 from src.strategy_runs.backtest_materialize import BacktestPrepareResponse
 from src.strategy_runs.control_contract import (
     CONTRACT_VERSION,
+    DISPATCH_KEY_PATTERN,
     ERROR_KINDS,
     ContractValidationError,
     JsonValue,
@@ -53,6 +54,12 @@ __all__ = [
 ]
 
 _IDENTITY_RE: Final = re.compile(r"^[A-Za-z0-9._~-]+$")
+_IDENTIFIER_PATTERNS: Final[
+    dict[Literal["dispatch_key", "remote_id"], re.Pattern[str]]
+] = {
+    "dispatch_key": re.compile(DISPATCH_KEY_PATTERN),
+    "remote_id": _IDENTITY_RE,
+}
 _RESULT_BYTE_CAP: Final = 50 * 1024
 _PROTOTYPE_RESULT_BYTE_CAP: Final = 8 * 1024 * 1024
 _BACKTEST_RUN_CARD_BYTE_CAP: Final = 8 * 1024 * 1024
@@ -532,9 +539,12 @@ def _failure_kind(value: str | None) -> str:
     return kind if kind in _ERROR_KINDS else "runner_error"
 
 
-def _identifier(value: str, limit: int, field: str) -> str:
+def _identifier(
+    value: str, limit: int, field: Literal["dispatch_key", "remote_id"]
+) -> str:
     valid_type = isinstance(value, str) and 1 <= len(value) <= limit
-    if not valid_type or _IDENTITY_RE.fullmatch(value) is None:
+    pattern = _IDENTIFIER_PATTERNS[field]
+    if not valid_type or pattern.fullmatch(value) is None:
         raise ControlProjectionError("invalid_request", f"invalid {field}")
     return value
 

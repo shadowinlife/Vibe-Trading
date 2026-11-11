@@ -137,14 +137,17 @@ def _finish(
     )
 
 
-def test_find_not_dispatched_has_exact_body(client: TestClient) -> None:
+@pytest.mark.parametrize("dispatch_key", ["missing", "user:1:job:9:1"])
+def test_find_not_dispatched_has_exact_body(
+    client: TestClient, dispatch_key: str
+) -> None:
     response = client.get(
-        "/execution-instances", params={"dispatch_key": "missing"}, headers=AUTH
+        "/execution-instances", params={"dispatch_key": dispatch_key}, headers=AUTH
     )
     assert response.status_code == 200
     assert response.json() == {
         "state": "not_dispatched",
-        "dispatch_key": "missing",
+        "dispatch_key": dispatch_key,
         "contract_version": CONTRACT_VERSION,
     }
 
