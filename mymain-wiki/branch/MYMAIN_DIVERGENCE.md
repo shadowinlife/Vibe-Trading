@@ -212,6 +212,13 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 
 ## 5. 迭代笔记
 
+### 2026-11-12 F14 生产池重交付（v3.18.3，canary PASS）
+
+- PR #13 合入 `mymain`：merge `084207fb6139594af08b2c9f2b1a5dbd97992efb`，tag `v3.18.3-mcp-execution-control-20261111`；镜像 `registry-vpc.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode:v3.18.3-mcp-execution-control-20261111@sha256:6b8aadec567d8e6d145bc93f160a679adaacae16c9b3401518d7142a98c49372`（呼和浩特仓同 digest）。
+- 相关回归 543 passed；A1–A11 真实 HTTP PASS（110 responses / 123 attempts，无 MCP/worker mock）；启动就绪 PASS。证据 `.omo/evidence/mcp-execution-control-v3.18.3-20261111/`。
+- 生产池 `opencode-poc` 与 `mcp-long-task` 模板已切该 digest，`replicas 0`；ImageCache `imc-bp19rbqnrfyvvkdp4wl9` 命中。canary 箱 `default--opencode-poc-7lssg`：2/2 Running、0 restarts；`find` 返回 `not_dispatched` + `contract_version=mcp-execution-control-v1`，`prepare`/`factor` 空体 400 均带合同版本，`/config` 200，99 tools；`mcp-long-task` 重跑在等待 entry `/health` 45s 后同样 PASS（`route-wait` 不代表应用 warm）；kill 后零残留。
+- 边界：VT 侧生产池可用性 canary，不是 RM live E2E，也不是 gate receipt；G-control/G-backtest/G-factor 仍 `pending`。RM 侧记录见 `aliyun-acs-agent-service/deploy/prod/README.md` §7.18。
+
 ### 2026-11-10 F14 MCP 执行控制合同（交付候选，门仍 pending）
 
 - 发布 `OpencodeAgent/docs/MCP-EXECUTION-CONTROL.md` 与功能卡 [F14](../features/f14-mcp-execution-control.md)：find/start/status/stop、`/backtest/prepare`、`/backtest/execute`、`/factor/prototype` 的路由、状态码、固定错误体、D-3/D-6 公式、canonical JSON、15 字段中立配置、成本语义、启动/停止身份绑定、legacy `run_key` 投影、结果回读与 horizon label-end 规则。
