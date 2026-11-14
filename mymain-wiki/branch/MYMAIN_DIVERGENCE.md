@@ -217,7 +217,8 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 - 实现 `POST /strategy-version-source`：按部署绑定 owner 与精确 `strategy_id + strategy_version` 返回 `code/signal_engine.py` 原始字节、不可变 `version_id`、长度和小写 SHA-256；不使用 latest、当前路径或 Git HEAD。合同与部署归属绑定见 [STRATEGY-VERSION-SOURCE.md](../../OpencodeAgent/docs/STRATEGY-VERSION-SOURCE.md)，能力导航见 [F15](../features/f15-strategy-version-source.md)。
 - 四个实现提交为 `d0d3fd41`、`86f8cb35`、`5e6e6abc`、`1163cdf7`：独立持久版本登记、发布/删除/崩溃恢复、跨 owner 写路径拒绝、state export/import 身份与 tombstone 保持。DCO 签署，无 AI 归属 trailer。
 - RM 独立本地验收：15 组真实 HTTP/process/state PASS、A8/A17 pytest 5 passed、选定 VT 回归 961 passed；外部用户 active/pending/tombstoned 版本均与不存在策略同形拒绝。首次审查缺失的 A13 状态覆盖已补齐，复审 APPROVE。
-- 当前边界：本地发布候选，不是生产部署或具名人工验收。生产启用前，RM 必须为每个新沙箱写入独立 `opencode:0600` 归属绑定；共享模板不得配置静态 owner。镜像 tag、digest、ImageCache、部署证据和 `verified_by` 待实际发布后记录。
+- 镜像构建（2026-11-14）：`v3.18.4-strategy-version-source-20261114`，tag 目标 `fbd73a5591a5b6da60b360e1f0490e07d0e7d75f`；主仓与杭州副本共享平台 manifest `sha256:2c8cc0258027795d06b1dd4ba84f1d3f5699e69acb029f777ba88c107242cb53`。本地 amd64 启动就绪 PASS：listening 5.6s、`/config` 24.1s、VT MCP 27.8s、entry listening 30.8s、entry `/health` 33.2s。
+- 当前边界：源码、镜像和本地启动已验证，不是生产部署或具名人工验收。生产启用前，RM 必须为每个新沙箱写入独立 `opencode:0600` 归属绑定；共享模板不得配置静态 owner。ImageCache、部署证据和 `verified_by` 待实际发布后记录。
 
 ### 2026-11-12 F14 生产池重交付（v3.18.3，canary PASS）
 

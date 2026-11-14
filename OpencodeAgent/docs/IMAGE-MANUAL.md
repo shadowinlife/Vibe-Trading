@@ -723,19 +723,18 @@ VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
 
 构建默认无 hardcode 兜底 registry；下表是已交付产物的实际地址，命令示例中的 tag 按当前交付替换。
 
-当前交付（2026-11-02）：
+当前交付（2026-11-14）：
 
 | 项 | 值 |
 |------|------|
-| Tag | `v3.17.0-upstream-align-20261102`（linux/amd64，4.33GB） |
-| 源码 | `mymain` HEAD `b504f292`（上游 `78fab6b3` 对齐 merge `86996c83` 之后） |
-| 主仓 | `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode:v3.17.0-upstream-align-20261102` |
-| 副本 | `registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode:v3.17.0-upstream-align-20261102` |
-| Digest | 双仓同 digest `sha256:9c40a61f32484fab1e5644697ef3b6d76e36300c55d86b06aaba35bf2b0358f9`（image ID `sha256:f19e7cab…`） |
-| 血统 | 3 个关键文件与 HEAD 逐字节一致：`agent/src/api/strategy_surfaces.py`（`4fd8e32b…`）、`OpencodeAgent/AGENTS.md`（`d5f4010c…`）、`config/oh-my-openagent.json`（`8eb16910…`） |
-| 预烘 / 预加载 | `@opencode-ai/plugin` 双目录（`~/.config/opencode` 与 `~/.opencode`）、`oh-my-openagent@5.1.35` 缓存、`models.json` 5.96MB / 235 providers 均在位；`OPENCODE_DISABLE_MODELS_FETCH=1` |
-| 启动就绪 | `check_startup_readiness.sh`（`OFFLINE=1`、预算 300s）PASS：listening 6.6s、`/config` 200 24.9s、MCP 29.3s、entry listening 32.6s、entry `/health` 200 35.1s |
-| OMO | 24/24 条目为 `alibaba-cn/deepseek-v4.1-flash-1017`（14 agents + 10 categories） |
+| Tag | `v3.18.4-strategy-version-source-20261114`（linux/amd64） |
+| 源码 | `feat/strategy-version-source` HEAD `fbd73a5591a5b6da60b360e1f0490e07d0e7d75f`；实现代码与本地验收 HEAD `1163cdf7` 的 `agent/` 逐字节一致 |
+| 主仓 | `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode:v3.18.4-strategy-version-source-20261114` |
+| 副本 | `registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode:v3.18.4-strategy-version-source-20261114` |
+| Digest | 双仓共享平台 manifest `sha256:2c8cc0258027795d06b1dd4ba84f1d3f5699e69acb029f777ba88c107242cb53`（本地 image ID `sha256:2778a65fd9de`）；生产按该子 manifest 钉死，不使用副本外层 index `999b5539…` |
+| 启动就绪 | `check_startup_readiness.sh`（`REQUIRE_IMAGE=1`、预算 300s）PASS：listening 5.6s、`/config` 200 24.1s、VT MCP 27.8s、entry listening 30.8s、entry `/health` 200 33.2s |
+| 合同 | `strategy-version-source-v1`；`RM_VT_STRATEGY_OWNER_BINDING_FILE` 与精确源码读取实现见 [STRATEGY-VERSION-SOURCE.md](STRATEGY-VERSION-SOURCE.md) |
+| 边界 | 本记录证明源码、镜像与本地启动就绪，不代表生产池发布、部署后 E2E 或具名人工验收；这些坐标在后续促进记录中追加 |
 
 ### 12.2 推送镜像
 
