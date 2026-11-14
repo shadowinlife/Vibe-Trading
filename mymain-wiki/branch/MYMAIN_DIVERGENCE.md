@@ -212,6 +212,13 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 
 ## 5. 迭代笔记
 
+### 2026-11-14 F15 精确策略版本源码读取（本地发布候选）
+
+- 实现 `POST /strategy-version-source`：按部署绑定 owner 与精确 `strategy_id + strategy_version` 返回 `code/signal_engine.py` 原始字节、不可变 `version_id`、长度和小写 SHA-256；不使用 latest、当前路径或 Git HEAD。合同与部署归属绑定见 [STRATEGY-VERSION-SOURCE.md](../../OpencodeAgent/docs/STRATEGY-VERSION-SOURCE.md)，能力导航见 [F15](../features/f15-strategy-version-source.md)。
+- 四个实现提交为 `d0d3fd41`、`86f8cb35`、`5e6e6abc`、`1163cdf7`：独立持久版本登记、发布/删除/崩溃恢复、跨 owner 写路径拒绝、state export/import 身份与 tombstone 保持。DCO 签署，无 AI 归属 trailer。
+- RM 独立本地验收：15 组真实 HTTP/process/state PASS、A8/A17 pytest 5 passed、选定 VT 回归 961 passed；外部用户 active/pending/tombstoned 版本均与不存在策略同形拒绝。首次审查缺失的 A13 状态覆盖已补齐，复审 APPROVE。
+- 当前边界：本地发布候选，不是生产部署或具名人工验收。生产启用前，RM 必须为每个新沙箱写入独立 `opencode:0600` 归属绑定；共享模板不得配置静态 owner。镜像 tag、digest、ImageCache、部署证据和 `verified_by` 待实际发布后记录。
+
 ### 2026-11-12 F14 生产池重交付（v3.18.3，canary PASS）
 
 - PR #13 合入 `mymain`：merge `084207fb6139594af08b2c9f2b1a5dbd97992efb`，tag `v3.18.3-mcp-execution-control-20261111`；镜像 `registry-vpc.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode:v3.18.3-mcp-execution-control-20261111@sha256:6b8aadec567d8e6d145bc93f160a679adaacae16c9b3401518d7142a98c49372`（呼和浩特仓同 digest）。

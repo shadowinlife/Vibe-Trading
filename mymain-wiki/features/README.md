@@ -1,10 +1,10 @@
 ---
-title: 功能卡索引（mymain 独有特性 F1-F5、F7、F9-F14）
-description: mymain 分支相对上游的独有功能索引。改代码前确认能力归属、查上游回流计划、定位验证基线时先读这里。触发词：F1、F2、F3、F4、F5、F7、F8、F9、F10、F11、F12、F13、F14、ashare、功能卡、feature、reflections、memory MCP、MemoryGuard、ClickHouse、OpencodeAgent、engine-bridge、opencode 引擎桥、策略库、strategy library、策略调度、strategy-run-entry、vt-state-v1、RM schedule tools、mcp-execution-control。
+title: 功能卡索引（mymain 独有特性 F1-F5、F7、F9-F15）
+description: mymain 分支相对上游的独有功能索引。改代码前确认能力归属、查上游回流计划、定位验证基线时先读这里。触发词：F1、F2、F3、F4、F5、F7、F8、F9、F10、F11、F12、F13、F14、F15、ashare、功能卡、feature、reflections、memory MCP、MemoryGuard、ClickHouse、OpencodeAgent、engine-bridge、opencode 引擎桥、策略库、strategy library、策略调度、strategy-run-entry、vt-state-v1、RM schedule tools、mcp-execution-control、strategy-version-source。
 type: index
 status: active
 created: 2026-08-30
-updated: 2026-11-10
+updated: 2026-11-14
 tags: [index, features, mymain]
 related: [../branch/MYMAIN_DIVERGENCE.md]
 ---
@@ -31,6 +31,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 | F12 | RM 调度工具 | 六个 MCP 工具转发 RM 控制面：create/list/pause/resume/delete/retarget | 本地 mymain 已合入（d90d5308）；未回上游 | [f12-rm-schedule-tools.md](f12-rm-schedule-tools.md) |
 | F13 | A 股外部证据取数 skills | 定期报告全文 / 公告 / 监管处罚 / 机构调研 / 券商研报 / gov.cn 政策，6 个 skill + 9 个零 key 脚本，装到全局配置目录 | 个人部署独有，不回流；关闭 DIVERGENCE R2 | [f13-ashare-evidence-skills.md](f13-ashare-evidence-skills.md) |
 | F14 | MCP 长执行控制面 | 原实例 find/start/status/stop、冻结回测 prepare/execute、因子原型、D-3/D-6 摘要与结果回读 | 个人部署与 RM 消费面独有，暂不回流；门 pending，交付候选 | [f14-mcp-execution-control.md](f14-mcp-execution-control.md) |
+| F15 | 精确策略版本源码读取 | 部署归属绑定 + 持久版本登记 + 单文件精确字节与血缘校验 | 个人部署与 RM 消费面独有，暂不回流；本地发布候选，生产验收 pending | [f15-strategy-version-source.md](f15-strategy-version-source.md) |
 
 ## 为什么没有 F6
 

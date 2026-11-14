@@ -14,7 +14,8 @@ records the implemented behavior and names the difference as an RM alignment ite
 
 The contract adds an original-instance control plane for long executions. It does
 not replace the strategy-run entry from VT-STRAT-0001, the cancel route from
-VT-STRAT-0002 or the version precheck from VT-STRAT-0003. It also does not change
+VT-STRAT-0002 or the exact source read from VT-STRAT-0003, documented separately
+in [STRATEGY-VERSION-SOURCE.md](STRATEGY-VERSION-SOURCE.md). It also does not change
 the artifact layout or the `summary` 1.0 object frozen by 0012.
 
 ## 1. Entry point and authentication
