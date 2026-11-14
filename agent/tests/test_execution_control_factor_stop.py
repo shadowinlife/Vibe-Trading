@@ -749,6 +749,7 @@ def test_stop_route_set_includes_all_previous_paths(
         "/strategy-runs",
         "/strategy-runs/{vt_run_id}",
         "/strategy-runs/{vt_run_id}/cancel",
+        "/strategy-version-source",
         "/state/export",
         "/state/import",
     }

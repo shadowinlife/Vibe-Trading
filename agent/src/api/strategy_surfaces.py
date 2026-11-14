@@ -35,7 +35,7 @@ STRATEGY_RUN_ENABLED = _enabled("VT_STRATEGY_RUN_ENABLED")
 
 
 def register_strategy_surfaces(app: FastAPI) -> None:
-    """Register the strategy library and the two opt-in F9 routers.
+    """Register the strategy library and the opt-in F9 routers.
 
     Args:
         app: FastAPI application that receives the routes.
@@ -47,5 +47,9 @@ def register_strategy_surfaces(app: FastAPI) -> None:
         register_strategy_schedule_routes(app)
     if STRATEGY_RUN_ENABLED:
         from src.api.strategy_run_routes import register_strategy_run_routes
+        from src.api.strategy_version_source_routes import (
+            register_strategy_version_source_routes,
+        )
 
         register_strategy_run_routes(app)
+        register_strategy_version_source_routes(app)

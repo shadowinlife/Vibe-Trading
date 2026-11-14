@@ -20,6 +20,7 @@ Failure split (frozen contract):
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 import logging
 import os
@@ -40,6 +41,7 @@ WWW_AUTHENTICATE = {"WWW-Authenticate": "Bearer"}
 __all__ = [
     "TOKEN_FILE_ENV",
     "WWW_AUTHENTICATE",
+    "expected_strategy_run_token_sha256",
     "log_token_configuration",
     "require_strategy_run_token",
     "token_configured",
@@ -112,6 +114,14 @@ def token_configured() -> bool:
     return bool(_expected_token())
 
 
+def expected_strategy_run_token_sha256() -> str | None:
+    """Return the normalized mounted credential's digest for bound writes."""
+    expected = _expected_token()
+    if not expected:
+        return None
+    return hashlib.sha256(expected.encode("utf-8")).hexdigest()
+
+
 def log_token_configuration() -> None:
     """Emit the only startup-safe token signal: configured or not.
 
@@ -123,8 +133,8 @@ def log_token_configuration() -> None:
         logger.info("strategy-run entry: service token not configured")
 
 
-def require_strategy_run_token(request: Request) -> None:
-    """FastAPI dependency validating the RM service token.
+def require_strategy_run_token(request: Request) -> str:
+    """Validate the RM service token and return its normalized presentation.
 
     Raises:
         HTTPException: 401 for a missing/malformed header, 403 when the token
@@ -136,3 +146,4 @@ def require_strategy_run_token(request: Request) -> None:
         raise _forbidden()
     if not hmac.compare_digest(presented.encode("utf-8"), expected.encode("utf-8")):
         raise _forbidden()
+    return presented
