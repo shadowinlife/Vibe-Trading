@@ -734,7 +734,8 @@ VT_SOURCE=vendor/Vibe-Trading ./build.sh --app --tag v3.2.0-mymain
 | Digest | 双仓共享平台 manifest `sha256:2c8cc0258027795d06b1dd4ba84f1d3f5699e69acb029f777ba88c107242cb53`（本地 image ID `sha256:2778a65fd9de`）；生产按该子 manifest 钉死，不使用副本外层 index `999b5539…` |
 | 启动就绪 | `check_startup_readiness.sh`（`REQUIRE_IMAGE=1`、预算 300s）PASS：listening 5.6s、`/config` 200 24.1s、VT MCP 27.8s、entry listening 30.8s、entry `/health` 200 33.2s |
 | 合同 | `strategy-version-source-v1`；`RM_VT_STRATEGY_OWNER_BINDING_FILE` 与精确源码读取实现见 [STRATEGY-VERSION-SOURCE.md](STRATEGY-VERSION-SOURCE.md) |
-| 边界 | 本记录证明源码、镜像与本地启动就绪，不代表生产池发布、部署后 E2E 或具名人工验收；这些坐标在后续促进记录中追加 |
+| 生产交付 | 两套池模板已切本镜像，`replicas: 0`，ImageCache `imc-bp19rbqnrfyxi7krnm8r` 命中；RM 同步发布 per-user owner binding。真实绑定写入与精确读取 PASS、生产 15 组 HTTP/process/state PASS、A8/A17 5 passed、真实 RM 用户归属一致、生产池新箱 0 restarts；详见 [MYMAIN_DIVERGENCE](../../mymain-wiki/branch/MYMAIN_DIVERGENCE.md) F15 与 RM `.omo/evidence/vt-0003-production-20261114/` |
+| 边界 | 本记录证明生产部署与部署工程验收；A11 具名验收者与 USER 生产人工验收仍 pending，不签发 `backtest.run`、research/factor 或 G-control/G-backtest/G-factor 能力回执 |
 
 ### 12.2 推送镜像
 

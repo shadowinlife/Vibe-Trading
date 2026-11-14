@@ -218,7 +218,9 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 - 四个实现提交为 `d0d3fd41`、`86f8cb35`、`5e6e6abc`、`1163cdf7`：独立持久版本登记、发布/删除/崩溃恢复、跨 owner 写路径拒绝、state export/import 身份与 tombstone 保持。DCO 签署，无 AI 归属 trailer。
 - RM 独立本地验收：15 组真实 HTTP/process/state PASS、A8/A17 pytest 5 passed、选定 VT 回归 961 passed；外部用户 active/pending/tombstoned 版本均与不存在策略同形拒绝。首次审查缺失的 A13 状态覆盖已补齐，复审 APPROVE。
 - 镜像构建（2026-11-14）：`v3.18.4-strategy-version-source-20261114`，tag 目标 `fbd73a5591a5b6da60b360e1f0490e07d0e7d75f`；主仓与杭州副本共享平台 manifest `sha256:2c8cc0258027795d06b1dd4ba84f1d3f5699e69acb029f777ba88c107242cb53`。本地 amd64 启动就绪 PASS：listening 5.6s、`/config` 24.1s、VT MCP 27.8s、entry listening 30.8s、entry `/health` 33.2s。
-- 当前边界：源码、镜像和本地启动已验证，不是生产部署或具名人工验收。生产启用前，RM 必须为每个新沙箱写入独立 `opencode:0600` 归属绑定；共享模板不得配置静态 owner。ImageCache、部署证据和 `verified_by` 待实际发布后记录。
+- 生产交付（2026-11-14）：RM `strategy-owner-binding-20261114` 已发布并在 interactive/execution 两条置备路径写入真实用户归属绑定；两套池模板已切 `v3.18.4-strategy-version-source-20261114@sha256:2c8cc0258027795d06b1dd4ba84f1d3f5699e69acb029f777ba88c107242cb53`，replicas 保持 0，ImageCache `imc-bp19rbqnrfyxi7krnm8r` 命中。RM image `sha256:7ae348d955ccda199e48539f0d8cc8db324b5079a138e4e18b9641f8269c4997`；备份 `/opt/acs-agent/backup/strategy-owner-binding-20261114T121830Z/`。
+- 部署验收：真实 CLI 绑定写入与 canary 精确读取 PASS；15 组生产 HTTP/process/state PASS / 0 FAIL；A8/A17 生产镜像内 5 passed。真实 RM 用户绑定的 owner/digest 与真实用户一致，启动探针预算修正为 300s 后生产池新箱 0 restarts。quick model 远端 MCP 的 `service.info` 成功，research 任务如实 queued/no_backend 并已 cancel 清理。
+- 当前边界：VT 已 delivered，A11 具名验收者与 USER 生产人工验收仍 pending；`backtest.run` 未注册，research/factor 仍不可用，G-control/G-backtest/G-factor 不签发 receipt。证据 = RM 仓 `.omo/evidence/vt-0003-production-20261114/`。
 
 ### 2026-11-12 F14 生产池重交付（v3.18.3，canary PASS）
 
