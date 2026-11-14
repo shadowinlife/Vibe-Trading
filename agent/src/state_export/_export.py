@@ -49,6 +49,7 @@ from src.state_export.manifest import (
     build_manifest,
     sha256_file,
 )
+from src.strategy_versions.locking import shared_version_lock
 
 __all__ = ["export_full"]
 
@@ -96,31 +97,32 @@ def export_full(
     root = _resolved_root(runtime_root)
     databases = _resolved_db_paths(root, db_paths)
     root.mkdir(parents=True, exist_ok=True)
-    staging = _make_temp_dir(root, _EXPORT_TMP_PREFIX)
-    try:
-        data_root = staging / DATA_DIRNAME
-        data_root.mkdir()
-        scanned = _scan_strategy_tree(root / _STRATEGY_DIRNAME, root)
-        database_pairs = _snapshot_databases(databases, data_root)
-        staged_files = _read_verify_and_stage(scanned, root, data_root)
-        _enforce_raw_budget(staged_files, database_pairs)
-        manifest = build_manifest(
-            [(relpath, staged) for relpath, staged, _, _ in staged_files],
-            database_pairs,
-            excluded=EXCLUDED_PATHS,
-        )
-        _assert_manifest_matches(manifest, staged_files)
-        body = _build_blob(manifest, data_root)
-        if len(body) > MAX_BLOB_BYTES:
-            raise BlobTooLarge(f"compressed state blob is {len(body)} bytes; limit is {MAX_BLOB_BYTES}")
-        return ExportBundle(
-            body=body,
-            manifest=manifest,
-            layout_version=manifest.layout_version,
-            content_sha256=manifest.content_sha256,
-        )
-    finally:
-        _remove_tree(staging)
+    with shared_version_lock(root):
+        staging = _make_temp_dir(root, _EXPORT_TMP_PREFIX)
+        try:
+            data_root = staging / DATA_DIRNAME
+            data_root.mkdir()
+            scanned = _scan_strategy_tree(root / _STRATEGY_DIRNAME, root)
+            database_pairs = _snapshot_databases(databases, data_root)
+            staged_files = _read_verify_and_stage(scanned, root, data_root)
+            _enforce_raw_budget(staged_files, database_pairs)
+            manifest = build_manifest(
+                [(relpath, staged) for relpath, staged, _, _ in staged_files],
+                database_pairs,
+                excluded=EXCLUDED_PATHS,
+            )
+            _assert_manifest_matches(manifest, staged_files)
+            body = _build_blob(manifest, data_root)
+            if len(body) > MAX_BLOB_BYTES:
+                raise BlobTooLarge(f"compressed state blob is {len(body)} bytes; limit is {MAX_BLOB_BYTES}")
+            return ExportBundle(
+                body=body,
+                manifest=manifest,
+                layout_version=manifest.layout_version,
+                content_sha256=manifest.content_sha256,
+            )
+        finally:
+            _remove_tree(staging)
 
 
 def _scan_strategy_tree(strategies_root: Path, root: Path) -> list[_ScanEntry]:

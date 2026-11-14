@@ -97,12 +97,13 @@ def _tree_bytes(root: Path) -> dict[str, bytes]:
 
 
 def _state_snapshot(root: Path) -> dict[str, bytes]:
+    """Capture user state, excluding the persistent coordination lock file."""
     if not root.exists():
         return {}
     return {
         path.relative_to(root).as_posix(): path.read_bytes()
         for path in sorted(root.rglob("*"))
-        if path.is_file()
+        if path.is_file() and path.name != ".strategy-version-registry.lock"
     }
 
 

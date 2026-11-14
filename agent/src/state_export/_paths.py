@@ -27,6 +27,8 @@ __all__ = ["MAX_RUN_PAYLOAD_BYTES", "default_db_paths"]
 #: Hard cap on the ``scope=run`` JSON payload (2 MiB, per change request 0004).
 MAX_RUN_PAYLOAD_BYTES = 2 * 1024 * 1024
 
+#: Database that also carries the durable strategy-version registry rows.
+_STRATEGY_STORE_DB = "strategy_store.db"
 #: Directory holding the irreversible strategy snapshots.
 _STRATEGY_DIRNAME = "strategies"
 #: SQLite sidecars that must never survive a replace: ``-journal`` is the
@@ -60,7 +62,7 @@ def default_db_paths(runtime_root: Path | None = None) -> dict[str, Path]:
     root = _resolved_root(runtime_root)
     overrides = get_env_config().paths
     raw_paths = {
-        "strategy_store.db": overrides.vibe_trading_strategy_store_db_path,
+        _STRATEGY_STORE_DB: overrides.vibe_trading_strategy_store_db_path,
         "strategy_discovery.db": overrides.vibe_trading_strategy_discovery_db_path,
     }
     resolved: dict[str, Path] = {}

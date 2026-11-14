@@ -14,7 +14,8 @@ import logging
 import os
 import sqlite3
 import uuid
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -26,6 +27,7 @@ from src.state_export._paths import (
     _IMPORT_BACKUP_PREFIX,
     _IMPORT_TMP_PREFIX,
     _STRATEGY_DIRNAME,
+    _STRATEGY_STORE_DB,
     _make_temp_dir,
     _move,
     _read_only_uri,
@@ -35,8 +37,14 @@ from src.state_export._paths import (
     _resolved_root,
     _unlink,
 )
+from src.state_export._version_registry import (
+    RegistryMergeConflict,
+    merge_registry_for_import,
+)
 from src.state_export.manifest import DATA_DIRNAME, ManifestInvalid, PathEscape, StateManifest
 from src.strategy_store import _shared
+from src.strategy_versions.errors import VersionLockUnavailable
+from src.strategy_versions.locking import exclusive_version_lock
 
 __all__ = ["import_locked"]
 
@@ -59,7 +67,13 @@ def import_locked(
     runtime_root: Path | None,
     db_paths: Mapping[str, Path] | None,
 ) -> ImportResult:
-    """Import one already-fenced blob; the caller holds the process lock."""
+    """Import one already-fenced blob; the caller holds the process lock.
+
+    The package is extracted and validated first.  The registry merge and every
+    live-state step run under the cross-process registry exclusive lock, so a
+    concurrent publish or tombstone cannot land between the merge read and the
+    installed file.
+    """
     root = _resolved_root(runtime_root)
     databases = _resolved_db_paths(root, db_paths)
     root.mkdir(parents=True, exist_ok=True)
@@ -70,44 +84,71 @@ def import_locked(
     keep_backup = False
     try:
         manifest = _extract_blob(blob, staging, set(databases))
-        backup = _make_temp_dir(root, _IMPORT_BACKUP_PREFIX)
-        try:
-            _take_backup(root, databases, backup, record)
-            _install_state(root, databases, staging, manifest, record)
-            _shared.write_state_generation(
-                f"{manifest.content_sha256}:{uuid.uuid4().hex}", runtime_root=root
-            )
-            reopened = _shared.reopen_store()
-            strategies, versions = _self_check(root, databases, manifest)
-        except BaseException as exc:
+        with _registry_exclusive(root):
+            effective_databases = _merge_registry(staging, databases)
+            backup = _make_temp_dir(root, _IMPORT_BACKUP_PREFIX)
             try:
-                problem = _restore_state(root, databases, record)
-            except BaseException:
-                keep_backup = True
-                logger.warning("state import rollback raised; backup retained at %s", backup)
-                raise ImportFailed("state import failed and rollback raised") from exc
-            if problem is not None:
-                keep_backup = True
-                logger.warning("state import rollback incomplete; backup retained at %s", backup)
-                raise ImportFailed(
-                    "state import failed and the previous state could not be fully restored"
-                ) from exc
-            if isinstance(exc, StateExportError):
-                raise
-            if isinstance(exc, _SelfCheckFailed):
-                raise ImportFailed(f"state import self-check failed: {exc}") from exc
-            raise ImportFailed(f"state import failed: {type(exc).__name__}") from exc
-        return ImportResult(
-            layout_version=manifest.layout_version,
-            content_sha256=manifest.content_sha256,
-            strategies=strategies,
-            versions=versions,
-            reopened=reopened,
-        )
+                _take_backup(root, databases, backup, record)
+                _install_state(root, databases, staging, manifest, effective_databases, record)
+                _shared.write_state_generation(f"{manifest.content_sha256}:{uuid.uuid4().hex}", runtime_root=root)
+                reopened = _shared.reopen_store()
+                strategies, versions = _self_check(root, databases, manifest, effective_databases)
+            except BaseException as exc:
+                try:
+                    problem = _restore_state(root, databases, record)
+                except BaseException:
+                    keep_backup = True
+                    logger.warning("state import rollback raised; backup retained at %s", backup)
+                    raise ImportFailed("state import failed and rollback raised") from exc
+                if problem is not None:
+                    keep_backup = True
+                    logger.warning("state import rollback incomplete; backup retained at %s", backup)
+                    raise ImportFailed(
+                        "state import failed and the previous state could not be fully restored"
+                    ) from exc
+                if isinstance(exc, StateExportError):
+                    raise
+                if isinstance(exc, _SelfCheckFailed):
+                    raise ImportFailed(f"state import self-check failed: {exc}") from exc
+                raise ImportFailed(f"state import failed: {type(exc).__name__}") from exc
+            return ImportResult(
+                layout_version=manifest.layout_version,
+                content_sha256=manifest.content_sha256,
+                strategies=strategies,
+                versions=versions,
+                reopened=reopened,
+            )
     finally:
         _remove_tree(staging)
         if not keep_backup:
             _remove_tree(backup)
+
+
+@contextmanager
+def _registry_exclusive(root: Path) -> Iterator[None]:
+    """Hold the registry exclusive lock, mapping lock failures to the import."""
+    try:
+        with exclusive_version_lock(root):
+            yield
+    except VersionLockUnavailable as exc:
+        raise ImportFailed("state import registry lock is unavailable") from exc
+
+
+def _merge_registry(staging: Path, databases: Mapping[str, Path]) -> set[str]:
+    """Merge packaged registry rows and name any database the installer must add."""
+    if _STRATEGY_STORE_DB not in databases:
+        return set()
+    try:
+        result = merge_registry_for_import(
+            databases[_STRATEGY_STORE_DB],
+            staging / DATA_DIRNAME / _STRATEGY_STORE_DB,
+            staging / DATA_DIRNAME,
+        )
+    except RegistryMergeConflict as exc:
+        raise ImportFailed("state import registry merge was refused") from exc
+    except (sqlite3.DatabaseError, ValueError) as exc:
+        raise ImportFailed("state import registry is unreadable") from exc
+    return {_STRATEGY_STORE_DB} if result.requires_strategy_store else set()
 
 
 def _ensure_same_device(root: Path, databases: Mapping[str, Path]) -> None:
@@ -167,6 +208,7 @@ def _install_state(
     databases: Mapping[str, Path],
     staging: Path,
     manifest: StateManifest,
+    effective_databases: set[str],
     record: _BackupRecord,
 ) -> None:
     """Atomically replace strategies and databases from the validated staging."""
@@ -176,12 +218,12 @@ def _install_state(
     record.strategies_installed = True
     os.replace(staged_strategies, root / _STRATEGY_DIRNAME)
 
-    declared_databases = {entry.path for entry in manifest.databases}
+    install_names = {entry.path for entry in manifest.databases} | effective_databases
     for name, target in databases.items():
         for suffix in _DB_SIDECARS:
             target.with_name(f"{target.name}{suffix}").unlink(missing_ok=True)
         staged_database = staging / DATA_DIRNAME / name
-        if name in declared_databases:
+        if name in install_names:
             target.parent.mkdir(parents=True, exist_ok=True)
             record.installed_databases.append(target)
             os.replace(staged_database, target)
@@ -193,10 +235,11 @@ def _self_check(
     root: Path,
     databases: Mapping[str, Path],
     manifest: StateManifest,
+    effective_databases: set[str],
 ) -> tuple[int, int]:
     """Prove the installed state is readable and agrees with the manifest."""
-    declared_databases = {entry.path for entry in manifest.databases}
-    for name in declared_databases:
+    installed_databases = {entry.path for entry in manifest.databases} | effective_databases
+    for name in installed_databases:
         try:
             _integrity_check(databases[name])
         except sqlite3.Error as exc:
@@ -204,9 +247,9 @@ def _self_check(
 
     strategy_dirs = _strategy_directories(root)
     row_count = 0
-    if "strategy_store.db" in declared_databases:
+    if _STRATEGY_STORE_DB in installed_databases:
         try:
-            row_count = _strategy_row_count(databases["strategy_store.db"])
+            row_count = _strategy_row_count(databases[_STRATEGY_STORE_DB])
         except sqlite3.Error as exc:
             raise _SelfCheckFailed("strategy table is not enumerable") from exc
     if row_count != len(strategy_dirs):
