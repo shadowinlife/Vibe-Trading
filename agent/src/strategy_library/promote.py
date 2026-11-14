@@ -36,9 +36,14 @@ from src.strategy_library.paths import (
     SIGNAL_ENGINE_RELPATH,
     VERSION_CONFIG_FILENAME,
     atomic_write_text,
-    resolve_runtime_root,
-    strategies_root,
     strategy_dir,
+)
+from src.strategy_library.promote_run_dir import (
+    FIX_RUN,
+    RUN_DIR_NOT_FOUND,
+    RUN_DIR_REJECTED,
+    RUN_DIR_REQUIRED,
+    resolve_run_dir,
 )
 from src.strategy_library.spec import Gap, StrategySpec, validate_spec
 from src.strategy_library.store import (
@@ -49,6 +54,10 @@ from src.strategy_library.store import (
 )
 from src.strategy_store.models import Artifact
 from src.strategy_store.sqlite_store import SqliteStrategyStore
+from src.strategy_versions.integration import (
+    initialize_bound_strategy,
+    resolve_creation_owner,
+)
 
 __all__ = [
     "COPY_FAILED",
@@ -62,16 +71,6 @@ __all__ = [
     "PromotionResult",
     "promote",
 ]
-
-#: A code draft names no backtest run.
-RUN_DIR_REQUIRED = "run_dir_required"
-
-#: The named path escapes the runtime root, traverses with ``..``, passes
-#: through a symlink, or points into the strategy library itself.
-RUN_DIR_REJECTED = "run_dir_rejected"
-
-#: The path resolved inside the runtime root but is not an existing directory.
-RUN_DIR_NOT_FOUND = "run_dir_not_found"
 
 #: The run directory has no non-empty ``config.json``.
 MISSING_CONFIG = "missing_config"
@@ -96,8 +95,6 @@ _REQUIRED_RUN_FILES: tuple[tuple[str, str, str], ...] = (
     ("config.json", MISSING_CONFIG, "the run has no non-empty config.json"),
     ("code/signal_engine.py", MISSING_SIGNAL_ENGINE, "the run has no non-empty signal engine"),
 )
-
-_FIX_RUN = "re-run the backtest into a runtime-root run directory"
 
 
 @dataclass(frozen=True)
@@ -169,6 +166,14 @@ def promote(
         reflects what the gate actually wrote.
 
     Raises:
+        OwnerBindingError: When a configured deployment owner binding is
+            untrusted; nothing is created.
+        BoundStrategyError: When a new bound code version cannot register a
+            fresh pending identity.
+        VersionConflictError: When the bound registry already stores different
+            facts or another owner claims the same version path.
+        FileNotFoundError: When the copied root source cannot be read.
+        LookupError: When the artifact disappears during bound initialization.
         StaleVerdictError: When the strategy was edited between registration
             and the automatic evaluation; nothing of that verdict is written and
             the row keeps its ``needs_work`` state.
@@ -180,13 +185,17 @@ def promote(
 
     source: Path | None = None
     if _kind(spec_draft) == "code":
-        source, gap = _resolve_run_dir(run_dir, runtime_root)
+        source, gap = resolve_run_dir(run_dir, runtime_root)
         if gap is not None:
             return PromotionResult(None, NEEDS_WORK, [gap], None, None, session)
         assert source is not None  # a resolved path is the only success shape
         gap = _check_run_files(source)
         if gap is not None:
             return PromotionResult(None, NEEDS_WORK, [gap], None, None, session)
+
+    owner = None
+    if source is not None and not demo:
+        owner = resolve_creation_owner()
 
     try:
         artifact = create_draft(
@@ -225,6 +234,9 @@ def promote(
         refreshed = get(artifact.id, store=store) or artifact
         return PromotionResult(artifact.id, NEEDS_WORK, [gap], None, refreshed, session)
 
+    if owner is not None:
+        initialize_bound_strategy(artifact, owner=owner, store=store, runtime_root=runtime_root)
+
     verdict = evaluate_code(artifact.id, store=store)
     refreshed = get(artifact.id, store=store) or artifact
     document = {**verdict.payload(), "session_id": session}
@@ -245,81 +257,6 @@ def _kind(spec: StrategySpec | Mapping[str, Any]) -> str:
     return str(spec.get("kind") or "")
 
 
-def _resolve_run_dir(
-    raw: str | Path | None, runtime_root: Path | None
-) -> tuple[Path | None, Gap | None]:
-    """Resolve *raw* to a run directory inside the runtime root, or explain why not.
-
-    Rejects, in order: an absent path, ``..`` traversal, a symlinked component
-    below the runtime root, a target outside the runtime root, and the strategy
-    library itself (which holds specs, never run artifacts).
-
-    Returns:
-        ``(resolved_path, None)`` or ``(None, gap)``.
-    """
-    text = "" if raw is None else str(raw).strip()
-    if not text:
-        return None, Gap(
-            code=RUN_DIR_REQUIRED,
-            field="run_dir",
-            message="a code strategy needs the backtest run it was verified on",
-            fix_hint="pass the run directory produced by the backtest, or promote as a workflow",
-        )
-
-    candidate = Path(text).expanduser()
-    if ".." in Path(text).parts:
-        return None, _rejected(text, "the path traverses with '..'")
-
-    root = resolve_runtime_root(runtime_root).expanduser()
-    absolute_root = root if root.is_absolute() else Path.cwd() / root
-    absolute = candidate if candidate.is_absolute() else Path.cwd() / candidate
-    symlink = _symlinked_ancestor(absolute, absolute_root)
-    if symlink is not None:
-        return None, _rejected(text, f"the path component {symlink} is a symlink")
-
-    resolved = candidate.resolve()
-    resolved_root = root.resolve()
-    if not resolved.is_relative_to(resolved_root):
-        return None, _rejected(text, f"it resolves outside the runtime root {resolved_root}")
-    library = strategies_root(runtime_root=runtime_root).resolve()
-    if resolved == library or resolved.is_relative_to(library):
-        return None, _rejected(text, "the strategy library is never a run directory")
-    if not resolved.is_dir():
-        return None, Gap(
-            code=RUN_DIR_NOT_FOUND,
-            field="run_dir",
-            message=f"run directory {resolved} does not exist",
-            fix_hint=_FIX_RUN,
-        )
-    return resolved, None
-
-
-def _symlinked_ancestor(target: Path, root: Path) -> Path | None:
-    """Return the first symlinked component of *target* below *root*.
-
-    The walk stops at *root* (in both its written and resolved form), so a
-    platform-level symlink above the runtime root — macOS ``/tmp`` — is never
-    mistaken for a crafted one below it.
-    """
-    stop = {root, root.resolve()}
-    for ancestor in (target, *target.parents):
-        if ancestor in stop:
-            return None
-        if ancestor.is_symlink():
-            return ancestor
-    return None
-
-
-def _rejected(text: str, why: str) -> Gap:
-    """Build the stable rejection gap for an untrusted run directory."""
-    return Gap(
-        code=RUN_DIR_REJECTED,
-        field="run_dir",
-        message=f"run directory {text!r} was refused: {why}",
-        fix_hint=_FIX_RUN,
-    )
-
-
 def _check_run_files(run_dir: Path) -> Gap | None:
     """Return the first missing or empty required file, or ``None``.
 
@@ -338,12 +275,14 @@ def _check_run_files(run_dir: Path) -> Gap | None:
                 code=code,
                 field="run_dir",
                 message=f"{message} ({path})",
-                fix_hint=_FIX_RUN,
+                fix_hint=FIX_RUN,
             )
     return None
 
 
-def _copy_code_sources(run_dir: Path, strategy_id: str, *, runtime_root: Path | None) -> Gap | None:
+def _copy_code_sources(
+    run_dir: Path, strategy_id: str, *, runtime_root: Path | None
+) -> Gap | None:
     """Copy the run's config and engine into ``strategies/<id>/``.
 
     Text is decoded and atomically rewritten, so a crash leaves either the old
