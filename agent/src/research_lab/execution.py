@@ -13,6 +13,10 @@ from typing import Any
 
 import pandas as pd
 
+from backtest.loaders.base import sanitize_loader_frame_attrs
+from backtest.loaders.registry import additive_caliber_warning, mixed_caliber_warning
+from backtest.run_card import _normalize_data_provenance
+from backtest.source_contract import federation_caliber_warning
 from src.config.paths import get_runs_dir
 from src.core.runner import Runner
 from src.tools.backtest_tool import _backtest_timeout_seconds
@@ -89,6 +93,54 @@ def freeze_run(run: Path, destination: Path) -> tuple[dict, Path, pd.DatetimeInd
     wanted = [symbol.removeprefix("local:") for symbol in config["codes"]]
     if not wanted or len(wanted) != len(set(wanted)):
         raise ValueError("source run must declare distinct instrument codes")
+
+    raw_provenance = card.get("data_provenance")
+    normalized_provenance = (
+        _normalize_data_provenance(raw_provenance)
+        if isinstance(raw_provenance, dict)
+        else {}
+    )
+    data_provenance = {}
+    for symbol in wanted:
+        raw_entry = (
+            raw_provenance.get(symbol) if isinstance(raw_provenance, dict) else None
+        )
+        entry = normalized_provenance.get(symbol)
+        raw_attempts = (
+            raw_entry.get("fallback_attempts") if isinstance(raw_entry, dict) else None
+        )
+        if (
+            not isinstance(raw_entry, dict)
+            or entry is None
+            or not isinstance(raw_attempts, list)
+            or not isinstance(raw_entry.get("attrs"), dict)
+            or len(entry["fallback_attempts"]) != len(raw_attempts)
+        ):
+            raise ValueError(
+                f"source run has incomplete or malformed data provenance for {symbol}; "
+                "rerun its backtest"
+            )
+        attrs = sanitize_loader_frame_attrs(entry.get("attrs"))
+        if attrs.get("adjustment", entry["adjustment"]) != entry["adjustment"]:
+            raise ValueError(
+                f"source run has inconsistent adjustment attrs for {symbol}; "
+                "rerun its backtest"
+            )
+        data_provenance[symbol] = entry
+
+    sources = card.get("data_sources")
+    actual_sources = {entry["source"] for entry in data_provenance.values()}
+    if (
+        not isinstance(sources, list)
+        or any(not isinstance(source, str) or not source.strip() for source in sources)
+        or len(sources) != len(set(sources))
+        or set(sources) != actual_sources
+    ):
+        raise ValueError(
+            "source run data_sources do not match per-symbol provenance; "
+            "rerun its backtest"
+        )
+
     frames = {}
     calendar = None
     snapshot = destination / "snapshot"
@@ -98,7 +150,9 @@ def freeze_run(run: Path, destination: Path) -> tuple[dict, Path, pd.DatetimeInd
         relative = f"artifacts/ohlcv_{symbol}.csv"
         path = (run / relative).resolve()
         if not path.is_relative_to(run.resolve()) or relative not in entries:
-            raise ValueError(f"source run has no manifested price snapshot for {symbol}; rerun its backtest")
+            raise ValueError(
+                f"source run has no manifested price snapshot for {symbol}; rerun its backtest"
+            )
         raw = path.read_bytes()
         if hashlib.sha256(raw).hexdigest() != entries[relative]["sha256"]:
             raise ValueError(f"source price snapshot changed: {symbol}")
@@ -112,22 +166,53 @@ def freeze_run(run: Path, destination: Path) -> tuple[dict, Path, pd.DatetimeInd
             calendar = calendar.union(frame.index)
         filename = f"frame-{index}.csv"
         (snapshot / filename).write_bytes(raw)
-        frames[symbol] = {"path": filename, "sha256": digest(snapshot / filename), "rows": len(frame)}
+        attrs = sanitize_loader_frame_attrs(data_provenance[symbol].get("attrs"))
+        attrs["adjustment"] = data_provenance[symbol]["adjustment"]
+        frames[symbol] = {
+            "path": filename,
+            "sha256": digest(snapshot / filename),
+            "rows": len(frame),
+            "attrs": attrs,
+        }
     strategy_entry = entries.get("code/signal_engine.py")
     strategy_bytes = code.read_bytes()
     strategy_hash = hashlib.sha256(strategy_bytes).hexdigest()
     if strategy_entry is None or strategy_hash != strategy_entry["sha256"]:
-        raise ValueError("source strategy changed since its completed backtest; rerun it before studying it")
+        raise ValueError(
+            "source strategy changed since its completed backtest; rerun it before studying it"
+        )
     (snapshot / "signal_engine.py").write_bytes(strategy_bytes)
+    caliber_stamps = {
+        symbol: (entry["source"], entry["adjustment"])
+        for symbol, entry in data_provenance.items()
+    }
+    federation_warnings = [
+        federation_caliber_warning(entry.get("federation"))
+        for entry in data_provenance.values()
+    ]
+    caliber_warning = "\n\n".join(
+        dict.fromkeys(
+            warning
+            for warning in (
+                mixed_caliber_warning(caliber_stamps),
+                additive_caliber_warning(caliber_stamps),
+                *federation_warnings,
+            )
+            if warning
+        )
+    )
     manifest = {
         "schema_version": 1,
         "interval": config.get("interval", "1D"),
         "frames": frames,
-        "sources": card.get("data_sources", [config.get("source", "auto")]),
+        "sources": sources,
         "source_run": run.name,
         "strategy_sha256": strategy_hash,
         "config_sha256": config_hash,
+        "data_provenance": data_provenance,
     }
+    if caliber_warning:
+        manifest["caliber_warning"] = caliber_warning
     manifest_path = snapshot / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, allow_nan=False))
     if calendar is None or len(calendar) < 2:
