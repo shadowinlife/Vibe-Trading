@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from backtest.loaders.base import validate_ohlc
+from backtest.loaders.base import sanitize_loader_frame_attrs, validate_ohlc
 
 
 def load_frozen_frames(manifest_path: str, config: dict) -> tuple[dict, dict]:
@@ -56,6 +56,6 @@ def load_frozen_frames(manifest_path: str, config: dict) -> tuple[dict, dict]:
         if not {"open", "high", "low", "close"}.issubset(frame.columns):
             raise ValueError(f"frozen input lacks OHLC fields: {code}")
         validate_ohlc(frame, strategy="raise", allow_nonpositive_prices=config.get("allow_nonpositive_prices", False))
-        frame.attrs.update(entry.get("attrs", {}))
+        frame.attrs.update(sanitize_loader_frame_attrs(entry.get("attrs")))
         frames[code] = frame
     return frames, manifest

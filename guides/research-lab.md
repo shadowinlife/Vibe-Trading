@@ -29,6 +29,28 @@ reported only as an observed sign-change bracket between measured scenarios;
 position sizing can make the relationship nonlinear. There are at most 20
 scenarios per request.
 
+## Source provenance and frozen runs
+
+New run cards carry `data_provenance` for each strategy symbol: the actual
+serving source, effective price adjustment, ordered rejected fallback attempts,
+and whitelisted frame attributes. `data_sources` remains the distinct final
+serving sources; a configured source or `auto` is not proof of the source that
+actually served the run.
+
+Freezing requires complete per-symbol provenance in the source run card. An old
+or partial source card is refused with a request to rerun its backtest rather
+than having its history reconstructed from `data_sources`. Schema-1 manifests
+that predate this field remain readable, but replay marks their per-symbol
+source as `unknown` and leaves fallback history absent. New manifests preserve
+the source adjustment attributes and any mixed/additive-caliber warning through
+cost and parameter trials.
+
+A frozen run with an explicit or derivable external benchmark must resolve that
+benchmark from the sealed inputs over the evaluation window. A miss fails
+without network access instead of silently changing the benchmark to equal
+weight. Frozen runs without an external benchmark retain equal-weight grading;
+ordinary non-frozen runs retain the existing warning-and-equal-weight fallback.
+
 ## Train, select, freeze, test
 
 ```bash

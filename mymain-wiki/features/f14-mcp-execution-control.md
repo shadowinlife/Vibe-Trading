@@ -89,7 +89,7 @@ python tools/ci_private_files_gate.py
 
 这些是本地单元/路由/集成证据，不构成 A1-A11 的验收入口。G-control、G-backtest、G-factor 仍 `pending`；没有 E2E，没有 receipt。
 
-固定镜像交付验证（2026-11-10，本地未推送）：
+固定镜像交付验证（2026-11-10，v3.18.0 本地构建、未推送；历史记录）：
 
 | 项 | 结果 |
 |---|---|
@@ -100,6 +100,22 @@ python tools/ci_private_files_gate.py
 | 静态门 | Ruff clean；Black 仅剩 `agent/backtest/runner.py` 在基线同样存在的整文件漂移；私有文件门与 `git diff --check` clean |
 
 证据在未跟踪的 `.omo/evidence/vt-mcp-execution-control/20261109T151921Z/`，入口为 `vt-owner-handoff.md` 与 `rm-integration-notes.md`，`evidence-sha256.txt` 可复算。该证据是本地固定镜像验证，不是 RM E2E，也不构成 receipt。
+
+生产池重交付 canary（2026-11-12）：
+
+| 项 | 结果 |
+|---|---|
+| 分支/标签 | `mymain` HEAD `084207fb` / `v3.18.3-mcp-execution-control-20261111` |
+| 镜像 | `registry-vpc.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode:v3.18.3-mcp-execution-control-20261111@sha256:6b8aadec567d8e6d145bc93f160a679adaacae16c9b3401518d7142a98c49372`；呼和浩特镜像仓同 manifest digest |
+| 镜像验证 | 相关回归 543 passed；A1–A11 真实 HTTP PASS（110 responses / 123 attempts，无 MCP/worker mock）；启动就绪 PASS |
+| 生产池 | `opencode-poc` 与 `mcp-long-task` 模板已切该 digest，`replicas 0`，generation/observed `23/23` 与 `3/3` |
+| ImageCache | `opencode-v3183-mcp-exec-20261111` = `imc-bp19rbqnrfyvvkdp4wl9`，命中 size 5 GiB |
+| canary（opencode-poc） | `default--opencode-poc-7lssg`：claim 12.23s、route-wait 6.73s、pod 2/2 Running、0 restarts；`/health` 200；`find` → `not_dispatched` + `contract_version=mcp-execution-control-v1`；`prepare`/`factor` 空体 400 均带合同版本；`/config` 200；opencode 1.19.3；VT MCP 99 tools |
+| canary（mcp-long-task） | 首次 23s 时 `route-wait` 已 ready 但 entry `:8000` 尚未监听（预热时序，不是镜像失败）；重跑等待 entry `/health`，45s 就绪，`find`/`prepare` 同上 PASS。**`route-wait` 只代表网关路由，不代表应用 warm** |
+| 清理 | `kill` 覆盖三个 canary 箱后 Sandbox/Pod 均为 0，生产池保持 `replicas 0` |
+| 边界 | 这是 VT 侧生产池可用性 canary，不是 RM live E2E，也不是 gate receipt；G-control/G-backtest/G-factor 仍 `pending` |
+
+证据：`.omo/evidence/mcp-execution-control-v3.18.3-20261111/production-canary-20261112.md`；RM 侧记录见 `aliyun-acs-agent-service/deploy/prod/README.md` §7.18。
 
 ## RM 集成前置与已知差异
 

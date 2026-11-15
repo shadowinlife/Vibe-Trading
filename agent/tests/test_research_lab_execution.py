@@ -64,6 +64,180 @@ def saved_run(tmp_path, monkeypatch, request):
     return root
 
 
+def _write_source_provenance(run_dir: Path, entry: dict | None) -> None:
+    card_path = run_dir / "run_card.json"
+    card = json.loads(card_path.read_text())
+    if entry is None:
+        card.pop("data_provenance", None)
+    else:
+        card["data_provenance"] = {"AAPL.US": entry}
+        card["data_sources"] = [entry["source"]]
+    card_path.write_text(json.dumps(card))
+
+
+def test_freeze_preserves_actual_provenance_attrs_and_additive_warning(
+    saved_run, tmp_path
+):
+    from backtest.loaders.registry import additive_caliber_warning
+    from src.research_lab.execution import freeze_run
+
+    _write_source_provenance(
+        saved_run,
+        {
+            "source": "tencent",
+            "adjustment": "split_dividend_additive",
+            "fallback_attempts": [{"source": "eastmoney", "reason": "no_data"}],
+            "attrs": {
+                "quote_currency": "CNY",
+                "currency_conversion": "none",
+                "api_key": "secret-token",
+                "arbitrary": "must-not-survive",
+            },
+            "password": "secret-password",
+        },
+    )
+
+    config, manifest_path, _, _ = freeze_run(saved_run, tmp_path / "study")
+
+    assert config["codes"] == ["local:AAPL.US"]
+    manifest = json.loads(manifest_path.read_text())
+    expected = {
+        "source": "tencent",
+        "adjustment": "split_dividend_additive",
+        "fallback_attempts": [{"source": "eastmoney", "reason": "no_data"}],
+        "attrs": {"quote_currency": "CNY", "currency_conversion": "none"},
+    }
+    assert manifest["schema_version"] == 1
+    assert manifest["data_provenance"] == {"AAPL.US": expected}
+    assert manifest["frames"]["AAPL.US"]["attrs"] == {
+        "quote_currency": "CNY",
+        "currency_conversion": "none",
+        "adjustment": "split_dividend_additive",
+    }
+    assert manifest["caliber_warning"] == additive_caliber_warning(
+        {"AAPL.US": ("tencent", "split_dividend_additive")}
+    )
+    serialized = json.dumps(manifest)
+    assert "secret-token" not in serialized
+    assert "secret-password" not in serialized
+    assert "must-not-survive" not in serialized
+
+
+def test_freeze_separates_caliber_warnings_like_live_run(
+    saved_run, tmp_path, monkeypatch
+):
+    from src.research_lab import execution
+
+    _write_source_provenance(
+        saved_run,
+        {
+            "source": "tencent",
+            "adjustment": "split_dividend_additive",
+            "fallback_attempts": [],
+            "attrs": {},
+        },
+    )
+    monkeypatch.setattr(execution, "mixed_caliber_warning", lambda stamps: "mixed")
+    monkeypatch.setattr(execution, "additive_caliber_warning", lambda stamps: "additive")
+
+    _, manifest_path, _, _ = execution.freeze_run(saved_run, tmp_path / "study")
+
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["caliber_warning"] == "mixed\n\nadditive"
+
+
+def test_freeze_rejects_source_set_mismatch(saved_run, tmp_path):
+    from src.research_lab.execution import freeze_run
+
+    _write_source_provenance(
+        saved_run,
+        {
+            "source": "original-vendor",
+            "adjustment": "raw",
+            "fallback_attempts": [],
+            "attrs": {"adjustment": "raw"},
+        },
+    )
+    card_path = saved_run / "run_card.json"
+    card = json.loads(card_path.read_text())
+    card["data_sources"] = ["local"]
+    card_path.write_text(json.dumps(card))
+
+    with pytest.raises(ValueError, match="sources") as caught:
+        freeze_run(saved_run, tmp_path / "study")
+
+    assert "rerun its backtest" in str(caught.value)
+
+
+def test_freeze_rejects_provenance_adjustment_mismatch(saved_run, tmp_path):
+    from src.research_lab.execution import freeze_run
+
+    _write_source_provenance(
+        saved_run,
+        {
+            "source": "tencent",
+            "adjustment": "raw",
+            "fallback_attempts": [],
+            "attrs": {"adjustment": "split_dividend"},
+        },
+    )
+
+    with pytest.raises(ValueError, match="adjustment") as caught:
+        freeze_run(saved_run, tmp_path / "study")
+
+    assert "AAPL.US" in str(caught.value)
+    assert "rerun its backtest" in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "mutation", ["absent", "missing_symbol", "partial", "malformed"]
+)
+def test_freeze_requires_complete_source_card_provenance_before_snapshot(
+    saved_run, tmp_path, mutation
+):
+    from src.research_lab.execution import freeze_run
+
+    card_path = saved_run / "run_card.json"
+    card = json.loads(card_path.read_text())
+    if mutation == "absent":
+        card.pop("data_provenance")
+    elif mutation == "missing_symbol":
+        card["data_provenance"] = {}
+    elif mutation == "partial":
+        del card["data_provenance"]["AAPL.US"]["fallback_attempts"]
+    else:
+        card["data_provenance"]["AAPL.US"]["source"] = None
+    card_path.write_text(json.dumps(card))
+    destination = tmp_path / "study"
+
+    with pytest.raises(ValueError) as caught:
+        freeze_run(saved_run, destination)
+
+    assert "AAPL.US" in str(caught.value)
+    assert "rerun its backtest" in str(caught.value)
+    assert not (destination / "snapshot").exists()
+
+
+def test_trial_run_card_preserves_original_actual_source(saved_run, tmp_path):
+    from src.research_lab.execution import freeze_run, trial
+
+    original = {
+        "source": "original-vendor",
+        "adjustment": "raw",
+        "fallback_attempts": [{"source": "requested-vendor", "reason": "no_data"}],
+        "attrs": {"quote_currency": "USD", "adjustment": "raw"},
+    }
+    _write_source_provenance(saved_run, original)
+    config, manifest, _, _ = freeze_run(saved_run, tmp_path / "study")
+
+    measured = trial(tmp_path / "study", "roundtrip", config, manifest)
+
+    card = json.loads((Path(measured["run_dir"]) / "run_card.json").read_text())
+    assert card["data_sources"] == ["original-vendor"]
+    assert card["data_provenance"] == {"AAPL.US": original}
+    assert card["data_provenance"]["AAPL.US"]["source"] != "local"
+
+
 def test_cost_study_reexecutes_same_frozen_data(saved_run, tmp_path):
     result = cost_sensitivity(
         CostRequest(

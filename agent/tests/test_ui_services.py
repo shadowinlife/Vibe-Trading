@@ -93,7 +93,7 @@ def test_fetch_data_map_uses_registry_for_nonlegacy_source(
             calls.append((codes, start_date, end_date, kwargs))
             return {codes[0]: frame}
 
-    monkeypatch.setattr(runner, "_get_loader", lambda source: StubLoader)
+    monkeypatch.setattr(runner, "_get_loader", lambda source, **kwargs: StubLoader)
     config = {
         "codes": ["AAPL.US"],
         "start_date": "2026-01-01",
@@ -134,7 +134,7 @@ def test_fetch_data_map_does_not_expose_config_mutables_to_loader(
             kwargs["fields"].append("injected")
             return {codes[0]: frame}
 
-    monkeypatch.setattr(runner, "_get_loader", lambda source: MutatingLoader)
+    monkeypatch.setattr(runner, "_get_loader", lambda source, **kwargs: MutatingLoader)
     config = {
         "codes": ["000001.SZ"],
         "start_date": "2026-01-01",
@@ -157,7 +157,7 @@ def test_fetch_data_map_delegates_auto_routing(
     )
     calls: list[tuple[list[str], dict, str]] = []
 
-    def fake_fetch_auto(codes: list[str], config: dict, interval: str) -> dict:
+    def fake_fetch_auto(codes: list[str], config: dict, interval: str, **kwargs) -> dict:
         calls.append((codes, config, interval))
         return {"AAPL.US": frame}
 
@@ -225,7 +225,7 @@ def test_main_reuses_explicit_source_snapshot(
             )
             observed["close"] = float(data["AAPL.US"]["close"].iloc[0])
 
-    monkeypatch.setattr(runner, "_get_loader", lambda source: CountingLoader)
+    monkeypatch.setattr(runner, "_get_loader", lambda source, **kwargs: CountingLoader)
     monkeypatch.setattr(
         runner,
         "_load_module_from_file",
@@ -258,7 +258,7 @@ def test_fetch_auto_restores_original_crypto_symbol(
             assert codes == ["BTC-USDT"]
             return {"BTC-USDT": frame}
 
-    monkeypatch.setattr(runner, "resolve_loader", lambda market: OkxLoader())
+    monkeypatch.setattr(runner, "resolve_loader", lambda market, **kwargs: OkxLoader())
 
     result = runner._fetch_auto(
         ["BTC/USDT"],
@@ -296,7 +296,7 @@ def test_fetch_auto_falls_back_only_for_missing_symbols(
             calls.append((self.name, list(codes)))
             return {code: frame for code in codes}
 
-    monkeypatch.setattr(runner, "resolve_loader", lambda market: PrimaryLoader())
+    monkeypatch.setattr(runner, "resolve_loader", lambda market, **kwargs: PrimaryLoader())
     monkeypatch.setitem(runner.FALLBACK_CHAINS, "us_equity", ["primary", "backup"])
     monkeypatch.setitem(runner.LOADER_REGISTRY, "backup", BackupLoader)
 
@@ -336,7 +336,7 @@ def test_explicit_fetch_falls_back_only_for_missing_symbols(
             calls.append(("backup", list(codes)))
             return {code: frame for code in codes}
 
-    monkeypatch.setattr(runner, "_get_loader", lambda source: PrimaryLoader)
+    monkeypatch.setattr(runner, "_get_loader", lambda source, **kwargs: PrimaryLoader)
     monkeypatch.setitem(runner.FALLBACK_CHAINS, "us_equity", ["backup"])
     monkeypatch.setitem(runner.LOADER_REGISTRY, "backup", BackupLoader)
 
@@ -373,13 +373,13 @@ def test_fetch_stops_when_fallbacks_leave_symbols_missing(
             return {"AAPL.US": frame}
 
     config = {"start_date": "2026-01-01", "end_date": "2026-01-02"}
-    monkeypatch.setattr(runner, "resolve_loader", lambda market: PartialLoader())
+    monkeypatch.setattr(runner, "resolve_loader", lambda market, **kwargs: PartialLoader())
     monkeypatch.setitem(runner.FALLBACK_CHAINS, "us_equity", [])
 
     with pytest.raises(NoAvailableSourceError, match="MSFT.US"):
         runner._fetch_auto(["AAPL.US", "MSFT.US"], config)
 
-    monkeypatch.setattr(runner, "_get_loader", lambda source: PartialLoader)
+    monkeypatch.setattr(runner, "_get_loader", lambda source, **kwargs: PartialLoader)
     with pytest.raises(NoAvailableSourceError, match="MSFT.US"):
         runner.fetch_data_map(
             {

@@ -1137,3 +1137,24 @@ That local evidence is not an RM end-to-end run.
 Accuracy boundaries: `verified_by` is `pending`, `verified_at` is `pending`, and
 `delivered-candidate` is the only status claim. Gates G-control, G-backtest and
 G-factor remain `pending`. Human confirmation is required. No receipt exists.
+
+### Production pool redelivery (2026-11-12)
+
+PR #13 was merged as `084207fb6139594af08b2c9f2b1a5dbd97992efb` and tagged
+`v3.18.3-mcp-execution-control-20261111`. The image
+`registry-vpc.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode:v3.18.3-mcp-execution-control-20261111@sha256:6b8aadec567d8e6d145bc93f160a679adaacae16c9b3401518d7142a98c49372`
+is in the production pool templates `opencode-poc` and `mcp-long-task` with
+`replicas: 0`. A production canary claimed one on-demand box from
+`opencode-poc`, hit ImageCache `imc-bp19rbqnrfyvvkdp4wl9`, reached `2/2
+Running` with zero restarts, and returned:
+
+- `GET /execution-instances?dispatch_key=user:1:job:9:1` →
+  `200 {"state":"not_dispatched","contract_version":"mcp-execution-control-v1"}`;
+- `POST /backtest/prepare {}` → `400 invalid_input` with the contract version;
+- `POST /factor/prototype {}` → `400 invalid_request` with the contract version;
+- `GET /config?directory=/workspace` → `200`, opencode `1.19.3`, 99 MCP tools.
+
+The box was killed and no Sandbox or Pod remained. This canary proves pool and
+route availability only; it is not an RM live end-to-end run and does not
+unlock G-control, G-backtest or G-factor. Evidence:
+`.omo/evidence/mcp-execution-control-v3.18.3-20261111/production-canary-20261112.md`.

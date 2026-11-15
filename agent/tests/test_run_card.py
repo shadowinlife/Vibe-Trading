@@ -124,6 +124,103 @@ def test_json_and_markdown_files_are_written(tmp_path: Path) -> None:
     assert "# Backtest Run Card" in markdown
     assert "Validation" in markdown
     assert "sample warning" in markdown
+    assert "data_provenance" not in loaded
+
+
+def test_data_provenance_is_optional_sanitized_and_json_only(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run"
+    card = write_run_card(
+        run_dir,
+        {"codes": ["AAPL.US"], "source": "auto"},
+        {"sharpe": 1.0},
+        data_sources=["yahoo"],
+        data_provenance={
+            "AAPL.US": {
+                "source": "yahoo",
+                "adjustment": "split_dividend",
+                "fallback_attempts": [
+                    {
+                        "source": "stooq",
+                        "reason": "source_unavailable",
+                        "exception": "secret token in exception",
+                    },
+                    {"source": "sina", "reason": "no_data"},
+                    {"source": "finnhub", "reason": "fetch_failed"},
+                    {
+                        "source": "secret-user",
+                        "reason": "RuntimeError: https://secret.example",
+                    },
+                    {"source": "", "reason": "no_data"},
+                    "not-an-attempt",
+                ],
+                "attrs": {
+                    "quote_currency": "USD",
+                    "currency_conversion": "none",
+                    "adjustment": "split_dividend",
+                    "api_key": "secret-key",
+                    "empty": "",
+                    "non_string": 123,
+                },
+                "password": "secret-password",
+            },
+            "BROKEN.US": {
+                "source": RuntimeError("secret raw exception"),
+                "adjustment": "raw",
+                "fallback_attempts": [],
+                "attrs": {},
+            },
+        },
+    )
+
+    assert card["schema_version"] == "1.0"
+    assert card["data_provenance"] == {
+        "AAPL.US": {
+            "source": "yahoo",
+            "adjustment": "split_dividend",
+            "fallback_attempts": [
+                {"source": "stooq", "reason": "source_unavailable"},
+                {"source": "sina", "reason": "no_data"},
+                {"source": "finnhub", "reason": "fetch_failed"},
+            ],
+            "attrs": {
+                "quote_currency": "USD",
+                "currency_conversion": "none",
+                "adjustment": "split_dividend",
+            },
+        }
+    }
+    serialized = json.dumps(card)
+    assert "secret" not in serialized
+    assert "RuntimeError" not in serialized
+    markdown = (run_dir / "run_card.md").read_text(encoding="utf-8")
+    assert "fallback_attempts" not in markdown
+    assert "Data provenance" not in markdown
+
+
+def test_data_provenance_distinguishes_known_empty_from_unknown_history(
+    tmp_path: Path,
+) -> None:
+    card = write_run_card(
+        tmp_path / "run",
+        {"codes": ["KNOWN.US", "LEGACY.US"], "source": "auto"},
+        {},
+        data_provenance={
+            "KNOWN.US": {
+                "source": "yahoo",
+                "adjustment": "split_dividend",
+                "fallback_attempts": [],
+                "attrs": {"adjustment": "split_dividend"},
+            },
+            "LEGACY.US": {
+                "source": "unknown",
+                "adjustment": "unknown",
+                "attrs": {},
+            },
+        },
+    )
+
+    assert card["data_provenance"]["KNOWN.US"]["fallback_attempts"] == []
+    assert "fallback_attempts" not in card["data_provenance"]["LEGACY.US"]
 
 
 def test_api_run_response_includes_run_card(tmp_path: Path) -> None:
@@ -275,7 +372,7 @@ def test_options_backtest_writes_run_card(tmp_path: Path) -> None:
     )
 
     class FakeLoader:
-        name = "yfinance"
+        name = "requested-loader"
 
         def fetch(self, codes, start_date, end_date):
             return {"SPY": bars.copy()}
@@ -297,6 +394,7 @@ def test_options_backtest_writes_run_card(tmp_path: Path) -> None:
                 },
             ]
 
+    caliber_warning = "mixed caliber warning\n\nadditive caliber warning"
     config = {
         "codes": ["SPY"],
         "start_date": "2025-01-01",
@@ -304,6 +402,18 @@ def test_options_backtest_writes_run_card(tmp_path: Path) -> None:
         "source": "yfinance",
         "engine": "options",
         "initial_cash": 100_000,
+        "_run_card_caliber_warning": caliber_warning,
+        "_run_card_effective_sources": ["stooq"],
+        "_run_card_data_provenance": {
+            "SPY": {
+                "source": "stooq",
+                "adjustment": "unknown",
+                "fallback_attempts": [
+                    {"source": "yfinance", "reason": "no_data"}
+                ],
+                "attrs": {"adjustment": "unknown", "secret": "do-not-copy"},
+            }
+        },
     }
     metrics = run_options_backtest(
         config,
@@ -314,7 +424,18 @@ def test_options_backtest_writes_run_card(tmp_path: Path) -> None:
 
     card = json.loads((tmp_path / "run_card.json").read_text(encoding="utf-8"))
     assert card["backtest"]["engine"] == "options"
-    assert card["data_sources"] == ["yfinance"]
+    assert card["data_sources"] == ["stooq"]
+    assert card["data_provenance"] == {
+        "SPY": {
+            "source": "stooq",
+            "adjustment": "unknown",
+            "fallback_attempts": [
+                {"source": "yfinance", "reason": "no_data"}
+            ],
+            "attrs": {"adjustment": "unknown"},
+        }
+    }
+    assert caliber_warning in card["warnings"]
     assert len(card["tool_traces"]) == 1
     assert card["tool_traces"][0]["tool"] == "backtest"
     assert card["tool_traces"][0]["status"] == "ok"

@@ -249,7 +249,7 @@ class TestNoNetworkFallbackIsPerSymbolToo:
 
         monkeypatch.setattr(
             "backtest.runner._get_loader",
-            lambda name: lambda: type("L", (), {"name": source, "fetch": staticmethod(_only_first)})(),
+            lambda name, **kwargs: lambda: type("L", (), {"name": source, "fetch": staticmethod(_only_first)})(),
         )
         monkeypatch.setattr(
             "backtest.runner.LOADER_REGISTRY",
@@ -293,7 +293,7 @@ class TestNoNetworkFallbackIsPerSymbolToo:
                 reached.extend(codes)
                 return {c: bars.copy() for c in codes}
 
-        monkeypatch.setattr("backtest.runner._get_loader", lambda source: _Primary)
+        monkeypatch.setattr("backtest.runner._get_loader", lambda source, **kwargs: _Primary)
         monkeypatch.setattr("backtest.runner.LOADER_REGISTRY", {"yahoo": _Fallback})
         monkeypatch.setattr("backtest.runner.FALLBACK_CHAINS", {"us_equity": ["yahoo"]})
 

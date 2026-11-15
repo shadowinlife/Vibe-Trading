@@ -212,6 +212,14 @@ class TestSeatsByReason:
 
 
 class TestExecuteError:
+    @pytest.fixture(autouse=True)
+    def _exercise_eastmoney_fallback(self):
+        with patch(
+            "src.tools.clickhouse_fallbacks.fetch_dragon_tiger_ch",
+            side_effect=RuntimeError("CH adapter unavailable"),
+        ):
+            yield
+
     def test_missing_date_returns_error_envelope(self) -> None:
         out = json.loads(DragonTigerTool().execute())
         assert out["ok"] is False

@@ -11,8 +11,10 @@ tushare fallback path.
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 
 from src.clickhouse_connector import ClickHouseConnector
@@ -178,6 +180,72 @@ class TestFetchNorthboundFlowCh:
             assert "turnover_total" in row
 
 
+class TestOfflineComponentSources:
+    def test_direct_margin_payload_is_clickhouse_labelled(self):
+        frame = pd.DataFrame(
+            [
+                {
+                    "trade_date": "20240103",
+                    "rzye": 1.0,
+                    "rzmre": 2.0,
+                    "rzche": 3.0,
+                    "rqye": 4.0,
+                    "rqyl": 5.0,
+                    "rzrqye": 6.0,
+                }
+            ]
+        )
+        connector = SimpleNamespace(get_margin=lambda *_, **__: frame)
+        with patch(
+            "src.tools.clickhouse_fallbacks.ClickHouseConnector",
+            return_value=connector,
+        ):
+            result = fetch_margin_trading_ch("000001.SZ", days=30)
+
+        assert result == {
+            "code": "000001",
+            "ts_code": "000001.SZ",
+            "source": "clickhouse",
+            "rows": [
+                {
+                    "trade_date": "2024-01-03",
+                    "financing_balance": 1.0,
+                    "financing_buy": 2.0,
+                    "financing_repay": 3.0,
+                    "short_balance": 4.0,
+                    "short_volume": 5.0,
+                    "margin_total_balance": 6.0,
+                }
+            ],
+        }
+
+    def test_direct_northbound_payload_is_clickhouse_labelled(self):
+        frame = pd.DataFrame(
+            [{"trade_date": "20240816", "hgt": 1.0, "sgt": 2.0, "north_money": 3.0}]
+        )
+        connector = SimpleNamespace(get_moneyflow_hsgt=lambda **_: frame)
+        with patch(
+            "src.tools.clickhouse_fallbacks.ClickHouseConnector",
+            return_value=connector,
+        ):
+            result = fetch_northbound_flow_ch(lookback_days=30)
+
+        assert result["source"] == "clickhouse"
+        assert result["unit"] == "CNY million"
+        assert result["history"] == [
+            {
+                "trade_date": "2024-08-16",
+                "shanghai_connect": 1.0,
+                "shenzhen_connect": 2.0,
+                "total": 3.0,
+                "turnover_shanghai": None,
+                "turnover_shenzhen": None,
+                "turnover_total": None,
+            }
+        ]
+        assert result["realtime"]["total"] == 3.0
+
+
 # ---------------------------------------------------------------------------
 # Test 5 — Fallback to tushare when CH is unreachable
 # ---------------------------------------------------------------------------
@@ -210,6 +278,7 @@ class TestFallbackToTushare:
         fallback = {
             "code": "000001",
             "ts_code": "000001.SZ",
+            "source": "tushare",
             "rows": [{"trade_date": "2024-01-03", "financing_balance": 1.0}],
         }
         with (
@@ -222,6 +291,7 @@ class TestFallbackToTushare:
             result = fetch_margin_trading_ch("000001.SZ", days=30)
         mock_fallback.assert_called_once_with("000001.SZ", days=30)
         assert result["code"] == "000001"
+        assert result["source"] == "tushare"
 
     def test_fetch_dragon_tiger_falls_back(self):
         """CH unreachable → tushare fallback is called."""
@@ -246,6 +316,7 @@ class TestFallbackToTushare:
         fallback = {
             "unit": "CNY million",
             "lookback_days": 30,
+            "source": "tushare",
             "note": "boundary 2024-08-19",
             "realtime": {
                 "shanghai_connect": None,
@@ -267,3 +338,4 @@ class TestFallbackToTushare:
             result = fetch_northbound_flow_ch(lookback_days=30)
         mock_fallback.assert_called_once_with(lookback_days=30)
         assert result["lookback_days"] == 30
+        assert result["source"] == "tushare"

@@ -46,6 +46,9 @@ class BenchmarkResult:
     total_ret: float          # total return over the FETCHED period
     close:      pd.Series       # benchmark closes, index = timestamps
     open:       Optional[pd.Series] = None  # benchmark opens, same index
+    source: Optional[str] = None
+    fallback_reason: Optional[str] = None
+    federation: Optional[dict[str, Any]] = None
 
     def total_return_over(self, dates: pd.DatetimeIndex) -> Optional[float]:
         """Return the buy-and-hold return restricted to ``dates``.
@@ -108,6 +111,7 @@ def resolve_benchmark(
     interval:     str = "1D",
     explicit:     Optional[str] = None,
     loader:       Optional[Any] = None,
+    evidence:     Optional[dict[str, Any]] = None,
 ) -> Optional[BenchmarkResult]:
     """Resolve the appropriate benchmark ticker and fetch its return series.
 
@@ -122,6 +126,8 @@ def resolve_benchmark(
                         benchmark is fetched through it first, falling back to
                         yfinance if it yields no data, except sources whose
                         contract prohibits a fallback to a different source.
+        evidence:       Optional output mapping for canonical benchmark source,
+                        fallback reason and federation, including unresolved reads.
 
     Returns:
         BenchmarkResult with return series and total return, or None if no
@@ -138,12 +144,36 @@ def resolve_benchmark(
         # explicit provider choices must not silently change for a benchmark.
         loader = None
 
+    canonical = source == "clickhouse" or (
+        source == "auto" and _infer_market(strategy_codes, source) == "a_share"
+    )
+    canonical_evidence = evidence if evidence is not None else {}
     try:
-        bench_df = _fetch_benchmark(
-            ticker, start_date, end_date, interval,
-            loader=loader,
-            allow_fallback=not source_bound,
-        )
+        if canonical:
+            from backtest.loaders.registry import FALLBACK_CHAINS
+            from src.market_data import fetch_market_data
+
+            canonical_evidence.clear()
+            market = _infer_market([ticker], source) or "a_share"
+            market_chain = FALLBACK_CHAINS.get(market, [])
+            payload = fetch_market_data(
+                codes=[ticker],
+                start_date=start_date,
+                end_date=end_date,
+                source=source,
+                interval=interval,
+                max_fallback_attempts=len(market_chain) + 1,
+                include_provenance=True,
+                as_frames=True,
+            )
+            _record_canonical_evidence(payload, ticker, canonical_evidence)
+            bench_df = _extract_frame(payload, ticker)
+        else:
+            bench_df = _fetch_benchmark(
+                ticker, start_date, end_date, interval,
+                loader=loader,
+                allow_fallback=not source_bound,
+            )
     except Exception:
         return None
 
@@ -164,13 +194,52 @@ def resolve_benchmark(
 
     opens = bench_df["open"].reindex(close.index) if "open" in bench_df.columns else None
     return BenchmarkResult(
-        ticker=ticker, ret_series=ret_series, total_ret=total, close=close, open=opens
+        ticker=ticker,
+        ret_series=ret_series,
+        total_ret=total,
+        close=close,
+        open=opens,
+        source=canonical_evidence.get("benchmark_source"),
+        fallback_reason=canonical_evidence.get("benchmark_fallback_reason"),
+        federation=canonical_evidence.get("benchmark_federation"),
     )
 
 
 # -------------------------------------------------------------------
 # Internal helpers
 # -------------------------------------------------------------------
+
+def _record_canonical_evidence(
+    payload: dict[str, Any], ticker: str, evidence: dict[str, Any]
+) -> None:
+    """Copy stable benchmark provenance, including failed canonical attempts."""
+    provenance_by_symbol = payload.get("_provenance", {})
+    provenance = provenance_by_symbol.get(ticker, {}) if isinstance(provenance_by_symbol, dict) else {}
+    if isinstance(provenance, dict):
+        source = provenance.get("source")
+        if isinstance(source, str) and source.strip():
+            evidence["benchmark_source"] = source
+        reason = provenance.get("fallback_reason")
+        if isinstance(reason, str) and reason.strip():
+            evidence["benchmark_fallback_reason"] = reason
+        federation = provenance.get("federation")
+        if federation is not None:
+            evidence["benchmark_federation"] = federation
+
+    diagnostics_by_symbol = payload.get("_diagnostics", {})
+    diagnostics = diagnostics_by_symbol.get(ticker, {}) if isinstance(diagnostics_by_symbol, dict) else {}
+    attempts = diagnostics.get("attempts", []) if isinstance(diagnostics, dict) else []
+    stable_attempts = []
+    for attempt in attempts:
+        if not isinstance(attempt, dict):
+            continue
+        source = attempt.get("source")
+        reason = attempt.get("reason")
+        if isinstance(source, str) and source.strip() and isinstance(reason, str) and reason.strip():
+            stable_attempts.append(f"{source}:{reason}")
+    if stable_attempts and "benchmark_fallback_reason" not in evidence:
+        evidence["benchmark_fallback_reason"] = "; ".join(stable_attempts)
+
 
 def default_benchmark(codes: list[str], source: str) -> str | None:
     """Select a default only when all evaluated instruments identify one market."""

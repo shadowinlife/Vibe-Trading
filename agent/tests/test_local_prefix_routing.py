@@ -73,11 +73,11 @@ def network(monkeypatch: pytest.MonkeyPatch) -> type[_NetworkLoader]:
     # Any non-local source resolves to the recorder, so a regression can never
     # reach a real endpoint from this suite.
     monkeypatch.setattr(
-        runner, "_get_loader", lambda source: real_get_loader(source) if source == "local" else _NetworkLoader
+        runner, "_get_loader", lambda source, **kwargs: real_get_loader(source, **kwargs) if source == "local" else _NetworkLoader
     )
     monkeypatch.setitem(runner.LOADER_REGISTRY, "fakenet", _NetworkLoader)
     monkeypatch.setattr(runner, "FALLBACK_CHAINS", {m: ["fakenet"] for m in ("us_equity", "a_share", "hk_equity")})
-    monkeypatch.setattr(runner, "resolve_loader", lambda market: _NetworkLoader())
+    monkeypatch.setattr(runner, "resolve_loader", lambda market, **kwargs: _NetworkLoader())
     return _NetworkLoader
 
 
