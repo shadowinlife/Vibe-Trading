@@ -188,7 +188,7 @@ class MarginTradingTool(BaseTool):
                 {
                     "ok": True,
                     "market": "a_share",
-                    "source": "clickhouse",
+                    "source": fallback_data.get("source", "unknown"),
                     "data": fallback_data,
                 },
                 ensure_ascii=False,

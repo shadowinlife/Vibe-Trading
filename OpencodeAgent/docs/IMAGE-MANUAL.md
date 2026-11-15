@@ -752,6 +752,18 @@ docker tag opencode-serve:v3.17.0-upstream-align-20261102 "${IMAGE_REGISTRY}:v3.
 docker push "${IMAGE_REGISTRY}:v3.17.0-upstream-align-20261102"
 ```
 
+#### L1 source-integrity RC（2026-11-15）
+
+| 项 | 值 |
+|---|---|
+| 状态 | 未提交工作树候选（非正式 release；无 Git commit/tag） |
+| 镜像 | `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode:v3.19.0-l1-source-integrity-rc1-20261115` |
+| Digest | `sha256:0464f4ff4ce7b42a6d2764488be7e1de9258f04c39c366e807474139d8917a28`（远端 manifest 已复核） |
+| Image ID | `sha256:c5776df26125148dc529db72a1b227b1a1a2591507bd6ba2a98455f58865da87` |
+| 源码 | HEAD `084207fb` + 已审阅未提交工作树；vendor 2363 文件逐字节一致；manifest SHA-256 `1170908de27a59f7d91939888e684ca1d323a317f279536bf9d899eac1fb5025` |
+| 验证 | 宿主机相关回归 795 passed / 9 skipped / 1 deselected；镜像内离线 74 passed；独立 L1 gate APPROVE |
+| 离线启动 | `/config` 23.9s、VT MCP 27.8s、strategy `/health` 32.8s；`check_startup_readiness.sh` PASS（预算 300s） |
+
 ### 12.3 拉取镜像
 
 ```bash

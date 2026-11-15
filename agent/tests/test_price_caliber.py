@@ -355,7 +355,7 @@ def test_fetch_data_map_warns_on_mixed_caliber_basket(
 ) -> None:
     """yahoo serves AAPL (split_dividend), sina serves TSLA down the chain
     (raw): the run must say the basket mixes calibers."""
-    monkeypatch.setattr(runner, "resolve_loader", lambda market: _YahooStub())
+    monkeypatch.setattr(runner, "resolve_loader", lambda market, **kwargs: _YahooStub())
     monkeypatch.setattr(runner, "LOADER_REGISTRY", {"sina": _SinaStub})
 
     result = runner.fetch_data_map(
@@ -372,6 +372,22 @@ def test_fetch_data_map_warns_on_mixed_caliber_basket(
     assert "AAPL.US" in result.caliber_warning
     assert "TSLA.US" in result.caliber_warning
     assert "mixed price calibers" in caplog.text
+    assert result.data_provenance == {
+        "AAPL.US": {
+            "source": "yahoo",
+            "adjustment": "split_dividend",
+            "fallback_attempts": [],
+            "attrs": {},
+        },
+        "TSLA.US": {
+            "source": "sina",
+            "adjustment": "raw",
+            "fallback_attempts": [
+                {"source": "yahoo", "reason": "no_data"}
+            ],
+            "attrs": {},
+        },
+    }
 
 
 def test_fetch_data_map_silent_on_single_caliber(
@@ -383,7 +399,7 @@ def test_fetch_data_map_silent_on_single_caliber(
         def fetch(self, codes, start, end, fields=None, interval="1D"):  # noqa: ANN001, ANN201
             return {code: _df() for code in codes}
 
-    monkeypatch.setattr(runner, "resolve_loader", lambda market: _YahooBoth())
+    monkeypatch.setattr(runner, "resolve_loader", lambda market, **kwargs: _YahooBoth())
     monkeypatch.setattr(runner, "LOADER_REGISTRY", {})
 
     result = runner.fetch_data_map(
@@ -413,7 +429,7 @@ def test_fetch_data_map_warns_on_additive_caliber(
     """A single-source tencent run mixes nothing, so the mixed-caliber warning
     is right to stay silent — but the series it served is additive, and the
     run must still say so."""
-    monkeypatch.setattr(runner, "resolve_loader", lambda market: _TencentStub())
+    monkeypatch.setattr(runner, "resolve_loader", lambda market, **kwargs: _TencentStub())
     monkeypatch.setattr(runner, "LOADER_REGISTRY", {})
 
     result = runner.fetch_data_map(
@@ -445,7 +461,7 @@ def test_fetch_data_map_does_not_call_an_index_additive(
         def fetch(self, codes, start, end, fields=None, interval="1D"):  # noqa: ANN001, ANN201
             return {code: _df() for code in codes}
 
-    monkeypatch.setattr(runner, "resolve_loader", lambda market: _TencentBoth())
+    monkeypatch.setattr(runner, "resolve_loader", lambda market, **kwargs: _TencentBoth())
     monkeypatch.setattr(runner, "LOADER_REGISTRY", {})
     config = {"source": "auto", "start_date": "2024-01-01", "end_date": "2024-01-03", "interval": "1D"}
 
@@ -464,7 +480,7 @@ def test_fetch_data_map_reports_both_warnings_when_they_apply(
     """tencent (additive) serving 600519.SH beside sina (raw) serving TSLA.US is
     both a mixed basket and an additive series; one warning must not shadow the
     other, since each says something the other does not."""
-    monkeypatch.setattr(runner, "resolve_loader", lambda market: _TencentStub())
+    monkeypatch.setattr(runner, "resolve_loader", lambda market, **kwargs: _TencentStub())
     monkeypatch.setattr(runner, "LOADER_REGISTRY", {"sina": _SinaStub})
 
     result = runner.fetch_data_map(

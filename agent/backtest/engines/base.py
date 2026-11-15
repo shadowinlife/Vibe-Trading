@@ -55,6 +55,7 @@ from backtest.rebalance_mask import (
     resolve_rebalance_dates,
     validate_rebalance_mask,
 )
+from backtest.source_contract import validate_frozen_enrichment
 
 
 def _json_safe_scalar_metrics(metrics: Dict[str, Any]) -> Dict[str, Any]:
@@ -461,6 +462,7 @@ def _maybe_enrich_fundamentals(
     config: Dict[str, Any],
 ) -> Dict[str, pd.DataFrame]:
     """Attach configured Tushare statement fields before signal generation."""
+    validate_frozen_enrichment(config)
     fields_by_table = _normalise_fundamental_fields(config)
     if not fields_by_table:
         return data_map
@@ -513,6 +515,7 @@ def _maybe_enrich_events(
     config: Dict[str, Any],
 ) -> Dict[str, pd.DataFrame]:
     """Attach a point-in-time-safe ``event_score`` column before signal generation."""
+    validate_frozen_enrichment(config)
     specs = _event_feed_specs(config)
     if not specs:
         return data_map
@@ -1021,6 +1024,7 @@ class BaseEngine(ABC):
         Returns:
             Metrics dictionary.
         """
+        validate_frozen_enrichment(config)
         trace_started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         codes = config.get("codes", [])
         interval = config.get("interval", "1D")
@@ -1107,6 +1111,8 @@ class BaseEngine(ABC):
             else f"equal-weight basket of {len(basket_codes)} symbols"
         )
         benchmark_metadata = {"benchmark_kind": "equal_weight", "benchmark_label": basket_label}
+        benchmark_evidence: Dict[str, Any] = {}
+        result = None
         requested = config.get("benchmark")
         source = config.get("source", "yfinance")
         ticker = default_benchmark(basket_codes, source) if requested == "auto" else requested
@@ -1118,6 +1124,7 @@ class BaseEngine(ABC):
                 explicit=ticker,
                 start_date=config.get("start_date", ""), end_date=config.get("end_date", ""),
                 interval=interval, loader=loader if source != "auto" or config.get("frozen_data_manifest") else None,
+                evidence=benchmark_evidence,
             )
             window_return = result.total_return_over(dates) if result is not None else None
             if result is not None and window_return is not None:
@@ -1127,7 +1134,25 @@ class BaseEngine(ABC):
                     "benchmark_ticker": result.ticker, "benchmark_return": window_return,
                 }
             else:
+                if config.get("frozen_data_manifest") and ticker:
+                    raise ValueError(
+                        f"benchmark {ticker!r} could not be resolved over the frozen "
+                        "evaluation window from the frozen snapshot; network fallback "
+                        "is disabled"
+                    )
                 reason = f"benchmark {ticker!r} could not be resolved over the evaluation window"
+        if result is not None:
+            result_evidence = {
+                "benchmark_source": result.source,
+                "benchmark_fallback_reason": result.fallback_reason,
+                "benchmark_federation": result.federation,
+            }
+            for key, value in result_evidence.items():
+                if value is not None:
+                    benchmark_evidence.setdefault(key, value)
+        # Benchmark provenance describes only the reference series. Keep it out
+        # of the strategy's data_sources/data_provenance on the run card.
+        benchmark_metadata.update(benchmark_evidence)
         benchmark_warning = (
             f"{reason}; benchmark-relative metrics use the {basket_label}"
             if benchmark_metadata["benchmark_kind"] == "equal_weight" else None
@@ -1289,6 +1314,7 @@ class BaseEngine(ABC):
             config,
             m,
             data_sources=_run_card_data_sources(config, loader),
+            data_provenance=config.get("_run_card_data_provenance"),
             strategy_path=run_dir / "code" / "signal_engine.py",
             warnings=card_warnings or None,
             tool_traces=[

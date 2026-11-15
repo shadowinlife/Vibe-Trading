@@ -99,6 +99,7 @@ def test_northbound_passes_through_million_yuan_with_semantics_note() -> None:
     ):
         data = tf.fetch_northbound_flow(lookback_days=2)
 
+    assert data["source"] == "tushare"
     assert data["unit"] == "CNY million"
     assert data["history"][0]["shanghai_connect"] == -2568.22
     assert data["history"][0]["total"] == -2468.22
@@ -142,6 +143,7 @@ def test_margin_trading_maps_and_sorts_most_recent_first() -> None:
     ):
         data = tf.fetch_margin_trading("600519.SH", days=5)
 
+    assert data["source"] == "tushare"
     assert data["ts_code"] == "600519.SH"
     assert data["rows"][0]["trade_date"] == "2024-01-03"
     assert data["rows"][0]["financing_balance"] == 7.0

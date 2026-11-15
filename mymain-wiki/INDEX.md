@@ -66,6 +66,7 @@ tags: [index]
 - [clickhouse/CLICKHOUSE_SEMANTIC_LAYER_REPORT.md](clickhouse/CLICKHOUSE_SEMANTIC_LAYER_REPORT.md) — R1 中文决策报告 — active
 - [clickhouse/CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md](clickhouse/CLICKHOUSE_SEMANTIC_LAYER_RESEARCH.md) — R1 英文调研原文 — active
 - [clickhouse/CLICKHOUSE_ITERATION_PLAN.md](clickhouse/CLICKHOUSE_ITERATION_PLAN.md) — Phase 0-2 已落地 / Phase 3 未启动 — active
+- [clickhouse/LOCAL_FIRST_DATA_ACCESS.md](clickhouse/LOCAL_FIRST_DATA_ACCESS.md) — 本地数据优先主矩阵：全读取路径、实时联邦、补缺 backlog 与 L0-L5 迭代 — active
 - [clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md](clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md) — 同步停更诊断（postmortem） — active
 - 代码侧现行入口（不在 wiki）：`schema/clickhouse/catalog/`（57 表契约 + RULES）与 `OpencodeAgent/skills/semantic-layer/`（agent 消费目录） — active
 

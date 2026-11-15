@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from backtest.engines.base import evaluation_start_index
+from backtest.engines.base import _run_card_data_sources, evaluation_start_index
 from backtest.metrics import effective_bars_per_year, period_returns
 from src.quantlib.options import bs_greeks, bs_price, normalise_option_type
 
@@ -645,13 +645,17 @@ def run_options_backtest(
     pd.DataFrame([metrics]).to_csv(out / "metrics.csv", index=False)
 
     from backtest.run_card import write_run_card
+    card_warnings = list(config.get("content_filter_warnings") or [])
+    if config.get("_run_card_caliber_warning"):
+        card_warnings.append(config["_run_card_caliber_warning"])
     write_run_card(
         run_dir,
         config,
         metrics,
-        data_sources=[str(getattr(loader, "name", config.get("source", "")))],
+        data_sources=_run_card_data_sources(config, loader),
+        data_provenance=config.get("_run_card_data_provenance"),
         strategy_path=run_dir / "code" / "signal_engine.py",
-        warnings=config.get("content_filter_warnings") or None,
+        warnings=card_warnings or None,
         tool_traces=[
             {
                 "tool": "backtest",

@@ -251,7 +251,7 @@ class NorthboundFlowTool(BaseTool):
                 {
                     "ok": True,
                     "market": "China A",
-                    "source": "clickhouse",
+                    "source": fallback_data.get("source", "unknown"),
                     "data": fallback_data,
                 },
                 ensure_ascii=False,

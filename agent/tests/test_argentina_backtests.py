@@ -103,7 +103,7 @@ def _run(tmp_path, monkeypatch, config, frames, signal=HOLD):
 
     monkeypatch.setenv("VIBE_TRADING_ALLOWED_RUN_ROOTS", str(tmp_path))
     monkeypatch.delenv("VIBE_TRADING_DATA_CACHE", raising=False)
-    monkeypatch.setattr(runner, "_get_loader", lambda source: Loader)
+    monkeypatch.setattr(runner, "_get_loader", lambda source, **kwargs: Loader)
     monkeypatch.setattr(
         ArgentinaEquityEngine, "describe_instrument", staticmethod(NAMES.get)
     )

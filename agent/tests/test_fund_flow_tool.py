@@ -24,6 +24,16 @@ _DAILY_PAYLOAD = {
 }
 
 
+@pytest.fixture(autouse=True)
+def _exercise_legacy_eastmoney_seam():
+    """Keep this module focused on Eastmoney, not the CH adapter's fallback."""
+    with patch(
+        "src.tools.clickhouse_fallbacks.fetch_fund_flow_ch",
+        side_effect=RuntimeError("CH adapter unavailable"),
+    ):
+        yield
+
+
 class TestSuccessEnvelope:
     """A resolvable symbol yields the ok envelope with labelled buckets."""
 

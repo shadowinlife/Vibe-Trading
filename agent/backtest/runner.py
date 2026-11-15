@@ -14,6 +14,7 @@ import importlib.util
 import inspect
 import json
 import logging
+import os
 import sys
 from dataclasses import dataclass
 from functools import lru_cache
@@ -37,6 +38,7 @@ from backtest.loaders.registry import (
 from backtest.loaders.base import (
     NoAvailableSourceError,
     resample_bars,
+    sanitize_loader_frame_attrs,
     source_interval,
     validate_ohlc,
 )
@@ -54,6 +56,13 @@ from backtest.engines._market_hooks import (  # noqa: F401  (re-exported)
 )
 from backtest.progress import write_progress
 from backtest.rebalance_mask import RebalanceMask, validate_rebalance_mask
+from backtest.source_contract import (
+    federation_adjustment,
+    federation_caliber_warning,
+    federation_from_attrs,
+    federation_source,
+    validate_frozen_enrichment,
+)
 from src.strategy_runs.backtest_config import adapt_backtest_config
 
 logger = logging.getLogger(__name__)
@@ -77,6 +86,7 @@ class DataFetchResult:
     # Mixed-caliber warning for the served basket (#1301), None when every
     # served symbol shares one comparable caliber (or none is measurable).
     caliber_warning: str | None = None
+    data_provenance: Dict[str, Dict[str, Any]] | None = None
 
 
 class BacktestConfigSchema(BaseModel):
@@ -220,6 +230,7 @@ class BacktestConfigSchema(BaseModel):
             raise ValueError(
                 f"start_date ({self.start_date}) must be <= end_date ({self.end_date})"
             )
+        validate_frozen_enrichment(self.model_dump())
         return self
 
 
@@ -919,22 +930,19 @@ def _group_codes_by_source(codes: List[str]) -> Dict[str, List[str]]:
     return groups
 
 
-def _get_loader(source: str):
+def _get_loader(
+    source: str, *, diagnostics: list[dict[str, str]] | None = None
+):
     """Return a DataLoader class for a source name, with fallback.
 
     Args:
         source: Source name (tushare/okx/yfinance/akshare/ccxt).
+        diagnostics: Optional caller-owned registry rejection records.
 
     Returns:
         DataLoader class.
     """
-    try:
-        return get_loader_cls_with_fallback(source)
-    except NoAvailableSourceError:
-        # Ultimate fallback for unknown sources
-        if "tushare" in LOADER_REGISTRY:
-            return LOADER_REGISTRY["tushare"]
-        raise
+    return get_loader_cls_with_fallback(source, diagnostics=diagnostics)
 
 
 def _normalize_codes(codes: List[str], source: str) -> List[str]:
@@ -1493,12 +1501,13 @@ def main(run_dir: Path) -> None:
     # LANGCHAIN_MODEL_NAME leaked into every later test and could not be undone
     # by any fixture, which is how seven redaction tests failed locally while
     # CI (with no .env checked out) stayed green.
-    try:
-        from dotenv import load_dotenv
+    if not os.environ.get("VIBE_TRADING_BACKTEST_SANDBOX"):
+        try:
+            from dotenv import load_dotenv
 
-        load_dotenv()
-    except ImportError:
-        pass
+            load_dotenv()
+        except ImportError:
+            pass
 
     # Guard the CLI entry point with the same root whitelist the MCP
     # ``backtest`` tool already uses (src/tools/backtest_tool.py:23). Without
@@ -1604,6 +1613,7 @@ def _execute_stages(run_dir: Path, progress: _StageProgress) -> None:
     loader = fetch_result.loader
     config["codes"] = codes
     config["_run_card_effective_sources"] = fetch_result.effective_sources
+    config["_run_card_data_provenance"] = fetch_result.data_provenance
     if fetch_result.caliber_warning:
         config["_run_card_caliber_warning"] = fetch_result.caliber_warning
     interval = config.get("interval", "1D")
@@ -1990,7 +2000,47 @@ def _detect_primary_source(codes: List[str], source: str) -> str:
     return max(groups, key=lambda s: len(groups[s]))
 
 
-def _fetch_auto(codes: List[str], config: dict, interval: str = "1D") -> dict:
+def _record_fallback_attempts(
+    attempts: dict[str, list[dict[str, str]]],
+    codes: Iterable[str],
+    source: str,
+    reason: Literal["source_unavailable", "no_data", "fetch_failed"],
+) -> None:
+    """Record one sanitized rejected fetch for each symbol still needing data."""
+    if not isinstance(source, str) or not source.strip():
+        return
+    for code in codes:
+        attempts.setdefault(strip_local_prefix(code), []).append(
+            {"source": source, "reason": reason}
+        )
+
+
+def _record_resolution_attempts(
+    attempts: dict[str, list[dict[str, str]]],
+    codes: Iterable[str],
+    records: Iterable[dict[str, str]],
+) -> None:
+    """Fan registry-level rejections out to the symbols in that resolution."""
+    for code in codes:
+        for record in records:
+            source = record.get("source")
+            if (
+                isinstance(source, str)
+                and source.strip()
+                and record.get("reason") == "source_unavailable"
+            ):
+                _record_fallback_attempts(
+                    attempts, [code], source, "source_unavailable"
+                )
+
+
+def _fetch_auto(
+    codes: List[str],
+    config: dict,
+    interval: str = "1D",
+    *,
+    diagnostics: list[dict[str, str]] | None = None,
+) -> dict:
     """Auto mode: route each market group through fallback chain.
 
     Args:
@@ -2002,14 +2052,18 @@ def _fetch_auto(codes: List[str], config: dict, interval: str = "1D") -> dict:
             names the *head* of each chain, which lies whenever that head is an
             optional package that is not installed).
         interval: Bar interval string.
+        diagnostics: Optional caller-owned registry rejection records.
 
     Returns:
         Merged ``code -> DataFrame`` map, keyed by bare symbol: a ``local:``
         code is served only by the local loader and keyed without the prefix.
     """
+    if diagnostics is None:
+        diagnostics = []
     merged = {}
     served_by: set[str] = set()
     caliber_stamps: dict[str, tuple[str, str]] = {}
+    fallback_attempts: dict[str, list[dict[str, str]]] = {}
     start_date = config.get("start_date", "")
     end_date = config.get("end_date", "")
 
@@ -2020,15 +2074,24 @@ def _fetch_auto(codes: List[str], config: dict, interval: str = "1D") -> dict:
     if local_codes:
         # ``local`` never degrades to a network loader; an unconfigured Data
         # Bridge raises here with its own hint.
-        local_loader = get_loader_cls_with_fallback("local")()
+        resolution_start = len(diagnostics)
+        local_loader = get_loader_cls_with_fallback(
+            "local", diagnostics=diagnostics
+        )()
+        _record_resolution_attempts(
+            fallback_attempts, local_codes, diagnostics[resolution_start:]
+        )
         stripped = [strip_local_prefix(code) for code in local_codes]
         local_result = local_loader.fetch(stripped, start_date, end_date, interval=interval)
+        local_name = str(getattr(local_loader, "name", "local") or "local")
         missing_local = [code for code in local_codes if strip_local_prefix(code) not in local_result]
+        _record_fallback_attempts(
+            fallback_attempts, missing_local, local_name, "no_data"
+        )
         if missing_local:
             raise NoAvailableSourceError(
                 f"incomplete data for source=local; missing symbols: {missing_local}"
             )
-        local_name = str(getattr(local_loader, "name", "local") or "local")
         served_by.add(local_name)
         for code in local_result:
             caliber_stamps[code] = (
@@ -2039,16 +2102,20 @@ def _fetch_auto(codes: List[str], config: dict, interval: str = "1D") -> dict:
 
     market_groups = _group_codes_by_market([code for code in codes if code not in set(local_codes)])
     for market, market_codes in market_groups.items():
+        resolution_start = len(diagnostics)
         try:
-            loader = resolve_loader(market)
+            loader = resolve_loader(market, diagnostics=diagnostics)
         except NoAvailableSourceError as exc:
             # Fallback: try legacy source mapping
             legacy_src = _MARKET_TO_SOURCE.get(market, "tushare")
             logger.warning("Fallback chain failed for %s: %s — trying %s", market, exc, legacy_src)
-            LoaderCls = _get_loader(legacy_src)
+            LoaderCls = _get_loader(legacy_src, diagnostics=diagnostics)
             loader = LoaderCls()
+        _record_resolution_attempts(
+            fallback_attempts, market_codes, diagnostics[resolution_start:]
+        )
 
-        src_name = getattr(loader, "name", "unknown")
+        src_name = str(getattr(loader, "name", "unknown") or "unknown")
         normalized_codes = _normalize_codes(market_codes, src_name)
         fields = config.get("extra_fields") if src_name == "tushare" else None
         result = loader.fetch(
@@ -2066,6 +2133,7 @@ def _fetch_auto(codes: List[str], config: dict, interval: str = "1D") -> dict:
             for code in market_result:
                 caliber_stamps[code] = (src_name, frame_caliber(market_result[code], src_name, market, code))
         missing = [code for code in market_codes if code not in market_result]
+        _record_fallback_attempts(fallback_attempts, missing, src_name, "no_data")
 
         # Retry only missing symbols so a partial primary response does not
         # silently shrink the requested universe or refetch successful data.
@@ -2076,16 +2144,23 @@ def _fetch_auto(codes: List[str], config: dict, interval: str = "1D") -> dict:
                 continue
             fb_loader = LOADER_REGISTRY[fb_name]()
             if not fb_loader.is_available():
+                _record_fallback_attempts(
+                    fallback_attempts, missing, fb_name, "source_unavailable"
+                )
                 continue
             fb_codes = _normalize_codes(missing, fb_name)
             fallback_result = fb_loader.fetch(
                 fb_codes, start_date, end_date, interval=interval
             )
             mapped = _restore_original_codes(fallback_result, missing, fb_codes)
+            fb_served_by = str(getattr(fb_loader, "name", fb_name) or fb_name)
+            still_missing = [code for code in missing if code not in mapped]
+            _record_fallback_attempts(
+                fallback_attempts, still_missing, fb_served_by, "no_data"
+            )
             if mapped:
                 market_result.update(mapped)
-                missing = [code for code in missing if code not in mapped]
-                fb_served_by = str(getattr(fb_loader, "name", fb_name) or fb_name)
+                missing = still_missing
                 served_by.add(fb_served_by)
                 for code in mapped:
                     caliber_stamps[code] = (fb_served_by, frame_caliber(mapped[code], fb_served_by, market, code))
@@ -2103,7 +2178,76 @@ def _fetch_auto(codes: List[str], config: dict, interval: str = "1D") -> dict:
 
     config["_actual_sources"] = sorted(served_by)
     config["_caliber_stamps"] = caliber_stamps
+    config["_fallback_attempts"] = fallback_attempts
     return merged
+
+
+def _frozen_data_provenance(
+    manifest: dict, frames: dict[str, pd.DataFrame]
+) -> dict[str, dict[str, Any]]:
+    """Return validated actual provenance, or explicit unknown legacy history."""
+    if "data_provenance" not in manifest:
+        provenance = {}
+        for code, frame in frames.items():
+            attrs = sanitize_loader_frame_attrs(getattr(frame, "attrs", None))
+            provenance[code] = {
+                "source": "unknown",
+                "adjustment": attrs.get("adjustment", "unknown"),
+                "attrs": attrs,
+            }
+        return provenance
+
+    from backtest.run_card import _normalize_data_provenance
+
+    raw_provenance = manifest["data_provenance"]
+    normalized_provenance = (
+        _normalize_data_provenance(raw_provenance)
+        if isinstance(raw_provenance, dict)
+        else {}
+    )
+    provenance = {}
+    for code, frame in frames.items():
+        raw_entry = (
+            raw_provenance.get(code) if isinstance(raw_provenance, dict) else None
+        )
+        entry = normalized_provenance.get(code)
+        raw_attempts = (
+            raw_entry.get("fallback_attempts") if isinstance(raw_entry, dict) else None
+        )
+        if (
+            not isinstance(raw_entry, dict)
+            or entry is None
+            or not isinstance(raw_attempts, list)
+            or not isinstance(raw_entry.get("attrs"), dict)
+            or len(entry["fallback_attempts"]) != len(raw_attempts)
+        ):
+            raise ValueError(
+                f"frozen manifest has missing or malformed data provenance for {code}"
+            )
+        attrs = sanitize_loader_frame_attrs(entry.get("attrs"))
+        if attrs.get("adjustment", entry["adjustment"]) != entry["adjustment"]:
+            raise ValueError(
+                f"frozen manifest has inconsistent adjustment attrs for {code}"
+            )
+        expected_attrs = dict(attrs)
+        expected_attrs["adjustment"] = entry["adjustment"]
+        actual_attrs = sanitize_loader_frame_attrs(getattr(frame, "attrs", None))
+        if actual_attrs != expected_attrs:
+            raise ValueError(
+                f"frozen manifest frame attrs do not match data provenance for {code}"
+            )
+        provenance[code] = entry
+
+    sources = manifest.get("sources")
+    actual_sources = {entry["source"] for entry in provenance.values()}
+    if (
+        not isinstance(sources, list)
+        or any(not isinstance(source, str) or not source.strip() for source in sources)
+        or len(sources) != len(set(sources))
+        or set(sources) != actual_sources
+    ):
+        raise ValueError("frozen manifest sources do not match per-symbol provenance")
+    return provenance
 
 
 def fetch_data_map(config: dict) -> DataFetchResult:
@@ -2127,14 +2271,41 @@ def fetch_data_map(config: dict) -> DataFetchResult:
         NoAvailableSourceError: If a requested symbol cannot be served.
     """
     config = copy.deepcopy(config)
+    validate_frozen_enrichment(config)
     if config.get("frozen_data_manifest"):
         from backtest.frozen import load_frozen_frames
 
         frames, manifest = load_frozen_frames(config["frozen_data_manifest"], config)
+        data_provenance = _frozen_data_provenance(manifest, frames)
+        caliber_warning = manifest.get("caliber_warning")
+        if "data_provenance" in manifest:
+            caliber_stamps = {
+                code: (entry["source"], entry["adjustment"])
+                for code, entry in data_provenance.items()
+            }
+            federation_warnings = [
+                federation_caliber_warning(entry.get("federation"))
+                for entry in data_provenance.values()
+            ]
+            caliber_warning = "\n\n".join(
+                dict.fromkeys(
+                    warning
+                    for warning in (
+                        mixed_caliber_warning(caliber_stamps),
+                        additive_caliber_warning(caliber_stamps),
+                        *federation_warnings,
+                    )
+                    if warning
+                )
+            ) or None
         return DataFetchResult(
-            frames, list(frames), config.get("source", "auto"),
-            _AutoLoader(frames, name="local"), manifest.get("sources", [config.get("source", "auto")]),
-            manifest.get("caliber_warning"),
+            frames,
+            list(frames),
+            config.get("source", "auto"),
+            _AutoLoader(frames, name="local"),
+            manifest.get("sources", [config.get("source", "auto")]),
+            caliber_warning,
+            data_provenance=data_provenance,
         )
     source = str(config.get("source") or "tushare")
     codes = list(config.get("codes") or [])
@@ -2157,21 +2328,26 @@ def fetch_data_map(config: dict) -> DataFetchResult:
         raise ValueError(f"symbols requested more than once (with and without local:): {repeated}")
 
     caliber_stamps: dict[str, tuple[str, str]] = {}
+    fallback_attempts: dict[str, list[dict[str, str]]] = {}
     if source == "auto":
-        data_map = _fetch_auto(codes, config, interval)
+        diagnostics: list[dict[str, str]] = []
+        data_map = _fetch_auto(codes, config, interval, diagnostics=diagnostics)
         codes = bare
         loader: Any = _AutoLoader(data_map)
         # Prefer the loaders that actually served rows; the symbol-pattern guess
         # is only a fallback for a stubbed/patched fetcher that recorded nothing.
         recorded = config.pop("_actual_sources", None)
         caliber_stamps = config.pop("_caliber_stamps", None) or {}
+        fallback_attempts = config.pop("_fallback_attempts", None) or {}
         used_sources: list[str] = [
             str(name) for name in recorded or [] if str(name).strip()
         ] or sorted(_group_codes_by_source(codes))
     else:
         codes = _normalize_codes(codes, source)
         primary_source = source
-        loader = _get_loader(source)()
+        diagnostics = []
+        loader = _get_loader(source, diagnostics=diagnostics)()
+        _record_resolution_attempts(fallback_attempts, codes, diagnostics)
         # ``_get_loader`` may hand back a *different* loader when the requested
         # one is unavailable (e.g. an optional package like pykrx is missing, so
         # the kr_equity chain resolves to yahoo). Record who actually served the
@@ -2202,6 +2378,7 @@ def fetch_data_map(config: dict) -> DataFetchResult:
             )
         used_sources = [served_by] if data_map else []
         missing = [code for code in codes if code not in data_map]
+        _record_fallback_attempts(fallback_attempts, missing, served_by, "no_data")
         # With the prefix stripped, a network chain could serve the bare symbol
         # as if the dataset held it. A ``local:`` code is the dataset's or nothing.
         unserved_local = [code for code in prefixed if strip_local_prefix(code) in missing]
@@ -2239,6 +2416,12 @@ def fetch_data_map(config: dict) -> DataFetchResult:
                         continue
                     fallback_loader = LOADER_REGISTRY[fallback_source]()
                     if not fallback_loader.is_available():
+                        _record_fallback_attempts(
+                            fallback_attempts,
+                            market_missing,
+                            fallback_source,
+                            "source_unavailable",
+                        )
                         continue
                     fallback_codes = _normalize_codes(market_missing, fallback_source)
                     fallback_result = fallback_loader.fetch(
@@ -2250,13 +2433,19 @@ def fetch_data_map(config: dict) -> DataFetchResult:
                     mapped = _restore_original_codes(
                         fallback_result, market_missing, fallback_codes
                     )
+                    fb_served_by = str(
+                        getattr(fallback_loader, "name", fallback_source)
+                        or fallback_source
+                    )
+                    still_missing = [
+                        code for code in market_missing if code not in mapped
+                    ]
+                    _record_fallback_attempts(
+                        fallback_attempts, still_missing, fb_served_by, "no_data"
+                    )
                     if mapped:
                         data_map.update(mapped)
-                        market_missing = [code for code in market_missing if code not in mapped]
-                        fb_served_by = str(
-                            getattr(fallback_loader, "name", fallback_source)
-                            or fallback_source
-                        )
+                        market_missing = still_missing
                         for code in mapped:
                             caliber_stamps[code] = (
                                 fb_served_by,
@@ -2281,23 +2470,86 @@ def fetch_data_map(config: dict) -> DataFetchResult:
         code: resample_bars(frame, requested_interval)
         for code, frame in _sanitize_data_map(data_map).items()
     }
-    caliber_stamps = {
-        code: stamp for code, stamp in caliber_stamps.items() if code in data_map
-    }
+    previous_stamps = caliber_stamps
+    caliber_stamps = {}
+    data_provenance: dict[str, dict[str, Any]] = {}
+    federation_warnings: list[str] = []
+    for code, frame in data_map.items():
+        previous = previous_stamps.get(code)
+        if previous is not None:
+            served_by = previous[0]
+        elif len(used_sources) == 1:
+            served_by = used_sources[0]
+        else:
+            # Compatibility for patched ``_fetch_auto`` doubles that do not
+            # provide routing metadata; live routing always records a stamp.
+            served_by = _detect_source(code)
+        adjustment = frame_caliber(
+            frame, served_by, _detect_market(code), code
+        )
+        attempts: list[dict[str, str]] = []
+        for attempt in fallback_attempts.get(code, []):
+            if not isinstance(attempt, dict):
+                continue
+            candidate = attempt.get("source")
+            reason = attempt.get("reason")
+            if (
+                isinstance(candidate, str)
+                and candidate.strip()
+                and reason in {"source_unavailable", "no_data", "fetch_failed"}
+            ):
+                attempts.append({"source": candidate, "reason": reason})
+
+        federation = federation_from_attrs(getattr(frame, "attrs", None))
+        if federation is not None:
+            if (
+                federation["mode"] == "realtime_only"
+                and served_by == "clickhouse"
+                and not any(
+                    attempt["source"] == "clickhouse" for attempt in attempts
+                )
+            ):
+                frame_provenance = getattr(frame, "attrs", {}).get("_provenance", {})
+                reason = frame_provenance.get("fallback_reason")
+                reason_code = (
+                    reason.rsplit(":", 1)[-1]
+                    if isinstance(reason, str) and reason.startswith("clickhouse:")
+                    else "no_data"
+                )
+                if reason_code not in {"no_data", "fetch_failed"}:
+                    reason_code = "no_data"
+                attempts.append({"source": "clickhouse", "reason": reason_code})
+            served_by = federation_source(federation, served_by)
+            adjustment = federation_adjustment(federation, adjustment)
+            warning = federation_caliber_warning(federation)
+            if warning and warning not in federation_warnings:
+                federation_warnings.append(warning)
+
+        caliber_stamps[code] = (served_by, adjustment)
+        entry = {
+            "source": served_by,
+            "adjustment": adjustment,
+            "fallback_attempts": attempts,
+            "attrs": sanitize_loader_frame_attrs(getattr(frame, "attrs", None)),
+        }
+        if federation is not None:
+            entry["federation"] = federation
+        data_provenance[code] = entry
+
+    final_sources = {source for source, _ in caliber_stamps.values()}
+    used_sources = list(
+        dict.fromkeys(name for name in used_sources if name in final_sources)
+    )
+    used_sources.extend(sorted(final_sources.difference(used_sources)))
     # Both warnings can apply at once (a tencent+baostock basket mixes calibers
     # *and* serves an additive one), and each says something the other does not,
     # so they are reported together rather than one shadowing the other.
-    caliber_warning = (
-        "\n".join(
-            warning
-            for warning in (
-                mixed_caliber_warning(caliber_stamps),
-                additive_caliber_warning(caliber_stamps),
-            )
-            if warning
-        )
-        or None
-    )
+    warnings = [
+        mixed_caliber_warning(caliber_stamps),
+        additive_caliber_warning(caliber_stamps),
+        *federation_warnings,
+    ]
+    caliber_warning = "\n".join(dict.fromkeys(w for w in warnings if w)) or None
     if caliber_warning:
         logger.warning("%s", caliber_warning)
     return DataFetchResult(
@@ -2307,6 +2559,7 @@ def fetch_data_map(config: dict) -> DataFetchResult:
         loader=loader,
         effective_sources=used_sources,
         caliber_warning=caliber_warning,
+        data_provenance=data_provenance,
     )
 
 

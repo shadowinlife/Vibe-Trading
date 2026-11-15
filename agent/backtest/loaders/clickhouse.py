@@ -39,6 +39,7 @@ import pandas as pd
 from backtest.loaders.base import cached_loader_fetch, validate_date_range
 from backtest.loaders.clickhouse_columns import table_column_sql
 from backtest.loaders.registry import register
+from backtest.source_contract import federation_from_attrs, normalize_federation
 
 if TYPE_CHECKING:
     from src.clickhouse_connector import ClickHouseConnector
@@ -49,9 +50,7 @@ logger = logging.getLogger(__name__)
 _A_SHARE_SYMBOL = re.compile(r"^\d{6}\.(?:SH|SZ|BJ)$", re.IGNORECASE)
 #: Price-index code ranges.  The suffix decides: ``000001.SH`` is the SSE
 #: Composite while ``000001.SZ`` is Ping An Bank.
-_A_SHARE_INDEX_SYMBOL = re.compile(
-    r"^(?:000\d{3}\.SH|399\d{3}\.SZ|899\d{3}\.BJ)$", re.IGNORECASE
-)
+_A_SHARE_INDEX_SYMBOL = re.compile(r"^(?:000\d{3}\.SH|399\d{3}\.SZ|899\d{3}\.BJ)$", re.IGNORECASE)
 #: Prefix ranges of exchange-listed funds (ETF / LOF) on SH and SZ.
 _FUND_CODE_PREFIXES = frozenset({"15", "16", "50", "51", "52", "56", "58"})
 
@@ -132,6 +131,7 @@ class DataLoader:
 
     def __init__(self) -> None:
         self._connector = self._build_connector()
+        self._ch_fetch_error: Exception | None = None
 
     # ------------------------------------------------------------------
     # Protocol methods
@@ -199,16 +199,12 @@ class DataLoader:
                 continue
 
             # --- 1. Fetch ClickHouse data -----------------------------------
-            ch_df = (
-                self._fetch_ch_bars_cached(code, table, start_date, ch_end)
-                if ch_has_window
-                else None
-            )
+            self._ch_fetch_error = None
+            ch_df = self._fetch_ch_bars_cached(code, table, start_date, ch_end) if ch_has_window else None
             ch_empty = ch_df is None or ch_df.empty
             if ch_empty and ch_has_window:
                 logger.warning(
-                    "ClickHouse %s returned no bars for %s over [%s, %s]; "
-                    "continuing down the fallback chain",
+                    "ClickHouse %s returned no bars for %s over [%s, %s]; continuing down the fallback chain",
                     table,
                     code,
                     start_date,
@@ -217,35 +213,63 @@ class DataLoader:
 
             # --- 2. Pure historical (no federation) → return CH directly ----
             if not needs_federation:
+                if self._ch_fetch_error is not None:
+                    raise self._ch_fetch_error
                 if ch_df is not None and not ch_df.empty:
                     result[code] = self._with_provenance(
-                        self._normalize_ch_frame(ch_df), table
+                        self._normalize_ch_frame(ch_df),
+                        table,
+                        start_date=start_date,
+                        end_date=ch_end,
                     )
                 continue
 
             # --- 3. Federation: network today + CH merge ---------------------
-            net_df = self._fetch_network_bars(code, net_start, end_date)  # type: ignore[arg-type]
+            assert net_start is not None
+            net_df = self._fetch_network_bars(code, net_start, end_date)
             net_empty = net_df is None or net_df.empty
+            realtime_leg = (
+                self._realtime_leg(net_df, code, net_start, end_date) if net_df is not None and not net_empty else None
+            )
 
-            # Both empty → nothing to return.
+            # Both empty → nothing to return. A planned but unserved network
+            # request is not evidence and therefore never becomes a leg.
             if ch_empty and net_empty:
+                if self._ch_fetch_error is not None:
+                    raise self._ch_fetch_error
                 continue
             if ch_empty:
-                if net_df is not None:
-                    result[code] = net_df
+                if net_df is not None and realtime_leg is not None:
+                    fallback_reason = (
+                        "clickhouse:fetch_failed"
+                        if self._ch_fetch_error is not None
+                        else "clickhouse:no_data"
+                    )
+                    result[code] = self._with_realtime_provenance(
+                        net_df, realtime_leg, fallback_reason=fallback_reason
+                    )
                 continue
             if net_empty:
                 if ch_df is not None:
                     result[code] = self._with_provenance(
-                        self._normalize_ch_frame(ch_df), table
+                        self._normalize_ch_frame(ch_df),
+                        table,
+                        start_date=start_date,
+                        end_date=ch_end,
                     )
                 continue
 
             # Merge: outer-join on trade_date, CH columns take priority.
-            assert ch_df is not None and net_df is not None
+            assert ch_df is not None and net_df is not None and realtime_leg is not None
             ch_norm = self._normalize_ch_frame(ch_df)
             merged = ch_norm.combine_first(net_df)
-            result[code] = self._with_provenance(merged, table)
+            result[code] = self._with_provenance(
+                merged,
+                table,
+                start_date=start_date,
+                end_date=ch_end,
+                realtime=realtime_leg,
+            )
 
         return result
 
@@ -276,30 +300,29 @@ class DataLoader:
         end_date: str,
     ) -> pd.DataFrame | None:
         """Fetch *table*'s explicit column contract for *ts_code*, cached."""
-
-        def _fetch() -> pd.DataFrame | None:
-            try:
-                return self._fetch_ch_bars_raw(ts_code, table, start_date, end_date)
-            except Exception as exc:
-                logger.warning(
-                    "ClickHouse %s fetch failed for %s [%s, %s]: %s",
-                    table,
-                    ts_code,
-                    start_date,
-                    end_date,
-                    exc,
-                )
-                return None
-
-        return cached_loader_fetch(
-            source=self.name,
-            symbol=ts_code,
-            timeframe="1D",
-            start_date=start_date,
-            end_date=end_date,
-            fields=None,  # CH returns the full explicit column contract
-            fetch=_fetch,
-        )
+        try:
+            return cached_loader_fetch(
+                source=self.name,
+                symbol=ts_code,
+                timeframe="1D",
+                start_date=start_date,
+                end_date=end_date,
+                fields=None,  # CH returns the full explicit column contract
+                fetch=lambda: self._fetch_ch_bars_raw(
+                    ts_code, table, start_date, end_date
+                ),
+            )
+        except Exception as exc:
+            self._ch_fetch_error = exc
+            logger.warning(
+                "ClickHouse %s fetch failed for %s [%s, %s]: %s",
+                table,
+                ts_code,
+                start_date,
+                end_date,
+                exc,
+            )
+            return None
 
     def _fetch_ch_bars_raw(
         self,
@@ -319,22 +342,106 @@ class DataLoader:
         )
 
     @staticmethod
-    def _with_provenance(df: pd.DataFrame, table: str) -> pd.DataFrame:
-        """Attach additive ``_provenance`` metadata naming the serving table.
-
-        Fail-soft: any problem building the metadata (e.g. the unit registry
-        is unavailable) leaves the frame untouched — provenance is additive
-        only and must never break the bar pipeline (P1.2).
-        """
+    def _with_provenance(
+        df: pd.DataFrame,
+        table: str,
+        *,
+        start_date: str,
+        end_date: str,
+        realtime: dict[str, object] | None = None,
+    ) -> pd.DataFrame:
+        existing = df.attrs.get("_provenance")
+        provenance = dict(existing) if isinstance(existing, dict) else {}
         try:
             from src.clickhouse_units import clickhouse_bar_provenance
 
-            provenance = clickhouse_bar_provenance(table)
-            provenance["table"] = table
-            df.attrs["_provenance"] = provenance
-        except Exception as exc:  # noqa: BLE001 — additive metadata is best-effort
+            provenance.update(clickhouse_bar_provenance(table))
+        except Exception as exc:  # noqa: BLE001 — unit metadata is best-effort
             logger.debug("clickhouse provenance metadata unavailable: %s", exc)
+        provenance["table"] = table
+        history = {
+            "source": "clickhouse",
+            "table": table,
+            "start_date": start_date,
+            "end_date": end_date,
+            "adjustment": provenance.get("price_adjust"),
+            "volume_unit": provenance.get("volume_unit"),
+            "amount_unit": provenance.get("amount_unit"),
+        }
+        federation: dict[str, object] = {
+            "mode": "federated" if realtime is not None else "clickhouse_only",
+            "history": history,
+        }
+        if realtime is not None:
+            federation["realtime"] = realtime
+        provenance["federation"] = normalize_federation(federation)
+        df.attrs["_provenance"] = provenance
         return df
+
+    @staticmethod
+    def _with_realtime_provenance(
+        df: pd.DataFrame,
+        realtime: dict[str, object],
+        *,
+        fallback_reason: str = "clickhouse:no_data",
+    ) -> pd.DataFrame:
+        existing = df.attrs.get("_provenance")
+        provenance = dict(existing) if isinstance(existing, dict) else {}
+        provenance["federation"] = normalize_federation({"mode": "realtime_only", "realtime": realtime})
+        provenance["fallback_reason"] = fallback_reason
+        df.attrs["_provenance"] = provenance
+        return df
+
+    @staticmethod
+    def _realtime_leg(df: pd.DataFrame, code: str, start_date: str, end_date: str) -> dict[str, object]:
+        existing = federation_from_attrs(df.attrs)
+        if existing is not None and existing["mode"] == "realtime_only":
+            return existing["realtime"]
+
+        # Compatibility for tests that replace _fetch_network_bars directly.
+        # Production frames take the named-loader path below instead.
+        from backtest.loaders.registry import frame_caliber
+
+        raw_provenance = df.attrs.get("_provenance")
+        provenance = raw_provenance if isinstance(raw_provenance, dict) else {}
+        raw_source = provenance.get("source")
+        source = raw_source if isinstance(raw_source, str) and raw_source else "unknown"
+        return {
+            "source": source,
+            "start_date": start_date,
+            "end_date": end_date,
+            "adjustment": frame_caliber(df, source, "a_share", code),
+            "volume_unit": provenance.get("volume_unit"),
+            "amount_unit": provenance.get("amount_unit"),
+        }
+
+    @staticmethod
+    def _build_realtime_leg(
+        loader: object,
+        df: pd.DataFrame,
+        code: str,
+        start_date: str,
+        end_date: str,
+    ) -> dict[str, object]:
+        from backtest.loaders.registry import frame_caliber
+
+        source = getattr(loader, "name", None)
+        if not isinstance(source, str) or not source:
+            raise ValueError("resolved network loader has no source name")
+        raw_provenance = df.attrs.get("_provenance")
+        provenance = raw_provenance if isinstance(raw_provenance, dict) else {}
+        volume_units = getattr(loader, "volume_units", None)
+        volume_units = volume_units if isinstance(volume_units, dict) else {}
+        amount_units = getattr(loader, "amount_units", None)
+        amount_units = amount_units if isinstance(amount_units, dict) else {}
+        return {
+            "source": source,
+            "start_date": start_date,
+            "end_date": end_date,
+            "adjustment": frame_caliber(df, source, "a_share", code),
+            "volume_unit": provenance.get("volume_unit") or volume_units.get("a_share"),
+            "amount_unit": provenance.get("amount_unit") or amount_units.get("a_share"),
+        }
 
     @staticmethod
     def _normalize_ch_frame(df: pd.DataFrame) -> pd.DataFrame:
@@ -387,6 +494,10 @@ class DataLoader:
                 end_date=end_date,
                 interval="1D",
             )
+            frame = (result or {}).get(code)
+            if frame is None:
+                return None
+            realtime = DataLoader._build_realtime_leg(loader, frame, code, start_date, end_date)
         except Exception as exc:
             logger.warning(
                 "network fetch failed for %s [%s, %s]: %s",
@@ -397,4 +508,4 @@ class DataLoader:
             )
             return None
 
-        return result.get(code)
+        return DataLoader._with_realtime_provenance(frame, realtime)

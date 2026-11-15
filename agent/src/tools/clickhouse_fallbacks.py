@@ -51,6 +51,19 @@ def _dashed_date(value: Any) -> str | None:
     return str(value)[:10] if value else None
 
 
+def _tushare_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Preserve the actual provider across legacy Tushare payload shapes."""
+    result = dict(payload)
+    result["source"] = result.get("source") or "tushare"
+    return result
+
+
+def _tushare_dragon_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    result = dict(payload)
+    appearance_source = result.get("appearance_source") or "tushare"
+    return tushare_fallbacks._with_dragon_source(result, appearance_source)
+
+
 # ---------------------------------------------------------------------------
 # Fund flow — stk_moneyflow
 # ---------------------------------------------------------------------------
@@ -72,13 +85,13 @@ def fetch_fund_flow_ch(symbol: str, *, days: int) -> dict[str, Any]:
         df = ch.get_moneyflow(ts_code, days=days)
     except Exception as exc:
         logger.debug("CH fund_flow unavailable for %s: %s", symbol, exc)
-        return tushare_fallbacks.fetch_fund_flow(symbol, days=days)
+        return _tushare_payload(tushare_fallbacks.fetch_fund_flow(symbol, days=days))
 
     if df.empty:
         logger.debug(
             "CH fund_flow returned empty for %s, falling back to tushare", symbol
         )
-        return tushare_fallbacks.fetch_fund_flow(symbol, days=days)
+        return _tushare_payload(tushare_fallbacks.fetch_fund_flow(symbol, days=days))
 
     wan_to_yuan = clickhouse_units.moneyflow_amount_to_yuan_factor()
     rows: list[dict[str, Any]] = []
@@ -132,13 +145,17 @@ def fetch_margin_trading_ch(code: str, *, days: int) -> dict[str, Any]:
         df = ch.get_margin(ts_code, days=days)
     except Exception as exc:
         logger.debug("CH margin_trading unavailable for %s: %s", code, exc)
-        return tushare_fallbacks.fetch_margin_trading(code, days=days)
+        return _tushare_payload(
+            tushare_fallbacks.fetch_margin_trading(code, days=days)
+        )
 
     if df.empty:
         logger.debug(
             "CH margin_trading returned empty for %s, falling back to tushare", code
         )
-        return tushare_fallbacks.fetch_margin_trading(code, days=days)
+        return _tushare_payload(
+            tushare_fallbacks.fetch_margin_trading(code, days=days)
+        )
 
     rows: list[dict[str, Any]] = []
     for _, row in df.iterrows():
@@ -154,7 +171,12 @@ def fetch_margin_trading_ch(code: str, *, days: int) -> dict[str, Any]:
             }
         )
     rows.sort(key=lambda item: item.get("trade_date") or "", reverse=True)
-    return {"code": ts_code.split(".", 1)[0], "ts_code": ts_code, "rows": rows[:days]}
+    return {
+        "code": ts_code.split(".", 1)[0],
+        "ts_code": ts_code,
+        "source": "clickhouse",
+        "rows": rows[:days],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +204,9 @@ def fetch_dragon_tiger_ch(trade_date: str, code: str | None) -> dict[str, Any]:
         df = ch.get_top_list(dashed, ts_code=ts_code)
     except Exception as exc:
         logger.debug("CH dragon_tiger unavailable for %s/%s: %s", dashed, code, exc)
-        return tushare_fallbacks.fetch_dragon_tiger(trade_date, code)
+        return _tushare_dragon_payload(
+            tushare_fallbacks.fetch_dragon_tiger(trade_date, code)
+        )
 
     if df.empty:
         logger.debug(
@@ -190,7 +214,9 @@ def fetch_dragon_tiger_ch(trade_date: str, code: str | None) -> dict[str, Any]:
             dashed,
             code,
         )
-        return tushare_fallbacks.fetch_dragon_tiger(trade_date, code)
+        return _tushare_dragon_payload(
+            tushare_fallbacks.fetch_dragon_tiger(trade_date, code)
+        )
 
     appearances_raw = df.to_dict("records")
     appearances = [
@@ -235,12 +261,15 @@ def fetch_dragon_tiger_ch(trade_date: str, code: str | None) -> dict[str, Any]:
                 }
                 for row in seats_raw
             ]
+            data["seat_source"] = "tushare"
         except Exception as exc:
             logger.debug(
                 "CH dragon_tiger seat detail unavailable for %s: %s", ts_code, exc
             )
+            data["seat_source"] = None
+            data["warnings"] = ["seat detail unavailable"]
 
-    return data
+    return tushare_fallbacks._with_dragon_source(data, "clickhouse")
 
 
 # ---------------------------------------------------------------------------
@@ -267,11 +296,15 @@ def fetch_northbound_flow_ch(*, lookback_days: int) -> dict[str, Any]:
         df = ch.get_moneyflow_hsgt(lookback_days=lookback_days)
     except Exception as exc:
         logger.debug("CH northbound_flow unavailable: %s", exc)
-        return tushare_fallbacks.fetch_northbound_flow(lookback_days=lookback_days)
+        return _tushare_payload(
+            tushare_fallbacks.fetch_northbound_flow(lookback_days=lookback_days)
+        )
 
     if df.empty:
         logger.debug("CH northbound_flow returned empty, falling back to tushare")
-        return tushare_fallbacks.fetch_northbound_flow(lookback_days=lookback_days)
+        return _tushare_payload(
+            tushare_fallbacks.fetch_northbound_flow(lookback_days=lookback_days)
+        )
 
     raw_to_million = clickhouse_units.northbound_raw_to_million_factor()
     boundary = tushare_fallbacks._NORTHBOUND_SEMANTICS_BOUNDARY
@@ -316,6 +349,7 @@ def fetch_northbound_flow_ch(*, lookback_days: int) -> dict[str, Any]:
     return {
         "unit": "CNY million",
         "lookback_days": lookback_days,
+        "source": "clickhouse",
         "note": tushare_fallbacks._NORTHBOUND_NOTE,
         "realtime": {
             "shanghai_connect": latest.get("shanghai_connect"),

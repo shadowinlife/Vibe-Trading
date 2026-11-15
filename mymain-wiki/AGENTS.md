@@ -41,7 +41,7 @@ mymain = **纯粹的 opencode + omo + VT MCP 路线**：opencode 作为 harness 
 | 发社区 PR | root `AGENTS.md` §6/§8.3 约束文件清单逐条过 + DIVERGENCE §4.4（DCO、禁 AI trailer）；上游 pin 测试义务见 §4.3 |
 | rebase/merge 对齐后 | DIVERGENCE §4.1 五步流程，第 5 步更新台账本身 |
 | 部署 / 生产配置（纯 opencode 路线） | `OpencodeAgent/docs/DEPLOY-GUIDE.md`（host-direct）+ `IMAGE-MANUAL.md`；接入方式背景 DIVERGENCE §3.3 |
-| ClickHouse 取数与语义层（F5） | [features/f5-clickhouse-data-source.md](features/f5-clickhouse-data-source.md) → [clickhouse/README.md](clickhouse/README.md)（现行代码入口 `schema/clickhouse/catalog/` + `OpencodeAgent/skills/semantic-layer/`）；同步管道事故 [clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md](clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md) |
+| ClickHouse 取数与语义层（F5） | [features/f5-clickhouse-data-source.md](features/f5-clickhouse-data-source.md) → [clickhouse/README.md](clickhouse/README.md)（现行代码入口 `schema/clickhouse/catalog/` + `OpencodeAgent/skills/semantic-layer/`）；全部读取路径/本地优先补缺走 [LOCAL_FIRST_DATA_ACCESS.md](clickhouse/LOCAL_FIRST_DATA_ACCESS.md)；同步管道事故 [clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md](clickhouse/CLICKHOUSE_SYNC_DIAGNOSIS.md) |
 | A 股外部证据取数（F13：年报全文/公告/处罚/调研/研报/政策） | [features/f13-ashare-evidence-skills.md](features/f13-ashare-evidence-skills.md) → 对应 skill 的 `SKILL.md`；检索预算在 `OpencodeAgent/AGENTS.md` |
 | 记忆系统（F1-F4） | 对应功能卡 → DIVERGENCE §2.3 队列 ①-⑤ 前置 + §4.5 债务 D1-D4 |
 | 策略库 / 调度（F9） | [features/f9-strategy-library-scheduling.md](features/f9-strategy-library-scheduling.md) → 该卡「调度模型」「P1 服务入口」；RM 入口 [F10](features/f10-strategy-run-entry.md)、状态镜像 [F11](features/f11-state-export-import.md)、六个调度工具 [F12](features/f12-rm-schedule-tools.md)；差异台账见 DIVERGENCE §2.1 F9 行 |

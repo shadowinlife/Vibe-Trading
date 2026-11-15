@@ -42,6 +42,9 @@ def test_backtest_runtime_env_keeps_market_data_configuration(
         "RSSHUB_FETCH_BUDGET_S": "45",
         "FUTU_HOST": "127.0.0.1",
         "FUTU_PORT": "11111",
+        "CLICKHOUSE_HOST": "clickhouse.example.test",
+        "CLICKHOUSE_PORT": "8123",
+        "CLICKHOUSE_DATABASE": "market",
         "HTTPS_PROXY": "http://proxy.example.test:8080",
         "REQUESTS_CA_BUNDLE": "/tmp/ca.pem",
         "LC_ALL": "C.UTF-8",
@@ -78,6 +81,10 @@ def test_backtest_runtime_env_scrubs_service_and_broker_secrets(
         "ALPACA_API_KEY",
         "LONGPORT_APP_SECRET",
         "SHOONYA_PASSWORD",
+        "CLICKHOUSE_USER",
+        "CLICKHOUSE_PASSWORD",
+        "CLICKHOUSE_LLM_USER",
+        "CLICKHOUSE_LLM_PASSWORD",
     ]
     for key in sensitive_keys:
         monkeypatch.setenv(key, f"{key.lower()}-secret")
@@ -392,6 +399,56 @@ def _probe_entry(tmp_path: Path, body: str) -> Path:
     entry = tmp_path / "probe.py"
     entry.write_text(body, encoding="utf-8")
     return entry
+
+
+def test_execute_forwards_only_anonymous_clickhouse_settings(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """Only the anonymous ClickHouse target crosses the real subprocess boundary.
+
+    The A-share loaders need host/port/database to resolve the ClickHouse
+    source, but the subprocess runs generated strategy code, so every
+    ClickHouse user/password pair must stay in the parent process.
+    """
+    forwarded = {
+        "CLICKHOUSE_HOST": "clickhouse.sentinel.invalid",
+        "CLICKHOUSE_PORT": "8123",
+        "CLICKHOUSE_DATABASE": "sentinel_db",
+    }
+    withheld = {
+        "CLICKHOUSE_USER": "sentinel-user",
+        "CLICKHOUSE_PASSWORD": "sentinel-password",
+        "CLICKHOUSE_LLM_USER": "sentinel-llm-user",
+        "CLICKHOUSE_LLM_PASSWORD": "sentinel-llm-password",
+    }
+    for key, value in {**forwarded, **withheld}.items():
+        monkeypatch.setenv(key, value)
+
+    marker = "VIBE_TRADING_BACKTEST_SANDBOX"
+    monkeypatch.delenv(marker, raising=False)
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    keys = [*forwarded, *withheld, marker]
+    entry = _probe_entry(
+        tmp_path,
+        "import json, os\n"
+        f"KEYS = {keys!r}\n"
+        "print('probe-env=' + json.dumps({key: os.environ.get(key) for key in KEYS}))\n",
+    )
+
+    result = Runner(timeout=60).execute(entry, run_dir, cwd=tmp_path)
+
+    assert result.success, result.stderr
+    probe_line = next(
+        line for line in result.stdout.splitlines() if line.startswith("probe-env=")
+    )
+    observed = json.loads(probe_line.removeprefix("probe-env="))
+    assert observed == {
+        **forwarded,
+        **{key: None for key in withheld},
+        marker: "1",
+    }
 
 
 def test_execute_uses_ephemeral_home_and_cleans_up(tmp_path: Path) -> None:
