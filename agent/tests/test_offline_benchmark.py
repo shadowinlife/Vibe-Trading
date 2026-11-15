@@ -10,6 +10,7 @@ benchmark-relative metrics are then graded against the equal-weight basket.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -24,6 +25,12 @@ _STOCK_CLOSE = [100.0, 110.0, 120.0, 130.0, 140.0]
 _BENCH_CLOSE = [200.0, 201.0, 202.0, 203.0, 204.0]
 _BENCH = "SPY.US"
 _UNRESOLVED_MARKER = "could not be resolved"
+
+
+@pytest.fixture(autouse=True)
+def _disable_dotenv(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep developer credentials out of this fully stubbed test module."""
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: False)
 
 
 def _bars(closes: list[float]) -> pd.DataFrame:
@@ -101,7 +108,7 @@ def _run_main(
 
     calls: list[list[str]] = []
     monkeypatch.setattr(
-        runner, "_get_loader", lambda name: _loader_class(source, frames, calls)
+        runner, "_get_loader", lambda name, **kwargs: _loader_class(source, frames, calls)
     )
     monkeypatch.setattr(
         runner,
@@ -119,6 +126,117 @@ def _run_main(
     runner.main(run_dir)
     card = json.loads((run_dir / "run_card.json").read_text(encoding="utf-8"))
     return card, calls
+
+
+def _run_frozen_main(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    benchmark: str | None,
+    provider_calls: list[str],
+) -> dict:
+    """Run a minimal sealed snapshot while recording any provider escape."""
+    run_dir = tmp_path / "run"
+    (run_dir / "code").mkdir(parents=True)
+    (run_dir / "code" / "signal_engine.py").write_text(
+        "class SignalEngine:\n    pass\n", encoding="utf-8"
+    )
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    raw = _bars(_STOCK_CLOSE).rename_axis("date").to_csv().encode("utf-8")
+    (snapshot / "AAPL.US.csv").write_bytes(raw)
+    manifest = snapshot / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "interval": "1D",
+                "sources": ["local"],
+                "frames": {
+                    "AAPL.US": {
+                        "path": "AAPL.US.csv",
+                        "sha256": hashlib.sha256(raw).hexdigest(),
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (run_dir / "config.json").write_text(
+        json.dumps(
+            {
+                "codes": ["AAPL.US"],
+                "start_date": str(_DATES[0].date()),
+                "end_date": str(_DATES[-1].date()),
+                "source": "local",
+                "benchmark": benchmark,
+                "initial_cash": 100_000.0,
+                "frozen_data_manifest": str(manifest),
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("VIBE_TRADING_ALLOWED_RUN_ROOTS", str(tmp_path))
+    monkeypatch.setattr(
+        runner,
+        "_load_module_from_file",
+        lambda path, name: SimpleNamespace(SignalEngine=_FlatSignal),
+    )
+    monkeypatch.setattr(runner, "_validate_signal_engine_class", lambda cls: None)
+
+    def forbidden_loader(name):
+        provider_calls.append(f"registry:{name}")
+        raise AssertionError("frozen run consulted the loader registry")
+
+    class _ForbiddenNetwork:
+        def __init__(self, *args, **kwargs):
+            provider_calls.append("yfinance:init")
+
+        def fetch(self, *args, **kwargs):
+            provider_calls.append("yfinance:fetch")
+            raise AssertionError("frozen run consulted Yahoo")
+
+    monkeypatch.setattr(runner, "_get_loader", forbidden_loader)
+    monkeypatch.setattr("backtest.benchmark.YfinanceLoader", _ForbiddenNetwork)
+    runner.main(run_dir)
+    return json.loads((run_dir / "run_card.json").read_text(encoding="utf-8"))
+
+
+@pytest.mark.parametrize("requested,ticker", [(_BENCH, _BENCH), ("auto", "SPY")])
+def test_frozen_unresolvable_benchmark_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, requested, ticker
+) -> None:
+    provider_calls: list[str] = []
+
+    with pytest.raises(ValueError) as caught:
+        _run_frozen_main(
+            tmp_path, monkeypatch, benchmark=requested, provider_calls=provider_calls
+        )
+
+    message = str(caught.value)
+    assert repr(ticker) in message
+    assert "frozen evaluation window" in message
+    assert "frozen snapshot" in message
+    assert "network fallback is disabled" in message
+    assert provider_calls == []
+
+
+def test_frozen_run_without_benchmark_keeps_equal_weight(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    provider_calls: list[str] = []
+
+    card = _run_frozen_main(
+        tmp_path, monkeypatch, benchmark=None, provider_calls=provider_calls
+    )
+
+    assert card["metrics"]["benchmark_kind"] == "equal_weight"
+    assert card["metrics"]["benchmark_return"] == pytest.approx(0.4)
+    assert "benchmark_ticker" not in card["metrics"]
+    assert card["data_provenance"] == {
+        "AAPL.US": {"source": "unknown", "adjustment": "unknown", "attrs": {}}
+    }
+    assert provider_calls == []
 
 
 def test_offline_run_fetches_the_declared_benchmark_through_its_own_loader(
