@@ -23,7 +23,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import BinaryIO, Final, Literal, TypedDict
 
-from src.config.accessor import get_env_value
+from src.core.runtime_env import build_scrubbed_runtime_env
 from src.strategy_runs.control_contract import CONTRACT_VERSION, JsonValue
 from src.strategy_runs.control_store import (
     ControlStore,
@@ -146,9 +146,11 @@ class NativeSupervisor:
         except OSError as exc:
             raise SupervisorError("log_path", str(exc)) from exc
 
-        env = {**os.environ, **(spec.env or {})}
-        if not env.get("PATH"):
-            env["PATH"] = get_env_value("PATH") or os.defpath
+        env = build_scrubbed_runtime_env(
+            spec.run_dir,
+            pythonpath_extra=spec.cwd,
+            overrides=spec.env,
+        )
         try:
             proc = self._popen(
                 spec.argv,
