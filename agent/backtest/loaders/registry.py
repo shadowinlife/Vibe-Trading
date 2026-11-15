@@ -593,7 +593,12 @@ def refresh_source_order_overrides() -> None:
 refresh_source_order_overrides()
 
 
-def resolve_loader(market: str, *, exclude: Collection[str] = ()) -> Any:
+def resolve_loader(
+    market: str,
+    *,
+    exclude: Collection[str] = (),
+    diagnostics: list[dict[str, str]] | None = None,
+) -> Any:
     """Return the first *available* loader instance for *market*.
 
     Walks the fallback chain and returns the first loader whose
@@ -605,6 +610,9 @@ def resolve_loader(market: str, *, exclude: Collection[str] = ()) -> Any:
             ``clickhouse``, so the ClickHouse loader's own federation path
             excludes itself to reach a genuine network source instead of
             resolving back into itself.
+        diagnostics: Optional caller-owned list receiving one fixed
+            ``{"source": name, "reason": "source_unavailable"}`` record for
+            each rejected candidate. Raw exceptions are never recorded.
 
     Returns:
         A loader instance.
@@ -627,20 +635,30 @@ def resolve_loader(market: str, *, exclude: Collection[str] = ()) -> Any:
             loader = LOADER_REGISTRY[name]()
         except Exception as exc:
             logger.debug("loader %s failed to construct: %s", name, exc)
+            if diagnostics is not None:
+                diagnostics.append(
+                    {"source": name, "reason": "source_unavailable"}
+                )
             continue
         if loader.is_available():
             return loader
+        if diagnostics is not None:
+            diagnostics.append({"source": name, "reason": "source_unavailable"})
     raise NoAvailableSourceError(
         f"No available data source for market '{market}'. "
         f"Tried: {tried or chain}. Check network and API token config."
     )
 
 
-def get_loader_cls_with_fallback(source: str) -> Type[Any]:
+def get_loader_cls_with_fallback(
+    source: str, *, diagnostics: list[dict[str, str]] | None = None
+) -> Type[Any]:
     """Return a loader *class* for *source*, falling back if unavailable.
 
     Args:
         source: Requested data source name.
+        diagnostics: Optional caller-owned list receiving sanitized rejection
+            records here and throughout the internal fallback resolution.
 
     Returns:
         A DataLoader class (not instance).
@@ -657,9 +675,18 @@ def get_loader_cls_with_fallback(source: str) -> Type[Any]:
         instance = loader_cls()
     except Exception as exc:
         logger.debug("loader %s failed to construct: %s", source, exc)
+        if diagnostics is not None:
+            diagnostics.append(
+                {"source": source, "reason": "source_unavailable"}
+            )
         instance = None
-    if instance is not None and instance.is_available():
-        return loader_cls
+    if instance is not None:
+        if instance.is_available():
+            return loader_cls
+        if diagnostics is not None:
+            diagnostics.append(
+                {"source": source, "reason": "source_unavailable"}
+            )
 
     # Some sources must never silently degrade to an unrelated network loader
     # when explicitly requested. ``local`` is the canonical case: its broad
@@ -689,7 +716,7 @@ def get_loader_cls_with_fallback(source: str) -> Type[Any]:
     # Source unavailable — try same-market fallback
     for market in loader_cls.markets:
         try:
-            fallback = resolve_loader(market)
+            fallback = resolve_loader(market, diagnostics=diagnostics)
             logger.warning(
                 "%s is unavailable, falling back to %s for market %s",
                 source,
