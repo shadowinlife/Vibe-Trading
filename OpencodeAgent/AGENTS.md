@@ -69,10 +69,11 @@ VT 内置三个 ClickHouse 语义层工具，是 LLM 交互式取数的**首选�
 
 ## A 股数据联邦
 1. A 股历史数据：ClickHouse 提供 T-1 全量；VT `get_market_data` 的 A 股 fallback 链**头部即 `clickhouse`**。行情按标的类型分表：个股 `stk_factor_pro`、ETF/LOF `fund_daily`、指数 `idx_factor_pro`（详见语义层目录）。
-2. 当日（T 日）OHLCV：ClickHouse 不覆盖，由网络源实时补数（`tencent`/`akshare`/`tushare`）。数据联邦模式 = ClickHouse T-1 历史 + 网络源当日。
-3. **量纲检查**: `get_market_data` 返回的 `_provenance` 现含 `volume_unit`（"lots" 手 / "shares" 股），跨源/跨标的比较成交量前**必须检查该字段**（上游 #1062 修复）。
-4. 估值速查：**仅个股**可查 `stk_factor_pro` 的 pe_ttm / pb / total_mv；ETF 与指数**没有**直接估值列，必须走 `/home/opencode/.config/opencode/skills/semantic-layer/RULES.md` R3 的三级降级（官方指数估值 → 成分股加权并披露覆盖率 → 明确拒答）。
-5. 本地找不到标的时，先用 `search_symbol` 判断是否为 ETF、港股、美股或其他市场代码，再选数据源，不要直接反问用户代码；ETF 需要指数数据时按 `RULES.md` R2 解析跟踪指数（库内无 `fund_basic` 映射表，已核验映射见 R2.1）。
+2. **回测来源单独核验**：`get_market_data` 的 provenance 不覆盖回测子进程。正式回测先用小 run 检查 `run_card.json` 的 `data_provenance`（实际 source、adjustment、fallback_attempts），再以 `frozen_data_manifest` 固定输入；`source:"auto"` 与链首优先级都不是实际命中 CH 的证明。沙箱仅转发 `CLICKHOUSE_HOST/PORT/DATABASE`，账号密码不会进入生成策略所在子进程。
+3. 当日（T 日）OHLCV：ClickHouse 不覆盖，由网络源实时补数（`tencent`/`akshare`/`tushare`）。数据联邦模式 = ClickHouse T-1 历史 + 网络源当日。
+4. **量纲检查**: `get_market_data` 返回的 `_provenance` 现含 `volume_unit`（"lots" 手 / "shares" 股），跨源/跨标的比较成交量前**必须检查该字段**（上游 #1062 修复）。
+5. 估值速查：**仅个股**可查 `stk_factor_pro` 的 pe_ttm / pb / total_mv；ETF 与指数**没有**直接估值列，必须走 `/home/opencode/.config/opencode/skills/semantic-layer/RULES.md` R3 的三级降级（官方指数估值 → 成分股加权并披露覆盖率 → 明确拒答）。
+6. 本地找不到标的时，先用 `search_symbol` 判断是否为 ETF、港股、美股或其他市场代码，再选数据源，不要直接反问用户代码；ETF 需要指数数据时按 `RULES.md` R2 解析跟踪指数（库内无 `fund_basic` 映射表，已核验映射见 R2.1）。
 
 ## 跨市场与实时数据
 1. 港美股优先 `yfinance`/`akshare`，加密用 `okx`/`ccxt`，不确定用 `auto`。
