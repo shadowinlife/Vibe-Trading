@@ -17,6 +17,7 @@ import os
 import re
 import time
 import uuid
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Callable, Protocol, TypeVar, runtime_checkable
 
@@ -482,6 +483,24 @@ _LOADER_CACHE_TRUE_VALUES = {"1", "true", "yes", "on"}
 # panels may omit the predecessor's filings and must be rebuilt.
 _LOADER_CACHE_VERSION = 9
 _LOADER_FRAME_METADATA_ATTRS = ("quote_currency", "currency_conversion", "adjustment")
+
+
+def sanitize_loader_frame_attrs(attrs: object) -> dict[str, str]:
+    """Return only non-empty string metadata allowed to leave a loader frame.
+
+    Args:
+        attrs: Candidate frame attributes or another mapping.
+
+    Returns:
+        Whitelisted metadata with non-empty string values, in contract order.
+    """
+    if not isinstance(attrs, Mapping):
+        return {}
+    return {
+        name: value
+        for name in _LOADER_FRAME_METADATA_ATTRS
+        if isinstance((value := attrs.get(name)), str) and value.strip()
+    }
 
 
 def loader_cache_enabled() -> bool:
