@@ -9,6 +9,13 @@ import re
 from collections.abc import Callable
 from typing import Any
 
+from backtest.source_contract import (
+    federation_adjustment,
+    federation_caliber_warning,
+    federation_from_attrs,
+    federation_source,
+)
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_ROWS = 250
@@ -87,7 +94,6 @@ def detect_source(code: str) -> str:
     return chain[0] if chain else "tushare"
 
 
-
 def normalize_crypto_symbol(code: str) -> str:
     """Normalize USDT spot aliases without changing the requested quote asset."""
     cleaned = code.strip().upper()
@@ -111,10 +117,46 @@ def get_loader(source: str):
 #: search, fetch and grounding all agree.
 FIAT_CODES = frozenset(
     {
-        "USD", "EUR", "GBP", "JPY", "CHF", "CNY", "CNH", "HKD", "AUD", "NZD",
-        "CAD", "KRW", "INR", "SGD", "SEK", "NOK", "DKK", "MXN", "BRL", "ZAR",
-        "TRY", "RUB", "PLN", "THB", "MYR", "IDR", "PHP", "VND", "ILS", "AED",
-        "SAR", "EGP", "CZK", "HUF", "RON", "CLP", "COP", "PEN", "TWD", "CUP",
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY",
+        "CHF",
+        "CNY",
+        "CNH",
+        "HKD",
+        "AUD",
+        "NZD",
+        "CAD",
+        "KRW",
+        "INR",
+        "SGD",
+        "SEK",
+        "NOK",
+        "DKK",
+        "MXN",
+        "BRL",
+        "ZAR",
+        "TRY",
+        "RUB",
+        "PLN",
+        "THB",
+        "MYR",
+        "IDR",
+        "PHP",
+        "VND",
+        "ILS",
+        "AED",
+        "SAR",
+        "EGP",
+        "CZK",
+        "HUF",
+        "RON",
+        "CLP",
+        "COP",
+        "PEN",
+        "TWD",
+        "CUP",
     }
 )
 
@@ -196,6 +238,26 @@ def _json_safe(value: Any) -> Any:
     if isinstance(value, float) and not math.isfinite(value):
         return None
     return value
+
+
+def _federation_unit(federation: dict[str, Any] | None, field: str, default: Any) -> Any:
+    if federation is None:
+        return default
+    values = [
+        federation[leg][field]
+        for leg in ("history", "realtime")
+        if leg in federation and federation[leg].get(field) is not None
+    ]
+    if not values:
+        return default
+
+    def canonical(value: Any) -> Any:
+        if isinstance(value, str) and value.strip().lower() in {"lot", "lots"}:
+            return "lot"
+        return value
+
+    normalized = [canonical(value) for value in values]
+    return normalized[0] if all(value == normalized[0] for value in normalized) else "mixed"
 
 
 def _clickhouse_table(frame: Any) -> str:
@@ -286,10 +348,7 @@ def fetch_market_data(
     results: dict[str, Any] = {}
     provenance: dict[str, dict[str, Any]] = {}
     diagnostics: dict[str, list[dict[str, str]]] = {}
-    result_aliases = {
-        code: code.split(":", 1)[1] if code.lower().startswith("local:") else code
-        for code in codes
-    }
+    result_aliases = {code: code.split(":", 1)[1] if code.lower().startswith("local:") else code for code in codes}
 
     groups: dict[tuple[str, str], list[str]] = {}
     for code in codes:
@@ -344,16 +403,9 @@ def fetch_market_data(
             override = None
         else:
             override = (
-                get_source_order_override(market)
-                if source == "auto"
-                and fallback_chain_provider is None
-                else None
+                get_source_order_override(market) if source == "auto" and fallback_chain_provider is None else None
             )
-            candidates = (
-                list(override)
-                if override is not None and src in override
-                else [src, *chain]
-            )
+            candidates = list(override) if override is not None and src in override else [src, *chain]
         # Deduplicate (preserving order), then cap the attempt budget.
         attempts: list[str] = []
         for candidate in candidates:
@@ -367,6 +419,7 @@ def fetch_market_data(
         provider_cls: type | None = None
         remaining = list(dict.fromkeys(src_codes))
         attempted_providers: set[str] = set()
+
         def record(symbols: list[str], candidate: str, reason: str) -> None:
             for symbol in symbols:
                 diagnostics.setdefault(symbol, []).append({"source": candidate, "reason": reason})
@@ -385,11 +438,10 @@ def fetch_market_data(
                 logger.debug("loader %r resolver failed: %s", attempt_src, exc)
                 continue
             serving_source = getattr(loader_cls, "name", None) or attempt_src
-            # An explicit source that lands on a substitute is a degraded read
-            # worth reporting; inside an auto-detected chain the substitution
-            # is ordinary routing, and upstream attributes the attempt to the
-            # loader that actually ran (#1491) instead of the name it replaced.
-            if serving_source != attempt_src and source != "auto":
+            # Resolver substitution is a degraded read in auto and explicit
+            # modes alike: the serving source is recorded separately below,
+            # while this rejected requested candidate supplies the reason.
+            if serving_source != attempt_src:
                 record(remaining, attempt_src, "source_unavailable")
             if serving_source in attempted_providers:
                 continue
@@ -399,19 +451,28 @@ def fetch_market_data(
                 # Weekly and monthly bars are built from daily ones (#1479).
                 loader_symbols = {symbol: normalize_crypto_symbol(symbol) for symbol in remaining}
                 fetched = loader.fetch(
-                    list(dict.fromkeys(loader_symbols.values())), start_date, end_date, interval=source_interval(interval)
+                    list(dict.fromkeys(loader_symbols.values())),
+                    start_date,
+                    end_date,
+                    interval=source_interval(interval),
                 )
                 partial = {
                     code: resample_bars(frame, interval) if hasattr(frame, "groupby") else frame
                     for code, frame in {
                         **(fetched or {}),
-                        **{original: fetched[normalized] for original, normalized in loader_symbols.items()
-                           if original != normalized and normalized in (fetched or {})},
+                        **{
+                            original: fetched[normalized]
+                            for original, normalized in loader_symbols.items()
+                            if original != normalized and normalized in (fetched or {})
+                        },
                     }.items()
                     if frame is not None and not getattr(frame, "empty", False)
                 }
-                partial = {code: frame for code, frame in partial.items()
-                           if frame is not None and not getattr(frame, "empty", False)}
+                partial = {
+                    code: frame
+                    for code, frame in partial.items()
+                    if frame is not None and not getattr(frame, "empty", False)
+                }
                 for original, normalized in loader_symbols.items():
                     if original != normalized and normalized not in remaining:
                         partial.pop(normalized, None)
@@ -419,7 +480,9 @@ def fetch_market_data(
                 record(remaining, serving_source, "fetch_failed")
                 logger.error(
                     "market-data loader %r failed for %s; trying next source in chain: %s",
-                    attempt_src, remaining, exc,
+                    attempt_src,
+                    remaining,
+                    exc,
                 )
                 continue
             if not partial:
@@ -444,13 +507,12 @@ def fetch_market_data(
                 src_codes,
                 used_source,
             )
-        served_elsewhere = sorted(
-            {serve_src for serve_src, _ in symbol_sources.values()} - {used_source}
-        )
+        served_elsewhere = sorted({serve_src for serve_src, _ in symbol_sources.values()} - {used_source})
         if served_elsewhere:
             logger.info(
                 "market-data per-symbol fallback: %s served the remaining symbols %r could not",
-                served_elsewhere, src,
+                served_elsewhere,
+                src,
             )
         return data_map, used_source, provider_cls, symbol_sources
 
@@ -486,23 +548,47 @@ def fetch_market_data(
             volume_units = getattr(provider_cls, "volume_units", None) or {}
             frame_attrs = getattr(df, "attrs", None)
             frame_attrs = frame_attrs if isinstance(frame_attrs, dict) else {}
+            federation = federation_from_attrs(frame_attrs)
+            default_source = used_source or src
+            emitted_source = federation_source(federation, default_source)
             currency_conversion = frame_attrs.get("currency_conversion")
             if not isinstance(currency_conversion, str) or not currency_conversion:
                 currency_conversion = "none"
+            fallback_used = bool(used_source and used_source != src)
+            realtime_after_ch = bool(
+                federation
+                and federation["mode"] == "realtime_only"
+                and src == "clickhouse"
+                and used_source == "clickhouse"
+            )
+            if realtime_after_ch:
+                fallback_used = emitted_source != src
             entry: dict[str, Any] = {
-                "source": used_source or src,
+                "source": emitted_source,
                 "requested_source": source,
                 "detected_source": src,
-                "fallback_used": bool(used_source and used_source != src),
+                "fallback_used": fallback_used,
                 "currency_conversion": currency_conversion,
                 "volume_unit": volume_units.get(market),
                 # A loader that converted its series reports the caliber it
                 # actually served on the frame; the static (source, market)
                 # table is the fallback for unconverted data (#1541).
-                "adjustment": frame_caliber(df, used_source or src, market, symbol),
+                "adjustment": federation_adjustment(
+                    federation,
+                    frame_caliber(df, default_source, market, symbol),
+                ),
             }
-            if entry["fallback_used"]:
-                reason = _fallback_reason(symbol)
+            if fallback_used:
+                if realtime_after_ch:
+                    raw_provenance = frame_attrs.get("_provenance")
+                    reason = (
+                        raw_provenance.get("fallback_reason")
+                        if isinstance(raw_provenance, dict)
+                        else None
+                    )
+                    reason = reason or "clickhouse:no_data"
+                else:
+                    reason = _fallback_reason(symbol)
                 if reason:
                     entry["fallback_reason"] = reason
             quote_currency = frame_attrs.get("quote_currency")
@@ -510,33 +596,37 @@ def fetch_market_data(
                 entry["quote_currency"] = quote_currency
             if extra_provenance:
                 entry.update(extra_provenance)
+            if federation:
+                entry["volume_unit"] = _federation_unit(federation, "volume_unit", entry["volume_unit"])
+                entry["amount_unit"] = _federation_unit(federation, "amount_unit", entry.get("amount_unit"))
+                entry["federation"] = federation
+                warning = federation_caliber_warning(federation)
+                if warning:
+                    entry["caliber_warning"] = warning
             provenance[symbol] = entry
 
     for (src, market), src_codes in groups.items():
-        data_map, used_source, provider_cls, symbol_sources = _fetch_via_chain(
-            src, market, src_codes
-        )
+        data_map, used_source, provider_cls, symbol_sources = _fetch_via_chain(src, market, src_codes)
         for symbol, df in data_map.items():
-            symbol_source, symbol_provider_cls = symbol_sources.get(
-                symbol, (used_source, provider_cls)
-            )
+            symbol_source, symbol_provider_cls = symbol_sources.get(symbol, (used_source, provider_cls))
+            federation = federation_from_attrs(getattr(df, "attrs", None))
             extra = (
                 _clickhouse_provenance(df)
                 if (symbol_source or src) == "clickhouse"
+                and (federation is None or federation["mode"] != "realtime_only")
                 else None
             )
             _emit(
-                symbol, df,
-                src=src, used_source=symbol_source, provider_cls=symbol_provider_cls,
+                symbol,
+                df,
+                src=src,
+                used_source=symbol_source,
+                provider_cls=symbol_provider_cls,
                 market=market,
                 extra_provenance=extra,
             )
 
-    unresolved = [
-        code
-        for code in codes
-        if code not in results and result_aliases[code] not in results
-    ]
+    unresolved = [code for code in codes if code not in results and result_aliases[code] not in results]
 
     # Canadian venue-alias fallback: TSX (.TO) <-> TSX Venture (.V).
     #
@@ -575,21 +665,25 @@ def fetch_market_data(
                         "resolved_symbol": sibling,
                     }
                 logger.info(
-                    "market-data venue alias %s -> %s (source=%s)", code, sibling, src,
+                    "market-data venue alias %s -> %s (source=%s)",
+                    code,
+                    sibling,
+                    src,
                 )
                 unresolved.remove(code)
                 continue
             # Sibling not already resolved — targeted re-fetch of just that
             # symbol through the same market's source chain.
-            sibling_data, used_source, provider_cls, _ = _fetch_via_chain(
-                src, market, [sibling]
-            )
+            sibling_data, used_source, provider_cls, _ = _fetch_via_chain(src, market, [sibling])
             if sibling_data:
                 df = next(iter(sibling_data.values()))
                 if df is not None and not df.empty:
                     _emit(
-                        code, df,
-                        src=src, used_source=used_source, provider_cls=provider_cls,
+                        code,
+                        df,
+                        src=src,
+                        used_source=used_source,
+                        provider_cls=provider_cls,
                         market=market,
                         extra_provenance={
                             "venue_fallback": True,
@@ -598,7 +692,9 @@ def fetch_market_data(
                     )
                     logger.info(
                         "market-data venue fallback %s -> %s (source=%s)",
-                        code, sibling, src,
+                        code,
+                        sibling,
+                        src,
                     )
                     unresolved.remove(code)
 
@@ -608,12 +704,16 @@ def fetch_market_data(
         results["_provenance"] = provenance
     if unresolved:
         results["_diagnostics"] = {
-            code: {"attempts": diagnostics.get(code, []), "recovery": (
-                "Use search_symbol to confirm the symbol and venue; check supported history/interval. source_unavailable means "
-                "the source needs configuration or an optional dependency; fetch_failed means "
-                "the request failed; no_data means that source returned no bars for this range. "
-                "For recent intraday bars, narrow the date range or request daily bars."
-            )} for code in unresolved
+            code: {
+                "attempts": diagnostics.get(code, []),
+                "recovery": (
+                    "Use search_symbol to confirm the symbol and venue; check supported history/interval. source_unavailable means "
+                    "the source needs configuration or an optional dependency; fetch_failed means "
+                    "the request failed; no_data means that source returned no bars for this range. "
+                    "For recent intraday bars, narrow the date range or request daily bars."
+                ),
+            }
+            for code in unresolved
         }
 
     return results
