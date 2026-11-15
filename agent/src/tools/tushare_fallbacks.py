@@ -173,6 +173,20 @@ def fetch_fund_flow(symbol: str, *, days: int) -> dict[str, Any]:
     }
 
 
+def _with_dragon_source(
+    data: dict[str, Any], appearance_source: str
+) -> dict[str, Any]:
+    """Attach actual appearance/seat sources and their aggregate label."""
+    data["appearance_source"] = appearance_source
+    sources = [appearance_source]
+    seat_source = data.get("seat_source")
+    if seat_source:
+        sources.append(seat_source)
+    distinct = list(dict.fromkeys(sources))
+    data["source"] = distinct[0] if len(distinct) == 1 else "mixed"
+    return data
+
+
 def fetch_dragon_tiger(trade_date: str, code: str | None) -> dict[str, Any]:
     compact = _compact_date(trade_date)
     ts_code = _ts_code(code) if code else None
@@ -215,7 +229,8 @@ def fetch_dragon_tiger(trade_date: str, code: str | None) -> dict[str, Any]:
             }
             for row in seats_raw
         ]
-    return data
+        data["seat_source"] = "tushare"
+    return _with_dragon_source(data, "tushare")
 
 
 #: Tushare's northbound fields changed to turnover at the 2024-08-19
@@ -285,6 +300,7 @@ def fetch_northbound_flow(*, lookback_days: int) -> dict[str, Any]:
     return {
         "unit": "CNY million",
         "lookback_days": lookback_days,
+        "source": "tushare",
         "note": _NORTHBOUND_NOTE,
         "realtime": {
             "shanghai_connect": latest.get("shanghai_connect"),
@@ -322,5 +338,6 @@ def fetch_margin_trading(code: str, *, days: int) -> dict[str, Any]:
     return {
         "code": ts_code.split(".", 1)[0],
         "ts_code": ts_code,
+        "source": "tushare",
         "rows": normalized[:days],
     }
