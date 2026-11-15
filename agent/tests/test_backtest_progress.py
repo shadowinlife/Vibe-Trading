@@ -96,7 +96,7 @@ def _synthetic_run_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             del start_date, end_date, kwargs
             return {codes[0]: frame}
 
-    monkeypatch.setattr(runner, "_get_loader", lambda source: FakeLoader)
+    monkeypatch.setattr(runner, "_get_loader", lambda source, **kwargs: FakeLoader)
     monkeypatch.setattr(
         runner,
         "_load_module_from_file",
