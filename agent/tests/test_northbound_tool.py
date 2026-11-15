@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 from unittest.mock import patch
 
+import pytest
+
 from src.tools import northbound_tool as nb
 
 
@@ -87,8 +89,39 @@ class TestSuccessEnvelope:
         assert len(history) == 1
         assert history[0]["trade_date"] == "2024-01-04"
 
+    def test_ch_adapter_tushare_fallback_reports_actual_source(self):
+        fallback = {
+            "unit": "CNY million",
+            "lookback_days": 5,
+            "source": "tushare",
+            "realtime": {"total": 100.0},
+            "history": [{"trade_date": "2024-01-03", "total": 100.0}],
+        }
+        with (
+            patch(
+                "src.tools.clickhouse_fallbacks.fetch_northbound_flow_ch",
+                return_value=fallback,
+            ),
+            patch.object(nb, "get_json") as eastmoney,
+        ):
+            payload = json.loads(
+                nb.NorthboundFlowTool().execute(lookback_days=5)
+            )
+
+        eastmoney.assert_not_called()
+        assert payload["source"] == "tushare"
+        assert payload["data"] == fallback
+
 
 class TestErrorEnvelope:
+    @pytest.fixture(autouse=True)
+    def _exercise_eastmoney_fallback(self):
+        with patch(
+            "src.tools.clickhouse_fallbacks.fetch_northbound_flow_ch",
+            side_effect=RuntimeError("CH adapter unavailable"),
+        ):
+            yield
+
     def test_http_failure_returns_error_envelope(self):
         with patch.object(nb, "get_json", side_effect=RuntimeError("HTTP 429")), patch.object(
             nb.tushare_fallbacks,
@@ -147,6 +180,14 @@ class TestErrorEnvelope:
 
 
 class TestDeadFeedDetection:
+    @pytest.fixture(autouse=True)
+    def _exercise_eastmoney_fallback(self):
+        with patch(
+            "src.tools.clickhouse_fallbacks.fetch_northbound_flow_ch",
+            side_effect=RuntimeError("CH adapter unavailable"),
+        ):
+            yield
+
     """Eastmoney's northbound net feed died at the 2024-08-30 disclosure reform.
 
     The HTTP calls still succeed with all-zero nets / a frozen cumulative (and
