@@ -76,14 +76,32 @@ _DECIMAL_KEYS: Final = frozenset(
         "amount",
         "avg_cost",
         "cash",
+        "cash_base",
+        "conversion_rounding_base",
+        "converted_amount",
+        "exact_converted",
+        "exact_nav_base",
+        "exact_value_base",
         "fee",
+        "hhi",
         "limit",
         "nav_base",
         "position_value",
+        "position_value_base",
         "price",
+        "rate",
         "rebalance_band",
+        "rounding_residual",
+        "rounding_residual_base",
+        "rounding_residual_local",
+        "source_amount",
+        "top_1",
+        "top_5",
+        "valuation_rounding",
         "value",
+        "value_base",
         "weight",
+        "weight_of_positions",
     }
 )
 _REQUIRED_SUCCESS_KEYS: Final = (
@@ -111,7 +129,8 @@ _REQUIRED_SUCCESS_KEYS: Final = (
     "complete",
     "hashes",
 )
-_SUCCESS_KEYS: Final = frozenset(_REQUIRED_SUCCESS_KEYS)
+_OPTIONAL_SUCCESS_KEYS: Final = ("analytics",)
+_SUCCESS_KEYS: Final = frozenset((*_REQUIRED_SUCCESS_KEYS, *_OPTIONAL_SUCCESS_KEYS))
 _CURRENCY_VALUES: Final = frozenset({"CNY", "HKD", "USD"})
 _INPUT_HASH_SUFFIX: Final = re.compile(r"(?:^|;\s*)input_sha256=[0-9a-f]{64}\s*$")
 _BUCKET_REQUIRED_KEYS: Final = ("bucket_id", "market", "currency", "cash", "positions")
@@ -720,6 +739,112 @@ def _assert_result_model(payload: JsonObject) -> None:
         )
 
 
+def _decimal_value(value: JsonValue, path: str) -> Decimal:
+    """Read a canonical public decimal after the shape/decimal checks."""
+    if not isinstance(value, str) or _DECIMAL_PATTERN.fullmatch(value) is None:
+        _reject("invalid_decimal", path, detail="expected a canonical fixed-point string")
+    return Decimal(value)
+
+
+def _analytics_sum(rows: list[JsonValue], path: str) -> Decimal:
+    total = Decimal(0)
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            _reject("invalid_analytics", f"{path}[{index}]")
+        total += _decimal_value(row.get("value_base"), f"{path}[{index}].value_base")
+    return total
+
+
+def _assert_analytics(payload: JsonObject) -> None:
+    """When present, analytics must agree with the public bucket ledger."""
+    raw = payload.get("analytics")
+    if raw is None:
+        return
+    if not isinstance(raw, dict):
+        _reject("invalid_analytics", "analytics", detail="analytics must be an object")
+    base_currency = payload["base_currency"]
+    if raw.get("base_currency") != base_currency:
+        _reject(
+            "analytics_base_currency_mismatch",
+            "analytics.base_currency",
+            detail="analytics must use the document base currency",
+        )
+    nav = _decimal_value(raw.get("nav_base"), "analytics.nav_base")
+    bucket_nav = sum(
+        (
+            _decimal_value(row.get("nav_base"), f"bucket_results[{index}].nav_base")
+            for index, row in enumerate(_require_list(payload, "bucket_results"))
+            if isinstance(row, dict)
+        ),
+        Decimal(0),
+    )
+    if nav != bucket_nav:
+        _reject(
+            "analytics_nav_mismatch",
+            "analytics.nav_base",
+            detail="analytics NAV differs from the bucket ledger NAV",
+        )
+    bridge = _require_mapping(raw, "nav_bridge")
+    bridge_nav = _decimal_value(bridge.get("nav_base"), "analytics.nav_bridge.nav_base")
+    if bridge_nav != nav:
+        _reject(
+            "analytics_nav_mismatch",
+            "analytics.nav_bridge.nav_base",
+            detail="the NAV bridge headline differs from analytics NAV",
+        )
+    bridge_cash = _decimal_value(
+        bridge.get("cash_base"), "analytics.nav_bridge.cash_base"
+    )
+    bridge_positions = _decimal_value(
+        bridge.get("position_value_base"), "analytics.nav_bridge.position_value_base"
+    )
+    bridge_rounding = _decimal_value(
+        bridge.get("valuation_rounding"), "analytics.nav_bridge.valuation_rounding"
+    )
+    if bridge_cash + bridge_positions + bridge_rounding != nav:
+        _reject(
+            "analytics_nav_bridge_mismatch",
+            "analytics.nav_bridge",
+            detail="cash plus positions plus rounding must equal NAV",
+        )
+    positions = _decimal_value(
+        raw.get("position_value_base"), "analytics.position_value_base"
+    )
+    bucket_values = _analytics_sum(
+        _require_list(raw, "bucket_exposures"), "analytics.bucket_exposures"
+    )
+    if bucket_values != nav:
+        _reject(
+            "analytics_bucket_nav_mismatch",
+            "analytics.bucket_exposures",
+            detail="bucket exposure values must sum to NAV",
+        )
+    if _analytics_sum(
+        _require_list(raw, "currency_exposures"), "analytics.currency_exposures"
+    ) != nav:
+        _reject(
+            "analytics_currency_nav_mismatch",
+            "analytics.currency_exposures",
+            detail="currency exposure values must sum to NAV",
+        )
+    if _analytics_sum(
+        _require_list(raw, "market_exposures"), "analytics.market_exposures"
+    ) != nav:
+        _reject(
+            "analytics_market_nav_mismatch",
+            "analytics.market_exposures",
+            detail="market exposure values must sum to NAV",
+        )
+    if _analytics_sum(
+        _require_list(raw, "sector_exposures"), "analytics.sector_exposures"
+    ) != positions:
+        _reject(
+            "analytics_sector_mismatch",
+            "analytics.sector_exposures",
+            detail="sector values including unclassified must sum to position value",
+        )
+
+
 def _assert_success_links(
     payload: JsonObject,
     *,
@@ -839,6 +964,8 @@ def _assert_success_links(
                 _reject("missing_bucket_id", f"errors[{index}].bucket_id")
             if bucket_id not in bucket_ids:
                 _reject("unknown_bucket", f"errors[{index}].bucket_id", bucket_id=bucket_id)
+
+    _assert_analytics(payload)
 
 
 def build_success_payload(document: Any) -> JsonObject:
