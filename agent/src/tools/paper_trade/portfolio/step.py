@@ -500,6 +500,7 @@ def run_portfolio_step(
         orchestration.end_ledger,
         orchestration.prepared_data,
         conversion_events=orchestration.conversion_replay.events,
+        opening_ledger=orchestration.opening_ledger,
     )
     if Decimal(analytics.nav_base) != orchestration.valuation.nav_bridge.total.reported_base:
         raise OrchestrationError(
