@@ -41,7 +41,14 @@ from typing import Any, Final, NoReturn
 from pydantic import ValidationError
 
 from ..state_hash import canonicalize
-from .models import JsonObject, JsonValue, PortfolioModel, PortfolioResult
+from .analytics import reconcile_attribution
+from .models import (
+    AnalyticsAttribution,
+    JsonObject,
+    JsonValue,
+    PortfolioModel,
+    PortfolioResult,
+)
 from .orchestrator import OrchestrationError, OrchestrationCode
 from .schema import PortfolioRequestError
 from .sessions import PortfolioSessionError
@@ -78,41 +85,91 @@ _DECIMAL_KEYS: Final = frozenset(
         "benchmark_return",
         "cash",
         "cash_base",
+        "cash_fx_effect_base",
+        "conversion_effect_base",
         "conversion_rounding_base",
         "converted_amount",
         "deviation",
+        "ending_cash",
+        "ending_local_value",
+        "ending_value_base",
         "exact_benchmark_return",
         "exact_converted",
         "exact_deviation",
         "exact_nav_base",
+        "exact_notional_local",
         "exact_portfolio_return",
         "exact_value_base",
+        "expected_rounding_residual",
         "fee",
+        "fee_effect_base",
+        "fee_local",
         "hhi",
         "limit",
+        "lot_gap",
+        "lot_gap_total",
+        "market_contribution_base",
         "nav_base",
+        "nav_change_exact",
+        "nav_change_reported",
+        "notional_local",
+        "opening_cash",
+        "opening_local_value",
+        "opening_value_base",
+        "planned_at_end_value_base",
+        "planned_at_end_weight",
+        "planned_cash_weight",
+        "planned_value_base",
+        "planned_weight",
+        "planned_weight_total",
         "portfolio_end_exact_nav_base",
         "portfolio_end_nav_base",
         "portfolio_return",
         "portfolio_start_exact_nav_base",
         "portfolio_start_nav_base",
         "portfolio_start_rounding_residual",
+        "position_contribution_base",
         "position_value",
         "position_value_base",
         "price",
+        "price_gap",
+        "price_gap_total",
         "rate",
+        "realized_cash_weight",
+        "realized_value_base",
+        "realized_weight",
+        "realized_weight_total",
         "rebalance_band",
+        "reject_gap",
+        "reject_gap_total",
+        "rounding_effect_base",
+        "rounding_local",
+        "rounding_loss_base",
         "rounding_residual",
         "rounding_residual_base",
         "rounding_residual_local",
         "source_amount",
+        "source_effect_base",
+        "start_exact_nav_base",
+        "start_nav_base",
+        "start_rounding_residual",
+        "target_cash_weight",
+        "target_gap",
+        "target_weight",
+        "target_weight_total",
+        "target_effect_base",
         "top_1",
         "top_5",
+        "total_contribution_base",
+        "trade_cash_base",
         "valuation_rounding",
+        "valuation_rounding_weight",
         "value",
         "value_base",
         "weight",
         "weight_of_positions",
+        "weight_rounding_residual",
+        "weight_rounding_tolerance",
     }
 )
 _REQUIRED_SUCCESS_KEYS: Final = (
@@ -957,6 +1014,85 @@ def _assert_benchmark(payload: JsonObject, *, nav: Decimal, exact_nav: Decimal) 
             )
 
 
+def _assert_attribution(
+    raw: JsonObject,
+    *,
+    nav: Decimal,
+    exact_nav: Decimal,
+    base_currency: str,
+) -> None:
+    """Recompute the optional one-day attribution before publishing it."""
+    try:
+        attribution = AnalyticsAttribution.model_validate(raw)
+    except ValidationError as exc:
+        first = exc.errors()[0]
+        path = _location_path(tuple(first.get("loc", ())))
+        _reject(
+            _pydantic_reason(str(first.get("type", "")), path),
+            f"analytics.attribution.{path}",
+            detail=str(first.get("msg", "invalid attribution value")),
+        )
+    if attribution.base_currency != base_currency:
+        _reject(
+            "attribution_base_currency_mismatch",
+            "analytics.attribution.base_currency",
+            detail="attribution must use the document base currency",
+        )
+    if _decimal_value(
+        attribution.nav.end_nav_base,
+        "analytics.attribution.nav.end_nav_base",
+    ) != nav:
+        _reject(
+            "attribution_nav_mismatch",
+            "analytics.attribution.nav.end_nav_base",
+            detail="attribution end NAV must equal analytics NAV",
+        )
+    if _decimal_value(
+        attribution.nav.end_exact_nav_base,
+        "analytics.attribution.nav.end_exact_nav_base",
+    ) != exact_nav:
+        _reject(
+            "attribution_nav_mismatch",
+            "analytics.attribution.nav.end_exact_nav_base",
+            detail="attribution exact end NAV must equal analytics exact NAV",
+        )
+    try:
+        issues = reconcile_attribution(attribution)
+    except (ArithmeticError, ValueError) as exc:
+        _reject(
+            "invalid_attribution",
+            "analytics.attribution",
+            detail=f"{type(exc).__name__}: {exc}"[:200],
+        )
+    if issues:
+        first = issues[0]
+        path = (
+            first.path
+            if first.path.startswith("attribution.")
+            else f"analytics.attribution.{first.path}"
+        )
+        _reject(
+            first.reason,
+            f"analytics.{path}",
+            bucket_id=first.bucket_id,
+            detail=first.detail,
+        )
+    if not attribution.reconciliation.reconciled:
+        _reject(
+            "attribution_not_reconciled",
+            "analytics.attribution.reconciliation",
+            detail="the attribution document declares a failed reconciliation",
+        )
+    if attribution.reconciliation.issues or not all(
+        check.passed for check in attribution.reconciliation.checks
+    ):
+        _reject(
+            "attribution_reconciliation_mismatch",
+            "analytics.attribution.reconciliation",
+            detail="a reconciled verdict cannot carry issues or failed checks",
+        )
+
+
 def _assert_analytics(payload: JsonObject) -> None:
     """When present, analytics must agree with the public bucket ledger."""
     raw = payload.get("analytics")
@@ -1045,6 +1181,21 @@ def _assert_analytics(payload: JsonObject) -> None:
             "analytics.sector_exposures",
             detail="sector values including unclassified must sum to position value",
         )
+    exact_nav = _decimal_value(raw.get("exact_nav_base"), "analytics.exact_nav_base")
+    attribution = raw.get("attribution")
+    if attribution is not None:
+        if not isinstance(attribution, dict):
+            _reject(
+                "invalid_analytics",
+                "analytics.attribution",
+                detail="attribution must be an object",
+            )
+        _assert_attribution(
+            attribution,
+            nav=nav,
+            exact_nav=exact_nav,
+            base_currency=base_currency,
+        )
     if "benchmark" not in raw:
         return
     benchmark = raw.get("benchmark")
@@ -1056,7 +1207,6 @@ def _assert_analytics(payload: JsonObject) -> None:
             "analytics.benchmark",
             detail="benchmark must be an object or null",
         )
-    exact_nav = _decimal_value(raw.get("exact_nav_base"), "analytics.exact_nav_base")
     _assert_benchmark(benchmark, nav=nav, exact_nav=exact_nav)
 
 

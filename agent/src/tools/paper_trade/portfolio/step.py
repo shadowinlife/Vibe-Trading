@@ -64,10 +64,12 @@ from .numeric import (
     canonical_decimal,
     parse_effective_fee_model,
 )
+from .ledger import ConversionReplay
 from .orchestrator import (
     CallerDeclaredConversions,
     ExecutionCancellation,
     ExecutionFill,
+    ExecutionOutcome,
     ExecutionRejection,
     MarksValuation,
     OpeningLedgerValidation,
@@ -101,6 +103,8 @@ class PortfolioStepResult:
     valuation: ValuationStageResult
     stage_trace: tuple[StageName, ...]
     analytics: PortfolioAnalytics | None = None
+    conversion_replay: ConversionReplay | None = None
+    execution: ExecutionOutcome | None = None
 
     @property
     def complete(self) -> bool:
@@ -501,7 +505,33 @@ def run_portfolio_step(
         orchestration.prepared_data,
         conversion_events=orchestration.conversion_replay.events,
         opening_ledger=orchestration.opening_ledger,
+        post_conversion_ledger=orchestration.conversion_replay.post_conversion,
+        fills=orchestration.execution.fills,
+        rejected_orders=orchestration.execution.rejected_orders,
+        canceled_orders=orchestration.execution.canceled_orders,
+        plan=orchestration.plan,
     )
+    attribution = analytics.attribution
+    if attribution is None or not attribution.reconciliation.reconciled:
+        first_issue = (
+            None
+            if attribution is None
+            else next(iter(attribution.reconciliation.issues), None)
+        )
+        raise OrchestrationError(
+            stage="valuate_reconcile",
+            reason="attribution_reconciliation_failed",
+            code="INTERNAL",
+            path="analytics.attribution.reconciliation",
+            detail=(
+                "attribution did not reconcile"
+                if first_issue is None
+                else "; ".join(
+                    f"{issue.reason}: {issue.path}"
+                    for issue in attribution.reconciliation.issues[:5]
+                )
+            ),
+        )
     if Decimal(analytics.nav_base) != orchestration.valuation.nav_bridge.total.reported_base:
         raise OrchestrationError(
             stage="valuate_reconcile",
@@ -521,4 +551,6 @@ def run_portfolio_step(
         valuation=orchestration.valuation,
         stage_trace=orchestration.stage_trace,
         analytics=analytics,
+        conversion_replay=orchestration.conversion_replay,
+        execution=orchestration.execution,
     )
