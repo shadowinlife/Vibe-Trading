@@ -4,6 +4,12 @@ Pins the contract the web frontend consumes: a best-effort ``summary`` block
 built from run_card.json + equity.csv + the ohlcv glob, the ``ohlcv`` map
 inside the envelope's ``artifacts``, byte-identical legacy envelope fields,
 and no summary on any failure path or corrupt input.
+
+Also pins the result-budget contract: the MCP path gets a 48 KiB / 2000-line
+budget (4 KiB headroom under the host's 50 KiB cap) while the model path keeps
+its 10,000-byte cap, optional bulk blocks are dropped before anything required,
+every dropped block is named in ``summary["omitted_fields"]``, and ``summary``
+itself is never removed.
 """
 
 from __future__ import annotations
@@ -19,6 +25,7 @@ import pytest
 
 from src.tools.backtest_summary import (
     MAX_PREVIEW_POINTS,
+    REQUIRED_SUMMARY_KEYS,
     build_backtest_summary,
     collect_ohlcv_paths,
     try_build_backtest_summary,
@@ -461,24 +468,28 @@ def test_equity_just_over_limit_samples_down(summary_run_dir):
     assert preview[-1] == _preview_point(rows[-1])
 
 
-def test_missing_equity_csv_yields_empty_preview(summary_run_dir):
+def test_missing_equity_csv_yields_initial_cash_point(summary_run_dir):
     (summary_run_dir / "artifacts" / "equity.csv").unlink()
 
     summary = build_backtest_summary(summary_run_dir)
 
-    assert summary["equity_preview"] == []
+    assert summary["equity_preview"] == [{"time": "2024-01-01", "equity": 1000000}]
     assert summary["artifact_paths"]["equity"] is None
     assert summary["metrics"] == CARD_METRICS
 
 
-def test_header_only_equity_csv_yields_empty_preview(summary_run_dir):
+def test_header_only_equity_csv_yields_initial_cash_point(summary_run_dir):
     _write_equity_csv(summary_run_dir / "artifacts" / "equity.csv", [])
 
-    assert build_backtest_summary(summary_run_dir)["equity_preview"] == []
+    assert build_backtest_summary(summary_run_dir)["equity_preview"] == [
+        {"time": "2024-01-01", "equity": 1000000}
+    ]
 
 
 @pytest.mark.parametrize("relative", ["run_card.json", "artifacts/equity.csv"])
-def test_summary_refuses_artifact_symlink_outside_run(summary_run_dir, tmp_path, relative):
+def test_summary_refuses_artifact_symlink_outside_run(
+    summary_run_dir, tmp_path, relative
+):
     path = summary_run_dir / relative
     outside = tmp_path / "external"
     outside.write_bytes(path.read_bytes())
@@ -497,10 +508,17 @@ def test_ohlcv_paths_skip_external_symlinks_and_directories(summary_run_dir, tmp
 
 def test_real_run_card_structured_metrics_reach_summary(summary_run_dir):
     from backtest.run_card import write_run_card
-    card = write_run_card(summary_run_dir, {"codes": ["BTC-USDT"]}, {
-        "sharpe": 1.25, "unfilled_plan_rejections_by_symbol": {"BTC-USDT": 2},
-        "validation": {"passed": False}, "warnings": ["annualisation adjusted"],
-    })
+
+    card = write_run_card(
+        summary_run_dir,
+        {"codes": ["BTC-USDT"]},
+        {
+            "sharpe": 1.25,
+            "unfilled_plan_rejections_by_symbol": {"BTC-USDT": 2},
+            "validation": {"passed": False},
+            "warnings": ["annualisation adjusted"],
+        },
+    )
     summary = build_backtest_summary(summary_run_dir)
     assert summary["metrics"] == card["metrics"]
     assert summary["structured_metrics"] == card["structured_metrics"]
@@ -509,8 +527,12 @@ def test_real_run_card_structured_metrics_reach_summary(summary_run_dir):
 
 def test_long_equity_summary_survives_model_delivery(summary_run_dir):
     from src.config.limits import TOOL_RESULT_LIMIT, truncate_tool_result
+
     _write_equity_csv(summary_run_dir / "artifacts/equity.csv", _equity_rows(10000))
-    result = _run_tool(summary_run_dir, _FakeRunResult(success=True, exit_code=0, stdout="x" * 4000, stderr="y" * 4000))
+    result = _run_tool(
+        summary_run_dir,
+        _FakeRunResult(success=True, exit_code=0, stdout="x" * 4000, stderr="y" * 4000),
+    )
     delivered = json.dumps(result, ensure_ascii=False)
     assert len(delivered) <= TOOL_RESULT_LIMIT
     assert truncate_tool_result(delivered) == delivered
@@ -520,13 +542,24 @@ def test_long_equity_summary_survives_model_delivery(summary_run_dir):
     assert preview[-1]["equity"] == 1000000.0 + 1000 * 9999
 
 
-def test_oversized_metrics_summary_reports_omission(summary_run_dir):
+def test_oversized_metrics_summary_is_trimmed_not_dropped(summary_run_dir):
     from src.config.limits import TOOL_RESULT_LIMIT
+
     card = _run_card()
     card["structured_metrics"] = {"detail": "x" * TOOL_RESULT_LIMIT}
     (summary_run_dir / "run_card.json").write_text(json.dumps(card))
     result = _run_tool(summary_run_dir, _FakeRunResult(success=True, exit_code=0))
     assert result["status"] == "ok"
-    assert "summary" not in result
-    assert "exceeds the result budget" in result["summary_omitted"]
-    assert len(json.dumps(result)) <= TOOL_RESULT_LIMIT
+    assert isinstance(result["summary"], dict)
+    assert "summary_omitted" not in result
+    assert "structured_metrics" in result["summary"]["omitted_fields"]
+    assert all(key in result["summary"] for key in REQUIRED_SUMMARY_KEYS)
+    assert (
+        len(json.dumps(result, ensure_ascii=False).encode("utf-8")) <= TOOL_RESULT_LIMIT
+    )
+
+
+def test_small_summary_has_no_omitted_fields(summary_run_dir):
+    result = _run_tool(summary_run_dir, _FakeRunResult(success=True, exit_code=0))
+
+    assert "omitted_fields" not in result["summary"]

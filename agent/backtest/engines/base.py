@@ -19,6 +19,7 @@ from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -48,11 +49,13 @@ from backtest.metrics import (
     period_returns,
 )
 from backtest.models import EquitySnapshot, FillRecord, Position, TradeRecord
+from backtest.progress import write_progress
 from backtest.rebalance_mask import (
     RebalanceMask,
     resolve_rebalance_dates,
     validate_rebalance_mask,
 )
+from backtest.source_contract import validate_frozen_enrichment
 
 
 def _json_safe_scalar_metrics(metrics: Dict[str, Any]) -> Dict[str, Any]:
@@ -459,6 +462,7 @@ def _maybe_enrich_fundamentals(
     config: Dict[str, Any],
 ) -> Dict[str, pd.DataFrame]:
     """Attach configured Tushare statement fields before signal generation."""
+    validate_frozen_enrichment(config)
     fields_by_table = _normalise_fundamental_fields(config)
     if not fields_by_table:
         return data_map
@@ -511,6 +515,7 @@ def _maybe_enrich_events(
     config: Dict[str, Any],
 ) -> Dict[str, pd.DataFrame]:
     """Attach a point-in-time-safe ``event_score`` column before signal generation."""
+    validate_frozen_enrichment(config)
     specs = _event_feed_specs(config)
     if not specs:
         return data_map
@@ -681,15 +686,34 @@ class BaseEngine(ABC):
             Rounded size.
         """
 
-    def _execution_commission(self, size: float, price: float, direction: int, is_open: bool) -> float:
-        """Apply the declared experiment multiplier to execution fees and taxes."""
+    def _execution_commission(
+        self, size: float, price: float, direction: int, is_open: bool
+    ) -> float:
+        """Apply exact neutral costs, or the legacy fee multiplier."""
+        neutral_costs = self.config.get("neutral_execution_costs")
+        if neutral_costs is not None:
+            notional = Decimal(str(size)) * Decimal(str(price))
+            commission = (
+                notional * Decimal(neutral_costs["commission_bps"]) / Decimal(10000)
+            )
+            if is_open is False:
+                commission += (
+                    notional * Decimal(neutral_costs["tax_bps"]) / Decimal(10000)
+                )
+            return float(commission)
         multiplier = float(self.config.get("execution_cost_multiplier", 1.0))
         if not math.isfinite(multiplier) or multiplier < 0:
-            raise ValueError("execution_cost_multiplier must be finite and non-negative")
+            raise ValueError(
+                "execution_cost_multiplier must be finite and non-negative"
+            )
         return self.calc_commission(size, price, direction, is_open) * multiplier
 
     def _execution_price(self, price: float, direction: int) -> float:
-        """Apply extra adverse slippage before the venue's tick-grid rounding."""
+        """Apply exact neutral slippage, or legacy adverse slippage."""
+        neutral_costs = self.config.get("neutral_execution_costs")
+        if neutral_costs is not None:
+            rate = Decimal(neutral_costs["slippage_bps"]) / Decimal(10000)
+            return float(Decimal(str(price)) * (Decimal(1) + Decimal(direction) * rate))
         bps = float(self.config.get("extra_slippage_bps", 0.0))
         if not math.isfinite(bps) or not 0 <= bps < 10000:
             raise ValueError("extra_slippage_bps must be finite and in [0, 10000)")
@@ -1000,6 +1024,7 @@ class BaseEngine(ABC):
         Returns:
             Metrics dictionary.
         """
+        validate_frozen_enrichment(config)
         trace_started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         codes = config.get("codes", [])
         interval = config.get("interval", "1D")
@@ -1064,6 +1089,7 @@ class BaseEngine(ABC):
             ret_df = ret_df.iloc[warmup_end:]
 
         # 4. Bar-by-bar execution
+        write_progress(run_dir, "matching", 60.0)
         self._execute_bars(dates, data_map, close_df, target_pos, valid_codes, close_val_df=close_val_df)
         actual_pos = self._actual_positions_frame(valid_codes)
 
@@ -1085,6 +1111,8 @@ class BaseEngine(ABC):
             else f"equal-weight basket of {len(basket_codes)} symbols"
         )
         benchmark_metadata = {"benchmark_kind": "equal_weight", "benchmark_label": basket_label}
+        benchmark_evidence: Dict[str, Any] = {}
+        result = None
         requested = config.get("benchmark")
         source = config.get("source", "yfinance")
         ticker = default_benchmark(basket_codes, source) if requested == "auto" else requested
@@ -1096,6 +1124,7 @@ class BaseEngine(ABC):
                 explicit=ticker,
                 start_date=config.get("start_date", ""), end_date=config.get("end_date", ""),
                 interval=interval, loader=loader if source != "auto" or config.get("frozen_data_manifest") else None,
+                evidence=benchmark_evidence,
             )
             window_return = result.total_return_over(dates) if result is not None else None
             if result is not None and window_return is not None:
@@ -1105,7 +1134,25 @@ class BaseEngine(ABC):
                     "benchmark_ticker": result.ticker, "benchmark_return": window_return,
                 }
             else:
+                if config.get("frozen_data_manifest") and ticker:
+                    raise ValueError(
+                        f"benchmark {ticker!r} could not be resolved over the frozen "
+                        "evaluation window from the frozen snapshot; network fallback "
+                        "is disabled"
+                    )
                 reason = f"benchmark {ticker!r} could not be resolved over the evaluation window"
+        if result is not None:
+            result_evidence = {
+                "benchmark_source": result.source,
+                "benchmark_fallback_reason": result.fallback_reason,
+                "benchmark_federation": result.federation,
+            }
+            for key, value in result_evidence.items():
+                if value is not None:
+                    benchmark_evidence.setdefault(key, value)
+        # Benchmark provenance describes only the reference series. Keep it out
+        # of the strategy's data_sources/data_provenance on the run card.
+        benchmark_metadata.update(benchmark_evidence)
         benchmark_warning = (
             f"{reason}; benchmark-relative metrics use the {basket_label}"
             if benchmark_metadata["benchmark_kind"] == "equal_weight" else None
@@ -1114,6 +1161,7 @@ class BaseEngine(ABC):
         bench_equity = self.initial_capital * (1 + bench_ret).cumprod()
 
         # 6. Metrics
+        write_progress(run_dir, "metrics", 85.0)
         realized_turnover = calc_fill_turnover_series(self.fill_records, equity_series)
         m = calc_metrics(
             equity_series,
@@ -1242,6 +1290,7 @@ class BaseEngine(ABC):
             write_validation_json(run_dir / "artifacts" / "validation.json", v_results)
 
         # 8. Artifacts
+        write_progress(run_dir, "artifacts", 95.0)
         self._write_artifacts(
             run_dir, data_map, dates, equity_series, bench_equity, bench_ret,
             target_pos, m, valid_codes,
@@ -1265,6 +1314,7 @@ class BaseEngine(ABC):
             config,
             m,
             data_sources=_run_card_data_sources(config, loader),
+            data_provenance=config.get("_run_card_data_provenance"),
             strategy_path=run_dir / "code" / "signal_engine.py",
             warnings=card_warnings or None,
             tool_traces=[

@@ -99,6 +99,53 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   full-series export with exit 0. Empty ids are now an error, as they already
   were over the API.
 
+- **Backtest summaries survive result delivery**: a successful backtest used to
+  drop its whole `summary` once the envelope exceeded the 10,000-character model
+  cap, leaving consumers only `run_id`/`run_dir`. The MCP path now gets a 48 KiB
+  budget (4 KiB headroom under the host's 2000-line / 50 KiB cap), and the
+  summary is never removed: optional bulk blocks are dropped first and named in
+  `summary["omitted_fields"]`, `equity_preview` stays at 50 points or fewer, and
+  the largest metric entries are trimmed (reported as `metrics`) only if the
+  required payload itself is too large. `schema_version` remains `"1.0"`, full
+  detail remains in `artifact_paths`, and a missing or empty equity curve falls
+  back to one point anchored at the run's start date and initial cash. A run
+  directory whose name is not a single `[A-Za-z0-9._-]` segment gets a short
+  digest suffix so `run_id` stays addressable and unique. Run
+  `python agent/scripts/verify_backtest_result.py --run-dir <run>` to check the
+  contract end to end.
+
+### Added
+
+- **A reviewable strategy library with gated promotion and scheduling**. `code`
+  and `workflow` strategies now share one library: every edit creates a
+  versioned snapshot, and each verdict is written with a single-statement
+  compare-and-swap on that version, so a stale view can never overwrite a
+  newer review. A `code` strategy becomes ready only after a completed
+  backtest plus bench evidence read from the run's own artifacts; a `workflow`
+  strategy must pass all eight rubric checks (any failure is a failure, not an
+  average), and a check that cannot be judged within 90 seconds is
+  `inconclusive` rather than a pass. Manual review can reject but never
+  approve, and any edit requires re-evaluation. The library is exposed over MCP
+  (`list_strategies`, `query_strategies`, `get_strategy_evidence`,
+  `adapt_strategy`, `refresh_strategy_evidence`, `promote_strategy`,
+  `evaluate_strategy`), with mutation behind an explicit gate, and
+  per-session tool allowlists are persisted and enforced after MCP tools are
+  appended. Strategy scheduling is owned by the RM control plane: six assistant
+  tools (`schedule_strategy`, `list_strategy_schedules`,
+  `pause_strategy_schedule`, `resume_strategy_schedule`,
+  `delete_strategy_schedule`, `retarget_strategy_schedule`) relay to RM over a
+  box-scoped token and never write the retired in-box job store. The F9
+  `/strategy-schedules` REST surface stays off in the box entry, and runs
+  execute asynchronously through the strategy-run service entry, so `start`
+  returns an in-flight handle and `sweep` reconciles. The Web UI adds
+  `/strategies` (KPI bar, search, kind and readiness filters, a one-click demo
+  seed and a six-tab inspector) and/or an operator-enabled schedule surface,
+  while a 90-second storyboard respects reduced-motion settings.
+  **Boundaries:** nothing is approved automatically, no metric is fabricated,
+  history is the current and previous verdict rather than a complete ledger,
+  no strategy executes inside the request path, and scheduling has no local
+  fallback: without RM the tools fail closed.
+
 ## [0.1.19] — 2026-11-05
 
 Rolls up 299 commits / 116 merged pull requests since 0.1.18, plus 21

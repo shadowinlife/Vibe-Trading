@@ -1,0 +1,35 @@
+name: funds-fi-agent
+domain: D14
+version: 0
+tools:
+- etf_holdings
+skills:
+- fund-analysis
+- etf-analysis
+- credit-analysis
+- convertible-bond
+- dividend-analysis
+- us-etf-flow
+description: 'Funds, ETF and fixed-income specialist (基金、ETF 与固收). Delegate: ETF look-through — full constituent
+  holdings from SEC N-PORT or A-share fund reports (ETF 持仓穿透), fund screening with Morningstar/Sharpe/style-box
+  and manager evaluation (基金筛选/经理评价), ETF fee, tracking-error and liquidity comparison (ETF 产品分析), US
+  ETF fund flows and style-factor flows (美股 ETF 资金流), credit-bond rating, spread and default analysis
+  including 城投债 (信用债), convertible-bond three-dimensional valuation with 下修/强赎/回售 game analysis (可转债),
+  and dividend quality, payout sustainability and yield-trap checks (红利/股息). NOT for: issuer financial-statement
+  fetching (→ fundamentals-text-agent), 13F manager books (→ fundamentals-text-agent), portfolio-level
+  VaR or attribution on the user''s holdings (→ risk-portfolio-agent), macro-cycle sector rotation (→
+  macro-sector-agent), option pricing on convertible embedded options (→ derivatives-agent), or price
+  data (→ market-data-agent).'
+twin_pairs:
+- pair: etf_holdings × etf-analysis
+  ref: K15
+  arbitration: Holdings look-through data (N-PORT / A-share reports) → tool; product screening, fee and
+    tracking-error analysis → skill.
+- pair: etf_holdings × us-etf-flow
+  ref: K15
+  arbitration: What an ETF holds → tool; US ETF money-flow and style- factor flows → skill.
+rationale: 'One tool, six skills: like altdata-agent this is a knowledge-concentration candidate whose
+  value is taking the fund/FI methodology surface off the main loop. get_financial_statements was cut
+  to fundamentals-text-agent (credit analysis consumes issuer financials through the parent). Keeping
+  us-etf-flow here rather than in market-data-agent co-locates the K15 triple (holdings/product/flows)
+  in one whitelist, so the arbitration happens inside the candidate instead of across the routing boundary.'

@@ -192,6 +192,33 @@ def contains_pdf_password(value: Any) -> bool:
     return False
 
 
+#: Accepted ``source_type`` values. ``"strategy"`` is coupled to
+#: ``executor_kind="strategy"``: a strategy job names the pinned version it
+#: runs, so neither half is meaningful without the other.
+_SOURCE_TYPES: tuple[str, ...] = ("prompt", "playbook", "system", "strategy")
+
+#: Accepted ``failure_kind`` values. ``"strategy"`` marks a strategy job whose
+#: runner was unavailable at dispatch time.
+_FAILURE_KINDS: tuple[str, ...] = ("dispatch", "schedule", "strategy")
+
+#: The persisted in-flight handle of a running strategy job. ``pid`` is
+#: deliberately absent: a process id is only meaningful inside the process
+#: that started the run, so it lives in memory and never reaches the store.
+_IN_FLIGHT_KEYS = frozenset({"run_id", "kind", "session_id", "run_dir", "started_at"})
+
+_STRATEGY_RUN_KINDS = frozenset({"code", "workflow"})
+
+
+def _default_run_policy() -> Dict[str, Any]:
+    """Return a fresh default run policy for one job.
+
+    ``overlap="skip"`` is the only accepted overlap policy: a financial run
+    started twice concurrently is an incident, not a feature. The factory
+    keeps two jobs from sharing one mutable dict.
+    """
+    return {"overlap": "skip", "retention": 20, "run_timeout_s": 3600, "primary": False}
+
+
 @dataclass
 class ScheduledResearchJob:
     """Mutable persisted state for a scheduled research / backtest job.
@@ -209,8 +236,9 @@ class ScheduledResearchJob:
         consecutive_failures: Number of consecutive dispatch failures. A
             successful dispatch resets it to zero.
         last_error: Redaction-safe diagnostic from the latest failed attempt.
-        failure_kind: ``"dispatch"`` for provider/session failures or
-            ``"schedule"`` when the schedule cannot be advanced.
+        failure_kind: ``"dispatch"`` for provider/session failures,
+            ``"schedule"`` when the schedule cannot be advanced, or
+            ``"strategy"`` when a strategy run could not be started.
         config: Opaque dict for future backtest parameters.
         timezone: IANA timezone key the cron schedule is evaluated in, or
             ``None`` for UTC (the semantics every job had before this field
@@ -232,6 +260,19 @@ class ScheduledResearchJob:
             resolve the internal executor for ``executor_kind="internal"``
             jobs. ``None`` for prompt jobs. Internal/system jobs legitimately
             carry ``prompt=""``.
+        strategy_id: Strategy the job runs, set iff
+            ``executor_kind="strategy"``.
+        strategy_version: Immutable strategy version the job is pinned to, set
+            iff ``executor_kind="strategy"``. Editing the strategy later never
+            changes what an already-scheduled job runs.
+        run_policy: Execution policy for the job: ``overlap`` (only
+            ``"skip"``), ``retention`` (run-history rows kept, 5-100),
+            ``run_timeout_s`` (one run's wall-clock budget, 60-86400) and
+            ``primary`` (the one active schedule per strategy).
+        in_flight: Persisted handle of the strategy run currently in flight,
+            or ``None``. Five keys exactly: ``run_id``, ``kind``
+            (``"code"``/``"workflow"``), ``session_id``, ``run_dir`` and
+            ``started_at`` (epoch ms).
     """
 
     id: str
@@ -266,6 +307,97 @@ class ScheduledResearchJob:
     protect_pdf: bool = False
     delivery: DeliveryRecord = field(default_factory=DeliveryRecord)
     last_verdict: Optional[VerdictRecord] = None
+    strategy_id: Optional[str] = None
+    strategy_version: Optional[str] = None
+    run_policy: Dict[str, Any] = field(default_factory=_default_run_policy)
+    in_flight: Optional[Dict[str, Any]] = None
+
+    def __post_init__(self) -> None:
+        """Reject a record that could never be loaded back from the store.
+
+        A malformed row is not a local problem: ``store.load()`` quarantines
+        the whole file when one record fails, so a directly constructed job
+        has to fail here instead of taking every other job down with it.
+        """
+        self._validate_execution_contract()
+
+    def _validate_execution_contract(self) -> None:
+        """Enforce the closed source/executor/failure domains and run policy."""
+        if self.source_type not in _SOURCE_TYPES:
+            raise ValueError("'source_type' must be 'prompt', 'playbook', 'system', or 'strategy'")
+        if not is_executor_kind(self.executor_kind):
+            raise ValueError("'executor_kind' must be 'prompt', 'internal', or 'strategy'")
+        if self.failure_kind is not None and self.failure_kind not in _FAILURE_KINDS:
+            raise ValueError(
+                "'failure_kind' must be 'dispatch', 'schedule', 'strategy', or null"
+            )
+        is_strategy = self.executor_kind == "strategy"
+        if (self.source_type == "strategy") != is_strategy:
+            raise ValueError(
+                "'source_type' 'strategy' and 'executor_kind' 'strategy' must be set together"
+            )
+        if is_strategy:
+            for name in ("strategy_id", "strategy_version"):
+                value = getattr(self, name)
+                if not isinstance(value, str) or not value.strip():
+                    raise ValueError(
+                        f"'executor_kind' 'strategy' requires a non-empty '{name}'"
+                    )
+        else:
+            for name in ("strategy_id", "strategy_version"):
+                if getattr(self, name) is not None:
+                    raise ValueError(f"'{name}' is only allowed on strategy jobs")
+            if self.in_flight is not None:
+                raise ValueError("'in_flight' is only allowed on strategy jobs")
+        self._normalize_run_policy()
+        if self.in_flight is not None:
+            self._validate_in_flight()
+
+    def _normalize_run_policy(self) -> None:
+        """Fill omitted policy keys from the defaults and validate every one."""
+        if not isinstance(self.run_policy, dict):
+            raise ValueError("'run_policy' must be an object")
+        policy = _default_run_policy()
+        policy.update(self.run_policy)
+        if policy["overlap"] != "skip":
+            raise ValueError("'run_policy.overlap' must be 'skip'")
+        retention = policy["retention"]
+        if (
+            isinstance(retention, bool)
+            or not isinstance(retention, int)
+            or not 5 <= retention <= 100
+        ):
+            raise ValueError("'run_policy.retention' must be an integer in [5, 100]")
+        timeout = policy["run_timeout_s"]
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, int)
+            or not 60 <= timeout <= 86400
+        ):
+            raise ValueError("'run_policy.run_timeout_s' must be an integer in [60, 86400]")
+        if not isinstance(policy["primary"], bool):
+            raise ValueError("'run_policy.primary' must be a boolean")
+        self.run_policy = policy
+
+    def _validate_in_flight(self) -> None:
+        """Require the persisted strategy handle's exact shape."""
+        handle = self.in_flight
+        if not isinstance(handle, dict) or set(handle) != _IN_FLIGHT_KEYS:
+            raise ValueError(
+                "'in_flight' must have exactly the keys 'run_id', 'kind', "
+                "'session_id', 'run_dir', and 'started_at'"
+            )
+        if not isinstance(handle["run_id"], str):
+            raise ValueError("'in_flight.run_id' must be a string")
+        if not isinstance(handle["kind"], str) or handle["kind"] not in _STRATEGY_RUN_KINDS:
+            raise ValueError("'in_flight.kind' must be 'code' or 'workflow'")
+        for name in ("session_id", "run_dir"):
+            if handle[name] is not None and not isinstance(handle[name], str):
+                raise ValueError(f"'in_flight.{name}' must be a string or null")
+        started_at = handle["started_at"]
+        if isinstance(started_at, bool) or not isinstance(started_at, int):
+            raise ValueError("'in_flight.started_at' must be an integer (epoch ms)")
+        self.in_flight = dict(handle)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to a plain JSON-serializable dict.
@@ -280,6 +412,7 @@ class ScheduledResearchJob:
             raise TypeError("'protect_pdf' must be a boolean")
         if self.protect_pdf and (self.delivery_channel != "email" or self.delivery_format != "pdf"):
             raise ValueError("'protect_pdf' requires PDF email delivery")
+        self._validate_execution_contract()
         return {
             "id": self.id,
             "prompt": self.prompt,
@@ -307,6 +440,10 @@ class ScheduledResearchJob:
             "protect_pdf": self.protect_pdf,
             "delivery": self.delivery.to_dict(),
             "last_verdict": self.last_verdict.to_dict() if self.last_verdict else None,
+            "strategy_id": self.strategy_id,
+            "strategy_version": self.strategy_version,
+            "run_policy": self.run_policy,
+            "in_flight": self.in_flight,
         }
 
     @classmethod
@@ -321,14 +458,18 @@ class ScheduledResearchJob:
 
         Dicts written before scheduler unification lack ``executor_kind`` and
         ``internal_callable``; both default to the prompt executor, so old
-        files load unchanged.
+        files load unchanged. ``strategy_*``, ``run_policy`` and ``in_flight``
+        are likewise defaulted when absent, and the cross-field contract is
+        re-checked by ``__post_init__`` on the reconstructed job.
 
         Raises:
             KeyError: If a required field is missing.
             TypeError: If a field has the wrong type.
             ValueError: If ``status`` is not a recognized ``JobStatus`` value,
-                or ``source_type`` / ``executor_kind`` is outside its domain,
-                or an ``internal`` job names no ``internal_callable``.
+                or ``source_type`` / ``executor_kind`` / ``failure_kind`` is
+                outside its domain, or an ``internal`` job names no
+                ``internal_callable``, or the strategy fields, ``run_policy``
+                or ``in_flight`` violate their contract.
         """
         job_id = data["id"]
         prompt = data["prompt"]
@@ -353,8 +494,10 @@ class ScheduledResearchJob:
         failure_kind = data.get("failure_kind")
         if last_error is not None and not isinstance(last_error, str):
             raise TypeError("'last_error' must be a string or null")
-        if failure_kind is not None and failure_kind not in {"dispatch", "schedule"}:
-            raise ValueError("'failure_kind' must be 'dispatch', 'schedule', or null")
+        if failure_kind is not None and failure_kind not in _FAILURE_KINDS:
+            raise ValueError(
+                "'failure_kind' must be 'dispatch', 'schedule', 'strategy', or null"
+            )
         # Never raises: the store quarantines the whole file when a single
         # record fails to load, so an unusable timezone value degrades that
         # one job to UTC — the semantics it had before the field existed —
@@ -376,8 +519,10 @@ class ScheduledResearchJob:
         end_at = data.get("end_at")
         if not isinstance(title, str):
             raise TypeError("'title' must be a string")
-        if source_type not in {"prompt", "playbook", "system"}:
-            raise ValueError("'source_type' must be 'prompt', 'playbook', or 'system'")
+        if source_type not in _SOURCE_TYPES:
+            raise ValueError(
+                "'source_type' must be 'prompt', 'playbook', 'system', or 'strategy'"
+            )
         # Pre-unification dicts carry neither key; both default to the prompt
         # executor. Unknown or contradictory values are REJECTED rather than
         # degraded: a misspelled executor must not silently fall back to
@@ -385,7 +530,7 @@ class ScheduledResearchJob:
         executor_kind = data.get("executor_kind", "prompt")
         internal_callable = data.get("internal_callable")
         if not is_executor_kind(executor_kind):
-            raise ValueError("'executor_kind' must be 'prompt' or 'internal'")
+            raise ValueError("'executor_kind' must be 'prompt', 'internal', or 'strategy'")
         if internal_callable is not None and not isinstance(internal_callable, str):
             raise TypeError("'internal_callable' must be a string or null")
         if executor_kind == "internal" and not internal_callable:
@@ -395,6 +540,20 @@ class ScheduledResearchJob:
             )
         if playbook_slug is not None and not isinstance(playbook_slug, str):
             raise TypeError("'playbook_slug' must be a string or null")
+        strategy_id = data.get("strategy_id")
+        strategy_version = data.get("strategy_version")
+        for name, value in (
+            ("strategy_id", strategy_id),
+            ("strategy_version", strategy_version),
+        ):
+            if value is not None and not isinstance(value, str):
+                raise TypeError(f"'{name}' must be a string or null")
+        raw_run_policy = data.get("run_policy")
+        if raw_run_policy is not None and not isinstance(raw_run_policy, dict):
+            raise TypeError("'run_policy' must be an object")
+        in_flight = data.get("in_flight")
+        if in_flight is not None and not isinstance(in_flight, dict):
+            raise TypeError("'in_flight' must be an object or null")
         if end_at is not None and (isinstance(end_at, bool) or not isinstance(end_at, int)):
             raise TypeError("'end_at' must be an integer (epoch ms) or null")
         raw_config = data.get("config")
@@ -448,4 +607,8 @@ class ScheduledResearchJob:
             protect_pdf=protect_pdf,
             delivery=DeliveryRecord.from_dict(data.get("delivery")),
             last_verdict=_verdict_record_or_none(data.get("last_verdict"), job_id),
+            strategy_id=strategy_id,
+            strategy_version=strategy_version,
+            run_policy=raw_run_policy if raw_run_policy is not None else _default_run_policy(),
+            in_flight=in_flight,
         )

@@ -12,8 +12,14 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from backtest.loaders.base import sanitize_loader_frame_attrs
+from backtest.source_contract import normalize_federation
+
 
 SCHEMA_VERSION = "1.0"
+_PROVENANCE_REASONS = frozenset(
+    {"source_unavailable", "no_data", "fetch_failed"}
+)
 # Largest single structured metric the card will carry, counted in BYTES of the
 # JSON the card actually writes (indented, sorted, non-ASCII kept literal). The
 # card is an at-a-glance artefact read on every run, so a structured metric that
@@ -165,12 +171,58 @@ def _model_provenance(
     return provenance, warnings
 
 
+def _contract_string(value: object) -> str | None:
+    return value if isinstance(value, str) and value.strip() else None
+
+
+def _normalize_data_provenance(
+    data_provenance: Mapping[str, Any],
+) -> dict[str, dict[str, Any]]:
+    normalized: dict[str, dict[str, Any]] = {}
+    for symbol, entry in data_provenance.items():
+        if not isinstance(symbol, str) or not symbol.strip():
+            continue
+        if not isinstance(entry, Mapping):
+            continue
+        source = _contract_string(entry.get("source"))
+        adjustment = _contract_string(entry.get("adjustment"))
+        if source is None or adjustment is None:
+            continue
+        normalized_entry: dict[str, Any] = {
+            "source": source,
+            "adjustment": adjustment,
+        }
+        if "federation" in entry:
+            federation = normalize_federation(entry.get("federation"))
+            if federation is not None:
+                normalized_entry["federation"] = federation
+        if "fallback_attempts" in entry:
+            attempts = []
+            raw_attempts = entry.get("fallback_attempts")
+            if isinstance(raw_attempts, Sequence) and not isinstance(
+                raw_attempts, (str, bytes, bytearray)
+            ):
+                for attempt in raw_attempts:
+                    if not isinstance(attempt, Mapping):
+                        continue
+                    candidate = _contract_string(attempt.get("source"))
+                    reason = attempt.get("reason")
+                    if candidate is None or reason not in _PROVENANCE_REASONS:
+                        continue
+                    attempts.append({"source": candidate, "reason": reason})
+            normalized_entry["fallback_attempts"] = attempts
+        normalized_entry["attrs"] = sanitize_loader_frame_attrs(entry.get("attrs"))
+        normalized[symbol] = normalized_entry
+    return normalized
+
+
 def write_run_card(
     run_dir: Path,
     config: Mapping[str, Any],
     metrics: Mapping[str, Any],
     *,
     data_sources: Sequence[str] | None = None,
+    data_provenance: Mapping[str, Any] | None = None,
     strategy_path: Path | None = None,
     warnings: Sequence[str] | None = None,
     artifact_refs: Sequence[Mapping[str, Any]] | None = None,
@@ -185,6 +237,7 @@ def write_run_card(
             stored under its own top-level key. Non-scalar metrics are carried
             in ``structured_metrics``.
         data_sources: Data sources used by the run.
+        data_provenance: Optional per-symbol serving and fallback evidence.
         strategy_path: Optional strategy source file to hash for reproducibility.
         warnings: Optional warnings to include in the card.
         artifact_refs: Optional IRR-AGL artifact references.
@@ -230,6 +283,10 @@ def write_run_card(
                 f"Strategy declares {delay} intentional extra signal-delay bar(s), "
                 "in addition to the engine's next-open execution delay."
             )
+    if data_provenance is not None:
+        normalized_provenance = _normalize_data_provenance(data_provenance)
+        if normalized_provenance:
+            card["data_provenance"] = normalized_provenance
     if "_run_card_bars_per_year" in config:
         card["annualisation"] = {"bars_per_year": config["_run_card_bars_per_year"]}
     normalized_refs = _normalize_artifact_refs(artifact_refs)

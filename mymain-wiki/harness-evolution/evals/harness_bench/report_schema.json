@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hkuds.github.io/Vibe-Trading/schemas/harness_bench_report.schema.json",
+  "title": "harness_bench benchmark report",
+  "description": "Comparable benchmark report emitted by every harness under comparison. The metrics array holds PERFORMANCE metric rows only (one row per (benchmark, metric), higher is better). Total cost is tracked in the dedicated total_cost object and is NEVER a row-level performance metric: the decision gate adjudicates performance rows row-by-row and cost only via the separate total-cost condition. skip_markers discloses degraded benchmarks, which do not participate in adjudication.",
+  "type": "object",
+  "required": ["report_version", "provenance", "metrics", "total_cost", "skip_markers"],
+  "additionalProperties": false,
+  "properties": {
+    "report_version": {
+      "const": "1.0"
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["harness_id", "parity_spec_sha256", "git_commit", "generated_at", "seeds"],
+      "additionalProperties": false,
+      "properties": {
+        "harness_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Harness under measurement, e.g. 'opencode_omo_baseline', 'pydantic_ai_poc', 'mock'."
+        },
+        "parity_spec_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256 of the parity_spec.json the run was parity-checked against."
+        },
+        "git_commit": {
+          "type": "string",
+          "minLength": 7,
+          "description": "Git commit of the harness/eval tree the run was produced from."
+        },
+        "generated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
+          "description": "ISO-8601 timestamp of report generation."
+        },
+        "seeds": {
+          "type": "object",
+          "description": "Seeds used, per benchmark id.",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "integer"}
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "description": "Performance metric rows: one row per (benchmark, metric). Higher is better for every row. Cost must never appear here.",
+      "items": {
+        "type": "object",
+        "required": ["benchmark", "metric", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "benchmark": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!total_cost$).*$"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!total_cost$|cost_usd$).*$"
+          },
+          "value": {
+            "type": "number",
+            "description": "Metric value; higher is better."
+          },
+          "seeds": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "description": "Seeds this row aggregates over."
+          }
+        }
+      }
+    },
+    "total_cost": {
+      "type": "object",
+      "description": "The total-cost row. Tracked for the separate total-cost condition of the decision gate; it does NOT participate in row-level performance adjudication.",
+      "required": ["value", "currency"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currency": {
+          "const": "USD"
+        },
+        "note": {
+          "type": "string",
+          "description": "Free-form disclosure, e.g. budget-cap context."
+        }
+      }
+    },
+    "skip_markers": {
+      "type": "array",
+      "description": "Degraded-mode disclosure. A skipped benchmark does not participate in adjudication and is disclosed explicitly at the decision gate.",
+      "items": {
+        "type": "object",
+        "required": ["benchmark", "reason", "degraded", "decision"],
+        "additionalProperties": false,
+        "properties": {
+          "benchmark": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why the benchmark could not run (Docker missing, HF unreachable, data download failed, bridge preflight failed, over budget...)."
+          },
+          "degraded": {
+            "type": "boolean",
+            "description": "True when the benchmark ran in degraded mode or was skipped entirely."
+          },
+          "decision": {
+            "type": "string",
+            "enum": ["excluded_from_adjudication", "one_sided_measurement"],
+            "description": "excluded_from_adjudication: benchmark drops out of the gate formula (quorum counts it as missing). one_sided_measurement: baseline missing, PoC measured alone, disclosed at the gate."
+          }
+        }
+      }
+    }
+  }
+}

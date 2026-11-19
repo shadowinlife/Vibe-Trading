@@ -1,0 +1,396 @@
+# A7 targeted query set for the LLM-judge T-A7 evaluation.
+#
+# 60 entries, ~10 per A7 description change, each tagged with the change's
+# arbitration_ref. Mix of:
+#   * regression-guard queries the baseline already routes correctly, and
+#   * hard/adversarial queries probing the exact confusion the change removes
+#     (these are the only queries that can demonstrate an improvement — a
+#     baseline-pass query can only regress).
+#
+# Schema matches queries.yaml: id / query / expected{kind,name} / domain /
+# negatives / arbitration_ref.
+
+version: 1
+entries:
+  # ── ① Q5 · correlation-analysis 删 "pair-trading signal generation" 越界 ──
+  # 相关性/协整"分析"仍归 correlation-analysis
+  - id: A7-01
+    query: 计算这两只股票日收益率的滚动相关系数序列
+    expected: {kind: skill, name: correlation-analysis}
+    domain: D09
+    negatives: [pair-trading]
+    arbitration_ref: Q5
+  - id: A7-02
+    query: 对这两只标的做 Engle-Granger 协整检验并给出误差修正项
+    expected: {kind: skill, name: correlation-analysis}
+    domain: D09
+    negatives: [pair-trading, quant-statistics]
+    arbitration_ref: Q5
+  - id: A7-03
+    query: 帮我做板块内股票收益的相关性聚类分析
+    expected: {kind: skill, name: correlation-analysis}
+    domain: D09
+    negatives: [pair-trading]
+    arbitration_ref: Q5
+  - id: A7-04
+    query: 用 Kalman 滤波估计两个资产间的动态对冲比率
+    expected: {kind: skill, name: correlation-analysis}
+    domain: D09
+    negatives: [pair-trading]
+    arbitration_ref: Q5
+  - id: A7-05
+    query: 分析 BTC 和 ETH 的联动性，相关系数最近怎么变了
+    expected: {kind: skill, name: correlation-analysis}
+    domain: D09
+    negatives: [pair-trading]
+    arbitration_ref: Q5
+  # 配对交易"信号/策略"应归 pair-trading，不再被越界声明抢走
+  - id: A7-06
+    query: 给我一对协整股票的配对交易买卖信号
+    expected: {kind: skill, name: pair-trading}
+    domain: D09
+    negatives: [correlation-analysis]
+    arbitration_ref: Q5
+  - id: A7-07
+    query: 基于价差 Z-score 的配对交易开平仓策略
+    expected: {kind: skill, name: pair-trading}
+    domain: D09
+    negatives: [correlation-analysis]
+    arbitration_ref: Q5
+  - id: A7-08
+    query: 构造一个统计套利配对组合并做回测
+    expected: {kind: skill, name: pair-trading}
+    domain: D09
+    negatives: [correlation-analysis]
+    arbitration_ref: Q5
+  - id: A7-09
+    query: 两个高相关标的的均值回归配对交易规则怎么定
+    expected: {kind: skill, name: pair-trading}
+    domain: D09
+    negatives: [correlation-analysis]
+    arbitration_ref: Q5
+  - id: A7-10
+    query: 帮我找适合做 pair trading 的股票对并给出交易信号
+    expected: {kind: skill, name: pair-trading}
+    domain: D09
+    negatives: [correlation-analysis]
+    arbitration_ref: Q5
+
+  # ── ② Q6 · screen_market 补"不做基本面/多因子过滤"边界 ──
+  # 简单涨跌幅/量能排行仍归 screen_market
+  - id: A7-11
+    query: 今天A股成交量最大的股票有哪些
+    expected: {kind: tool, name: screen_market}
+    domain: D01
+    negatives: [iwencai_search, fundamental-filter]
+    arbitration_ref: Q6
+  - id: A7-12
+    query: 港股今天涨幅榜前 20 名
+    expected: {kind: tool, name: screen_market}
+    domain: D01
+    negatives: [iwencai_search]
+    arbitration_ref: Q6
+  - id: A7-13
+    query: 美股今天跌得最多的股票排个行
+    expected: {kind: tool, name: screen_market}
+    domain: D01
+    negatives: [iwencai_search]
+    arbitration_ref: Q6
+  - id: A7-14
+    query: 按换手率给今天的A股排个榜
+    expected: {kind: tool, name: screen_market}
+    domain: D01
+    negatives: [iwencai_search, fundamental-filter]
+    arbitration_ref: Q6
+  - id: A7-15
+    query: 今天A股成交额最高的股票是哪些
+    expected: {kind: tool, name: screen_market}
+    domain: D01
+    negatives: [iwencai_search]
+    arbitration_ref: Q6
+  # 基本面/多因子筛选应走 iwencai_search / fundamental-filter，不再误投 screen_market
+  - id: A7-16
+    query: 筛选市盈率低于 15 且 ROE 大于 15% 的银行股
+    expected: {kind: tool, name: iwencai_search}
+    domain: D01
+    negatives: [screen_market]
+    arbitration_ref: Q6
+  - id: A7-17
+    query: 帮我找连续三年营收正增长的消费股
+    expected: {kind: tool, name: iwencai_search}
+    domain: D01
+    negatives: [screen_market]
+    arbitration_ref: Q6
+  - id: A7-18
+    query: 用多因子模型筛选低估值高质量股票
+    expected: {kind: skill, name: fundamental-filter}
+    domain: D01
+    negatives: [screen_market]
+    arbitration_ref: Q6
+  - id: A7-19
+    query: 筛选股息率超过 5% 且资产负债率低的股票
+    expected: {kind: tool, name: iwencai_search}
+    domain: D01
+    negatives: [screen_market]
+    arbitration_ref: Q6
+  - id: A7-20
+    query: 基本面选股，找净利润增速超 30% 的科技股
+    expected: {kind: tool, name: iwencai_search}
+    domain: D01
+    negatives: [screen_market]
+    arbitration_ref: Q6
+
+  # ── ③ Q8 · web_search 多引擎现状 + 与 read_url 衔接 ──
+  # 开放式联网搜索归 web_search
+  - id: A7-21
+    query: 搜索一下最新公布的美国 CPI 数据
+    expected: {kind: tool, name: web_search}
+    domain: D19
+    negatives: [read_url]
+    arbitration_ref: Q8
+  - id: A7-22
+    query: 帮我查最近关于 AI 芯片行业的新闻
+    expected: {kind: tool, name: web_search}
+    domain: D19
+    negatives: [read_url]
+    arbitration_ref: Q8
+  - id: A7-23
+    query: 网上搜一下伯克希尔哈撒韦最新的持仓变动
+    expected: {kind: tool, name: web_search}
+    domain: D19
+    negatives: [read_url]
+    arbitration_ref: Q8
+  - id: A7-24
+    query: 搜索欧洲央行最新的利率决议结果
+    expected: {kind: tool, name: web_search}
+    domain: D19
+    negatives: [read_url]
+    arbitration_ref: Q8
+  - id: A7-25
+    query: 查一下最近黄金价格大涨的原因
+    expected: {kind: tool, name: web_search}
+    domain: D19
+    negatives: [read_url]
+    arbitration_ref: Q8
+  # 给定具体 URL 读取正文归 read_url（web_search 的下游衔接）
+  - id: A7-26
+    query: 帮我读取这个链接的正文内容 https://example.com/fed-report
+    expected: {kind: tool, name: read_url}
+    domain: D19
+    negatives: [web_search]
+    arbitration_ref: Q8
+  - id: A7-27
+    query: 把这篇网页文章提取成干净的文本 https://example.com/article
+    expected: {kind: tool, name: read_url}
+    domain: D19
+    negatives: [web_search]
+    arbitration_ref: Q8
+  - id: A7-28
+    query: 抓取这个 URL 的页面正文并转成 markdown
+    expected: {kind: tool, name: read_url}
+    domain: D19
+    negatives: [web_search]
+    arbitration_ref: Q8
+  - id: A7-29
+    query: 我有一篇研报的网址，帮我解析里面的内容
+    expected: {kind: tool, name: read_url}
+    domain: D19
+    negatives: [web_search]
+    arbitration_ref: Q8
+  - id: A7-30
+    query: 阅读这个网页并总结要点 https://example.com/notes
+    expected: {kind: tool, name: read_url}
+    domain: D19
+    negatives: [web_search]
+    arbitration_ref: Q8
+
+  # ── ④ Q10 · trading_* 入口顺序声明 ──
+  - id: A7-31
+    query: 列出我配置过的所有券商连接器
+    expected: {kind: tool, name: trading_connections}
+    domain: D16
+    negatives: [trading_check]
+    arbitration_ref: Q10
+  - id: A7-32
+    query: 我想开始读券商数据，第一步该调用什么
+    expected: {kind: tool, name: trading_connections}
+    domain: D16
+    negatives: [trading_account]
+    arbitration_ref: Q10
+  - id: A7-33
+    query: 把默认连接器切换成富途
+    expected: {kind: tool, name: trading_select_connection}
+    domain: D16
+    negatives: [trading_connections]
+    arbitration_ref: Q10
+  - id: A7-34
+    query: 检查我的老虎证券连接器配置好没有、能不能连上
+    expected: {kind: tool, name: trading_check}
+    domain: D16
+    negatives: [trading_connections]
+    arbitration_ref: Q10
+  - id: A7-35
+    query: 读取当前选中连接器的账户资金情况
+    expected: {kind: tool, name: trading_account}
+    domain: D16
+    negatives: [trading_positions]
+    arbitration_ref: Q10
+  - id: A7-36
+    query: 看看我连接器账户里现在持有哪些仓位
+    expected: {kind: tool, name: trading_positions}
+    domain: D16
+    negatives: [trading_orders]
+    arbitration_ref: Q10
+  - id: A7-37
+    query: 查一下我账户里还没成交的挂单
+    expected: {kind: tool, name: trading_orders}
+    domain: D16
+    negatives: [trading_positions]
+    arbitration_ref: Q10
+  - id: A7-38
+    query: 从连接器读 AAPL 的实时报价快照
+    expected: {kind: tool, name: trading_quote}
+    domain: D16
+    negatives: [trading_history]
+    arbitration_ref: Q10
+  - id: A7-39
+    query: 读取选中连接器的历史日K线
+    expected: {kind: tool, name: trading_history}
+    domain: D16
+    negatives: [trading_quote]
+    arbitration_ref: Q10
+  - id: A7-40
+    query: 我现在有哪些可用的交易连接器配置，各自什么状态
+    expected: {kind: tool, name: trading_connections}
+    domain: D16
+    negatives: [trading_check]
+    arbitration_ref: Q10
+
+  # ── ⑤ Q17/K2 · technical_indicators(取值) × technical-basic(信号框架) 层级 ──
+  # 计算具体指标数值归 technical_indicators
+  - id: A7-41
+    query: 计算腾讯控股的 14 日 RSI
+    expected: {kind: tool, name: technical_indicators}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: Q17
+  - id: A7-42
+    query: 给我 NVDA 的 MACD 线和信号线数值
+    expected: {kind: tool, name: technical_indicators}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: Q17
+  - id: A7-43
+    query: 算一下沪深300的布林带上下轨
+    expected: {kind: tool, name: technical_indicators}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: Q17
+  - id: A7-44
+    query: 计算 SPY 的 50 日和 200 日简单移动均线
+    expected: {kind: tool, name: technical_indicators}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: K2
+  - id: A7-45
+    query: BTC-USDT 的 20 日 EMA 现在是多少
+    expected: {kind: tool, name: technical_indicators}
+    domain: D05
+    negatives: [technical-basic]
+    arbitration_ref: Q17
+  # 综合技术面买卖信号/框架归 technical-basic
+  - id: A7-46
+    query: 用趋势、均值回归、量能三维投票给我 AAPL 的买卖信号
+    expected: {kind: skill, name: technical-basic}
+    domain: D05
+    negatives: [technical_indicators]
+    arbitration_ref: K2
+  - id: A7-47
+    query: 给我一套完整的技术面交易信号框架
+    expected: {kind: skill, name: technical-basic}
+    domain: D05
+    negatives: [technical_indicators]
+    arbitration_ref: K2
+  - id: A7-48
+    query: 综合 EMA、ADX、布林带、RSI、OBV 判断现在该买还是卖
+    expected: {kind: skill, name: technical-basic}
+    domain: D05
+    negatives: [technical_indicators]
+    arbitration_ref: K2
+  - id: A7-49
+    query: 从技术面看这只股票现在是买入时机吗，给个信号
+    expected: {kind: skill, name: technical-basic}
+    domain: D05
+    negatives: [technical_indicators]
+    arbitration_ref: K2
+  - id: A7-50
+    query: 用经典技术指标组合生成一个综合交易信号
+    expected: {kind: skill, name: technical-basic}
+    domain: D05
+    negatives: [technical_indicators]
+    arbitration_ref: K2
+
+  # ── ⑥ Q18 · 研报 / 期权簇 / 策略发现族 族内互指 ──
+  # 研报两工具区分
+  - id: A7-51
+    query: 查一下券商对宁德时代的最新研报和评级目标价
+    expected: {kind: tool, name: get_research_reports}
+    domain: D03
+    negatives: [research_papers]
+    arbitration_ref: Q18
+  - id: A7-52
+    query: 搜索 arXiv 上关于统计套利的学术论文
+    expected: {kind: tool, name: research_papers}
+    domain: D03
+    negatives: [get_research_reports]
+    arbitration_ref: Q18
+  - id: A7-53
+    query: 卖方分析师对这只股票的一致预期和目标价
+    expected: {kind: tool, name: get_research_reports}
+    domain: D03
+    negatives: [research_papers]
+    arbitration_ref: Q18
+  # 期权簇区分
+  - id: A7-54
+    query: 给一个跨式期权组合画盈亏图并算盈亏平衡点
+    expected: {kind: tool, name: analyze_options_payoff}
+    domain: D08
+    negatives: [get_options_chain, analyze_options]
+    arbitration_ref: Q18
+  - id: A7-55
+    query: 用 Black-Scholes 算这个看涨期权的价格和 Delta Gamma
+    expected: {kind: tool, name: analyze_options}
+    domain: D08
+    negatives: [get_options_chain]
+    arbitration_ref: Q18
+  - id: A7-56
+    query: 拉取 TSLA 下月到期的期权合约链，要隐含波动率
+    expected: {kind: tool, name: get_options_chain}
+    domain: D08
+    negatives: [analyze_options]
+    arbitration_ref: Q18
+  # 策略发现族区分
+  - id: A7-57
+    query: 现在策略库里一共有哪些可用的策略
+    expected: {kind: tool, name: list_strategies}
+    domain: D06
+    negatives: [query_strategies]
+    arbitration_ref: Q18
+  - id: A7-58
+    query: 查询在熊市 regime 下夏普比率大于 1 的策略
+    expected: {kind: tool, name: query_strategies}
+    domain: D06
+    negatives: [list_strategies]
+    arbitration_ref: Q18
+  - id: A7-59
+    query: 某个策略在各市场 regime 下的回测证据明细
+    expected: {kind: tool, name: get_strategy_evidence}
+    domain: D06
+    negatives: [list_strategies]
+    arbitration_ref: Q18
+  - id: A7-60
+    query: 浏览 Alpha Zoo 里有哪些因子库和因子
+    expected: {kind: tool, name: alpha_zoo}
+    domain: D06
+    negatives: [list_strategies]
+    arbitration_ref: Q18

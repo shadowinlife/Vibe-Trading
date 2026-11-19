@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-27T23:34:18Z",
+  "source": "local_store",
+  "source_mix": {
+    "real": 726,
+    "synthetic": 0
+  },
+  "n_total": 726,
+  "label_distribution": {
+    "个股体检": 8,
+    "选股清单": 10,
+    "策略回测": 58,
+    "组合体检": 4,
+    "事件/宏观影响": 3,
+    "交易复盘": 2,
+    "定时监控": 39,
+    "报告": 16,
+    "都不是": 586
+  },
+  "length_buckets": {
+    "<=10": 50,
+    "11-30": 99,
+    "31-80": 148,
+    ">80": 429
+  },
+  "notes": "read a temporary read-only copy; opencode.db: 726 first user messages; local store is a developer harness machine, not a novice-user corpus; root sessions only (child/subagent sessions excluded); raw text stayed outside the repository"
+}

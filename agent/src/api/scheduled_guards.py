@@ -14,6 +14,7 @@ from typing import Optional
 
 from fastapi import HTTPException
 
+from src.scheduled_research.store import ScheduledResearchJobStore
 from src.scheduling.system_jobs import JOB_ID_RULE_MESSAGE, is_safe_job_id, is_system_job_id
 
 
@@ -47,6 +48,32 @@ def guard_system_job_mutation(job_id: str, source_type: str) -> None:
     """
     if is_system_job_id(job_id) or source_type == "system":
         raise HTTPException(status_code=403, detail="system jobs cannot be modified")
+
+
+def ensure_not_strategy_job(
+    store: ScheduledResearchJobStore, job_id: Optional[str]
+) -> None:
+    """Refuse to touch a strategy schedule through the legacy scheduled-runs API.
+
+    A strategy job is owned by the strategy schedule surface; letting a legacy
+    create path replace it (or a legacy edit/delete mutate it) would bypass the
+    version pin and the confirmation flow. ``None`` (no caller-supplied id) and
+    an unknown id are accepted: the create paths mint or replace a legacy job,
+    and the update/delete paths answer their own 404 before mutating anything.
+
+    Raises:
+        HTTPException: 409 when *job_id* names a strategy job.
+    """
+    if job_id is None:
+        return
+    job = store.get(job_id)
+    if job is not None and (
+        job.executor_kind == "strategy" or job.source_type == "strategy"
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="strategy schedules cannot be managed through the scheduled-runs API",
+        )
 
 
 def guard_system_job_deletion(job_id: str) -> None:

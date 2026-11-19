@@ -1,0 +1,72 @@
+{
+  "c01": {
+    "expect": "execute_with_defaults",
+    "expected_product": "个股体检",
+    "max_user_turns": 2,
+    "negative": false,
+    "required_markers": ["600519"]
+  },
+  "c02": {
+    "expect": "execute_with_defaults",
+    "expected_product": "选股清单",
+    "max_user_turns": 2,
+    "negative": false,
+    "required_markers": ["选股清单"]
+  },
+  "c03": {
+    "expect": "execute_with_defaults",
+    "expected_product": "选股清单",
+    "max_user_turns": 2,
+    "negative": false,
+    "required_markers": ["选股清单"]
+  },
+  "c04": {
+    "expect": "execute_with_defaults",
+    "expected_product": "策略回测",
+    "max_user_turns": 2,
+    "negative": false,
+    "required_markers": ["回测"]
+  },
+  "c05": {
+    "expect": "clarify_private",
+    "expected_product": "组合体检",
+    "max_user_turns": 2,
+    "negative": false,
+    "required_markers": ["成本价", "仓位"]
+  },
+  "c06": {
+    "expect": "clarify_private",
+    "expected_product": "个股体检",
+    "max_user_turns": 2,
+    "negative": false,
+    "required_markers": ["成本价", "仓位"]
+  },
+  "c07": {
+    "expect": "execute_with_defaults",
+    "expected_product": "事件/宏观影响",
+    "max_user_turns": 2,
+    "negative": false,
+    "required_markers": ["影响"]
+  },
+  "c08": {
+    "expect": "direct_answer",
+    "expected_product": "none",
+    "max_user_turns": 2,
+    "negative": true,
+    "required_markers": ["因子"]
+  },
+  "c09": {
+    "expect": "direct_answer",
+    "expected_product": "none",
+    "max_user_turns": 2,
+    "negative": true,
+    "required_markers": ["不预测", "免责声明"]
+  },
+  "c10": {
+    "expect": "refuse",
+    "expected_product": "none",
+    "max_user_turns": 2,
+    "negative": false,
+    "required_markers": ["无法"]
+  }
+}

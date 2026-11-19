@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 from unittest.mock import patch
 
+import pytest
+
 from backtest.loaders import eastmoney_client
 from src.tools.margin_trading_tool import MarginTradingTool
 
@@ -87,8 +89,38 @@ class TestSuccess:
         assert kwargs["params"]["filter"] == '(SCODE="000001")'
         assert json.loads(out)["ok"] is True
 
+    def test_ch_adapter_tushare_fallback_reports_actual_source(self) -> None:
+        fallback = {
+            "code": "600519",
+            "ts_code": "600519.SH",
+            "source": "tushare",
+            "rows": [{"trade_date": "2024-01-03", "financing_balance": 1.0}],
+        }
+        with (
+            patch(
+                "src.tools.clickhouse_fallbacks.fetch_margin_trading_ch",
+                return_value=fallback,
+            ),
+            patch.object(eastmoney_client, "get_json") as eastmoney,
+        ):
+            payload = json.loads(
+                MarginTradingTool().execute(code="600519.SH", days=5)
+            )
+
+        eastmoney.assert_not_called()
+        assert payload["source"] == "tushare"
+        assert payload["data"] == fallback
+
 
 class TestErrors:
+    @pytest.fixture(autouse=True)
+    def _exercise_eastmoney_fallback(self):
+        with patch(
+            "src.tools.clickhouse_fallbacks.fetch_margin_trading_ch",
+            side_effect=RuntimeError("CH adapter unavailable"),
+        ):
+            yield
+
     def test_unsupported_symbol_rejected_without_request(self) -> None:
         tool = MarginTradingTool()
         with patch.object(eastmoney_client, "get_json") as get_json:

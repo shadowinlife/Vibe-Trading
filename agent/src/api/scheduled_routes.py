@@ -158,6 +158,7 @@ def _get_scheduled_research_executor():
     if _scheduled_research_executor is None:
         from src.scheduled_research.executor import ScheduledResearchExecutor
         from src.scheduled_research.internal_dispatch import resolve_scheduled_internal_callable
+        from src.strategy_library.runner import resolve_strategy_runner
 
         _scheduled_research_executor = ScheduledResearchExecutor(
             _get_scheduled_research_store(),
@@ -166,6 +167,7 @@ def _get_scheduled_research_executor():
             briefing_reader=_read_scheduled_briefing,
             channel_sender=_send_scheduled_briefing,
             internal_dispatcher=resolve_scheduled_internal_callable,
+            strategy_runner=resolve_strategy_runner(),
         )
     return _scheduled_research_executor
 
@@ -485,7 +487,10 @@ def register_scheduled_routes(
 
         The job is persisted immediately. No execution is triggered.
         """
-        from src.api.scheduled_guards import ensure_authorable_job_id
+        from src.api.scheduled_guards import (
+            ensure_authorable_job_id,
+            ensure_not_strategy_job,
+        )
         from src.scheduled_research.executor import next_due
         from src.scheduled_research.models import (
             JobStatus,
@@ -497,6 +502,7 @@ def register_scheduled_routes(
         )
 
         ensure_authorable_job_id(request.id)
+        ensure_not_strategy_job(_get_scheduled_research_store(), request.id)
         if contains_pdf_password(request.config):
             raise HTTPException(status_code=422, detail="config must not include pdf_password")
 
@@ -607,7 +613,7 @@ def register_scheduled_routes(
     ) -> List[ScheduledRunResponse]:
         """List scheduled research jobs, optionally filtered by status."""
         jobs = _get_scheduled_research_store().list_jobs(
-            status=status_filter, limit=limit
+            status=status_filter, limit=limit, exclude_source_type="strategy"
         )
         return [_job_to_response(j) for j in jobs]
 
@@ -660,7 +666,10 @@ def register_scheduled_routes(
         request: UpdateScheduledRunRequest,
     ) -> ScheduledRunResponse:
         """Update future configuration without deleting the job or its history."""
-        from src.api.scheduled_guards import guard_system_job_mutation
+        from src.api.scheduled_guards import (
+            ensure_not_strategy_job,
+            guard_system_job_mutation,
+        )
         from src.scheduled_research.executor import next_due
         from src.scheduled_research.models import (
             DeliveryRecord,
@@ -680,6 +689,7 @@ def register_scheduled_routes(
                 status_code=404, detail=f"scheduled run {job_id} not found"
             )
         guard_system_job_mutation(job.id, job.source_type)
+        ensure_not_strategy_job(store, job_id)
         if job.status == JobStatus.RUNNING or job.delivery.status == DeliveryStatus.SENDING:
             raise HTTPException(
                 status_code=409,
@@ -852,11 +862,16 @@ def register_scheduled_routes(
     )
     async def delete_scheduled_run(job_id: str) -> Response:
         """Cancel (delete) a scheduled research job by id."""
-        from src.api.scheduled_guards import guard_system_job_deletion
+        from src.api.scheduled_guards import (
+            ensure_not_strategy_job,
+            guard_system_job_deletion,
+        )
 
         _host_validate_path_param(job_id, "job_id")
         guard_system_job_deletion(job_id)
-        removed = _get_scheduled_research_store().delete(job_id)
+        store = _get_scheduled_research_store()
+        ensure_not_strategy_job(store, job_id)
+        removed = store.delete(job_id)
         if not removed:
             raise HTTPException(
                 status_code=404, detail=f"scheduled run {job_id} not found"
@@ -934,6 +949,7 @@ def register_scheduled_routes(
         plain ``POST /scheduled-runs`` path uses, so the two entry points can
         never accept different schedule grammars.
         """
+        from src.api.scheduled_guards import ensure_not_strategy_job
         from src.scheduled_research.playbooks import (
             PlaybookError,
             PlaybookNotFoundError,
@@ -947,6 +963,7 @@ def register_scheduled_routes(
         # rejects it with 400.
         if request.id is not None:
             _host_validate_path_param(request.id, "id")
+        ensure_not_strategy_job(_get_scheduled_research_store(), request.id)
 
         try:
             playbook = get_playbook(slug)

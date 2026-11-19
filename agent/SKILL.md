@@ -1,7 +1,7 @@
 ---
 name: vibe-trading
 version: 0.1.19
-description: Professional finance research toolkit — backtesting (12 engines + benchmark comparison panel), factor analysis, Alpha Zoo (478 pre-built alphas across qlib158/alpha101/gtja191/academic/fundamental), options pricing, 89 finance skills, 30 multi-agent swarm teams, Trade Journal analyzer, and Shadow Account (extract → backtest → render) across 28 market-data sources (tushare, yfinance, okx, binance, akshare, baostock, tencent, mootdx, ccxt, futu, mt5, tickerall, local, eastmoney, sina, stooq, yahoo, pykrx, india_broker, longbridge, nobitex, wallex, plus optional-key finnhub/alphavantage/tiingo/fmp/gildata).
+description: Professional finance research toolkit — backtesting (12 engines + benchmark comparison panel), factor analysis, Alpha Zoo (478 pre-built alphas across qlib158/alpha101/gtja191/academic/fundamental), options pricing, 90 finance skills, 30 multi-agent swarm teams, Trade Journal analyzer, and Shadow Account (extract → backtest → render) across 29 market-data sources (clickhouse, tushare, yfinance, okx, binance, akshare, baostock, tencent, mootdx, ccxt, futu, mt5, tickerall, local, eastmoney, sina, stooq, yahoo, pykrx, india_broker, longbridge, nobitex, wallex, plus optional-key finnhub/alphavantage/tiingo/fmp/gildata).
 dependencies:
   python: ">=3.11"
   pip:
@@ -23,7 +23,7 @@ mcp:
 
 # Vibe-Trading
 
-Professional finance research toolkit with AI-powered backtesting (12 engines), multi-agent teams, 89 specialized skills, the **Alpha Zoo** (478 pre-built quantitative alphas across qlib158 / alpha101 / gtja191 / academic / fundamental with one-line CLI benchmarking), and the Shadow Account loop — extract your implicit trading rules from a journal, backtest them across A股/港股/美股/crypto, then see where they would have served you better.
+Professional finance research toolkit with AI-powered backtesting (12 engines), multi-agent teams, 90 specialized skills, the **Alpha Zoo** (478 pre-built quantitative alphas across qlib158 / alpha101 / gtja191 / academic / fundamental with one-line CLI benchmarking), and the Shadow Account loop — extract your implicit trading rules from a journal, backtest them across A股/港股/美股/crypto, then see where they would have served you better.
 
 ## Setup
 
@@ -53,7 +53,7 @@ Add to your agent's MCP config:
 
 ### API Key Requirements
 
-Core research MCP tools work with zero API keys for HK/US/Canada/crypto. After `pip install`, backtesting, market data, factor analysis, options pricing, chart patterns, web search, document reading, trade journal analysis, shadow-account extraction/backtest/report, the Alpha Zoo (478 pre-built alphas), and all 89 skills are ready to use. IBKR tools require a local TWS / IB Gateway session; `run_swarm` requires an LLM key.
+Core research MCP tools work with zero API keys for HK/US/Canada/crypto. After `pip install`, backtesting, market data, factor analysis, options pricing, chart patterns, web search, document reading, trade journal analysis, shadow-account extraction/backtest/report, the Alpha Zoo (478 pre-built alphas), and all 90 skills are ready to use. IBKR tools require a local TWS / IB Gateway session; `run_swarm` requires an LLM key.
 
 | Feature | Key needed | When |
 |---------|-----------|------|
@@ -74,7 +74,7 @@ Feed a CSV broker export (同花顺 / 东财 / 富途 / generic), and the agent 
 5. `scan_shadow_signals` — list today's symbols that match your shadow's entry cadence (research only).
 
 ### Backtesting
-Create and run quantitative strategies across 12 engines (ChinaA, GlobalEquity, IndiaEquity, KoreaEquity, VietnamEquity, BrazilEquity, ArgentinaEquity, Crypto, ChinaFutures, GlobalFutures, Forex, cross-market Composite) plus an options portfolio engine, with 28 market-data sources (auto-detect + ordered fallback; the hosted forex `tickerall` source is explicit-only):
+Create and run quantitative strategies across 12 engines (ChinaA, GlobalEquity, IndiaEquity, KoreaEquity, VietnamEquity, BrazilEquity, ArgentinaEquity, Crypto, ChinaFutures, GlobalFutures, Forex, cross-market Composite) plus an options portfolio engine, with 29 market-data sources (auto-detect + ordered fallback; the hosted forex `tickerall` source is explicit-only):
 - **HK/US equities** via yfinance / stooq / yahoo (free, no API key); optionally via **Longbridge** historical OHLCV (`longbridge`, requires the optional SDK and `LONGBRIDGE_APP_KEY` / `LONGBRIDGE_APP_SECRET` / `LONGBRIDGE_ACCESS_TOKEN`). To force it for a run, set `"source": "longbridge"` in `config.json`.
 - **Canada equities (TSX/TSXV)** via yahoo / yfinance using Yahoo's canonical `<TICKER>.TO` (TSX, e.g. `TD.TO`) or `<TICKER>.V` (TSXV, e.g. `PNG.V`) suffixes — free, no API key. The GlobalEquity engine uses CAD identity, whole-share orders, configurable Canadian commission/slippage, and the TSX/TSXV price-increment grid.
 - **India equities (NSE/BSE)** via yahoo / yfinance using `<SYMBOL>.NS` (NSE, e.g. `RELIANCE.NS`) or `<SCRIP>.BO` (BSE, e.g. `500325.BO`) — free, no API key. The `IndiaEquityEngine` models T+1 delivery, no overnight shorts (set `allow_short` for intraday), configurable circuit bands, 1-share lots, and the STT/stamp-duty/exchange/GST cost stack. Optionally back-fill from your live broker via the `india_broker` source (Shoonya/Dhan; requires broker login).
@@ -96,6 +96,11 @@ Example workflow:
 2. Use `load_skill("strategy-generate")` for the strategy creation guide
 3. Use `write_file()` to create `config.json` and `code/signal_engine.py`
 4. Use `backtest()` to run and get metrics (Sharpe, return, drawdown, etc.)
+
+The **strategy library** stores reviewable `code` and `workflow` strategies with versioned snapshots, a readiness gate and a scheduling model; use `promote_strategy`, `evaluate_strategy`, `list_strategy_library` and `schedule_strategy` to manage it, and note that it never approves a strategy automatically and never places an order.
+
+### Backtest result envelope
+A successful `backtest` result carries the legacy `status` / `exit_code` / `stdout` / `stderr` / `artifacts` / `run_dir` fields plus an inline `summary` (`schema_version` `"1.0"`): `run_id` (safe as one query path segment), the full scalar `metrics`, an equal-stride `equity_preview` of at most 50 points with the first and last bar always kept, `codes`, `start_date` / `end_date` / `interval`, `initial_cash`, `warnings`, and `artifact_paths` (equity, trades, metrics, run card and per-symbol OHLCV). Full curves, per-trade detail and the HTML report stay in those files. The MCP envelope is fitted under the host's 2,000-line / 50 KiB cap: logs are dropped first, then `validation`, `structured_metrics`, `warnings`, `title` and the per-symbol path map, then the largest metric entries (`metrics.<key>`), each named in `summary.omitted_fields`; `equity_preview` is thinned but never emptied, and `summary` is never removed from a successful result. The in-process model path keeps its 10,000-character cap with the same never-drop rule. A missing or corrupt run card still leaves the run successful without a summary.
 
 ### Multi-Agent Swarm Teams
 30 pre-built agent teams for complex research:
@@ -120,7 +125,7 @@ One-line cross-sectional IC / IR / alive-reversed-dead categorisation across fiv
 
 Each alpha ships with `__alpha_meta__` (formula LaTeX + theme + universe + warmup + columns required), guarded by an AST purity gate + 300-row lookahead sentinel test. Use the `vibe-trading alpha {list,show,bench,compare,export-manifest}` CLI, the `/alpha/*` REST routes (browser at `/alpha-zoo`), or compose multi-factor signals via `ZooSignalEngine.from_zoo(...)`.
 
-### Finance Skills (89)
+### Finance Skills (90)
 Comprehensive knowledge base covering:
 - Technical analysis (candlestick, Elliott wave, Ichimoku, SMC, harmonic, chanlun)
 - Quantitative methods (factor research, ML strategy, pair trading, multi-factor)
@@ -133,17 +138,18 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (83)
+## Available MCP Tools (95)
 
 | Tool | Description | API Key |
 |------|-------------|---------|
-| `list_skills` | List all 89 finance skills | None |
+| `list_skills` | List all 90 finance skills | None |
 | `load_skill` | Load full skill documentation | None |
 | `start_research_goal` | Create an auditable research goal | None |
 | `get_research_goal` | Read the current research goal | None |
 | `add_goal_evidence` | Attach evidence to a research goal | None |
 | `update_research_goal` | Edit a research goal's objective or summary in place | None |
 | `update_research_goal_status` | Update goal lifecycle status | None |
+| `scheduled_research` | Inspect scheduled research; prepare create/cancel proposals (human confirms on the surface) | None |
 | `research_lab` | Frozen-input cost scenarios, training-only parameter selection and OOS/holdout, factor contracts and offline task replay | None |
 | `backtest` | Run vectorized backtest engine | None* |
 | `paper_trade_step` | Deterministic paper-trading matching engine (single-market default or pt-v2.0 cross-market portfolio); never places real orders | None* |
@@ -154,7 +160,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `analyze_options` | Black-Scholes price + Greeks | None |
 | `analyze_options_payoff` | Multi-leg expiry payoff + spot/IV scenarios | None |
 | `pattern_recognition` | Detect chart patterns (H&S, double top, etc.) | None |
-| `get_market_data` | Fetch OHLCV data (auto-detect + ordered fallback across 28 sources) | None* |
+| `get_market_data` | Fetch OHLCV data (auto-detect + ordered fallback across 29 sources) | None* |
 | `get_fund_flow` | Capital fund-flow (main/retail net inflow) | None* |
 | `get_dragon_tiger` | Dragon-tiger list (龙虎榜) top buyer/seller seats | None* |
 | `get_northbound_flow` | Northbound (Stock Connect) net flow | None* |
@@ -188,6 +194,14 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `list_strategies` | Browse discoverable strategies (Alpha Zoo + SDM store) | None |
 | `query_strategies` | Evidence-gated query: regime / Sharpe / quality / cost filters | None |
 | `get_strategy_evidence` | Per-regime evidence rows for one strategy | None |
+| `promote_strategy` | Register a strategy draft; code strategies are evaluated immediately | None |
+| `evaluate_strategy` | Re-run the kind-matched gate and persist the version-bound verdict | None |
+| `schedule_strategy` | Prepare a schedule proposal for a ready strategy (workflow jobs need human confirmation) | None |
+| `list_strategy_schedules` | List RM schedules with local version-drift annotations | None |
+| `pause_strategy_schedule` | Pause one RM schedule without deleting its run history | None |
+| `resume_strategy_schedule` | Re-enable one paused RM schedule | None |
+| `delete_strategy_schedule` | Delete one RM schedule; its history stays with RM | None |
+| `retarget_strategy_schedule` | Re-pin one RM schedule to a version, keeping the schedule id and history | None |
 | `adapt_strategy` | Prepare an evidence-gated child strategy for generation and its own backtest |
 | `refresh_strategy_evidence` | Rebuild the disposable strategy-evidence cache from run artifacts | None |
 | `analyze_trade_journal` | Parse broker CSV → profile + behavior diagnostics | None |
@@ -220,6 +234,9 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `sentiment` | Local lexicon text scoring + crypto Fear & Greed Index | None |
 | `technical_indicators` | RSI / MACD / Bollinger / SMA / EMA through the existing loaders | None* |
 | `get_fundamentals` | PIT-safe SEC fundamentals panels (filed-date anchored) | None |
+| `ch_list_tables` | ClickHouse ashare catalog — 56 tables with COMMENTs | None (ClickHouse warehouse) |
+| `ch_describe_table` | ClickHouse table columns/types/keys + sample rows | None (ClickHouse warehouse) |
+| `ch_query` | Guarded read-only SELECT over ashare (sqlglot AST guard, LIMIT 500, ~50KB cap, audit log) | CLICKHOUSE_LLM_USER + CLICKHOUSE_LLM_PASSWORD |
 
 <sub>*A-share symbols require `TUSHARE_TOKEN`. HK/US/Canada/crypto are free. Trading connector rows use the selected connector profile, e.g. IBKR local TWS/Gateway or Robinhood MCP OAuth.</sub>
 
@@ -229,7 +246,7 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 pip install vibe-trading-ai
 ```
 
-That's it — no API keys needed for HK/US/Canada/crypto markets. Start using `backtest`, `get_market_data`, `analyze_options`, `analyze_trade_journal`, `extract_shadow_strategy`, `web_search`, the **Alpha Zoo** (`vibe-trading alpha bench --zoo gtja191 --universe csi300 --period 2018-2025`), and all 89 skills immediately.
+That's it — no API keys needed for HK/US/Canada/crypto markets. Start using `backtest`, `get_market_data`, `analyze_options`, `analyze_trade_journal`, `extract_shadow_strategy`, `web_search`, the **Alpha Zoo** (`vibe-trading alpha bench --zoo gtja191 --universe csi300 --period 2018-2025`), and all 90 skills immediately.
 
 ## Loading Tools from External MCP Servers
 

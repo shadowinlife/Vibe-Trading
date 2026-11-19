@@ -24,6 +24,17 @@ PRIVATE_DOCUMENT_NAMES = frozenset({
     "notes.md",
 })
 
+# mymain publishes its branch knowledge base in Git and tracks these five
+# instruction files on purpose. The allowlist is exact: any other AGENTS.md
+# (for example agent/AGENTS.md) still fails the gate.
+MYMAIN_KNOWLEDGE_BASE = frozenset({
+    "AGENTS.md",
+    "OpencodeAgent/AGENTS.md",
+    "OpencodeAgent/workspace/cron_jobs/AGENTS.md",
+    "OpencodeAgent/workspace/scripts/AGENTS.md",
+    "mymain-wiki/AGENTS.md",
+})
+
 
 def main(repo_root: Path | None = None) -> int:
     """Check the Git index for internal document paths.
@@ -51,6 +62,8 @@ def main(repo_root: Path | None = None) -> int:
         if not raw_path:
             continue
         name = os.fsdecode(raw_path)
+        if name in MYMAIN_KNOWLEDGE_BASE:
+            continue
         path = PurePosixPath(name)
         if path.parts[0].casefold() == "docs" or path.name.casefold() in PRIVATE_DOCUMENT_NAMES:
             forbidden.append(name)

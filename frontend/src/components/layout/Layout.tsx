@@ -13,6 +13,7 @@ import { SUPPORTED_LANGUAGES } from "@/i18n";
 import i18n from "@/i18n";
 import { toast } from "sonner";
 import { SidebarNavigation } from "./SidebarNavigation";
+import { StrategyEntry } from "./StrategyEntry";
 import { PageHelp } from "./PageHelp";
 
 // APP_VERSION is sourced from i18n locale files (app.version key) to keep a
@@ -172,7 +173,10 @@ export function Layout() {
         </div>
 
         {/* Nav */}
-        <SidebarNavigation collapsed={collapsed} />
+        <SidebarNavigation
+          collapsed={collapsed}
+          strategyEntry={(compact, drawer) => <StrategyEntry collapsed={compact} inDrawer={drawer} />}
+        />
 
         <button
           ref={sessionsTriggerRef}

@@ -124,6 +124,10 @@ from src.api.scheduled_routes import (  # noqa: F401, E402
     _stop_scheduled_research_executor,
     _stop_scheduled_research_on_shutdown,
 )
+from src.api.strategy_run_lifecycle import (  # noqa: F401, E402
+    start_strategy_run_service,
+    stop_strategy_run_service,
+)
 
 
 async def _run_startup_preflight() -> None:
@@ -149,13 +153,26 @@ async def _run_startup_preflight() -> None:
         await _start_channel_runtime()
 
 
+async def _start_strategy_run_service() -> None:
+    """Start the opt-in RM entry service on the full API surface."""
+    if _VT_STRATEGY_RUN_ENABLED:
+        await start_strategy_run_service()
+
+
+async def _stop_strategy_run_service() -> None:
+    """Stop the opt-in entry service; safe when it never started."""
+    await stop_strategy_run_service()
+
+
 @asynccontextmanager
 async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Run API startup and guaranteed reverse-order shutdown."""
     try:
         await _run_startup_preflight()
+        await _start_strategy_run_service()
         yield
     finally:
+        await _stop_strategy_run_service()
         await _stop_scheduled_research_on_shutdown()
         # Reap background work this host owns before its runtime disappears.
         # Read the existing service rather than _get_session_service(): a
@@ -240,6 +257,12 @@ from src.api.pixel_office_routes import register_pixel_office_routes  # noqa: E4
 register_pixel_office_routes(app, require_local_or_auth, require_settings_write_auth)
 from src.api.strategy_adaptation_routes import register_strategy_adaptation_routes  # noqa: E402
 register_strategy_adaptation_routes(app, require_settings_write_auth)
+from src.api.strategy_surfaces import (  # noqa: F401, E402
+    STRATEGY_RUN_ENABLED as _VT_STRATEGY_RUN_ENABLED,
+    register_strategy_surfaces,
+)
+
+register_strategy_surfaces(app)
 
 # --- Uploads ---
 from src.api.uploads_routes import register_uploads_routes  # noqa: E402

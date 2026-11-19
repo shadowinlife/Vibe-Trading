@@ -40,8 +40,12 @@ if str(AGENT_DIR) not in sys.path:
     sys.path.insert(0, str(AGENT_DIR))
 
 # Baseline before task 17: replacing the hand-written wrapper with a mirrored
-# registration must not add or remove a tool.
-EXPECTED_MCP_TOOL_COUNT = 83
+# registration must not add or remove a tool. After the mymain merge the live
+# catalogue is the union of the 83 upstream tools and 12 mymain-local tools
+# (scheduled_research, promote/evaluate/schedule_strategy, the five schedule
+# managers, and the ch_* semantic layer); test_readme_counts independently
+# pins this same count against the runtime list_tools() set.
+EXPECTED_MCP_TOOL_COUNT = 95
 
 _DAY = "2026-11-13"
 _PRIOR = "2026-11-12"

@@ -199,14 +199,20 @@ class ScheduledResearchJobStore:
         self,
         status: Optional[str] = None,
         limit: int = 50,
+        exclude_source_type: Optional[str] = None,
     ) -> List[ScheduledResearchJob]:
-        """Return jobs, optionally filtered by status.
+        """Return jobs, optionally filtered by status and source type.
+
+        Every filter runs before *limit* is applied, so a page never comes back
+        short because excluded rows occupied the window.
 
         Args:
             status: When provided, include only jobs whose status matches this
                 string (e.g. ``"pending"``).
             limit: Maximum number of jobs to return (newest first by
                 ``created_at``).
+            exclude_source_type: When provided, drop jobs whose
+                ``source_type`` matches this string (e.g. ``"strategy"``).
 
         Returns:
             A list of at most *limit* jobs sorted descending by ``created_at``.
@@ -214,6 +220,8 @@ class ScheduledResearchJobStore:
         jobs = list(self.load().values())
         if status is not None:
             jobs = [j for j in jobs if j.status.value == status]
+        if exclude_source_type is not None:
+            jobs = [j for j in jobs if j.source_type != exclude_source_type]
         jobs.sort(key=lambda j: j.created_at, reverse=True)
         return jobs[:limit]
 

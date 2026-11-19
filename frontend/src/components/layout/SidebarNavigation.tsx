@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { isNavigationActive, NAVIGATION_GROUPS } from "./navigation";
 
-export function SidebarNavigation({ collapsed }: { collapsed: boolean }) {
+export function SidebarNavigation({ collapsed, strategyEntry }: {
+  collapsed: boolean;
+  strategyEntry?: (compact: boolean, drawer: boolean) => ReactNode;
+}) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,29 +40,33 @@ export function SidebarNavigation({ collapsed }: { collapsed: boolean }) {
     };
   }, [menuOpen]);
 
+  // The strategy group renders as the injected entry block so the sidebar can
+  // show the run summary next to it without listing the two links twice.
   const groups = (compact: boolean, drawer = false) => NAVIGATION_GROUPS.map(({ id, items }) => (
-    <section key={id} aria-label={t(`navigation.groups.${id}`)} className={cn(id !== "research" && "border-t border-border/60 pt-2")}>
-      {!compact && <p className={cn("mb-1 px-3 text-[10px] font-medium text-muted-foreground/70", !drawer && "max-md:hidden")}>{t(`navigation.groups.${id}`)}</p>}
-      <div className="space-y-0.5">
-        {items.map(({ id: itemId, to, icon: Icon }) => {
-          const label = t(`layout.${itemId}`);
-          const active = isNavigationActive(to, pathname);
-          return (
-            <Link key={to} to={to} aria-label={label} aria-current={active ? "page" : undefined}
-              title={`${label} — ${t(`navigation.descriptions.${itemId}`)}`}
-              onClick={() => setMenuOpen(false)}
-              className={cn("flex items-center rounded-md text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                compact ? "justify-center px-2 py-1.5" : "gap-3 px-3 py-1.5",
-                !compact && !drawer && "max-md:justify-center max-md:px-2",
-                active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground")}
-            >
-              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {!compact && <span className={cn(!drawer && "max-md:hidden")}>{label}</span>}
-            </Link>
-          );
-        })}
-      </div>
-    </section>
+    id === "strategy" && strategyEntry
+      ? <Fragment key={id}>{strategyEntry(compact, drawer)}</Fragment>
+      : <section key={id} aria-label={t(`navigation.groups.${id}`)} className={cn(id !== "research" && "border-t border-border/60 pt-2")}>
+        {!compact && <p className={cn("mb-1 px-3 text-[10px] font-medium text-muted-foreground/70", !drawer && "max-md:hidden")}>{t(`navigation.groups.${id}`)}</p>}
+        <div className="space-y-0.5">
+          {items.map(({ id: itemId, to, icon: Icon }) => {
+            const label = t(`layout.${itemId}`);
+            const active = isNavigationActive(to, pathname);
+            return (
+              <Link key={to} to={to} aria-label={label} aria-current={active ? "page" : undefined}
+                title={`${label} — ${t(`navigation.descriptions.${itemId}`)}`}
+                onClick={() => setMenuOpen(false)}
+                className={cn("flex items-center rounded-md text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                  compact ? "justify-center px-2 py-1.5" : "gap-3 px-3 py-1.5",
+                  !compact && !drawer && "max-md:justify-center max-md:px-2",
+                  active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground")}
+              >
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {!compact && <span className={cn(!drawer && "max-md:hidden")}>{label}</span>}
+              </Link>
+            );
+          })}
+        </div>
+      </section>
   ));
 
   return (

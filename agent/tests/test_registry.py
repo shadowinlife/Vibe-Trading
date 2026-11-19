@@ -70,6 +70,18 @@ class _FakeInitErrorLoader:
         return {}
 
 
+_DUMMY_INIT_SECRET = (
+    "dummy-secret-token https://user:dummy-password@example.invalid"
+)
+
+
+class _FakeSecretInitErrorLoader(_FakeInitErrorLoader):
+    name = "fake_secret_init_error"
+
+    def __init__(self) -> None:
+        raise RuntimeError(_DUMMY_INIT_SECRET)
+
+
 class _FakeCryptoLoader:
     name = "fake_crypto"
     markets = {"crypto"}
@@ -251,8 +263,14 @@ class TestFallbackChains:
 
     def test_chains_ordered_by_ip_ban_risk(self) -> None:
         """Equity chains lead with throttle-tolerant public sources and trail
-        with key-gated REST fallbacks, in the exact reviewed order."""
+        with key-gated REST fallbacks, in the exact reviewed order.
+
+        mymain divergence (F5): the a_share chain leads with the local
+        ClickHouse warehouse (T-1 full history, no IP exposure); the reviewed
+        network order follows it unchanged.
+        """
         assert FALLBACK_CHAINS["a_share"] == [
+            "clickhouse",
             "tencent",
             "eastmoney",
             "baostock",
@@ -411,6 +429,61 @@ class TestResolveLoader:
                 loader = resolve_loader("a_share")
                 assert loader.name == "fake_available"
 
+    def test_diagnostics_record_ordered_sanitized_rejections(self) -> None:
+        diagnostics: list[dict[str, str]] = []
+        with patch.dict(
+            LOADER_REGISTRY,
+            {
+                "fake_secret_init_error": _FakeSecretInitErrorLoader,
+                "fake_unavailable": _FakeUnavailableLoader,
+                "fake_available": _FakeAvailableLoader,
+            },
+            clear=True,
+        ):
+            with patch.dict(
+                FALLBACK_CHAINS,
+                {
+                    "a_share": [
+                        "fake_secret_init_error",
+                        "fake_unavailable",
+                        "fake_available",
+                    ],
+                },
+            ):
+                loader = resolve_loader("a_share", diagnostics=diagnostics)
+
+        assert loader.name == "fake_available"
+        assert diagnostics == [
+            {"source": "fake_secret_init_error", "reason": "source_unavailable"},
+            {"source": "fake_unavailable", "reason": "source_unavailable"},
+        ]
+        assert _DUMMY_INIT_SECRET not in repr(diagnostics)
+
+    def test_diagnostics_are_isolated_between_calls(self) -> None:
+        first_diagnostics: list[dict[str, str]] = []
+        second_diagnostics: list[dict[str, str]] = []
+        with patch.dict(
+            LOADER_REGISTRY,
+            {
+                "fake_unavailable": _FakeUnavailableLoader,
+                "fake_available": _FakeAvailableLoader,
+            },
+            clear=True,
+        ):
+            with patch.dict(
+                FALLBACK_CHAINS,
+                {"a_share": ["fake_unavailable", "fake_available"]},
+            ):
+                resolve_loader("a_share", diagnostics=first_diagnostics)
+                resolve_loader("a_share", diagnostics=second_diagnostics)
+
+        expected = [
+            {"source": "fake_unavailable", "reason": "source_unavailable"},
+        ]
+        assert first_diagnostics == expected
+        assert second_diagnostics == expected
+        assert first_diagnostics is not second_diagnostics
+
     def test_raises_when_none_available(self) -> None:
         with patch.dict(
             LOADER_REGISTRY,
@@ -432,6 +505,22 @@ class TestResolveLoader:
         with patch.dict(LOADER_REGISTRY, {}, clear=True):
             with pytest.raises(NoAvailableSourceError):
                 resolve_loader("martian_stocks")
+
+    def test_exclude_skips_listed_loader(self) -> None:
+        with patch.dict(
+            LOADER_REGISTRY,
+            {
+                "fake_available": _FakeAvailableLoader,
+                "fake_crypto": _FakeCryptoLoader,
+            },
+            clear=True,
+        ):
+            with patch.dict(
+                FALLBACK_CHAINS,
+                {"a_share": ["fake_available", "fake_crypto"]},
+            ):
+                loader = resolve_loader("a_share", exclude={"fake_available"})
+                assert loader.name == "fake_crypto"
 
 
 # ---------------------------------------------------------------------------
@@ -468,6 +557,32 @@ class TestGetLoaderWithFallback:
             ):
                 cls = get_loader_cls_with_fallback("fake_unavailable")
                 assert cls is _FakeAvailableLoader
+
+    def test_diagnostics_propagate_through_fallback(self) -> None:
+        diagnostics: list[dict[str, str]] = []
+        with patch.dict(
+            LOADER_REGISTRY,
+            {
+                "fake_secret_init_error": _FakeSecretInitErrorLoader,
+                "fake_unavailable": _FakeUnavailableLoader,
+                "fake_available": _FakeAvailableLoader,
+            },
+            clear=True,
+        ):
+            with patch.dict(
+                FALLBACK_CHAINS,
+                {"a_share": ["fake_unavailable", "fake_available"]},
+            ):
+                cls = get_loader_cls_with_fallback(
+                    "fake_secret_init_error", diagnostics=diagnostics
+                )
+
+        assert cls is _FakeAvailableLoader
+        assert diagnostics == [
+            {"source": "fake_secret_init_error", "reason": "source_unavailable"},
+            {"source": "fake_unavailable", "reason": "source_unavailable"},
+        ]
+        assert _DUMMY_INIT_SECRET not in repr(diagnostics)
 
     def test_unknown_source_raises(self) -> None:
         with patch.dict(LOADER_REGISTRY, {}, clear=True):

@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-trading.local/schemas/intake-events.schema.json",
+  "title": "Intake eval event record",
+  "description": "One JSONL record per instrumentation event emitted by tests/evals/intake/run.py. Each record is rooted in base_record; the four event $defs carry the judge_rule that says how observed is derived from `opencode run --format json` output. run_error is an operational terminal record, not one of the four measured layers.",
+  "type": "object",
+  "$defs": {
+    "base_record": {
+      "type": "object",
+      "required": [
+        "run_id",
+        "corpus_id",
+        "event",
+        "ts",
+        "observed",
+        "expected",
+        "evidence"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "corpus_id": {
+          "type": "string",
+          "pattern": "^c[0-9]{2}$"
+        },
+        "event": {
+          "type": "string"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "observed": {
+          "type": [
+            "string",
+            "boolean",
+            "null"
+          ]
+        },
+        "expected": {
+          "type": [
+            "string",
+            "boolean",
+            "null"
+          ]
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "string"
+        },
+        "args_digest": {
+          "type": "string"
+        },
+        "question_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "user_turns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "wall_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "route_class": {
+      "judge_rule": "Expected class is the corpus `expect` label. Observed is derived in this order: (1) text containing an explicit capability refusal (无法转账/无法执行/不支持/超出能力/超出范围/cannot/unable) => refuse, checked first because a refusal often includes a numbered 'do it yourself' list (c10); (2) a `question` tool call, or at least two option lines matching `1.`/`1)`/`1）`/`1、`/`A.`/`A)`/`A）` after stripping markdown emphasis and HTML tags, plus a choice cue (选项/请选择/成本价/仓位/希望/偏好/哪个/还是) => clarify_private, unless the text is an artifact (>=3 markdown table rows or a heading containing 结论/结果/报告/清单/回测/净值/体检/归因), because artifacts often end with numbered follow-ups (c04); (3) any `vibe-trading_*`/`ch_*` call with non-empty arguments => execute_with_defaults; (4) otherwise a text-only answer => direct_answer. The artifact guard keeps c04's '下一步' list from reading as a clarification; c05's bold full-width questions are matched after emphasis stripping.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_record"
+        },
+        {
+          "properties": {
+            "event": {
+              "const": "route_class"
+            },
+            "observed": {
+              "enum": [
+                "direct_answer",
+                "execute_with_defaults",
+                "clarify_private",
+                "refuse"
+              ]
+            },
+            "expected": {
+              "enum": [
+                "direct_answer",
+                "execute_with_defaults",
+                "clarify_private",
+                "refuse"
+              ]
+            }
+          },
+          "required": [
+            "observed",
+            "expected"
+          ]
+        }
+      ]
+    },
+    "intake_loaded": {
+      "judge_rule": "Observed true when the event stream contains (a) a read-style tool call whose arguments mention a path containing `skills/intake`, (b) an opencode `skill` tool call (name `skill`, `*.skill` or `*_skill`) whose arguments name `intake`, (c) any tool call whose name contains `intake`, or (d) an assistant message that quotes the intake skill name (`intake`). Rule (b) was added on 2026-10-28 after the delivered image shipped the skill: opencode loads project skills through the `skill` tool, which the original path-only rule missed. It cannot retroactively affect `results/baseline.jsonl`, where the skill did not exist. Expected is true only when the item is open-ended (`open_ended: true`) or expects `clarify_private` (c02/c03/c05/c06/c07 in the frozen corpus), and false for the 明确可执行 items and negatives (c01/c04/c08/c09/c10): intake routes only requests that need the funnel or private-slot clarification. A pre-intake baseline observes false everywhere.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_record"
+        },
+        {
+          "properties": {
+            "event": {
+              "const": "intake_loaded"
+            },
+            "observed": {
+              "type": "boolean"
+            },
+            "expected": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "observed",
+            "expected"
+          ]
+        }
+      ]
+    },
+    "question_called": {
+      "judge_rule": "Observed true when any tool part in the stream is named `question` or matches the `question.*` variant namespace; question_count carries the number of such tool calls. Expected is true exactly when the corpus `expect` label is `clarify_private`.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_record"
+        },
+        {
+          "properties": {
+            "event": {
+              "const": "question_called"
+            },
+            "observed": {
+              "type": "boolean"
+            },
+            "expected": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "observed",
+            "expected"
+          ]
+        }
+      ]
+    },
+    "params_compiled": {
+      "judge_rule": "Observed true when any tool call named `vibe-trading_*` (or `vibe_trading_*`) or `ch_*` carries non-empty arguments, i.e. collected options were compiled into tool parameters; tool names the first such call and args_digest is the SHA-256 of its canonical JSON arguments. Expected is true exactly when the corpus `expect` label is `execute_with_defaults`; a first-turn clarify asks for private slots and produces no parameters yet.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_record"
+        },
+        {
+          "properties": {
+            "event": {
+              "const": "params_compiled"
+            },
+            "observed": {
+              "type": "boolean"
+            },
+            "expected": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "observed",
+            "expected"
+          ]
+        }
+      ]
+    },
+    "run_error": {
+      "judge_rule": "Operational record written when the CLI invocation fails (nonzero exit, timeout, executable missing) or yields no parseable assistant text or tool call; evidence carries the stderr tail capped at 2000 characters. It is terminal for the item and keeps one failed item from aborting the whole run.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_record"
+        },
+        {
+          "properties": {
+            "event": {
+              "const": "run_error"
+            },
+            "observed": {
+              "const": "error"
+            },
+            "expected": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "observed",
+            "expected"
+          ]
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/route_class"
+    },
+    {
+      "$ref": "#/$defs/intake_loaded"
+    },
+    {
+      "$ref": "#/$defs/question_called"
+    },
+    {
+      "$ref": "#/$defs/params_compiled"
+    },
+    {
+      "$ref": "#/$defs/run_error"
+    }
+  ]
+}

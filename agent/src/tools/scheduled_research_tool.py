@@ -111,7 +111,10 @@ class ScheduledResearchTool(BaseTool):
         elif action == "list_jobs":
             payload = {
                 "jobs": [
-                    public_job(job) for job in default_store().list_jobs(limit=200)
+                    public_job(job)
+                    for job in default_store().list_jobs(
+                        exclude_source_type="strategy", limit=200
+                    )
                 ]
             }
         elif action == "get_job":

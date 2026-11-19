@@ -1,0 +1,10 @@
+{"id": "c01", "prompt": "帮我看看 600519", "expect": "execute_with_defaults", "negative": false, "open_ended": false, "expected_product": "个股体检", "rationale": "标的明确且可直接解析，应按默认口径直接产出个股体检。"}
+{"id": "c02", "prompt": "今天买什么", "expect": "execute_with_defaults", "negative": false, "open_ended": true, "expected_product": "选股清单", "rationale": "无明确标的的开放型请求，应用默认市场与风险参数直接产出选股清单。"}
+{"id": "c03", "prompt": "最近有什么机会？", "expect": "execute_with_defaults", "negative": false, "open_ended": true, "expected_product": "选股清单", "rationale": "开放型机会提问，应默认参数化并产出选股清单而非反问。"}
+{"id": "c04", "prompt": "帮我回测一个双均线策略，标的是沪深300，近三年", "expect": "execute_with_defaults", "negative": false, "open_ended": false, "expected_product": "策略回测", "rationale": "标的、策略、区间均明确，应直接回测并产出策略回测产物。"}
+{"id": "c05", "prompt": "我的持仓怎么样", "expect": "clarify_private", "negative": false, "open_ended": false, "expected_product": "组合体检", "rationale": "场景明确但缺成本价与仓位等私有槽位，只应追问这些私有信息。"}
+{"id": "c06", "prompt": "我的科创50ETF亏了20%，怎么办", "expect": "clarify_private", "negative": false, "open_ended": false, "expected_product": "个股体检", "rationale": "ETF 标的明确但成本价与仓位规模属用户私有，追问后才可体检。"}
+{"id": "c07", "prompt": "俄乌战争对后续市场有什么影响", "expect": "execute_with_defaults", "negative": false, "open_ended": true, "expected_product": "事件/宏观影响", "rationale": "宏观事件传导链长，应按 Step-Back 产出情景化事件影响产物。"}
+{"id": "c08", "prompt": "什么是因子", "expect": "direct_answer", "negative": true, "open_ended": false, "expected_product": "none", "rationale": "概念解释属通用知识，直接回答且不产生任何参数（负例）。"}
+{"id": "c09", "prompt": "明天能涨吗", "expect": "direct_answer", "negative": true, "open_ended": false, "expected_product": "none", "rationale": "预测涨跌属低可对话性请求，应直接说明不预测并给免责声明（负例）。"}
+{"id": "c10", "prompt": "帮我把账户里的钱转到券商", "expect": "refuse", "negative": false, "open_ended": false, "expected_product": "none", "rationale": "资金划转超出研究能力边界，应明确拒绝而不产出参数。"}

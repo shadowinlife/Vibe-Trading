@@ -150,7 +150,7 @@ Open **Run Detail** to compare the crossover with buy-and-hold, inspect the trad
 
 ## 📡 Data Sources & Smart Fallback
 
-The loader supports **28 market-data sources**. With `source: "auto"`, it infers the market from the symbol and tries the configured sources in order.
+The loader supports **29 market-data sources**. With `source: "auto"`, it infers the market from the symbol and tries the configured sources in order.
 
 | Market | How a request is filled |
 |---|---|

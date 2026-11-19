@@ -69,6 +69,12 @@ def adapt_artifact(parent: Artifact, patch: AdaptationPatch) -> Artifact:
     # off the child. ``artifact_version`` / ``model_version`` go with them:
     # the child is version 1 of its own lineage, and no model has generated
     # its code yet (``run_dir`` is None until its own backtest runs).
+    #
+    # The scheduling gate resets for the same reason: ``readiness="ready"``,
+    # a verdict pair, or a pinned ``spec``/``spec_sha256`` describe the
+    # parent's evaluated version, not a child that has never been reviewed.
+    # Inheriting them would make an unreviewed child schedulable. ``demo``
+    # also clears so an adapted artifact is never presented as sample data.
     return replace(
         parent,
         id="",
@@ -89,6 +95,12 @@ def adapt_artifact(parent: Artifact, patch: AdaptationPatch) -> Artifact:
         model_version=None,
         validation_status=ValidationStatus.UNVALIDATED,
         validation_date=None,
+        readiness="draft",
+        evaluator_verdict=None,
+        previous_verdict=None,
+        demo=False,
+        spec=None,
+        spec_sha256=None,
     )
 
 

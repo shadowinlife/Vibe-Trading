@@ -92,6 +92,7 @@ def test_market_data_json_can_include_actual_source_provenance():
         "requested_source": "yahoo",
         "detected_source": "yahoo",
         "fallback_used": True,
+        "fallback_reason": "yahoo:source_unavailable",
         "currency_conversion": "none",
         "volume_unit": None,
         "adjustment": "split_dividend",

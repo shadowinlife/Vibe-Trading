@@ -1,0 +1,623 @@
+# ClickHouse A 股语义目录（agent 侧唯一真相源）
+#
+# 本文件只写「库表结构里读不出来的东西」：领域、粒度、主键、权威资产类、
+# 单位口径、可估值性、使用场景、坑与示例。列名/类型/列注释由
+# tools/gen_semantic_layer.py 从 schema/clickhouse/metadata.json 合并渲染，
+# 不要在这里重复抄列清单。
+#
+# 数据水位（最新日期、落后天数）由生成器按 metadata.json 实时计算，
+# 因此这里不要手写「已停更」之类的时效判断。
+version: 1
+database: ashare
+updated: "2026-10-29"
+owner: mymain
+
+defaults:
+  freshness_sla_days: 1          # 允许落后几个自然日（T+1 发布口径）
+  valuation: false               # 是否可直接提供 pe/pb 类估值
+  authoritative: false           # 是否为该资产类的权威行情表
+  asset_class: stock
+
+# 领域用于 INDEX.md 分组，也是「该查哪张表」的第一层路由。
+domains:
+  basic: 标的基础信息（股票/指数/板块/交易日历）
+  quote: 行情与量价
+  factor: 因子与估值
+  flow: 资金、筹码、两融、北向
+  event: 公司行为与事件（分红/解禁/回购/质押/增减持/调研）
+  finance: 财务报表与披露
+  fund: 基金与 ETF
+  ops: 运维元数据（同步状态、漂移日志）
+
+tables:
+  # ---------------- 个股 ----------------
+  stk_factor_pro:
+    domain: factor
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    authoritative: true
+    valuation: true
+    use: 个股日行情 + 估值（pe/pe_ttm/pb/ps/dv_ratio）+ 复权价 + 200+ 技术指标的首选表
+    units: {vol: 手, amount: 千元, total_mv: 万元}
+    caveats:
+      - "涨跌幅列名是 pct_chg；指数表用 pct_change，不要跨表照抄"
+      - "close 不复权，close_hfq 后复权；回测必须显式声明用哪一列"
+      - "生产库实际 261 列，仓库旧文档称 199 列，以本表全列清单为准"
+    examples:
+      - "SELECT trade_date, close, pe_ttm, pb FROM stk_factor_pro WHERE ts_code='600519.SH' AND trade_date >= today()-30 ORDER BY trade_date"
+    related: [stk_info, trade_calendar]
+
+  stk_info:
+    domain: basic
+    asset_class: stock
+    grain: 全量快照
+    primary_key: [ts_code]
+    date_column: null
+    freshness_sla_days: 7
+    use: A 股股票基础信息（名称、行业、上市状态、实控人），代码↔名称解析的第一站
+    caveats:
+      - "快照表，无交易日维度；历史名称变化查 stk_name_history"
+    examples:
+      - "SELECT ts_code, name, industry FROM stk_info WHERE name LIKE '%宁德%'"
+    related: [stk_name_history, trade_calendar]
+
+  stk_name_history:
+    domain: basic
+    grain: 标的-报告期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 30
+    use: 股票曾用名与变更原因，做名称模糊匹配前先确认不是旧名
+    caveats: ["end_date 为 String（YYYYMMDD），按日期过滤需 toDate()"]
+    related: [stk_info]
+
+  stk_company:
+    domain: basic
+    grain: 全量快照
+    primary_key: [ts_code]
+    date_column: null
+    freshness_sla_days: 30
+    use: 公司概况（注册地、上市日期、主营业务、法人）
+    related: [stk_info]
+
+  stk_bse_mapping:
+    domain: basic
+    asset_class: market
+    grain: 全量快照
+    primary_key: [o_code, n_code]
+    date_column: null
+    freshness_sla_days: 365
+    use: 北交所旧代码与新代码映射；查询北交所历史代码前先过这张表
+    related: [stk_info]
+
+  trade_calendar:
+    domain: basic
+    asset_class: market
+    grain: 全量快照
+    primary_key: [cal_date]
+    date_column: null
+    freshness_sla_days: 30
+    use: 交易日历（2000-2030），判断「最新应有交易日」「是否休市」的唯一依据
+    caveats:
+      - "不要用 max(trade_date) FROM 某行情表 推断今天是否该有数据；用本表 is_open=1"
+    examples:
+      - "SELECT max(cal_date) FROM trade_calendar WHERE is_open=1 AND cal_date < today()"
+    related: [table_sync_state]
+
+  # ---------------- 行情 ----------------
+  stk_limit:
+    domain: quote
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    freshness_sla_days: 2
+    use: 每日涨停价/跌停价，用于判断封板、连板与可成交性
+    caveats: ["1826 万行，按 ts_code + 日期区间过滤，不要全表扫"]
+    related: [stk_factor_pro, stk_st_daily]
+
+  stk_suspend:
+    domain: quote
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: 停复牌日历；回测遇停牌应跳过而不是按前收盘成交
+    related: [stk_factor_pro]
+
+  stk_st_daily:
+    domain: quote
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: ST / *ST / 退市风险状态日历，做可交易池过滤
+    related: [stk_info, stk_limit]
+
+  stk_ah_comparison:
+    domain: quote
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: A/H 股比价（同一公司的 A 股与 H 股价格、溢价率）
+    caveats: ["pct 列名为 pct_chg"]
+    related: [stk_info]
+
+  # ---------------- 资金 / 筹码 / 两融 ----------------
+  stk_moneyflow:
+    domain: flow
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: 个股大中小单资金净流向（主力/超大单/大单/中单/小单）
+    units: {buy_elg_amount: 万元, net_mf_amount: 万元}
+    related: [stk_moneyflow_ths, stk_factor_pro]
+
+  stk_moneyflow_ths:
+    domain: flow
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: 同花顺口径资金流向，与 stk_moneyflow（东财口径）互为交叉验证
+    caveats: ["涨跌幅列名是 pct_change，与 stk_moneyflow 不同口径"]
+    related: [stk_moneyflow]
+
+  stk_margin:
+    domain: flow
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    freshness_sla_days: 2
+    use: 融资融券明细（融资余额、融券余量、偿还量），判断杠杆资金方向
+    units: {rzye: 元, rzmre: 元, rqyl: 股}
+    related: [stk_factor_pro]
+
+  stk_moneyflow_hsgt:
+    domain: flow
+    asset_class: market
+    grain: 交易日
+    primary_key: [trade_date]
+    freshness_sla_days: 1
+    use: 沪深港通资金（北向/南向）
+    caveats:
+      - "2024-08-19 起北向不再披露日度净买入，hgt/sgt/north_money 已是成交额（百万元），不是净流入"
+      - "2026-10-29 实测停在 2026-07-22；引用前先看本表水位行"
+    units: {north_money: 百万元, south_money: 百万元}
+    related: [trade_calendar]
+
+  stk_cyq_perf:
+    domain: flow
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: 筹码分布派生指标（获利比例、平均成本、90/70 成本区间与集中度）
+    caveats: ["无官方原始源，属派生量；2026-07-27 后停更，先看水位"]
+    related: [stk_cyq_chips, stk_factor_pro]
+
+  stk_cyq_chips:
+    domain: flow
+    grain: 标的-交易日-价格
+    primary_key: [ts_code, trade_date, price]
+    status: excluded
+    use: 逐价位筹码占比（当前为空表，不要依赖）
+    caveats: ["2026-10-29 实测 0 行；Tushare 该接口按 ts_code 取数，不是按日期，属已知缺口"]
+    related: [stk_cyq_perf]
+
+  # ---------------- 龙虎榜 / 大宗 ----------------
+  stk_top_list:
+    domain: flow
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: 龙虎榜上榜个股与上榜原因、买卖额
+    caveats: ["列名 pct_change；2026-07-22 后停更"]
+    related: [stk_top_inst]
+
+  stk_top_inst:
+    domain: flow
+    grain: 标的-交易日-席位
+    primary_key: [ts_code, trade_date, exalter]
+    use: 龙虎榜买卖席位（营业部/机构专用），每边仅披露前 5 名
+    caveats: ["交易所只披露每边前 5 名，不存在「全席位」数据；2026-07-22 后停更"]
+    related: [stk_top_list]
+
+  stk_block_trade:
+    domain: flow
+    grain: 成交笔-交易日
+    primary_key: [ts_code, trade_date, buyer, seller]
+    use: 大宗交易逐笔（成交价、成交量、溢价率、买卖营业部）
+    caveats: ["2026-07-22 后停更，先看水位"]
+    related: [stk_factor_pro]
+
+  # ---------------- 事件 ----------------
+  stk_dividend:
+    domain: event
+    grain: 标的-除权除息日
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 30
+    use: 分红送股方案与除权除息日，复权因子校验的辅助表
+    caveats: ["end_date 为 String（YYYYMMDD）"]
+    related: [stk_factor_pro]
+
+  stk_share_float:
+    domain: event
+    grain: 标的-解禁日
+    primary_key: [ts_code, ann_date]
+    date_column: ann_date
+    freshness_sla_days: 30
+    use: 限售股解禁（解禁数量、占比、股东类型），判断供给冲击
+    caveats: ["ann_date 为 String（YYYYMMDD）"]
+    related: [stk_info]
+
+  stk_repurchase:
+    domain: event
+    grain: 标的-公告
+    primary_key: [ts_code, ann_date]
+    freshness_sla_days: 30
+    use: 股份回购进度（预案/实施/完成）与回购数量金额
+    caveats: ["2025-07 后停更，先看水位"]
+    related: [stk_info]
+
+  stk_holdertrade:
+    domain: event
+    grain: 标的-公告-股东
+    primary_key: [ts_code, ann_date, holder_name]
+    date_column: ann_date
+    freshness_sla_days: 30
+    use: 股东/高管增减持（方向、股数、均价、占比）
+    caveats: ["ann_date 为 String；2026-07-22 后停更"]
+    related: [stk_holdernumber]
+
+  stk_holdernumber:
+    domain: event
+    grain: 标的-公告期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 30
+    use: 股东户数与户均持股，判断筹码集中度变化
+    caveats: ["ann_date/end_date 为 String；历史数据含非法日期哨兵值，过滤时先 toDateOrNull"]
+    related: [stk_holdertrade]
+
+  stk_pledge_stat:
+    domain: event
+    grain: 标的-统计期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 30
+    use: 股权质押比例与质押次数（中登周频）
+    caveats: ["end_date 为 String；中登按周披露，不能按日回补"]
+    related: [stk_pledge_detail]
+
+  stk_pledge_detail:
+    domain: event
+    grain: 标的-公告-质押笔
+    primary_key: [ts_code, ann_date, pledgor]
+    date_column: ann_date
+    freshness_sla_days: 30
+    use: 股权质押逐笔明细（质押方、质权方、数量）
+    caveats: ["日期列为 String，含 99990101 哨兵值，必须过滤"]
+    related: [stk_pledge_stat]
+
+  stk_managers:
+    domain: event
+    grain: 标的-任职期
+    primary_key: [ts_code, ann_date, name]
+    date_column: ann_date
+    freshness_sla_days: 30
+    use: 董监高人员与任职、薪酬
+    caveats: ["ann_date 为 String；2025-12 后停更"]
+    related: [stk_company]
+
+  stk_rewards:
+    domain: event
+    grain: 标的-公告-激励对象
+    primary_key: [ts_code, ann_date, name]
+    date_column: ann_date
+    freshness_sla_days: 30
+    use: 股权激励与员工持股计划明细
+    caveats: ["ann_date 为 String；数据水位见本表首行"]
+    related: [stk_managers]
+
+  stk_surv:
+    domain: event
+    grain: 标的-调研活动
+    primary_key: [ts_code, surv_date]
+    date_column: surv_date
+    freshness_sla_days: 30
+    use: 机构调研记录（参与机构、调研日期、接待人员）
+    related: [stk_info]
+
+  stk_new_share:
+    domain: event
+    grain: 标的-发行
+    primary_key: [ts_code]
+    date_column: null
+    freshness_sla_days: 30
+    use: 新股发行信息（发行价、发行量、上市日）
+    related: [stk_info]
+
+  stk_hm_list:
+    domain: basic
+    asset_class: market
+    grain: 全量快照
+    primary_key: [name]
+    date_column: null
+    freshness_sla_days: 30
+    use: 沪深港通标的名单
+    related: [stk_hk_hold]
+
+  stk_hk_hold:
+    domain: flow
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: 沪深股通持股（持股数量、占比）
+    caveats: ["2026-07-22 后停更"]
+    related: [stk_hm_list]
+
+  stk_ccass_hold:
+    domain: flow
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: 香港中央结算持股（陆股通托管口径）
+    caveats: ["2026-06-10 后停更"]
+    related: [stk_hk_hold]
+
+  stk_limit_list_d:
+    domain: quote
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: 涨跌停名单（涨停/跌停/炸板），做情绪与连板统计
+    caveats: ["2024-05-30 后停更；新数据请用 stk_limit 自行判定"]
+    related: [stk_limit]
+
+  # ---------------- 指数 / 板块 ----------------
+  idx_factor_pro:
+    domain: factor
+    asset_class: index
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    authoritative: true
+    use: 指数日行情 + 80+ 技术指标（含 000300.SH / 000688.SH 等 4103 个指数代码）
+    caveats:
+      - "只含价格与技术因子，没有任何 pe/pb 列；指数估值查 idx_dailybasic"
+      - "涨跌幅列名是 pct_change"
+    examples:
+      - "SELECT trade_date, close, pct_change FROM idx_factor_pro WHERE ts_code='000688.SH' ORDER BY trade_date DESC LIMIT 20"
+    related: [idx_info, idx_weight, idx_dailybasic]
+
+  idx_dailybasic:
+    domain: factor
+    asset_class: index
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    valuation: true
+    freshness_sla_days: 1
+    use: 指数估值（pe / pe_ttm / pb / 换手率），唯一提供指数市盈率的表
+    caveats:
+      - "2026-10-29 实测：仅 12 个指数代码，不含 000688.SH（科创50）"
+      - "2026-10-29 实测停在 2025-07-04；不要把它当全指数覆盖"
+    examples:
+      - "SELECT trade_date, pe_ttm, pb FROM idx_dailybasic WHERE ts_code='000300.SH' ORDER BY trade_date DESC LIMIT 5"
+    related: [idx_factor_pro, idx_info]
+
+  idx_info:
+    domain: basic
+    asset_class: index
+    grain: 全量快照
+    primary_key: [ts_code]
+    date_column: null
+    freshness_sla_days: 7
+    use: 指数基础信息（名称、发布机构、基期、成分数），指数代码↔名称解析
+    caveats:
+      - "8000 条里含大量 .CSI 外币/全收益变体（000688USD07.CSI 等），按名称匹配时要锚定 .SH/.SZ 后缀"
+      - "名称是简称：000688.SH 叫「科创50」，不叫「上证科创板50成份指数」"
+    examples:
+      - "SELECT ts_code, name FROM idx_info WHERE name LIKE '%科创50%' AND ts_code LIKE '%.SH'"
+    related: [idx_factor_pro, idx_weight]
+
+  idx_weight:
+    domain: index
+    asset_class: index
+    grain: 指数-成分股-交易日
+    primary_key: [index_code, con_code, trade_date]
+    date_column: trade_date
+    freshness_sla_days: 30
+    use: 指数成分与权重（月度快照），指数→成分股展开
+    caveats:
+      - "trade_date 为 String（YYYYMMDD）"
+      - "每个快照只含部分成分（2026-10-29 实测：000688.SH 最新快照 19 只、权重和 77.6%），不是全成分；加权计算必须披露覆盖率"
+      - "1.08 亿行，必须带 index_code + trade_date 过滤"
+    examples:
+      - "SELECT con_code, weight FROM idx_weight WHERE index_code='000688.SH' AND trade_date=(SELECT max(trade_date) FROM idx_weight WHERE index_code='000688.SH')"
+    related: [idx_info, stk_factor_pro]
+
+  idx_member_daily:
+    domain: index
+    asset_class: index
+    grain: 交易日-成分股
+    primary_key: [ts_code, con_code, trade_date]
+    freshness_sla_days: 1
+    use: 指数成分股每日快照（3167 万行），回溯历史成分
+    caveats: ["只记录成员关系，无权重；权重查 idx_weight"]
+    related: [idx_weight, idx_info]
+
+  idx_daily_dc:
+    domain: quote
+    asset_class: board
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: 东方财富板块指数日行情（概念/行业/地域板块，BK 代码）
+    caveats:
+      - "只含 BK* 板块代码，不含 000300.SH 等标准指数；标准指数查 idx_factor_pro"
+      - "涨跌幅列名是 pct_change"
+    related: [idx_quote_dc]
+
+  idx_quote_dc:
+    domain: quote
+    asset_class: board
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    use: 板块行情概览（领涨股、涨跌家数、总市值）
+    caveats: ["只含 BK* 板块代码；涨跌幅列名是 pct_change"]
+    related: [idx_daily_dc]
+
+  idx_sw_classify:
+    domain: basic
+    asset_class: board
+    grain: 行业层级字典
+    primary_key: [index_code]
+    date_column: null
+    freshness_sla_days: 90
+    use: 申万行业分类字典（L1/L2/L3 层级与代码）
+    caveats:
+      - "纯分类维表：没有日期列、没有涨跌幅列，不能用来算行业涨幅"
+      - "行业行情请用成分股 + stk_factor_pro 聚合，或 idx_sw_member_all 展开"
+    related: [idx_sw_member_all]
+
+  idx_sw_member_all:
+    domain: basic
+    asset_class: board
+    grain: 行业-成分股快照
+    primary_key: [l3_code, ts_code]
+    date_column: null
+    freshness_sla_days: 90
+    use: 申万行业成分股全量快照，行业→个股展开的正确入口
+    related: [idx_sw_classify]
+
+  # ---------------- 财务 ----------------
+  fin_balance:
+    domain: finance
+    grain: 标的-报告期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 120
+    use: 资产负债表（158 列）
+    caveats: ["报告期维度；ann_date 是披露日，end_date 是报告期末，别混用"]
+    related: [fin_income, fin_cashflow, fin_indicator]
+
+  fin_income:
+    domain: finance
+    grain: 标的-报告期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 120
+    use: 利润表（营收、净利润、EPS）
+    related: [fin_balance, fin_indicator]
+
+  fin_cashflow:
+    domain: finance
+    grain: 标的-报告期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 120
+    use: 现金流量表（经营/投资/筹资）
+    related: [fin_balance, fin_income]
+
+  fin_indicator:
+    domain: finance
+    grain: 标的-报告期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 120
+    use: 财务指标（ROE/ROA/毛利率/资产负债率/每股指标），做筛选最常用
+    units: {roe: 百分比, grossprofit_margin: 百分比}
+    caveats: ["同名指标有多个口径（roe / roe_waa / roe_dt），先看列注释再选"]
+    related: [fin_income, fin_balance]
+
+  fin_express:
+    domain: finance
+    grain: 标的-报告期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 120
+    use: 业绩快报（早于正式财报）
+    related: [fin_income]
+
+  fin_forecast:
+    domain: finance
+    grain: 标的-报告期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 120
+    use: 业绩预告（预增/预减/扭亏类型与幅度）
+    caveats: ["end_date 可能是未来报告期，做「已披露」筛选要加 ann_date <= today()"]
+    related: [fin_express, fin_income]
+
+  fin_audit:
+    domain: finance
+    grain: 标的-报告期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 365
+    use: 审计意见类型（标准无保留/保留/无法表示等）
+    caveats: ["2025-07 后停更，先看水位"]
+    related: [fin_income]
+
+  fin_disclosure_date:
+    domain: finance
+    grain: 标的-报告期
+    primary_key: [ts_code, end_date]
+    date_column: end_date
+    freshness_sla_days: 120
+    use: 财报预约披露日期与实际披露日期
+    related: [fin_income]
+
+  fin_mainbz:
+    domain: finance
+    grain: 标的-报告期-业务
+    primary_key: [ts_code, end_date, bz_item]
+    date_column: end_date
+    freshness_sla_days: 365
+    use: 主营业务构成（分产品/分地区收入与毛利率）
+    caveats: ["end_date 为 String（YYYYMMDD）；149 万行，按 ts_code 过滤"]
+    related: [fin_income]
+
+  fin_top10_holders:
+    domain: finance
+    grain: 标的-报告期-股东
+    primary_key: [ts_code, end_date, holder_name]
+    date_column: end_date
+    freshness_sla_days: 120
+    use: 前十大股东持股
+    related: [fin_top10_float_holders, stk_holdernumber]
+
+  fin_top10_float_holders:
+    domain: finance
+    grain: 标的-报告期-股东
+    primary_key: [ts_code, end_date, holder_name]
+    date_column: end_date
+    freshness_sla_days: 120
+    use: 前十大流通股东持股
+    related: [fin_top10_holders]
+
+  # ---------------- 基金 / ETF ----------------
+  fund_daily:
+    domain: fund
+    asset_class: fund
+    grain: 标的-交易日
+    primary_key: [ts_code, trade_date]
+    authoritative: true
+    use: ETF/LOF 日行情（2026-10-29 实测 2829 个基金代码），ETF 价格的唯一权威表
+    units: {vol: 手, amount: 千元}
+    caveats:
+      - "trade_date 是 String（YYYYMMDD），日期过滤必须 toDate(trade_date)"
+      - "只有价格，没有净值/IOPV/份额/持仓/估值；净值查 get_fund_nav，持仓查 get_etf_holdings"
+      - "列 COMMENT 未登记，单位按 Tushare fund_daily 口径"
+    examples:
+      - "SELECT trade_date, close, pct_chg FROM fund_daily WHERE ts_code='588000.SH' ORDER BY trade_date DESC LIMIT 20"
+    related: [idx_factor_pro, idx_info]
+
+  # ---------------- 运维 ----------------
+  table_sync_state:
+    domain: ops
+    asset_class: market
+    grain: 表-维度-维度值
+    primary_key: [target_table, dimension_type, dimension_value]
+    date_column: null
+    freshness_sla_days: 1
+    use: 同步状态（每表每维度的 is_sync / 行数 / 错误信息），判断「没数据」还是「没同步」
+    caveats:
+      - "没有记录 ≠ 同步失败；很可能是该表没被注册进同步体系"
+      - "与 check_freshness 的水位判断互为补充"
+    examples:
+      - "SELECT target_table, max(updated_at) FROM table_sync_state WHERE is_sync=0 GROUP BY target_table"
+    related: [trade_calendar]
+
+  schema_drift_log:
+    domain: ops
+    asset_class: market
+    grain: 事件
+    primary_key: [event_time, target_table]
+    date_column: null
+    freshness_sla_days: 7
+    use: 上游字段漂移记录（列增删改），解释「昨天还能查的列今天没了」
+    related: [table_sync_state]

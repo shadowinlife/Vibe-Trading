@@ -1,0 +1,50 @@
+name: fundamentals-text-agent
+domain: D02+D03
+version: 0
+tools:
+- get_financial_statements
+- get_fundamentals
+- get_sec_filings
+- get_stock_profile
+- get_institutional_holdings
+- get_stock_news
+- get_research_reports
+- research_papers
+skills:
+- financial-statement
+- sec-edgar-fetch
+- edgar-sec-filings
+- fundamental-filter
+description: 'Fundamentals and research-text specialist (基本面与研报). Delegate: structured financial statements
+  and key indicators for A/HK/US stocks (三大报表/财务指标) INCLUDING statement-level analysis — three-statement
+  reconciliation, earnings-quality teardown, DuPont decomposition (三表勾稽/盈利质量分析/杜邦分解); PIT-safe US fundamental
+  panels (防前视基本面面板); SEC filing lists and XBRL concept series (10-K/10-Q/Revenue 序列); company profiles
+  with analyst targets and ownership (公司画像/目标价); 13F institutional holdings with quarter-over-quarter
+  diffs (机构持仓); per-stock news headlines AND market-level financial news digests (个股新闻/全球财经要闻); A-share
+  sell-side research coverage with per-year EPS consensus (券商盈利预测/一致预期); academic finance paper search
+  with evidence-anchored factor briefs (学术论文); and field-based fundamental screening on statement metrics
+  (按 PE/PB/ROE/毛利率/负债率等财报字段筛股, fundamental-filter). This agent fetches, reads, and analyzes fundamentals
+  text; what it does NOT do is turn them into a valuation view or price target (→ valuation-agent). NOT
+  for: valuation, forward-looking projections, linked three-statement modeling, or estimate-revision analysis
+  as a valuation input (三表联动预测/估值建模 → valuation-agent); macro data series (→ macro-sector-agent); credit
+  analysis of bond issuers (→ funds-fi-agent); raw OHLCV or quotes (→ market-data-agent); price/volume/rankings
+  screening, market movers, or iwencai natural-language stock screens (涨幅榜/换手率/问财行情条件 → market-data-agent);
+  web pages or documents outside the finance sources above (→ web-docs-agent).'
+twin_pairs:
+- pair: get_financial_statements × financial-statement
+  ref: K6
+  arbitration: Structured statement fetch → tool; three-statement reading methodology (勾稽/盈利质量/造假红旗) →
+    skill, applied on fetched data.
+- pair: get_sec_filings × sec-edgar-fetch × edgar-sec-filings
+  ref: K5/Q2
+  arbitration: Filing lists / XBRL series → tool; sec-edgar-fetch = how the EDGAR interface works; edgar-sec-filings
+    = how to read a filing for signals. (Q2 merge/rename still pending upstream.)
+- pair: get_fundamentals × fundamental-filter
+  ref: K13
+  arbitration: PIT panel data → tool; PE/PB/ROE screening workflow → skill.
+rationale: 'The boundary against valuation-agent is fetch-vs-interpret: every data inlet a valuation needs
+  (statements, profile, consensus) lives here so valuation-agent carries no fetch tools at all. get_institutional_holdings
+  stays here rather than funds-fi-agent because its dominant modes (ticker_holders, manager book diff)
+  are ownership research on companies, not fund product analysis. The K4 tool pair (get_research_reports
+  vs research_papers) is internally arbitrated in the description: 研报 defaults to sell-side coverage,
+  papers means academic.'

@@ -247,6 +247,27 @@ class DragonTigerTool(BaseTool):
         )
 
         try:
+            from src.tools.clickhouse_fallbacks import fetch_dragon_tiger_ch
+
+            data = fetch_dragon_tiger_ch(trade_date, code)
+            return json.dumps(
+                {
+                    "ok": True,
+                    "market": "a_share",
+                    "source": data.get("source", "unknown"),
+                    **(
+                        {"warnings": data["warnings"]}
+                        if data.get("warnings")
+                        else {}
+                    ),
+                    "data": data,
+                },
+                ensure_ascii=False,
+            )
+        except Exception:
+            pass
+
+        try:
             data = self._collect(trade_date, code)
         except (
             Exception
@@ -267,7 +288,7 @@ class DragonTigerTool(BaseTool):
                 {
                     "ok": True,
                     "market": "a_share",
-                    "source": "tushare",
+                    "source": data.get("source", "tushare"),
                     "warnings": [f"eastmoney failed ({exc}); used tushare fallback"],
                     "data": data,
                 },
@@ -275,7 +296,12 @@ class DragonTigerTool(BaseTool):
             )
 
         return json.dumps(
-            {"ok": True, "market": "a_share", "source": "eastmoney", "data": data},
+            {
+                "ok": True,
+                "market": "a_share",
+                "source": data.get("source", "eastmoney"),
+                "data": data,
+            },
             ensure_ascii=False,
         )
 
@@ -308,6 +334,7 @@ class DragonTigerTool(BaseTool):
         }
         if code:
             data["code"] = code
+            data["seat_source"] = "eastmoney"
             seat_filter = f"(TRADE_DATE='{trade_date}')(SECURITY_CODE=\"{code}\")"
             buy_rows = _fetch_report(
                 _SEAT_BUY_REPORT,
@@ -334,7 +361,7 @@ class DragonTigerTool(BaseTool):
             data["seats"] = seats[:_MAX_SEATS]
             if kept < len(groups):
                 data["seat_reasons_omitted"] = len(groups) - kept
-        return data
+        return tushare_fallbacks._with_dragon_source(data, "eastmoney")
 
     @staticmethod
     def _error(message: str) -> str:
