@@ -59,7 +59,7 @@ _BARS = 20
 
 _LOCAL_CONFIG = {
     "source": "local",
-    "codes": ["LOCAL1"],
+    "codes": ["600519.SH"],
     "start_date": "2024-01-01",
     "end_date": "2024-01-31",
     "initial_cash": 100000.0,
@@ -193,7 +193,7 @@ def _write_local_bars(home: Path) -> None:
     bars_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     (data_dir / "config.yaml").write_text(
         "sources:\n"
-        "  - symbol: LOCAL1\n"
+        "  - symbol: 600519.SH\n"
         "    type: csv\n"
         f'    path: "{bars_path}"\n',
         encoding="utf-8",

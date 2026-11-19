@@ -192,6 +192,79 @@ def test_cli_compares_two_revisions(tmp_path, capsys):
     assert comparison["content"]["changed"] is True
     assert comparison["metadata"]["data_as_of"]["to"] == "2026-11-03"
 
+    code, out, err = _run(
+        parser,
+        capsys,
+        "research-artifact",
+        "--path",
+        db,
+        "export",
+        first["artifact_id"],
+        "--from-revision-id",
+        first["revision_id"],
+        "--to-revision-id",
+        revised["revision_id"],
+        "--format",
+        "json",
+    )
+    assert code == 0, err
+    exported = json.loads(out)
+    assert exported["filename"] == f"{first['artifact_id']}-r1-r2.json"
+    document = json.loads(exported["content"])
+    assert document["kind"] == "research_artifact_revision_comparison"
+    assert document["comparison"]["from"]["revision_id"] == first["revision_id"]
+    assert document["comparison"]["to"]["revision_id"] == revised["revision_id"]
+
+    code, out, err = _run(
+        parser,
+        capsys,
+        "research-artifact",
+        "--path",
+        db,
+        "export",
+        first["artifact_id"],
+        "--from-revision-id",
+        first["revision_id"],
+        "--to-revision-id",
+        revised["revision_id"],
+        "--format",
+        "markdown",
+    )
+    assert code == 0, err
+    assert json.loads(out)["filename"] == f"{first['artifact_id']}-r1-r2.md"
+
+    code, _, err = _run(
+        parser,
+        capsys,
+        "research-artifact",
+        "--path",
+        db,
+        "export",
+        first["artifact_id"],
+        "--from-revision-id",
+        first["revision_id"],
+    )
+    assert code == 1
+    assert "together" in err
+
+    # An empty id (an unset shell variable) is an error, as it is over the API,
+    # never a silent full-series export.
+    for pair in (("", ""), ("", revised["revision_id"]), (first["revision_id"], "")):
+        code, out, err = _run(
+            parser,
+            capsys,
+            "research-artifact",
+            "--path",
+            db,
+            "export",
+            first["artifact_id"],
+            f"--from-revision-id={pair[0]}",
+            f"--to-revision-id={pair[1]}",
+        )
+        assert code == 1, (pair, out)
+        assert "must not be empty" in err
+        assert out == ""
+
 
 def test_cli_reports_missing_artifact(tmp_path, capsys):
     parser = _parser()

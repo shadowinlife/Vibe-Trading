@@ -272,6 +272,17 @@ def write_run_card(
         "model_provenance": model_provenance,
         "artifacts": _list_artifacts(run_dir),
     }
+    if config.get("engine", "daily") == "daily":
+        delay = config.get("intentional_signal_delay_bars", 0)
+        card["signal_timing"] = {
+            "engine_delay_bars": 1,
+            "intentional_signal_delay_bars": delay,
+        }
+        if delay:
+            card["warnings"].append(
+                f"Strategy declares {delay} intentional extra signal-delay bar(s), "
+                "in addition to the engine's next-open execution delay."
+            )
     if data_provenance is not None:
         normalized_provenance = _normalize_data_provenance(data_provenance)
         if normalized_provenance:

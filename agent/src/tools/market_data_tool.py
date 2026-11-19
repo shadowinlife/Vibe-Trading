@@ -145,6 +145,7 @@ class MarketDataTool(BaseTool):
     parameters = {
         "type": "object",
         "properties": {
+            "run_dir": {"type": "string", "description": "Workspace for a saved full JSON result usable by quantlib_call; injected by agent sessions."},
             "codes": {
                 "type": "array",
                 "items": {"type": "string"},
@@ -309,5 +310,7 @@ class MarketDataTool(BaseTool):
             and any(not str(key).startswith("_") for key in payload)
         ):
             _augment_schema_fields(payload)
-            return json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False)
-        return envelope
+            envelope = json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False)
+        from src.agent.result_artifacts import persist_calculation_result
+
+        return persist_calculation_result(envelope, kwargs.get("run_dir"))

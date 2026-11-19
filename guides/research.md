@@ -59,9 +59,13 @@ vibe-trading research-artifact compare ra_example ra_example_r1 ra_example_r3
 
 vibe-trading research-artifact export ra_example --format json
 vibe-trading research-artifact export ra_example --format markdown
+vibe-trading research-artifact export ra_example --from-revision-id ra_example_r1 --to-revision-id ra_example_r3 --format json
+vibe-trading research-artifact export ra_example --from-revision-id ra_example_r1 --to-revision-id ra_example_r3 --format markdown
 ```
 
 A series export includes every immutable revision in chronological order, including evidence, verification state, and optional lineage links. JSON and Markdown are deterministic for the same stored series: no export timestamp is inserted. The API `GET /api/research-artifacts/{artifact_id}/export?format=json|markdown` and the CLI return a filename, media type, exact content, and its SHA-256 digest. The Web library downloads the same server-rendered bytes rather than rebuilding a second representation in the browser. Export does not revalidate historical claims or alter their verification status. In Markdown exports, each original revision is shown verbatim in a fenced Markdown block; its markup is not rendered as part of the export. This keeps arbitrary HTML, unfinished fences, and headings inside the saved research from hiding the generated evidence and revision sections. JSON retains the original content unchanged.
+
+To export one selected comparison instead of the full series, provide both `from_revision_id` and `to_revision_id` to the same API endpoint, or both corresponding CLI options. The JSON document identifies the comparison schema and contains the same comparison object returned by the compare endpoint. Markdown includes both immutable revision identities, content hashes and line counts, the unified diff, evidence changes, and metadata changes. If the diff exceeds 400 generated lines, the report says so explicitly and retains the full-content hashes and line counts; use a series export when complete original text is required. Comparison exports use the same deterministic filename, media type, exact bytes, and SHA-256 contract, and remain read-only.
 
 ## 💡 Examples
 
@@ -73,6 +77,18 @@ or next session with configurable cash/positions; settle completed daily bars
 and inspect fills, rejections and NAV history. Strategy history stops before the
 execution date, and each day receives the ledger after preceding fills. The
 agent/MCP `paper_trade_step` remains a stateless research primitive.
+
+**Cross-market portfolio mode (pt-v2.0).** The same `paper_trade_step` name also
+accepts `mode: "portfolio"` with `schema_version: "pt-v2.0"` through the agent,
+MCP, `POST /api/paper-trade/step` and `vibe-trading paper step`; omitting `mode`
+or sending `mode: "single"` keeps the legacy single-market contract. Portfolio
+mode is one stateless daily step for one `trade_date` (`1d` + `all_or_none`),
+with caller-declared CNY/HKD/USD buckets, exactly one of `orders` /
+`target_weights`, caller-declared open/closed sessions and direct-pair FX
+snapshots; conversions settle against opening cash before planning. Closed
+buckets use dated prior marks and run no matcher. There is no portfolio
+reconcile, Brinson/multi-day attribution, saved account, UI or persistence yet,
+and no 5m, volume-share, margin or shorting support.
 
 **Five-minute A-share simulation (since 0.1.19).** `paper_trade_step` accepts `interval="5m"`. Saved paper accounts still settle daily. Each step covers one
 completed session and matches bar by bar against its 48 continuous five-minute

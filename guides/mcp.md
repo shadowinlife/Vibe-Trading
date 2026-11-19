@@ -2,7 +2,7 @@
 
 ## 🔌 MCP Plugin
 
-Vibe-Trading exposes 94 MCP tools for any MCP-compatible client. Runs as a stdio subprocess — no server setup needed. Core research tools work with zero API keys for HK/US/crypto; trading connector tools use the selected connector profile, and `run_swarm` needs an LLM key.
+Vibe-Trading exposes 95 MCP tools for any MCP-compatible client. Runs as a stdio subprocess — no server setup needed. Core research tools work with zero API keys for HK/US/crypto; trading connector tools use the selected connector profile, and `run_swarm` needs an LLM key.
 
 **Environment variables:** the client spawns the server itself, so a shell `export` never reaches it — set them in the client's `env` block. Generated backtest code is sandboxed to the allowed run roots, so writing results into a workspace of your own needs `VIBE_TRADING_ALLOWED_RUN_ROOTS`:
 
@@ -71,7 +71,20 @@ with `--host` / `--port`.
 
 </details>
 
-**MCP tools exposed (94):** `list_skills`, `load_skill`, `start_research_goal`, `get_research_goal`, `update_research_goal`, `add_goal_evidence`, `update_research_goal_status`, `backtest`, `factor_analysis`, `alpha_zoo`, `alpha_bench`, `analyze_options`, `analyze_options_payoff`, `pattern_recognition`, `read_url`, `read_document`, `web_search`, `write_file`, `read_file`, `read_run_artifact`, `list_backtest_runs`, `list_strategies`, `query_strategies`, `get_strategy_evidence`, `refresh_strategy_evidence`, `adapt_strategy`, `trading_connections`, `trading_select_connection`, `trading_check`, `trading_account`, `trading_positions`, `trading_orders`, `trading_quote`, `trading_history`, `list_swarm_presets`, `run_swarm`, `get_market_data`, `get_fund_flow`, `get_dragon_tiger`, `get_northbound_flow`, `get_southbound_flow`, `get_margin_trading`, `get_block_trades`, `get_shareholder_count`, `get_lockup_expiry`, `get_sector_info`, `get_research_reports`, `get_stock_news`, `get_sec_filings`, `get_financial_statements`, `get_options_chain`, `get_stock_profile`, `screen_market`, `search_symbol`, `get_macro_series`, `iwencai_search`, `get_institutional_holdings`, `etf_holdings`, `prediction_market`, `research_papers`, `get_swarm_status`, `get_run_result`, `list_runs`, `reap_stale_runs`, `retry_run`, `analyze_trade_journal`, `extract_shadow_strategy`, `run_shadow_backtest`, `render_shadow_report`, `scan_shadow_signals`, `quantlib_call`, `cashflow_performance`, `orderbook_depth`, `sentiment`, `technical_indicators`, `get_fundamentals`, `get_fund_nav`, `get_cn_macro_series`, `get_cn_announcements`, `search_broker_reports`, `paper_trade_step`, `research_lab`, `scheduled_research`, `promote_strategy`, `evaluate_strategy`, `schedule_strategy`, `list_strategy_schedules`, `pause_strategy_schedule`, `resume_strategy_schedule`, `delete_strategy_schedule`, `retarget_strategy_schedule`, `ch_list_tables`, `ch_describe_table`, `ch_query`.
+**MCP tools exposed (95):** `list_skills`, `load_skill`, `start_research_goal`, `get_research_goal`, `update_research_goal`, `add_goal_evidence`, `update_research_goal_status`, `backtest`, `factor_analysis`, `alpha_zoo`, `alpha_bench`, `analyze_options`, `analyze_options_payoff`, `pattern_recognition`, `read_url`, `read_document`, `web_search`, `write_file`, `read_file`, `read_run_artifact`, `list_backtest_runs`, `list_strategies`, `query_strategies`, `get_strategy_evidence`, `refresh_strategy_evidence`, `adapt_strategy`, `trading_connections`, `trading_select_connection`, `trading_check`, `trading_account`, `trading_positions`, `trading_orders`, `trading_quote`, `trading_history`, `list_swarm_presets`, `run_swarm`, `get_market_data`, `get_fund_flow`, `get_dragon_tiger`, `get_northbound_flow`, `get_southbound_flow`, `get_margin_trading`, `get_block_trades`, `get_shareholder_count`, `get_lockup_expiry`, `get_sector_info`, `get_research_reports`, `get_stock_news`, `get_sec_filings`, `get_financial_statements`, `get_options_chain`, `get_stock_profile`, `screen_market`, `search_symbol`, `get_macro_series`, `iwencai_search`, `get_institutional_holdings`, `etf_holdings`, `prediction_market`, `research_papers`, `get_swarm_status`, `get_run_result`, `list_runs`, `reap_stale_runs`, `retry_run`, `analyze_trade_journal`, `extract_shadow_strategy`, `run_shadow_backtest`, `render_shadow_report`, `scan_shadow_signals`, `quantlib_call`, `cashflow_performance`, `orderbook_depth`, `sentiment`, `technical_indicators`, `get_fundamentals`, `get_fund_nav`, `get_cn_macro_series`, `get_cn_announcements`, `search_broker_reports`, `paper_trade_step`, `paper_trade_reconcile`, `research_lab`, `scheduled_research`, `promote_strategy`, `evaluate_strategy`, `schedule_strategy`, `list_strategy_schedules`, `pause_strategy_schedule`, `resume_strategy_schedule`, `delete_strategy_schedule`, `retarget_strategy_schedule`, `ch_list_tables`, `ch_describe_table`, `ch_query`.
+
+`paper_trade_step` is one registered tool with two request branches. Omitted
+`mode` or `mode: "single"` keeps the legacy single-market payload;
+`mode: "portfolio"` with `schema_version: "pt-v2.0"` runs one stateless
+cross-market daily step with caller-declared buckets, sessions, direct-pair FX
+and exactly one of `orders` / `target_weights`. No separate portfolio tool is
+registered. `paper_trade_reconcile` keeps one name and one `account_state`
+argument: a legacy single-market document takes its `{cash, positions}` ledger,
+while a document declaring `mode: "portfolio"` and `schema_version: "pt-v2.0"`
+takes the step's opening `portfolio_state` object and is replayed across
+buckets, conversions, plan order ids, fills, NAV, exposures and attribution.
+Neither branch fetches a market price, verifies a broker fill or recomputes
+hashes without their raw inputs; those limits are published in `not_verified`.
 
 `web_search` tries its existing Sogou and Bing China fallbacks when ddgs returns
 no results or fails. Set `VIBE_TRADING_SEARCH_BING_FALLBACK=0` to disable both.

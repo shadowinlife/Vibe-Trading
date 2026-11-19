@@ -138,7 +138,7 @@ Comprehensive knowledge base covering:
 
 Use `load_skill(name)` to access full methodology docs with code templates.
 
-## Available MCP Tools (94)
+## Available MCP Tools (95)
 
 | Tool | Description | API Key |
 |------|-------------|---------|
@@ -152,7 +152,8 @@ Use `load_skill(name)` to access full methodology docs with code templates.
 | `scheduled_research` | Inspect scheduled research; prepare create/cancel proposals (human confirms on the surface) | None |
 | `research_lab` | Frozen-input cost scenarios, training-only parameter selection and OOS/holdout, factor contracts and offline task replay | None |
 | `backtest` | Run vectorized backtest engine | None* |
-| `paper_trade_step` | Deterministic paper-trading matching engine; never places real orders | None* |
+| `paper_trade_step` | Deterministic paper-trading matching engine (single-market default or pt-v2.0 cross-market portfolio); never places real orders | None* |
+| `paper_trade_reconcile` | Independently replay single-market fills or pt-v2.0 portfolio buckets, conversions, NAV, exposures and attribution; no broker or market fetch | None* |
 | `factor_analysis` | IC/IR analysis + layered backtest | None* |
 | `alpha_zoo` | Browse bundled alpha metadata and registry health | None |
 | `alpha_bench` | Benchmark one alpha or a complete zoo | None* |

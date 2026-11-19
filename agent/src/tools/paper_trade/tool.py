@@ -28,7 +28,10 @@ T7 is in flight.
 
 from __future__ import annotations
 
+import json
 import logging
+from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 
 from src.agent.tools import BaseTool
@@ -37,6 +40,11 @@ from . import data, data_5m, engine, wire
 from .calendar import CN_A_MARKET, CalendarUnavailableError, snapshot_calendar
 from .data import ClickHouseBarsClient
 from .limits_cn_a import ClickHouseLimitsClient
+from .portfolio import run_portfolio_step
+from .portfolio import wire as portfolio_wire
+from .portfolio.orchestrator import OrchestrationCode, OrchestrationError
+from .portfolio.schema import PortfolioRequestError, load_portfolio_contract_schema
+from .portfolio.sessions import PortfolioSessionError
 from .schema import (
     DateRange,
     ErrorEnvelope,
@@ -47,6 +55,203 @@ from .schema import (
 logger = logging.getLogger(__name__)
 
 __all__ = ["PaperTradeDocument", "PaperTradeStepTool", "run_paper_trade_step"]
+
+#: Canonical markets the internal portfolio step can dispatch.
+_PORTFOLIO_MARKETS = ("cn_a", "hk", "us")
+
+#: Fields that belong to the legacy single-market request envelope.  The
+#: portfolio parser owns the same list, but the tool gate rejects them before
+#: any portfolio parser sees a single raw value.
+_LEGACY_ONLY_FIELDS = (
+    "market",
+    "account_state",
+    "from_date",
+    "to_date",
+    "strategy_path",
+    "volume_share",
+    "order_volume_ratio",
+    "path_model",
+    "session",
+    "fee_model",
+)
+
+#: Fields that belong only to the pt-v2.0 portfolio request envelope.  They are
+#: rejected when an omitted/``single`` mode call still carries one, while every
+#: other unknown key keeps the legacy parser's ignore behavior.
+_PORTFOLIO_ONLY_FIELDS = (
+    "tool",
+    "schema_version",
+    "base_currency",
+    "trade_date",
+    "planning_at",
+    "valuation_at",
+    "portfolio_state",
+    "sessions",
+    "fx_snapshots",
+    "fx_conversions",
+    "target_weights",
+    "rebalance_band",
+    "benchmark",
+    "sectors",
+)
+
+
+#: The legacy single-market request keeps this exact required list.  The
+#: portfolio branch below must never inherit it: its own envelope carries the
+#: pt-v2.0 required fields instead (GAP-8).
+_LEGACY_REQUIRED = (
+    "account_id",
+    "market",
+    "account_state",
+    "from_date",
+    "to_date",
+)
+
+#: Legacy single-market properties, published unchanged since pt-v1.1 except
+#: for the optional explicit ``mode=single`` discriminator added by the oneOf.
+_LEGACY_PROPERTIES: dict[str, Any] = {
+    "account_id": {
+        "type": "string",
+        "description": "Account identifier, echoed verbatim (R4).",
+    },
+    "market": {
+        "type": "string",
+        "enum": ["cn_a", "hk", "us"],
+        "description": "Market whose frozen rules govern matching.",
+    },
+    "account_state": {
+        "type": "object",
+        "description": (
+            "RM-injected ledger snapshot {cash, positions:[{symbol, qty, "
+            "avg_cost}]}. Hashed raw for received_state_hash (AM-4-1)."
+        ),
+        "properties": {
+            "cash": {"type": "number"},
+            "positions": {"type": "array", "items": {"type": "object"}},
+        },
+        "required": ["cash"],
+    },
+    "from_date": {
+        "type": "string",
+        "description": "Inclusive range start YYYY-MM-DD (orders mode: == to_date, AM-3).",
+    },
+    "to_date": {
+        "type": "string",
+        "description": "Inclusive range end YYYY-MM-DD (the target trading day).",
+    },
+    "orders": {
+        "type": "array",
+        "description": (
+            "Orders mode: array of {symbol, side, qty, limit?}. XOR with "
+            "strategy_path; an empty array is the pure-valuation path."
+        ),
+        "items": {"type": "object"},
+    },
+    "strategy_path": {
+        "type": "string",
+        "description": (
+            "Strategy mode (Step 7): path to an AST-hardened strategy whose "
+            "per-day orders are matched. XOR with orders."
+        ),
+    },
+    "fee_model": {
+        "type": "object",
+        "description": (
+            "Optional per-key fee overrides merged over the market defaults "
+            "(AM-4-3: RM always injects it explicitly)."
+        ),
+    },
+    "interval": {
+        "type": "string",
+        "enum": ["1d", "5m"],
+        "default": "1d",
+        "description": (
+            "Optional pt-v1.2 bar interval. '1d' (default) keeps the pt-v1.1 "
+            "daily close-price path; '5m' is cn_a-only and matches the whole "
+            "continuous session as one bar (D1)."
+        ),
+    },
+    "session": {
+        "type": "string",
+        "enum": ["auto", "cn_a"],
+        "default": "auto",
+        "description": (
+            "Optional pt-v1.2 session selector. 'auto' resolves to cn_a for "
+            "market=cn_a and is inert for hk/us; 'cn_a' requires market=cn_a (D5)."
+        ),
+    },
+    "path_model": {
+        "type": "string",
+        "enum": ["bar_median", "bar_close"],
+        "default": "bar_median",
+        "description": (
+            "Optional pt-v1.2 reference-price model for interval='5m': "
+            "median(open, high, low, close) or the bar close (D1). Ignored for '1d'."
+        ),
+    },
+    "fill_model": {
+        "type": "string",
+        "enum": ["all_or_none", "volume_share"],
+        "default": "all_or_none",
+        "description": (
+            "Optional fill model: 'all_or_none' (the default) fills every "
+            "order whole or not at all. 'volume_share' opts into pt-v1.3 "
+            "per-order partial fills capped by each order's own share of "
+            "the matched volume; it requires interval='5m' and market='cn_a'."
+        ),
+    },
+    "order_volume_ratio": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "maximum": 1,
+        "default": 1.0,
+        "description": (
+            "Optional pt-v1.3 per-order share of available volume, 0 < r <= 1. "
+            "Accepted only together with fill_model='volume_share' (a ratio "
+            "without it is INVALID_REQUEST); omitted or null means 1.0, which "
+            "does not reduce fills. Each order is capped independently."
+        ),
+    },
+}
+
+
+def _published_parameters() -> dict[str, Any]:
+    """Build the self-contained discriminated Agent schema for one step.
+
+    The legacy branch is the pt-v1.1/v1.2/v1.3 single-market envelope with the
+    optional ``mode=single`` discriminator.  The portfolio branch is the
+    packaged pt-v2.0 request schema inlined from the single contract source;
+    its ``$defs`` are hoisted to this document's root so every local
+    ``#/$defs/...`` reference resolves without an external file reference.
+    """
+    portfolio_request = load_portfolio_contract_schema("request")
+    definitions = portfolio_request.pop("$defs", {})
+    portfolio_request.pop("$id", None)
+    portfolio_request.pop("$schema", None)
+
+    legacy_request = {
+        "title": "paper_trade_step legacy single-market request",
+        "type": "object",
+        "properties": {
+            **_LEGACY_PROPERTIES,
+            "mode": {
+                "type": "string",
+                "const": "single",
+                "description": (
+                    "Optional explicit legacy single-market discriminator; "
+                    "omission keeps the legacy default. Portfolio mode selects "
+                    "the other oneOf branch."
+                ),
+            },
+        },
+        "required": list(_LEGACY_REQUIRED),
+    }
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "oneOf": [legacy_request, portfolio_request],
+        "$defs": definitions,
+    }
 
 
 class PaperTradeDocument(str):
@@ -80,15 +285,20 @@ _AUTO = data._AUTO
 #: REQUIREMENTS R1 / VD-12 frozen description phrase — both registration
 #: surfaces (BaseTool.description and the MCP wrapper docstring) carry it.
 _DESCRIPTION = (
-    "Run one deterministic paper-trading step for a single account: a "
-    "deterministic paper-trading matching engine; never places real orders. "
-    "Matches the injected orders (or a strategy_path's per-day orders, Step 7) "
-    "against bars under the market's frozen rules (T+1, price limits, "
-    "board lots, fees), and returns one in-band JSON document — the success "
-    "result or an AM-5 error envelope (PAPER_DATA_NOT_READY / INVALID_REQUEST) "
-    "on the same channel, never a transport error. Optional pt-v1.2 selectors "
-    "(interval/session/path_model/fill_model) default to the pt-v1.1 daily "
-    "behaviour; interval='5m' is cn_a-only. Research-only."
+    "Run one deterministic paper-trading step. The default (or mode='single') "
+    "is the single-market contract: a deterministic paper-trading matching "
+    "engine; never places real orders. It matches injected orders (or a "
+    "strategy_path's per-day orders, Step 7) against bars under the market's "
+    "frozen rules (T+1, price limits, board lots, fees). mode='portfolio' with "
+    "schema_version='pt-v2.0' runs one cross-market daily step over caller "
+    "buckets, direct-pair FX snapshots and caller-declared sessions, with "
+    "either orders or target_weights. Both branches return one in-band JSON "
+    "document — success or an INVALID_REQUEST / PAPER_DATA_NOT_READY envelope "
+    "on the same channel; those request/data errors are in-band, while INTERNAL "
+    "engine faults and unexpected exceptions propagate as transport errors. "
+    "Legacy interval/session/"
+    "path_model/fill_model selectors default to pt-v1.1 daily behaviour; "
+    "interval='5m' is cn_a-only. Research-only."
 )
 
 
@@ -128,6 +338,236 @@ def _error_document(
         received_state_hash=wire.received_state_hash_from_payload(raw_payload),
     )
     return wire.dumps_payload(wire.build_error_payload(envelope))
+
+
+def _dumps_document(payload: Any) -> str:
+    """Serialize one portfolio document/error with the canonical byte spelling."""
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _ModeGateError:
+    """One stable pre-parse mode rejection."""
+
+    reason: str
+    path: str
+    detail: str
+
+
+def _portfolio_error_document(
+    code: OrchestrationCode,
+    raw_payload: Any,
+    *,
+    reason: str,
+    path: str,
+    detail: str,
+    bucket_id: str | None = None,
+) -> str:
+    """Build the structured pt-v2.0 error through the public wire serializer.
+
+    The serializer owns the stable envelope shape and appends the raw-request
+    ``input_sha256`` suffix to ``detail``; it also refuses ``INTERNAL`` so an
+    engine fault can never become an in-band public code.
+    """
+    return portfolio_wire.serialize_error(
+        raw_payload,
+        code=code,
+        reason=reason or "invalid_request",
+        path=path or "$",
+        detail=detail or reason or "invalid request",
+        bucket_id=bucket_id,
+    )
+
+
+def _preparse_mode(payload: Any) -> tuple[str, _ModeGateError | None]:
+    """Classify one raw payload before either parser runs.
+
+    Returns ``("legacy", None)`` for omitted/``single`` mode,
+    ``("portfolio", None)`` for the exact pt-v2.0 pair, or
+    ``("error", error)`` for every unsupported combination.
+    """
+    if not isinstance(payload, dict):
+        return "legacy", None
+    mode = payload.get("mode")
+    schema_version = payload.get("schema_version")
+    if mode is None or mode == "single":
+        if schema_version == "pt-v2.0":
+            return "error", _ModeGateError(
+                reason="missing_mode" if mode is None else "invalid_mode",
+                path="mode",
+                detail="schema_version 'pt-v2.0' requires mode 'portfolio'",
+            )
+        for field in _PORTFOLIO_ONLY_FIELDS:
+            if field in payload:
+                return "error", _ModeGateError(
+                    reason="portfolio_field_forbidden",
+                    path=field,
+                    detail=f"portfolio-only field {field!r} is not allowed when mode is 'single'",
+                )
+        return "legacy", None
+    if mode == "portfolio":
+        if schema_version != "pt-v2.0":
+            return "error", _ModeGateError(
+                reason=(
+                    "missing_schema_version"
+                    if schema_version is None
+                    else "invalid_schema_version"
+                ),
+                path="schema_version",
+                detail="mode 'portfolio' requires schema_version 'pt-v2.0'",
+            )
+        for field in _LEGACY_ONLY_FIELDS:
+            if field in payload:
+                return "error", _ModeGateError(
+                    reason="legacy_field_forbidden",
+                    path=field,
+                    detail=f"legacy field {field!r} is not allowed in portfolio mode",
+                )
+        return "portfolio", None
+    return "error", _ModeGateError(
+        reason="invalid_mode",
+        path="mode",
+        detail="mode must be 'single' or 'portfolio'",
+    )
+
+
+def _portfolio_markets(raw_payload: Any) -> tuple[str, ...]:
+    """Read only the canonical bucket markets a valid request can dispatch."""
+    raw = raw_payload if isinstance(raw_payload, dict) else {}
+    state = raw.get("portfolio_state")
+    buckets = state.get("buckets") if isinstance(state, dict) else None
+    markets: list[str] = []
+    for bucket in buckets if isinstance(buckets, list) else ():
+        market = bucket.get("market") if isinstance(bucket, dict) else None
+        if isinstance(market, str) and market in _PORTFOLIO_MARKETS:
+            markets.append(market)
+    return tuple(dict.fromkeys(markets))
+
+
+def _portfolio_dependencies(
+    raw_payload: Any,
+    *,
+    loader: Any,
+    ch_client: Any,
+    calendar_client: Any,
+) -> tuple[dict[str, Any], dict[str, Any], Any]:
+    """Resolve the internal step's per-market loaders and cn_a calendar.
+
+    ``loader``/``ch_client`` accept either one shared injection (legacy test
+    seam) or a per-market mapping.  ``_AUTO`` resolves the existing raw network
+    loaders and ClickHouse helpers only; a missing source stays ``None`` so the
+    fetch reports data-not-ready instead of becoming an input error.
+    """
+    markets = _portfolio_markets(raw_payload)
+    connector = None
+    if "cn_a" in markets and (
+        loader is _AUTO or ch_client is _AUTO or calendar_client is _AUTO
+    ):
+        connector = _default_cn_a_connector()
+
+    if isinstance(loader, Mapping):
+        loaders = {market: loader.get(market) for market in markets}
+    elif loader is _AUTO:
+        loaders = {}
+        for market in markets:
+            try:
+                loaders[market] = data._resolve_network_loader(
+                    data.MARKET_LOADER_KEYS[market],
+                    exclude=frozenset({"clickhouse"}) if market == CN_A_MARKET else frozenset(),
+                )
+            except Exception as exc:  # noqa: BLE001 — unavailable source degrades to data-not-ready
+                logger.debug("paper_trade portfolio loader unavailable for %s: %s", market, exc)
+                loaders[market] = None
+    else:
+        loaders = {market: loader for market in markets}
+
+    if isinstance(ch_client, Mapping):
+        ch_clients = {market: ch_client.get(market) for market in markets}
+    elif ch_client is _AUTO:
+        ch_clients = {
+            market: (
+                ClickHouseBarsClient(connector)
+                if market == CN_A_MARKET and connector is not None
+                else None
+            )
+            for market in markets
+        }
+    elif ch_client is None:
+        ch_clients = {market: None for market in markets}
+    else:
+        ch_clients = {
+            market: ch_client if market == CN_A_MARKET else None
+            for market in markets
+        }
+
+    return loaders, ch_clients, connector if calendar_client is _AUTO else calendar_client
+
+
+def _execute_portfolio_step(
+    payload: Any,
+    *,
+    loader: Any,
+    ch_client: Any,
+    calendar_client: Any,
+    hk_lot_sizes: Any,
+) -> str:
+    """Run the internal seam and return only its public document bytes."""
+    raw_payload = payload if isinstance(payload, dict) else {}
+    try:
+        loaders, ch_clients, cal = _portfolio_dependencies(
+            raw_payload,
+            loader=loader,
+            ch_client=ch_client,
+            calendar_client=calendar_client,
+        )
+        result = run_portfolio_step(
+            payload,
+            loaders=loaders,
+            calendar_client=cal,
+            ch_clients=ch_clients,
+            hk_lot_sizes=None if hk_lot_sizes is _AUTO else hk_lot_sizes,
+        )
+    except PortfolioRequestError as exc:
+        return _portfolio_error_document(
+            "INVALID_REQUEST",
+            raw_payload,
+            reason=exc.reason,
+            path=exc.path,
+            detail=exc.detail or str(exc),
+            bucket_id=exc.bucket_id,
+        )
+    except PortfolioSessionError as exc:
+        return _portfolio_error_document(
+            exc.code,
+            raw_payload,
+            reason=exc.reason,
+            path=exc.path,
+            detail=exc.detail or str(exc),
+            bucket_id=exc.bucket_id,
+        )
+    except OrchestrationError as exc:
+        if exc.code == "INTERNAL":
+            raise
+        return _portfolio_error_document(
+            exc.code,
+            raw_payload,
+            reason=exc.reason,
+            path=exc.path,
+            detail=exc.detail or str(exc),
+            bucket_id=exc.bucket_id,
+        )
+    document = result.document
+    if isinstance(document, str):
+        return document
+    if isinstance(document, dict):
+        return _dumps_document(document)
+    return _dumps_document(document.model_dump(mode="json", by_alias=True, exclude_none=True))
 
 
 def _default_cn_a_connector() -> Any | None:
@@ -211,7 +651,36 @@ def run_paper_trade_step(
     The returned :class:`PaperTradeDocument` is the wire string plus the
     fetched :class:`data.MarketDataResult` (``None`` on every error envelope),
     so an in-process caller can record the day's bars without a second fetch.
+
+    A raw ``mode``/``schema_version`` gate runs before the legacy parser:
+    omitted or ``single`` mode follows the existing pipeline unchanged, while
+    ``mode="portfolio"`` plus ``schema_version="pt-v2.0"`` dispatches only to
+    the internal portfolio seam.
     """
+    dispatch, error = _preparse_mode(payload)
+    if dispatch == "error":
+        assert error is not None
+        return PaperTradeDocument(
+            _portfolio_error_document(
+                "INVALID_REQUEST",
+                payload,
+                reason=error.reason,
+                path=error.path,
+                detail=error.detail,
+            ),
+            None,
+        )
+    if dispatch == "portfolio":
+        return PaperTradeDocument(
+            _execute_portfolio_step(
+                payload,
+                loader=loader,
+                ch_client=ch_client,
+                calendar_client=calendar_client,
+                hk_lot_sizes=hk_lot_sizes,
+            ),
+            None,
+        )
     document, market_data = _execute_step(
         payload,
         loader=loader,
@@ -271,9 +740,19 @@ def _execute_step(
             request.from_date, request.to_date, message, raw_payload,
         ), None
 
-    # 2b. pt-v1.2 cross-field gates (D5).  Shape/vocabulary checks already ran
-    #     in parse_request; these are the market-combination rules the shape
-    #     parser cannot own.  Both stay in-band and non-retryable.
+    # 2b. pt-v1.2/pt-v1.3 cross-field gates (D5).  Shape/vocabulary checks
+    #     already ran in parse_request; these are the market-combination rules
+    #     the shape parser cannot own.  All stay in-band and non-retryable.
+    if request.fill_model == "volume_share" and (
+        request.interval != "5m" or request.market != CN_A_MARKET
+    ):
+        return _error_document(
+            "INVALID_REQUEST", request.account_id, request.market,
+            request.from_date, request.to_date,
+            "fill_model 'volume_share' is a 5m cn_a-only policy; "
+            f"got interval={request.interval!r} market={request.market!r}",
+            raw_payload,
+        ), None
     if request.interval == "5m" and request.market != CN_A_MARKET:
         return _error_document(
             "INVALID_REQUEST", request.account_id, request.market,
@@ -426,7 +905,8 @@ def _execute_step(
             orders_by_day={request.to_date: request.orders or ()}, fee_model=request.fee_model,
             calendar_client=cal, limits_client=lim, hk_lot_sizes=hk_lot_sizes,
             corporate_action_unresolved_by_day=corporate_action_unresolved_by_day,
-            path_model=request.path_model, fill_model=request.fill_model)
+            path_model=request.path_model, fill_model=request.fill_model,
+            order_volume_ratio=request.order_volume_ratio)
     else:
         outcome = engine.match_orders(
             request,
@@ -455,106 +935,15 @@ class PaperTradeStepTool(BaseTool):
 
     Read-only research tool (REQUIREMENTS R1): it reads market data and the
     injected ledger, matches on paper under the frozen market rules, and
-    returns one in-band JSON document.  It registers no broker / trading
-    connector path and writes nothing.
+    returns one in-band JSON document. The same name serves the default/explicit
+    single-market contract and the pt-v2.0 portfolio branch selected by
+    ``mode='portfolio'`` + ``schema_version='pt-v2.0'``. It registers no broker /
+    trading connector path and writes nothing.
     """
 
     name = "paper_trade_step"
     description = _DESCRIPTION
-    parameters = {
-        "type": "object",
-        "properties": {
-            "account_id": {
-                "type": "string",
-                "description": "Account identifier, echoed verbatim (R4).",
-            },
-            "market": {
-                "type": "string",
-                "enum": ["cn_a", "hk", "us"],
-                "description": "Market whose frozen rules govern matching.",
-            },
-            "account_state": {
-                "type": "object",
-                "description": (
-                    "RM-injected ledger snapshot {cash, positions:[{symbol, qty, "
-                    "avg_cost}]}. Hashed raw for received_state_hash (AM-4-1)."
-                ),
-                "properties": {
-                    "cash": {"type": "number"},
-                    "positions": {"type": "array", "items": {"type": "object"}},
-                },
-                "required": ["cash"],
-            },
-            "from_date": {
-                "type": "string",
-                "description": "Inclusive range start YYYY-MM-DD (orders mode: == to_date, AM-3).",
-            },
-            "to_date": {
-                "type": "string",
-                "description": "Inclusive range end YYYY-MM-DD (the target trading day).",
-            },
-            "orders": {
-                "type": "array",
-                "description": (
-                    "Orders mode: array of {symbol, side, qty, limit?}. XOR with "
-                    "strategy_path; an empty array is the pure-valuation path."
-                ),
-                "items": {"type": "object"},
-            },
-            "strategy_path": {
-                "type": "string",
-                "description": (
-                    "Strategy mode (Step 7): path to an AST-hardened strategy whose "
-                    "per-day orders are matched. XOR with orders."
-                ),
-            },
-            "fee_model": {
-                "type": "object",
-                "description": (
-                    "Optional per-key fee overrides merged over the market defaults "
-                    "(AM-4-3: RM always injects it explicitly)."
-                ),
-            },
-            "interval": {
-                "type": "string",
-                "enum": ["1d", "5m"],
-                "default": "1d",
-                "description": (
-                    "Optional pt-v1.2 bar interval. '1d' (default) keeps the pt-v1.1 "
-                    "daily close-price path; '5m' is cn_a-only and matches the whole "
-                    "continuous session as one bar (D1)."
-                ),
-            },
-            "session": {
-                "type": "string",
-                "enum": ["auto", "cn_a"],
-                "default": "auto",
-                "description": (
-                    "Optional pt-v1.2 session selector. 'auto' resolves to cn_a for "
-                    "market=cn_a and is inert for hk/us; 'cn_a' requires market=cn_a (D5)."
-                ),
-            },
-            "path_model": {
-                "type": "string",
-                "enum": ["bar_median", "bar_close"],
-                "default": "bar_median",
-                "description": (
-                    "Optional pt-v1.2 reference-price model for interval='5m': "
-                    "median(open, high, low, close) or the bar close (D1). Ignored for '1d'."
-                ),
-            },
-            "fill_model": {
-                "type": "string",
-                "enum": ["all_or_none"],
-                "default": "all_or_none",
-                "description": (
-                    "Optional pt-v1.2 fill model: 'all_or_none' is the only P0 value — "
-                    "no partial fills, every order terminal in its bar."
-                ),
-            },
-        },
-        "required": ["account_id", "market", "account_state", "from_date", "to_date"],
-    }
+    parameters = _published_parameters()
     repeatable = True
     is_readonly = True
     # Not `deterministic`: the result depends on served market data, which

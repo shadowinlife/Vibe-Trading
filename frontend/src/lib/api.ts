@@ -4,6 +4,8 @@ import type {
   OptionsChainResponse,
   OptionsPayoffRequest,
   OptionsPayoffResponse,
+  VolatilitySurfaceRequest,
+  VolatilitySurfaceResponse,
 } from "@/lib/options";
 
 const BASE = "";
@@ -408,6 +410,17 @@ async function errorFromResponse(res: Response): Promise<ApiError> {
     const raw = body.detail ?? body.message ?? body.error;
     if (typeof raw === "string" && raw) {
       detail = raw;
+    } else if (Array.isArray(raw)) {
+      const details = raw.flatMap((entry) => {
+        if (!entry || typeof entry !== "object") return [];
+        const { loc, msg } = entry as { loc?: unknown; msg?: unknown };
+        if (typeof msg !== "string" || !msg) return [];
+        const location = Array.isArray(loc)
+          ? loc.filter((part) => typeof part === "string" || typeof part === "number").join(".")
+          : "";
+        return [location ? `${location}: ${msg}` : msg];
+      });
+      if (details.length) detail = details.join("; ");
     } else if (raw && typeof raw === "object") {
       const structured = raw as { code?: unknown; message?: unknown; max_length?: unknown };
       if (typeof structured.code === "string" && structured.code) code = structured.code;
@@ -576,7 +589,16 @@ export interface LabJob {
   result?: LabResult; error?: string; request?: Record<string, unknown>;
 }
 
+export interface SoftwareUpdate {
+  current_version: string;
+  latest_version: string | null;
+  available: boolean;
+  method: "wheel" | "editable" | "checkout" | "vcs" | "container" | "desktop" | "desktop-manual" | "desktop-unconfigured";
+  recovery?: string;
+}
+
 export const api = {
+  checkForUpdates: () => request<SoftwareUpdate>("/api/system/update"),
   getResearchLabCatalog: () => request<LabCatalog>("/api/research-lab/catalog"),
   startResearchLabJob: (action: LabAction, body: Record<string, unknown>) =>
     request<LabJob>("/api/research-lab/jobs", { method: "POST", body: JSON.stringify({ action, request: body }) }),
@@ -603,6 +625,10 @@ export const api = {
     request<{ revision: ResearchArtifactRevision }>(`/api/research-artifacts/revision/${encodeURIComponent(revisionId)}`),
   exportResearchArtifact: (artifactId: string, format: "json" | "markdown" = "json") =>
     request<ResearchArtifactExport>(`/api/research-artifacts/${encodeURIComponent(artifactId)}/export?format=${format}`),
+  exportResearchArtifactComparison: (artifactId: string, fromRevisionId: string, toRevisionId: string, format: "json" | "markdown" = "json") => {
+    const search = new URLSearchParams({ format, from_revision_id: fromRevisionId, to_revision_id: toRevisionId });
+    return request<ResearchArtifactExport>(`/api/research-artifacts/${encodeURIComponent(artifactId)}/export?${search}`);
+  },
   saveResearchArtifact: (body: SaveResearchArtifactRequest) =>
     request<ResearchArtifactSaveResult>("/api/research-artifacts", { method: "POST", body: JSON.stringify(body) }),
   getCorrelationAnalysis: (codes: string, days: number, method: "pearson" | "spearman", includeRegime: boolean, signal?: AbortSignal) =>
@@ -824,8 +850,8 @@ export const api = {
   swarmSseUrl: (id: string) => withAuthTicket(`${BASE}/swarm/runs/${id}/events`),
   cancelSwarmRun: (id: string) =>
     request<{ status: string }>(`/swarm/runs/${id}/cancel`, { method: "POST" }),
-  retrySwarmRun: (id: string) =>
-    request<{ id: string; status: string; preset_name: string }>(`/swarm/runs/${id}/retry`, { method: "POST" }),
+  retrySwarmRun: (id: string, resume = false) =>
+    request<{ id: string; status: string; preset_name: string }>(`/swarm/runs/${id}/retry${resume ? "?resume=true" : ""}`, { method: "POST" }),
   getLLMSettings: () => request<LLMSettings>("/settings/llm"),
   updateLLMSettings: (settings: UpdateLLMSettingsRequest) =>
     request<LLMSettings>("/settings/llm", {
@@ -915,6 +941,12 @@ export const api = {
   // Options Lab
   analyzeOptionsPayoff: (body: OptionsPayoffRequest, signal?: AbortSignal) =>
     request<OptionsPayoffResponse>("/options/payoff", {
+      method: "POST",
+      body: JSON.stringify(body),
+      signal,
+    }),
+  computeVolatilitySurface: (body: VolatilitySurfaceRequest, signal?: AbortSignal) =>
+    request<VolatilitySurfaceResponse>("/options/volatility-surface", {
       method: "POST",
       body: JSON.stringify(body),
       signal,
@@ -1283,6 +1315,9 @@ export interface SwarmRunSummary {
 }
 
 export interface LLMProviderOption {
+  backend?: string;
+  automatic_model_list?: boolean;
+  model_options?: string[];
   name: string;
   label: string;
   api_key_env?: string | null;

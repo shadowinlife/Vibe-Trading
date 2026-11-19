@@ -37,6 +37,7 @@ from src.tools.paper_trade import tool as tool_module
 from src.tools.paper_trade.schema import (
     MARKETS,
     load_contract_schema,
+    parse_request,
     validate_payload,
 )
 from src.tools.paper_trade.tool import PaperTradeStepTool, run_paper_trade_step
@@ -445,6 +446,38 @@ def test_mcp_wrapper_omits_absent_optional_keys(monkeypatch: pytest.MonkeyPatch)
             from_date=_HK_DAY, to_date=_HK_DAY)
     payload = captured["payload"]
     assert "orders" not in payload and "strategy_path" not in payload and "fee_model" not in payload
+    assert "order_volume_ratio" not in payload
+
+
+def test_mcp_wrapper_forwards_order_volume_ratio_into_the_parsed_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict = {}
+
+    def _recorder(payload, **kwargs):
+        captured["payload"] = payload
+        # The real boundary parser, so the assertion is about the request
+        # contract rather than the wrapper's dict literal.
+        captured["request"] = parse_request(payload)
+        return "SENTINEL"
+
+    monkeypatch.setattr(tool_module, "run_paper_trade_step", _recorder)
+    _mcp_server, wrapper = _mcp_wrapper()
+    out = wrapper(
+        account_id="pa_mcp_v13", market="cn_a",
+        account_state={"cash": 100000.0, "positions": []},
+        from_date=_CN_A_DAY, to_date=_CN_A_DAY,
+        orders=[],
+        interval="5m",
+        fill_model="volume_share",
+        order_volume_ratio=0.25,
+    )
+    assert out == "SENTINEL"
+    assert captured["payload"]["order_volume_ratio"] == 0.25
+    request = captured["request"]
+    assert request.fill_model == "volume_share"
+    assert request.order_volume_ratio == 0.25
+    assert request.uses_v1_3 is True
 
 
 def test_mcp_wrapper_description_carries_the_frozen_phrase() -> None:
@@ -495,10 +528,19 @@ def test_tool_is_registered_readonly_and_available() -> None:
     assert tool.name == "paper_trade_step"
     assert tool.is_readonly is True
     assert tool.check_available() is True
-    assert tool.parameters["required"] == [
+    parameters = tool.parameters
+    assert parameters["type"] == "object"
+    assert "anyOf" not in parameters
+    legacy = next(
+        branch
+        for branch in parameters["oneOf"]
+        if branch["properties"]["mode"]["const"] == "single"
+    )
+    assert legacy["required"] == [
         "account_id", "market", "account_state", "from_date", "to_date",
     ]
-    assert set(tool.parameters["properties"]["market"]["enum"]) == set(MARKETS)
+    assert set(legacy["properties"]["market"]["enum"]) == set(MARKETS)
+    assert legacy["properties"]["mode"]["type"] == "string"
 
 
 def test_execute_delegates_the_kwargs_payload_to_the_core(monkeypatch: pytest.MonkeyPatch) -> None:

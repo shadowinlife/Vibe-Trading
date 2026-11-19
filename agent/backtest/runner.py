@@ -15,6 +15,7 @@ import inspect
 import json
 import logging
 import os
+import re
 import sys
 from dataclasses import dataclass
 from functools import lru_cache
@@ -52,6 +53,7 @@ from backtest.engines._market_hooks import (  # noqa: F401  (re-exported)
     _detect_submarket,
     _is_china_futures,
     hk_counter_currency,
+    matched_market,
     strip_local_prefix,
 )
 from backtest.progress import write_progress
@@ -101,6 +103,7 @@ class BacktestConfigSchema(BaseModel):
     interval: str = "1D"
     engine: str = "daily"
     position_adjustment: Literal["hold", "rebalance"] = "hold"
+    intentional_signal_delay_bars: int = Field(default=0, ge=0, strict=True)
     rebalance_mask: RebalanceMask = None
     # Under "rebalance", a resize executes only once the held weight has
     # drifted further than this fraction of its target -- the tolerance band
@@ -137,6 +140,25 @@ class BacktestConfigSchema(BaseModel):
             raise ValueError("codes must be a non-empty list")
         if any(not c.strip() for c in v):
             raise ValueError("codes must not contain empty strings")
+        # The engine applies one market's trading rules, chosen from the code.
+        # A code no routing rule recognises used to fall through to the A-share
+        # default (T+1, price limits, 100-share lots, CNY) -- or to US rules
+        # under yfinance -- and the run still succeeded. A bare six-digit code
+        # and Yahoo's ``.SS`` Shanghai spelling are mainland listings that no
+        # routing rule names; the loaders and the benchmark resolve both.
+        unrecognised = [
+            c for c in v
+            if matched_market(c.strip()) is None
+            and not re.fullmatch(r"\d{6}(?:\.SS)?", strip_local_prefix(c.strip()), re.I)
+        ]
+        if unrecognised:
+            raise ValueError(
+                f"no market rule recognises {', '.join(unrecognised)}, so the backtest "
+                "cannot tell which market's trading rules to apply. Write the code "
+                "with its market suffix, e.g. 600519.SH / 000001.SZ, AAPL or BRK-B.US, "
+                "00700.HK, VOD.L, TD.TO, RELIANCE.NS, 005930.KS, PETR4.SA, GGAL.BA, "
+                "VNM.VN, BTC-USDT, EURUSD, ^GSPC or IF2406.CFFEX"
+            )
         return v
 
     @field_validator("start_date", "end_date")
@@ -1586,6 +1608,10 @@ def _execute_stages(run_dir: Path, progress: _StageProgress) -> None:
         sys.exit(1)
 
     try:
+        if config.get("engine", "daily") == "daily":
+            from backtest.signal_timing import validate_signal_timing
+
+            validate_signal_timing(signal_path, config.get("intentional_signal_delay_bars", 0))
         signal_module = _load_module_from_file(signal_path, "signal_engine")
     except ValueError as exc:
         # Source-level AST validation (circular self-import, unsafe imports,
