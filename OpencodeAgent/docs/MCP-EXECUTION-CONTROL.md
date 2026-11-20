@@ -185,11 +185,15 @@ Rules:
 - A nonterminal native row is `running` only when this supervisor still owns a live
   handle for the remote id. After a process restart, or with no live handle, it is
   `unknown`.
-- Handle observation boundary: the read service reports `running` only when the
-  host app registers an `execution_handle_provider`. The dedicated entry as
-  committed does not register a process-wide provider, so a live native dispatch
-  can read `unknown` until its terminal record is written. `unknown` is never
-  proof of stop and must not release the RM execution slot.
+- Handle observation boundary: the dedicated entry wires the shared native
+  supervisor's process-liveness check into the read service as its
+  `execution_handle_provider` at route registration, so no manual provider
+  injection is needed. A record that exists whose process is live-observable
+  (the supervisor's run handle proves the process alive) MUST project
+  `status=running`, never `unknown`. `unknown` is reserved for a record that
+  exists but whose process cannot be observed, for example after an entry
+  restart. `unknown` is never proof of stop and must not release the RM
+  execution slot.
 - A legacy `running` row follows the same handle rule.
 - `failed` always carries `error_kind`. The closed vocabulary is `timeout`,
   `runner_error`, `strategy_not_found`, `version_not_found`,
@@ -992,8 +996,9 @@ that any of them is resolved.
    (`not_dispatched`, `dispatched`, `absent`), and every new error body carries it.
    The field is additive, so a parser that ignores unknown fields keeps working.
    Legacy 0001/0002 bodies deliberately do not carry it.
-7. **`unknown` is not stopped.** The dedicated entry may report `unknown` for a
-   live native dispatch because no cross-request handle provider is registered.
+7. **`unknown` is not stopped.** The dedicated entry reports `unknown` only for
+   a record whose process cannot be observed; a live-observable native dispatch
+   projects `running` through the wired supervisor handle provider.
    RM must keep the execution slot, query find and stop, and must not read
    `unknown` as a completed, failed or cancelled run.
 8. **Stop requires `deadline_at`.** The 0013 stop example lists only the three
