@@ -221,6 +221,15 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 
 ## 5. 迭代笔记
 
+### 2026-11-20 swarm LLM 凭据桥 + 缺失 key fail-fast（v3.20.1，review→merge→tag→镜像全链路）
+
+- **交付链**：code-review skill 两轴复核（Standards/Spec 并行子代理，spec=用户三层根因链 F1-F4）→ 跟进项落地（`registry.missing_api_key_hint` 共享措辞、preflight 测试参数化、README/IMAGE-MANUAL 环境表同步）→ fork PR [#19](https://github.com/shadowinlife/Vibe-Trading/pull/19) 合入（merge commit `37a61f02`，修复提交 `deee34b0`）→ tag `v3.20.1-swarm-key-failfast-20261120` 推送 fork → amd64 镜像 `opencode-serve:v3.20.1-swarm-key-failfast-20261120`（image ID `sha256:748664e21285…`，4.37 GB）构建 + 启动就绪门禁 PASS。
+- **根因与修复**：代理模式容器只注入 `LLM_API_KEY`/`LLM_BASE_URL`（opencode 消费），VT dashscope provider 读 `DASHSCOPE_API_KEY`/`DASHSCOPE_BASE_URL`（catalog），两者皆空 → swarm worker 构造期 SDK 报错；preflight 从不验 key（镜像烘焙 `LANGCHAIN_PROVIDER=dashscope` + 公网 `DASHSCOPE_BASE_URL`，TCP ping 可达即判 ready）。F1 entrypoint 凭据桥（显式 `DASHSCOPE_API_KEY` 优先；base 随 key，仅当 key 被桥接；直连模式零扰动；日志只打变量名）；F2 preflight 空 key critical fail-fast 指名变量（ping 之前）；F3 `build_llm` 空 key 抛 provider 指名 RuntimeError（覆盖 swarm/主循环/session/一次性客户端；构造异常不进 worker 重试循环）；F4 不做（`LLM_API_KEY` 不入通用回退链）。
+- **验证基线**（conda legonanobot）：广域 provider/chat/ocr/vision/swarm 选择面 + preflight + llm + OpencodeAgent/tests **644 passed / 1 skipped / 13 failed**，13 失败全部在 base `63732338` 复现相同（11 stash 对照 + 2 detached HEAD worktree 对照），零回归；13 个新回归用例（桥矩阵 5 例直接执行 entrypoint 真实字节、preflight 4 例、build_llm 4 例）单轮全过；ruff 全净、black@120 新增 hunks 全净。
+- **镜像门禁**：`check_startup_readiness.sh`（OFFLINE=1、预算 300s、REQUIRE_IMAGE=1）PASS——listening **5.7s**、首次 /config 200 **24.1s**、VT MCP connected **27.8s**、entry listening **30.6s**、entry /health 200 **32.7s**。修复在镜像内验证（entrypoint 桥块 + vendored VT `missing_api_key_hint` 可导入）。registry 双仓推送待 operator 确认（本轮未推）。
+- **边界**：preflight 强制面仅 legacy CLI 阻断；容器 MCP 路径不跑 preflight，容器侧 fail-fast 由 F3 承担。vision OCR 自建 `openai.OpenAI` 不经 `build_llm`，但读同一 catalog env（F1 覆盖）且 `is_available()` 门控优雅降级。
+- 证据：PR #19 正文、本会话两轴 review 报告、门禁输出。回滚路径：revert `37a61f02`（或 `deee34b0`）；上一已知良好镜像 v3.20.0-paper-trade-portfolio-20261119。
+
 ### 2026-11-19 F15 pt-v2.0 组合栈落地 + 上游对齐 19c83de9（v3.20.0，review→merge→tag→镜像全链路）
 
 - **交付链**：code-review skill 两轴复核（Standards/Spec 并行子代理，spec=上游 issue #1938 Phase 2）→ 阻断项修复 → `mymain` merge 进 analytics（18 冲突文件并集解决）→ fork PR [#18](https://github.com/shadowinlife/Vibe-Trading/pull/18) 合入（merge commit `09b0d779`，stack 合并提交 `0e0bebae`）→ tag `v3.20.0-paper-trade-portfolio-20261119` 推送 fork → amd64 镜像 `opencode-serve:v3.20.0-paper-trade-portfolio-20261119`（image ID `sha256:163ad97ed951…`，4.37 GB）构建 + 启动就绪门禁 PASS。stacked draft PR #16/#17 以 superseded 关闭。

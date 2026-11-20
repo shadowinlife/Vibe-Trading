@@ -36,6 +36,17 @@ related: [MYMAIN_DIVERGENCE.md]
 
 ---
 
+### 缺陷修复 + 镜像交付 · 2026-11-20 — v3.20.1-swarm-key-failfast-20261120（swarm 代理凭据桥 + 缺失 key fail-fast）
+
+- **发布 commit**：`37a61f02`（fork PR [#19](https://github.com/shadowinlife/Vibe-Trading/pull/19) merge commit；修复提交 `deee34b0`）；不可变 tag `v3.20.1-swarm-key-failfast-20261120` 已推送 fork；`release/mymain` 移动 tag 本轮不移动
+- **基线**：`63732338`（v3.20.0 交付记录）+ 单修复提交（9 文件 +329/-5）
+- **内容**：entrypoint `LLM_*`→`DASHSCOPE_*` 凭据桥（显式值优先、base 随 key、直连零扰动、零值回显）；preflight 空 key critical fail-fast 指名变量；`build_llm` 空 key provider 指名报错；`registry.missing_api_key_hint` 措辞单点；README/IMAGE-MANUAL 环境表同步；13 个新回归用例
+- **验证**：广域选择面 644 passed / 1 skipped / 13 failed（13 失败 base 对照全预存，零回归）；ruff/black@120 新 hunks 全净；两轴 code-review 通过
+- **镜像**：`opencode-serve:v3.20.1-swarm-key-failfast-20261120`（linux/amd64，4.37 GB，image ID `sha256:748664e21285…`），复用 base `opencode-serve-base:latest`；registry 双仓推送待 operator 确认（本轮未推）
+- **启动就绪**：`check_startup_readiness.sh`（OFFLINE=1、预算 300s、REQUIRE_IMAGE=1）PASS：listening **5.7s**、首次 /config 200 **24.1s**、VT MCP connected **27.8s**、entry listening **30.6s**、entry /health 200 **32.7s**
+
+---
+
 ### 功能落地 + 镜像交付 · 2026-11-19 — v3.20.0-paper-trade-portfolio-20261119（F15 pt-v2.0 组合栈 + 上游对齐）
 
 - **发布 commit**：`09b0d779`（fork PR [#18](https://github.com/shadowinlife/Vibe-Trading/pull/18) merge commit；stack 侧合并提交 `0e0bebae`）；不可变 tag `v3.20.0-paper-trade-portfolio-20261119` 已推送 fork；`release/mymain` 移动 tag 本轮不移动（沿用 v3.17.0 起镜像交付惯例）
