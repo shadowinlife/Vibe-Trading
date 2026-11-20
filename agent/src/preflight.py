@@ -62,8 +62,11 @@ def _check_llm_provider() -> CheckResult:
 
     _sync_provider_env()
     diagnostics = provider_diagnostics()
+    from src.providers.registry import get_provider_capabilities, missing_api_key_hint
     from src.providers.settings import resolve_config
-    base_url = resolve_config().base_url
+
+    config = resolve_config()
+    base_url = config.base_url
     proxy_label = ",".join(sorted(diagnostics.get("proxy", {}).keys())) or "none"
     diag_hint = (
         f"base={diagnostics['base_url']} "
@@ -145,6 +148,20 @@ def _check_llm_provider() -> CheckResult:
             status="not_configured",
             message=f"base URL not set for {provider} | {diag_hint}",
             impact="agent cannot function",
+            critical=True,
+        )
+
+    # Credential presence: the TCP ping below proves reachability, not auth.
+    # A missing key otherwise surfaces only when a swarm worker constructs its
+    # SDK client, and the SDK error names OPENAI_API_KEY even for providers
+    # that read a different env var. Fail fast and name the expected variable.
+    if not config.api_key:
+        caps = get_provider_capabilities(provider, model)
+        return CheckResult(
+            name=f"LLM ({provider})",
+            status="not_configured",
+            message=f"API key missing: {missing_api_key_hint(caps)} is not set | {diag_hint}",
+            impact="agent and swarm workers cannot call the LLM",
             critical=True,
         )
 

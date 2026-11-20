@@ -17,6 +17,7 @@ def _configure_llm_preflight(monkeypatch) -> None:
     monkeypatch.setenv("LANGCHAIN_MODEL_NAME", "gpt-test")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://example.test/v1")
     monkeypatch.delenv("OPENAI_API_BASE", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-preflight-dummy")
     monkeypatch.setattr(settings, "_ensure_dotenv", lambda: None)
     monkeypatch.setattr(settings, "_sync_provider_env", lambda: None)
     monkeypatch.setattr(
@@ -154,3 +155,100 @@ def test_content_filter_threshold_default(monkeypatch) -> None:
     assert result.name == "Content Filter Threshold"
     assert result.status == "ready"
     assert "5%" in result.message
+
+
+def _configure_provider_preflight(
+    monkeypatch, *, provider: str, model: str, base_url: str, base_env: str | None = None
+) -> None:
+    """Install a keyless provider environment for preflight tests."""
+    from src.providers import settings, llm as llm_module
+
+    monkeypatch.setenv("LANGCHAIN_PROVIDER", provider)
+    monkeypatch.setenv("LANGCHAIN_MODEL_NAME", model)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("DASHSCOPE_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_API_BASE", raising=False)
+    if base_env is not None:
+        monkeypatch.setenv(base_env, base_url)
+    monkeypatch.setattr(settings, "_ensure_dotenv", lambda: None)
+    monkeypatch.setattr(settings, "_sync_provider_env", lambda: None)
+    monkeypatch.setattr(
+        llm_module,
+        "provider_diagnostics",
+        lambda: {
+            "base_url": base_url,
+            "timeout_seconds": 120,
+            "max_retries": 2,
+            "proxy": {},
+        },
+    )
+
+
+def _dashscope_preflight(monkeypatch) -> None:
+    _configure_provider_preflight(
+        monkeypatch,
+        provider="dashscope",
+        model="qwen-test",
+        base_url="https://dashscope.example.test/compatible-mode/v1",
+        base_env="DASHSCOPE_BASE_URL",
+    )
+
+
+def test_dashscope_preflight_fails_fast_without_key(monkeypatch) -> None:
+    """A reachable endpoint without a credential must not report ready."""
+    _dashscope_preflight(monkeypatch)
+
+    def fail_get(url: str, **kwargs: object) -> object:
+        del url, kwargs
+        raise AssertionError("preflight must fail on the missing key before pinging")
+
+    monkeypatch.setattr(requests, "get", fail_get)
+
+    result = preflight._check_llm_provider()
+
+    assert result.status == "not_configured"
+    assert result.critical is True
+    assert "DASHSCOPE_API_KEY" in result.message
+
+
+def test_dashscope_preflight_ready_with_provider_key(monkeypatch) -> None:
+    _dashscope_preflight(monkeypatch)
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "sk-dashscope-dummy")
+    response = requests.Response()
+    response.status_code = 200
+    monkeypatch.setattr(requests, "get", lambda url, **kwargs: response)
+
+    result = preflight._check_llm_provider()
+
+    assert result.status == "ready"
+
+
+def test_dashscope_preflight_accepts_generic_openai_fallback(monkeypatch) -> None:
+    """The catalog fallback chain (DASHSCOPE_API_KEY -> OPENAI_API_KEY) stays valid."""
+    _dashscope_preflight(monkeypatch)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-fallback-dummy")
+    response = requests.Response()
+    response.status_code = 200
+    monkeypatch.setattr(requests, "get", lambda url, **kwargs: response)
+
+    result = preflight._check_llm_provider()
+
+    assert result.status == "ready"
+
+
+def test_ollama_preflight_requires_no_key(monkeypatch) -> None:
+    """Keyless local providers get the 'ollama' placeholder, not a false failure."""
+    _configure_provider_preflight(
+        monkeypatch,
+        provider="ollama",
+        model="llama3-test",
+        base_url="http://localhost:11434/v1",
+    )
+    response = requests.Response()
+    response.status_code = 200
+    monkeypatch.setattr(requests, "get", lambda url, **kwargs: response)
+
+    result = preflight._check_llm_provider()
+
+    assert result.status == "ready"

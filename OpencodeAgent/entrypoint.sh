@@ -126,6 +126,26 @@ LLM_BASE_URL="${LLM_BASE_URL:-}"
 LLM_API_KEY="${LLM_API_KEY:-}"
 SANDBOX_ID="${HOSTNAME:-$(uname -n)}"
 
+# ── VT credential bridge (LLM_* → DASHSCOPE_*) ────────────────────────────────
+# opencode consumes LLM_API_KEY/LLM_BASE_URL via the rendered provider options,
+# but the VT MCP process (swarm workers included) resolves credentials from the
+# provider catalog: dashscope reads DASHSCOPE_API_KEY / DASHSCOPE_BASE_URL
+# (agent/src/providers/llm_providers.json). In proxy mode the pool injects only
+# LLM_*, so without this bridge every swarm worker builds its SDK client with an
+# empty key. An explicit DASHSCOPE_API_KEY (direct mode) always wins. The
+# borrowed proxy credential is only valid at the proxy endpoint, so the base
+# URL follows the key: the image's baked-in public DashScope URL would reject
+# it. Never log the values themselves.
+if [ -n "$LLM_API_KEY" ] && [ -z "${DASHSCOPE_API_KEY:-}" ]; then
+    export DASHSCOPE_API_KEY="$LLM_API_KEY"
+    if [ -n "$LLM_BASE_URL" ]; then
+        export DASHSCOPE_BASE_URL="$LLM_BASE_URL"
+        echo "[entrypoint] VT credential bridge: DASHSCOPE_API_KEY/DASHSCOPE_BASE_URL <- LLM_API_KEY/LLM_BASE_URL"
+    else
+        echo "[entrypoint] VT credential bridge: DASHSCOPE_API_KEY <- LLM_API_KEY"
+    fi
+fi
+
 # ── Render opencode.json from the Jinja2 template ─────────────────────────────
 # The build-time copies live under /workspace, which a deployment may shadow
 # with a volume mount; /opt/opencode-config is the immutable copy baked into

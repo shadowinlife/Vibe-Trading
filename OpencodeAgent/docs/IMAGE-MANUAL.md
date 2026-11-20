@@ -209,9 +209,9 @@ DOCKER_PLATFORM=linux/amd64 VT_SOURCE=../Vibe-Trading ./build.sh --app --tag v3.
 
 | 变量 | 必需 | 默认值 | 说明 |
 |------|------|--------|------|
-| `DASHSCOPE_API_KEY` | ✅（仅直连模式） | — | DashScope API Key。代理模式下不需要（真实 key 不进沙箱，由 RM 上游注入；生产池自 2026-10-09 起已移除该变量） |
+| `DASHSCOPE_API_KEY` | ✅（仅直连模式） | — | DashScope API Key。代理模式下不需要（真实 key 不进沙箱，由 RM 上游注入；生产池自 2026-10-09 起已移除该变量）。v3.20.1 起 entrypoint 自动桥接 `LLM_API_KEY`→`DASHSCOPE_API_KEY`，显式设置优先 |
 | `LLM_BASE_URL` | ❌ | 空 | v3.4.0-mymain 起（Phase 9a）：RM 内嵌 LLM 代理地址。非空时 `render_config.py` 渲染 `provider.alibaba-cn.options.{baseURL,apiKey,headers.x-sandbox-id=HOSTNAME}` 指向代理；空 = 直连模式（仅渲染 `provider.models`，不渲染 `provider.options`） |
-| `LLM_API_KEY` | ❌ | 空 | 沙箱→RM 代理的调用凭证（渲染 gate 仅看 `LLM_BASE_URL` 非空；生产恒两者同设——缺本键时 apiKey 渲染为空串，请求将被代理 401 拒绝） |
+| `LLM_API_KEY` | ❌ | 空 | 沙箱→RM 代理的调用凭证（渲染 gate 仅看 `LLM_BASE_URL` 非空；生产恒两者同设——缺本键时 apiKey 渲染为空串，请求将被代理 401 拒绝）。v3.20.1 起 entrypoint 同时桥接 `LLM_BASE_URL`→`DASHSCOPE_BASE_URL`（仅在 key 被桥接时），VT swarm/LangChain 与 opencode 走同一代理端点 |
 | `OPENCODE_SERVER_PASSWORD` | ✅ | — | Web Server 密码 |
 | `CLICKHOUSE_HOST` | ✅ | — | ClickHouse 地址 |
 | `CLICKHOUSE_PORT` | ❌ | `8123` | ClickHouse HTTP 端口 |
