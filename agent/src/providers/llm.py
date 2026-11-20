@@ -18,7 +18,7 @@ from urllib.parse import urlparse, urlsplit
 
 from pydantic import PrivateAttr
 
-from src.providers.registry import ProviderCapabilities, get_provider_capabilities
+from src.providers.registry import ProviderCapabilities, get_provider_capabilities, missing_api_key_hint
 from src.providers.settings import ProviderConfig, resolve_config
 from src.providers.session_context import current_llm_session_id
 
@@ -1549,6 +1549,14 @@ def build_llm(*, model_name: str | None = None, callbacks: Any = None, snapshot:
     )
     _validate_moonshot_reasoning_effort(caps, name, effort, snapshot.base_url)
     api_key = snapshot.api_key
+    if not api_key:
+        # The SDK's own missing-key error names only OPENAI_API_KEY, which
+        # misdirects debugging for every provider that reads its own env var
+        # (e.g. dashscope -> DASHSCOPE_API_KEY). Name the real source instead.
+        raise RuntimeError(
+            f"provider {provider}: no API key resolved. Set {missing_api_key_hint(caps)} "
+            "before starting the agent or swarm."
+        )
     _validate_authorization_credential(api_key, source=caps.api_key_env or "provider credential")
     kwargs: dict[str, Any] = {
         "model": name,

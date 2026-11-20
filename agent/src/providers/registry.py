@@ -219,3 +219,19 @@ def provider_env_names(provider: str | None, model: str | None = None) -> tuple[
     """Return the API-key and base-URL env names for a provider/model pair."""
     caps = get_provider_capabilities(provider, model)
     return caps.api_key_env, caps.base_url_env
+
+
+def missing_api_key_hint(caps: ProviderCapabilities) -> str:
+    """Name the credential env a provider reads, with the generic fallback.
+
+    Args:
+        caps: Resolved provider capabilities.
+
+    Returns:
+        The provider's own API-key env plus the OPENAI_API_KEY fallback
+        clause, or OPENAI_API_KEY alone when the provider has no dedicated env.
+    """
+    expected = caps.api_key_env or "OPENAI_API_KEY"
+    if expected == "OPENAI_API_KEY":
+        return expected
+    return f"{expected} (generic fallback: OPENAI_API_KEY)"

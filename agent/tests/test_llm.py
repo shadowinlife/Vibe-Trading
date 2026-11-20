@@ -730,6 +730,69 @@ class TestMinimaxTemperature:
         assert captured["temperature"] == 0.7
 
 
+class TestMissingCredentialFailFast:
+    """build_llm must name the provider's own key env, not the SDK's OPENAI-only error."""
+
+    def test_dashscope_missing_key_names_dashscope_env(self) -> None:
+        _provider_configuration._dotenv_loaded = True
+        env = {
+            "LANGCHAIN_PROVIDER": "dashscope",
+            "LANGCHAIN_MODEL_NAME": "qwen-test",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(RuntimeError) as excinfo:
+                build_llm()
+        message = str(excinfo.value)
+        assert "provider dashscope" in message
+        assert "DASHSCOPE_API_KEY" in message
+
+    def test_openai_missing_key_names_openai_env(self) -> None:
+        _provider_configuration._dotenv_loaded = True
+        env = {
+            "LANGCHAIN_PROVIDER": "openai",
+            "LANGCHAIN_MODEL_NAME": "gpt-test",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(RuntimeError) as excinfo:
+                build_llm()
+        assert "OPENAI_API_KEY" in str(excinfo.value)
+
+    def test_generic_openai_fallback_key_still_builds(self) -> None:
+        _provider_configuration._dotenv_loaded = True
+        captured: dict[str, object] = {}
+
+        class _FakeChatOpenAI:
+            def __init__(self, **kwargs: object) -> None:
+                captured.update(kwargs)
+
+        env = {
+            "LANGCHAIN_PROVIDER": "dashscope",
+            "LANGCHAIN_MODEL_NAME": "qwen-test",
+            "OPENAI_API_KEY": "sk-fallback-dummy",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with patch.object(_provider_adapters, "ChatOpenAIWithReasoning", _FakeChatOpenAI):
+                build_llm()
+        assert captured["api_key"] == "sk-fallback-dummy"
+
+    def test_ollama_builds_without_any_key(self) -> None:
+        _provider_configuration._dotenv_loaded = True
+        captured: dict[str, object] = {}
+
+        class _FakeChatOpenAI:
+            def __init__(self, **kwargs: object) -> None:
+                captured.update(kwargs)
+
+        env = {
+            "LANGCHAIN_PROVIDER": "ollama",
+            "LANGCHAIN_MODEL_NAME": "llama3-test",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with patch.object(_provider_adapters, "ChatOpenAIWithReasoning", _FakeChatOpenAI):
+                build_llm()
+        assert captured["api_key"] == "ollama"
+
+
 class TestDisableHttpProxy:
     """The proxy opt-out must cover both OpenAI SDK execution paths."""
 

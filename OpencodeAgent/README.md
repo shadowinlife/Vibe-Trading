@@ -176,7 +176,9 @@ python cron_jobs/manage.py remove <task_id>  # Remove
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DASHSCOPE_API_KEY` | Yes | DashScope API key for LLM inference |
+| `DASHSCOPE_API_KEY` | Direct mode only | DashScope API key for VT LangChain/swarm. In proxy mode the entrypoint bridges `LLM_API_KEY` -> `DASHSCOPE_API_KEY` automatically; an explicit value always wins |
+| `LLM_BASE_URL` | No | RM LLM proxy endpoint; non-empty enables proxy mode (opencode provider options + VT credential bridge) |
+| `LLM_API_KEY` | No | Sandbox-to-proxy credential; in proxy mode bridged to `DASHSCOPE_API_KEY`, and `LLM_BASE_URL` to `DASHSCOPE_BASE_URL`, so VT swarm uses the same proxy endpoint |
 | `OPENCODE_SERVER_PASSWORD` | Yes | Web server password |
 | `CLICKHOUSE_HOST` | Yes | ClickHouse host |
 | `CLICKHOUSE_PORT` | No | ClickHouse port (default: 8123) |
