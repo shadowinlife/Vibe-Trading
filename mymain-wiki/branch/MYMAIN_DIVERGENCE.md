@@ -241,7 +241,8 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 ### 2026-11-19 F16 前向修复（0014 回归恢复）
 
 - v3.19.0 对齐合并丢弃了从未合入 mymain 的 0003 交付面（`POST /strategy-version-source`，合同 `strategy-version-source-v1`）。按 RM 跨仓请求 0014，在 `fix/strategy-version-source-restore` worktree 以预生成前向补丁把 0003 面从 `fbd73a55`（tag `v3.18.4-strategy-version-source-20261114`）字节一致地恢复到 `a709b99b`（= tag `v3.19.0-l1-source-integrity-20261115` 树）之上；53 个补丁文件中 52 个与 `fbd73a55` blob 哈希一致，唯一差异是本文件保留的 v3.19.0 F5-L1 行。
-- v3.19.0 的 L0/L1 source-integrity 工作不回滚、不改写；回测执行器、config.json 生成与调度内核未触碰。已提交并 rebase 到当前 mymain（v3.20.1 线，base `48bba44d`）；新基线复验、tag 与镜像坐标待交付后记录。
+- v3.19.0 的 L0/L1 source-integrity 工作不回滚、不改写；回测执行器、config.json 生成与调度内核未触碰。已提交并 rebase 到当前 mymain（v3.20.1 线，base `48bba44d`）；tag 与镜像坐标待交付后记录。
+- **新基线复验（2026-11-20）**：策略/状态/执行控制/paper_trade 交互面 **2673 passed / 0 failed**；A0 修复前探针在 base `48bba44d` 真实 loopback HTTP **404**（回归确认），修复后探针七项全 **PASS**（200 字节精确 BOM/CRLF/非 ASCII/尾随换行 + 404/404/409/403/401 五错误形状）；**50/50 非 wiki 补丁文件与 `fbd73a55` blob 哈希一致**，3 个 wiki 文件为台账合并与 F16 归位的有意差异。证据：`.omo/evidence/0014-version-source-restore/`（`a0-prefix-v3201-base.txt`、`a0-postfix-v3201-base.txt`）。
 - 验证：20 个恢复验收套件 280 passed（A12-A20、D1-D4 及 A9 边界）；A0 修复后真实 loopback HTTP 探针 PASS（200 字节精确 BOM/CRLF/尾随换行 + 404/404/409/403/401 五错误形状）；全量回归 23414 passed / 172 skipped / 27 failed，27 个失败在未打补丁的 base worktree（同 HEAD `a709b99b`）逐条复现，均为预存环境性失败，与本次恢复无关。证据：`.omo/evidence/0014-version-source-restore/`（`DELIVERY.md`、`byte-verification.txt`、`acceptance-suites.txt`、`full-regression.txt`、`base-attribution.txt`、`a0-postfix.txt`；A0 修复前探针已由 lead 在 base worktree 采集 `a0-prefix.txt`（修复前框架 404，回归确认））。
 - 状态：delivered/pending。人工确认与 RM 验收 pending，不是 verified；本条不升级任何验收状态。
 

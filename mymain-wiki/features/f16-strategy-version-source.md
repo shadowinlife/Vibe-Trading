@@ -39,7 +39,7 @@ related: [../branch/MYMAIN_DIVERGENCE.md]
 
 ## 2026-11-19 前向修复注记（0014 回归恢复）
 
-v3.19.0 对齐合并丢弃了从未合入 mymain 的 0003 交付面。按 RM 跨仓请求 0014，本能力已从 `fbd73a55`（tag `v3.18.4-strategy-version-source-20261114`）字节一致地前向恢复到 `a709b99b`（v3.19.0 线）之上的 `fix/strategy-version-source-restore` worktree；v3.19.0 的 L0/L1 source-integrity 工作完整保留，未回滚。路由、合同字段、错误码、鉴权与归属绑定语义均未改动。20 个恢复验收套件 280 passed，A0 修复后真实 loopback HTTP 探针 PASS；全量回归 23414 passed / 172 skipped / 27 failed，27 个失败在未打补丁的 base worktree（同 HEAD）逐条复现，均为预存失败，与恢复无关。证据见 `.omo/evidence/0014-version-source-restore/`（`DELIVERY.md`、`a0-postfix.txt`、`base-attribution.txt` 等；修复前探针 `a0-prefix.txt` 已由 lead 在 base worktree 采集（框架 404，回归确认））。状态 delivered/pending：人工确认与 RM 验收 pending，不是 verified。
+v3.19.0 对齐合并丢弃了从未合入 mymain 的 0003 交付面。按 RM 跨仓请求 0014，本能力已从 `fbd73a55`（tag `v3.18.4-strategy-version-source-20261114`）字节一致地前向恢复到 `a709b99b`（v3.19.0 线）之上的 `fix/strategy-version-source-restore` worktree；v3.19.0 的 L0/L1 source-integrity 工作完整保留，未回滚。路由、合同字段、错误码、鉴权与归属绑定语义均未改动。20 个恢复验收套件 280 passed，A0 修复后真实 loopback HTTP 探针 PASS；全量回归 23414 passed / 172 skipped / 27 failed，27 个失败在未打补丁的 base worktree（同 HEAD）逐条复现，均为预存失败，与恢复无关。证据见 `.omo/evidence/0014-version-source-restore/`（`DELIVERY.md`、`a0-postfix.txt`、`base-attribution.txt` 等；修复前探针 `a0-prefix.txt` 已由 lead 在 base worktree 采集（框架 404，回归确认））。状态 delivered/pending：人工确认与 RM 验收 pending，不是 verified。2026-11-20 已 rebase 到 v3.20.1 线（base `48bba44d`）并复验：策略/状态/执行控制/paper_trade 交互面 2673 passed / 0 failed，A0 修复前 404 / 修复后七项 PASS，50/50 非 wiki 文件与 `fbd73a55` 字节一致。
 
 ## 编号注记（2026-11-20）
 
