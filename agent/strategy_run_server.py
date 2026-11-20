@@ -3,10 +3,10 @@
 
 This app exists so the box can answer the RM service routes without exposing
 the full VT REST surface and without starting a second F9 scheduler. It mounts
-``/health``, ``POST /strategy-runs``, ``GET /strategy-runs/{vt_run_id}``, the
-execution-instance read/start routes, ``POST /factor/prototype``,
-``POST /backtest/prepare``, ``POST /backtest/execute``, ``POST /state/export``
-and ``POST /state/import``
+``/health``, ``POST /strategy-runs``, ``GET /strategy-runs/{vt_run_id}``,
+``POST /strategy-version-source``, the execution-instance read/start routes,
+``POST /factor/prototype``, ``POST /backtest/prepare``,
+``POST /backtest/execute``, ``POST /state/export`` and ``POST /state/import``
 and nothing else — there is deliberately no SPA
 fallback or catch-all, so an unregistered path (including
 ``/strategy-schedules``) stays a framework ``404``. No scheduler is started and
@@ -53,6 +53,10 @@ from src.api.strategy_run_routes import (
     default_service_provider,
     register_strategy_run_routes,
 )
+from src.api.strategy_version_source_routes import (
+    StrategyVersionSourceProvider,
+    register_strategy_version_source_routes,
+)
 
 logger = logging.getLogger("strategy_run_entry")
 
@@ -91,6 +95,7 @@ def create_app(
     prepare_provider: PrepareProvider | None = None,
     execution_start_service_provider: ExecutionStartProvider | None = None,
     execution_stop_service_provider: ExecutionStopProvider | None = None,
+    version_source_provider: StrategyVersionSourceProvider | None = None,
 ) -> FastAPI:
     """Build the dedicated entry app.
 
@@ -117,10 +122,14 @@ def create_app(
         execution_stop_service_provider: Optional callable returning the
             idempotent stop service; tests inject a fake supervisor through
             it. ``None`` selects native production supervision.
+        version_source_provider: Optional callable returning the exact
+            strategy-version source reader. ``None`` selects the lazy
+            production provider resolved after auth and binding.
 
     Returns:
         An app carrying ``/health``, the two strategy-run routes, the
-        execution-instance routes and the two state routes.
+        exact strategy-version source route, the execution-instance routes
+        and the two state routes.
     """
     provider = (
         service_provider if service_provider is not None else default_service_provider
@@ -177,6 +186,7 @@ def create_app(
         return _health_payload()
 
     register_strategy_run_routes(app, _service_for_request)
+    register_strategy_version_source_routes(app, version_source_provider)
     register_execution_control_routes(
         app,
         control_service_provider,

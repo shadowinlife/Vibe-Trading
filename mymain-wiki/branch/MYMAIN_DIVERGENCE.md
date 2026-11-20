@@ -238,6 +238,19 @@ VT_MEMORY_MCP_TOOLS=1 python -c "import asyncio, mcp_server; print(len(asyncio.r
 - **验证基线**（conda legonanobot）：合并前 paper_trade 1266/8；合并后 paper_trade **1267 passed / 8 skipped**（3 pin 更新后复跑绿）、reconcile 47（27 组合含变异检测 + 20 legacy 字节级）、golden/determinism/purity 31、provenance/run_card/market_data/resolver 332/8、mcp/execution_control/strategy_run 950+1 修复、strategy 家族 **1103/8**、readme/docs counts 143、前端 tsc+vite 构建绿、ruff/py_compile/git diff --check 全绿。全量 24k 套件未跑（narrowest-command 规则，聚焦面全覆盖）。
 - **镜像门禁**：`check_startup_readiness.sh`（OFFLINE=1、预算 300s、REQUIRE_IMAGE=1）PASS——listening **6.6s**、warmup complete（首次 /config 200）**24.6s**、VT MCP connected **29.1s**（vibe-trading connected=yes）、strategy-run entry listening **32.6s**、entry /health 200 复核 **35.5s**。镜像经 operator 确认推送主仓 `registry.cn-huhehaote.aliyuncs.com/gm_1/opencode` + 副本 `registry.cn-hangzhou.aliyuncs.com/jiefengnewsv2/opencode`，双仓同 digest `sha256:b08524113430c11c04d6fff131601e8aad50ea8bed870a47a08966db936d945b`，远端 manifest inspect 验证通过。
 - 证据：PR #18 正文（Test Plan/债务清单/回滚路径）、wave4 worktree `.omo/evidence/paper-trade-cross-market-portfolio/`（task-14/22/23/24/25）、本会话 review 两轴报告与门禁输出。回滚路径：revert `09b0d779`；上一已知良好镜像 v3.19.0-l1-source-integrity-20261115。
+### 2026-11-19 F16 前向修复（0014 回归恢复）
+
+- v3.19.0 对齐合并丢弃了从未合入 mymain 的 0003 交付面（`POST /strategy-version-source`，合同 `strategy-version-source-v1`）。按 RM 跨仓请求 0014，在 `fix/strategy-version-source-restore` worktree 以预生成前向补丁把 0003 面从 `fbd73a55`（tag `v3.18.4-strategy-version-source-20261114`）字节一致地恢复到 `a709b99b`（= tag `v3.19.0-l1-source-integrity-20261115` 树）之上；53 个补丁文件中 52 个与 `fbd73a55` blob 哈希一致，唯一差异是本文件保留的 v3.19.0 F5-L1 行。
+- v3.19.0 的 L0/L1 source-integrity 工作不回滚、不改写；回测执行器、config.json 生成与调度内核未触碰。已提交并 rebase 到当前 mymain（v3.20.1 线，base `48bba44d`）；新基线复验、tag 与镜像坐标待交付后记录。
+- 验证：20 个恢复验收套件 280 passed（A12-A20、D1-D4 及 A9 边界）；A0 修复后真实 loopback HTTP 探针 PASS（200 字节精确 BOM/CRLF/尾随换行 + 404/404/409/403/401 五错误形状）；全量回归 23414 passed / 172 skipped / 27 failed，27 个失败在未打补丁的 base worktree（同 HEAD `a709b99b`）逐条复现，均为预存环境性失败，与本次恢复无关。证据：`.omo/evidence/0014-version-source-restore/`（`DELIVERY.md`、`byte-verification.txt`、`acceptance-suites.txt`、`full-regression.txt`、`base-attribution.txt`、`a0-postfix.txt`；A0 修复前探针已由 lead 在 base worktree 采集 `a0-prefix.txt`（修复前框架 404，回归确认））。
+- 状态：delivered/pending。人工确认与 RM 验收 pending，不是 verified；本条不升级任何验收状态。
+
+### 2026-11-14 F16 精确策略版本源码读取（本地发布候选；原拟编号 F15，因 v3.20.0 pt-v2.0 组合栈占用 F15，合入时归位 F16）
+
+- 实现 `POST /strategy-version-source`：按部署绑定 owner 与精确 `strategy_id + strategy_version` 返回 `code/signal_engine.py` 原始字节、不可变 `version_id`、长度和小写 SHA-256；不使用 latest、当前路径或 Git HEAD。合同与部署归属绑定见 [STRATEGY-VERSION-SOURCE.md](../../OpencodeAgent/docs/STRATEGY-VERSION-SOURCE.md)，能力导航见 [F16](../features/f16-strategy-version-source.md)。
+- 四个实现提交为 `d0d3fd41`、`86f8cb35`、`5e6e6abc`、`1163cdf7`：独立持久版本登记、发布/删除/崩溃恢复、跨 owner 写路径拒绝、state export/import 身份与 tombstone 保持。DCO 签署，无 AI 归属 trailer。
+- RM 独立本地验收：15 组真实 HTTP/process/state PASS、A8/A17 pytest 5 passed、选定 VT 回归 961 passed；外部用户 active/pending/tombstoned 版本均与不存在策略同形拒绝。首次审查缺失的 A13 状态覆盖已补齐，复审 APPROVE。
+- 当前边界：本地发布候选，不是生产部署或具名人工验收。生产启用前，RM 必须为每个新沙箱写入独立 `opencode:0600` 归属绑定；共享模板不得配置静态 owner。镜像 tag、digest、ImageCache、部署证据和 `verified_by` 待实际发布后记录。
 
 ### 2026-11-12 F14 生产池重交付（v3.18.3，canary PASS）
 
