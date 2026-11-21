@@ -18,11 +18,9 @@ belongs to RM alone. Do not re-wire it back into an agent tool.
 from __future__ import annotations
 
 import hashlib
-import hmac
 import re
 import secrets
 import threading
-import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,8 +32,21 @@ from src.scheduling.triggers import next_due, validate_schedule, validate_timezo
 from src.strategy_library import scheduling_io as proposal_io
 from src.strategy_library import store as library_store
 from src.strategy_library.history import delete_runs
-from src.strategy_library.paths import resolve_runtime_root
+from src.strategy_library.scheduling_errors import (
+    ScheduleError,
+    fail as _fail,
+    not_ready as _not_ready,
+    version_changed as _version_changed,
+)
 from src.strategy_library.scheduling_io import PROPOSAL_ID_RE, strategy_proposals_dir
+from src.strategy_library.scheduling_jobs import (
+    DISABLED_STATUSES,
+    has_enabled_primary,
+    now_ms as _now_ms,
+    resolve_job_store,
+)
+from src.strategy_library.scheduling_validation import check_token, check_version
+from src.strategy_versions import integration
 
 __all__ = [
     "CONFIRM_TOKEN_RE",
@@ -56,20 +67,7 @@ PROPOSAL_OPERATION = "strategy_schedule"
 PROPOSAL_TTL_MS = 15 * 60 * 1000
 CONFIRM_TOKEN_RE = re.compile(r"^scp_[0-9a-f]{32}$")
 
-_SCHEDULED_DIRNAME = "scheduled_research"
-_JOB_STORE_FILENAME = "scheduled_research_jobs.json"
-# Not "enabled": the primary uniqueness rule and the list view both use this.
-_DISABLED_STATUSES = frozenset({JobStatus.CANCELLED, JobStatus.FAILED, JobStatus.EXPIRED})
 _COMMIT_LOCK = threading.Lock()
-
-
-class ScheduleError(RuntimeError):
-    """A refused schedule mutation; ``status`` is the HTTP code to answer with."""
-
-    def __init__(self, message: str, *, status: int = 409, code: str = "schedule_error"):
-        super().__init__(message)
-        self.status = status
-        self.code = code
 
 
 @dataclass(frozen=True)
@@ -86,59 +84,12 @@ class AttachResult:
     requires_confirmation: bool
 
 
-def _fail(message: str, status: int, code: str) -> NoReturn:
-    raise ScheduleError(message, status=status, code=code)
-
-
-def _now_ms() -> int:
-    return int(time.time() * 1000)
-
-
-def _not_ready(strategy_id: str, readiness: Any) -> NoReturn:
-    _fail(
-        f"strategy {strategy_id!r} is not ready to schedule "
-        f"(readiness={readiness!r})",
-        409,
-        "not_ready",
-    )
-
-
-def _version_changed(strategy_id: str) -> NoReturn:
-    _fail(
-        f"strategy {strategy_id!r} changed since the proposal was created; re-attach it",
-        409,
-        "version_changed",
-    )
-
-
 def _primary_conflict(strategy_id: str) -> NoReturn:
     _fail(
         f"strategy {strategy_id!r} already has an enabled primary schedule",
         409,
         "primary_exists",
     )
-
-
-def _resolve_job_store(
-    job_store: ScheduledResearchJobStore | None, runtime_root: Path | None
-) -> ScheduledResearchJobStore:
-    if job_store is not None:
-        return job_store
-    if runtime_root is None:
-        from src.scheduled_research.service import default_store
-
-        return default_store()
-    root = resolve_runtime_root(runtime_root)
-    return ScheduledResearchJobStore(root / _SCHEDULED_DIRNAME / _JOB_STORE_FILENAME)
-
-
-def _has_enabled_primary(job_store: ScheduledResearchJobStore, strategy_id: str) -> bool:
-    for job in job_store.load().values():
-        if job.strategy_id != strategy_id or job.status in _DISABLED_STATUSES:
-            continue
-        if job.run_policy.get("primary") is True:
-            return True
-    return False
 
 
 def _pin(strategy_id: str, *, store: Any, runtime_root: Path | None) -> tuple[Any, str, str]:
@@ -152,7 +103,7 @@ def _pin(strategy_id: str, *, store: Any, runtime_root: Path | None) -> tuple[An
     if not isinstance(digest, str) or not digest:
         _fail(f"strategy {strategy_id!r} has no spec digest; re-promote it first", 409, "edit_required")
     try:
-        version = library_store.snapshot(strategy_id, store=store, runtime_root=runtime_root)
+        version = integration.snapshot_version(strategy_id, store=store, runtime_root=runtime_root)
     except library_store.EditRequiredError as exc:
         raise ScheduleError(str(exc), status=409, code="edit_required") from exc
     # An edit between the read above and the snapshot bumps version and digest
@@ -220,9 +171,11 @@ def attach(
         validate_timezone(timezone)
     except ValueError as exc:
         raise ScheduleError(str(exc), status=400, code="invalid_schedule") from exc
-    artifact, version, digest = _pin(strategy_id, store=store, runtime_root=runtime_root)
-    jobs = _resolve_job_store(job_store, runtime_root)
-    if primary and _has_enabled_primary(jobs, artifact.id):
+    artifact, version, digest = _pin(
+        strategy_id, store=store, runtime_root=runtime_root
+    )
+    jobs = resolve_job_store(job_store, runtime_root)
+    if primary and has_enabled_primary(jobs, artifact.id):
         _primary_conflict(artifact.id)
     job = _new_job(
         artifact=artifact,
@@ -290,35 +243,6 @@ def request_schedule(
     }
 
 
-def _check_token(payload: dict[str, Any], confirm_token: str, now: int) -> None:
-    proposal_id = payload.get("proposal_id")
-    if int(payload.get("expires_at") or 0) < now:
-        _fail(f"strategy proposal {proposal_id!r} has expired", 409, "expired")
-    if payload.get("status") != "pending" or payload.get("used_at") is not None:
-        _fail(f"strategy proposal {proposal_id!r} was already used", 403, "token_used")
-    expected = payload.get("confirm_token_sha256")
-    presented = hashlib.sha256(confirm_token.encode("utf-8")).hexdigest()
-    if not isinstance(expected, str) or not hmac.compare_digest(expected, presented):
-        _fail("confirmation token does not match", 403, "invalid_token")
-
-
-def _check_version(payload: dict[str, Any], store: Any) -> tuple[str, str]:
-    """Re-read the strategy and return the ``(strategy_id, version)`` it pins."""
-    strategy_id = payload.get("strategy_id")
-    version = payload.get("strategy_version")
-    digest = payload.get("spec_sha256")
-    if not all(isinstance(v, str) and v for v in (strategy_id, version, digest)):
-        _fail("proposal record is malformed; re-attach the strategy", 409, "version_changed")
-    artifact = library_store.get(strategy_id, store=store)
-    if artifact is None or (
-        artifact.artifact_version != version or artifact.spec_sha256 != digest
-    ):
-        _version_changed(strategy_id)
-    if artifact.readiness != "ready":
-        _not_ready(strategy_id, artifact.readiness)
-    return strategy_id, version
-
-
 def commit(
     proposal_id: str,
     confirm_token: str,
@@ -346,10 +270,14 @@ def commit(
         except proposal_io.ProposalFileError as exc:
             raise ScheduleError(str(exc), status=404, code="proposal_not_found") from exc
         if payload.get("operation") != PROPOSAL_OPERATION:
-            _fail(f"strategy proposal {proposal_id!r} is unknown", 404, "proposal_not_found")
+            _fail(
+                f"strategy proposal {proposal_id!r} is unknown",
+                404,
+                "proposal_not_found",
+            )
         now = _now_ms()
-        _check_token(payload, confirm_token, now)
-        strategy_id, version = _check_version(payload, store)
+        check_token(payload, confirm_token, now)
+        strategy_id, version = check_version(payload, store)
         job_payload = payload.get("job")
         if not isinstance(job_payload, dict):
             _version_changed(strategy_id)
@@ -357,12 +285,14 @@ def commit(
             job = ScheduledResearchJob.from_dict(job_payload)
         except (KeyError, TypeError, ValueError) as exc:
             raise ScheduleError(
-                "proposal job record is malformed; re-attach the strategy", status=409, code="version_changed"
+                "proposal job record is malformed; re-attach the strategy",
+                status=409,
+                code="version_changed",
             ) from exc
         if job.strategy_id != strategy_id or job.strategy_version != version:
             _version_changed(strategy_id)
-        jobs = _resolve_job_store(job_store, runtime_root)
-        if job.run_policy.get("primary") is True and _has_enabled_primary(jobs, strategy_id):
+        jobs = resolve_job_store(job_store, runtime_root)
+        if job.run_policy.get("primary") is True and has_enabled_primary(jobs, strategy_id):
             _primary_conflict(strategy_id)
         jobs.upsert(job)
         payload["status"] = "committed"
@@ -384,7 +314,7 @@ def detach(
         ``True`` when the job existed and was removed, ``False`` when it was
         already gone. Both paths delete any orphaned history file.
     """
-    removed = _resolve_job_store(job_store, runtime_root).delete(job_id)
+    removed = resolve_job_store(job_store, runtime_root).delete(job_id)
     try:
         delete_runs(job_id, runtime_root=runtime_root)
     except ValueError:
@@ -399,10 +329,12 @@ def list_schedules(
     runtime_root: Path | None = None,
 ) -> list[ScheduledResearchJob]:
     """Return enabled strategy schedules, earliest ``next_run_at`` first."""
-    jobs = _resolve_job_store(job_store, runtime_root).load().values()
+    jobs = resolve_job_store(job_store, runtime_root).load().values()
     selected = [
-        job for job in jobs
-        if job.executor_kind == "strategy" and job.status not in _DISABLED_STATUSES
+        job
+        for job in jobs
+        if job.executor_kind == "strategy"
+        and job.status not in DISABLED_STATUSES
         and (strategy_id is None or job.strategy_id == strategy_id)
     ]
     return sorted(selected, key=lambda job: (job.next_run_at, job.id))
