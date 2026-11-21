@@ -59,11 +59,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["execution-control"])
 
-#: ``app.state`` attributes holding the zero-argument service providers.
+#: ``app.state`` attributes holding the service providers and liveness probe.
 _PROVIDER_ATTR = "execution_control_service_provider"
 _START_PROVIDER_ATTR = "execution_start_service_provider"
 _STOP_PROVIDER_ATTR = "execution_stop_service_provider"
 _SHARED_SUPERVISOR_ATTR = "execution_control_native_supervisor"
+_HANDLE_PROVIDER_ATTR = "execution_handle_provider"
 
 #: Fixed status for each projection failure kind.
 _ERROR_STATUS = {
@@ -137,7 +138,7 @@ def default_control_service_provider(app: FastAPI) -> ControlProvider:
         from src.strategy_runs.control_service import ExecutionControlService
         from src.strategy_runs.control_store import ControlStore
 
-        handle_provider = getattr(app.state, "execution_handle_provider", None)
+        handle_provider = getattr(app.state, _HANDLE_PROVIDER_ATTR, None)
         return ExecutionControlService(
             ControlStore(),
             legacy_store=ControlStore(),
@@ -497,12 +498,21 @@ def register_execution_control_routes(
     start_provider: ExecutionStartProvider | None = None,
     stop_provider: ExecutionStopProvider | None = None,
 ) -> None:
-    """Mount execution-instance reads, starts and stops with lazy providers."""
+    """Mount execution-instance reads, starts and stops with lazy providers.
+
+    When the production shared supervisor owns start or stop, its
+    process-liveness check becomes the read side's handle provider unless one
+    was already injected, so a live-observable dispatch projects ``running``
+    without manual assembly. The supervisor stays lazy: the probe resolves it
+    per call, never at registration.
+    """
     shared_supervisor = (
         _shared_native_supervisor_provider(app)
         if start_provider is None or stop_provider is None
         else None
     )
+    if shared_supervisor is not None and getattr(app.state, _HANDLE_PROVIDER_ATTR, None) is None:
+        setattr(app.state, _HANDLE_PROVIDER_ATTR, lambda remote_id: shared_supervisor().handle_is_live(remote_id))
     setattr(
         app.state,
         _PROVIDER_ATTR,
