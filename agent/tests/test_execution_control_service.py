@@ -322,6 +322,7 @@ def test_status_native_terminal_states_are_stable(
         "error_kind": "timeout" if status == "failed" else None,
         "run_dir": "/server/run",
         "batch_status": None,
+        "failure_reason": None,
         "contract_version": CONTRACT_VERSION,
     }
 

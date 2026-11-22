@@ -13,7 +13,8 @@ fragment, filesystem path or token never reaches a response or a log line.
 
 Response shapes are exact: find is one of ``not_dispatched``,
 ``dispatched`` or ``absent``; status carries the five-state view; result is
-either ``available`` or ``unavailable``. Every new body — the three read
+``available``, ``unavailable``, or a ``failed`` reason document for a settled
+failure with a persisted reason. Every new body — the three read
 projections, the start/stop acceptances and every error body — carries
 ``contract_version``; unknown identities answer
 ``404 {"error": "not_found", "contract_version": ...}``.
@@ -309,8 +310,9 @@ def _find_payload(projection: FindProjection) -> dict[str, Any]:
 def _status_payload(projection: StatusProjection) -> dict[str, Any]:
     """Project one status read onto its exact eight-field body.
 
-    Factor rows add ``batch_status`` as a ninth field; every other row kind
-    keeps the eight-field body byte for byte.
+    Factor rows add ``batch_status`` as a ninth field; failed rows with a
+    persisted reason add ``failure_reason``; every other row kind keeps the
+    eight-field body byte for byte.
     """
     payload: dict[str, Any] = {
         "remote_id": projection.remote_id,
@@ -324,6 +326,8 @@ def _status_payload(projection: StatusProjection) -> dict[str, Any]:
     }
     if projection.batch_status is not None:
         payload["batch_status"] = projection.batch_status
+    if projection.failure_reason is not None:
+        payload["failure_reason"] = projection.failure_reason
     return payload
 
 

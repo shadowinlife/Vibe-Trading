@@ -355,11 +355,13 @@ def test_old_dispatch_schema_migrates_without_rewriting_rows(
         after_legacy = conn.execute("SELECT * FROM strategy_runs").fetchone()
     assert column_rows["start_declaration_json"][3] == 0
     assert column_rows["start_digest"][3] == 0
+    assert column_rows["failure_reason"][3] == 0
     assert after_dispatch[: len(before_dispatch)] == before_dispatch
-    assert after_dispatch[len(before_dispatch) :] == (None, None)
+    assert after_dispatch[len(before_dispatch) :] == (None, None, None)
     assert after_legacy == before_legacy
     migrated = store.get_dispatch("dispatch-a")
     assert migrated is not None
     assert migrated.start_declaration_json is None
     assert migrated.start_digest is None
+    assert migrated.failure_reason is None
     assert migrated.started_at == 123

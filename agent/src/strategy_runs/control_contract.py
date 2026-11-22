@@ -42,10 +42,14 @@ STOP_EVIDENCE: Final = (
 ERROR_KINDS: Final = (
     "timeout",
     "runner_error",
+    "network_timeout",
+    "logic_error",
     "strategy_not_found",
     "version_not_found",
     "input_digest_mismatch",
 )
+#: Persisted failure text is bounded so one dispatch row never carries a log.
+FAILURE_REASON_LIMIT: Final = 500
 DATA_DIGEST_STATUSES: Final = ("verified", "unavailable")
 
 _URL_SAFE_PATTERN: Final = r"^[A-Za-z0-9._~-]+$"
@@ -65,6 +69,7 @@ __all__ = [
     "DATA_DIGEST_STATUSES",
     "DISPATCH_KEY_PATTERN",
     "ERROR_KINDS",
+    "FAILURE_REASON_LIMIT",
     "FIND_STATES",
     "RUN_STATES",
     "STOP_EVIDENCE",

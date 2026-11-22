@@ -125,12 +125,13 @@ class StatusProjection:
     error_kind: str | None
     run_dir: str | None
     batch_status: str | None = None
+    failure_reason: str | None = None
     contract_version: str = CONTRACT_VERSION
 
 
 @dataclass(frozen=True, slots=True)
 class ResultProjection:
-    """Bounded result JSON, or an explicit unavailable projection."""
+    """Bounded result JSON, a failure reason document, or unavailable."""
 
     remote_id: str
     status: str
@@ -196,6 +197,8 @@ class ExecutionControlService:
         status = _status_projection(row, self._is_live)
         match row:
             case DispatchRow():
+                if status.status == "failed" and row.failure_reason is not None:
+                    return _failure_result(row, status)
                 return self._native_result(row, status)
             case RunRow():
                 return _unavailable_result(status)
@@ -451,6 +454,7 @@ def _status_projection(
                 error_kind,
                 row.run_dir,
                 batch_status,
+                failure_reason=row.failure_reason if status == "failed" else None,
             )
         case RunRow():
             status, error_kind = _observed_status(row, is_live)
@@ -525,6 +529,23 @@ def _observed_status(
 def _unavailable_result(s: StatusProjection) -> ResultProjection:
     return ResultProjection(
         s.remote_id, s.status, "unavailable", None, None, False, s.batch_status
+    )
+
+
+def _failure_result(row: DispatchRow, status: StatusProjection) -> ResultProjection:
+    """Project a settled failure as a bounded reason document, not a blank."""
+    document: dict[str, JsonValue] = {
+        "failure_kind": status.error_kind,
+        "failure_reason": row.failure_reason,
+    }
+    return ResultProjection(
+        row.remote_id,
+        status.status,
+        "failed",
+        document,
+        None,
+        False,
+        status.batch_status,
     )
 
 
