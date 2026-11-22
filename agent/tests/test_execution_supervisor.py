@@ -704,6 +704,8 @@ def test_cas_loss_preserves_existing_terminal_file_and_cleans_temp(
         status: str,
         error_kind: str | None = None,
         result_path: str | None = None,
+        *,
+        failure_reason: str | None = None,
     ) -> Any:
         assert result_path is not None
         original(
@@ -711,9 +713,14 @@ def test_cas_loss_preserves_existing_terminal_file_and_cleans_temp(
             "failed",
             error_kind="runner_error",
             result_path=result_path,
+            failure_reason=failure_reason,
         )
         return original(
-            dispatch_key, status, error_kind=error_kind, result_path=result_path
+            dispatch_key,
+            status,
+            error_kind=error_kind,
+            result_path=result_path,
+            failure_reason=failure_reason,
         )
 
     monkeypatch.setattr(store, "mark_dispatch_terminal", lose_cas)

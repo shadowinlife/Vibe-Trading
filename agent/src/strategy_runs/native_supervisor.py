@@ -21,7 +21,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import BinaryIO, Final, Literal, TypedDict
+from typing import BinaryIO, Final, Literal, NotRequired, TypedDict
 
 from src.core.runtime_env import build_scrubbed_runtime_env
 from src.strategy_runs.control_contract import CONTRACT_VERSION, JsonValue
@@ -35,6 +35,7 @@ from src.strategy_runs.control_store import (
     StopTransitionError,
 )
 from src.strategy_runs.execution_worker import WorkerSpec
+from src.strategy_runs.failure_diagnosis import failure_diagnostic
 
 __all__ = ["NativeSupervisor", "SupervisorError"]
 
@@ -74,6 +75,7 @@ class _Outcome:
     status: Literal["completed", "failed", "cancelled"]
     exit_code: int | None
     error_kind: str | None
+    failure_reason: str | None = None
 
 
 class _TerminalResult(TypedDict):
@@ -84,6 +86,7 @@ class _TerminalResult(TypedDict):
     error_kind: str | None
     finished_at: str
     contract_version: str
+    failure_reason: NotRequired[str]
 
 
 class NativeSupervisor:
@@ -432,6 +435,13 @@ class NativeSupervisor:
             reaped = self._wait_after_kill(handle)
             if outcome.error_kind == "timeout" and type(reaped) is int:
                 outcome = replace(outcome, exit_code=reaped)
+            if outcome.status == "failed":
+                kind, reason = failure_diagnostic(
+                    handle.spec.run_dir, handle.spec.log_path, outcome.exit_code
+                )
+                if outcome.error_kind == "runner_error":
+                    outcome = replace(outcome, error_kind=kind)
+                outcome = replace(outcome, failure_reason=reason)
             self._persist_terminal(handle, outcome)
         finally:
             with self._lock:
@@ -497,6 +507,7 @@ class NativeSupervisor:
                     outcome.status,
                     error_kind=outcome.error_kind,
                     result_path=str(handle.spec.result_path),
+                    failure_reason=outcome.failure_reason,
                 )
             except DispatchTransitionError:
                 return
@@ -518,6 +529,8 @@ def _write_terminal(handle: _WorkerHandle, outcome: _Outcome) -> Path:
         "finished_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "contract_version": CONTRACT_VERSION,
     }
+    if outcome.failure_reason is not None:
+        result["failure_reason"] = outcome.failure_reason
     encoded = json.dumps(
         result,
         ensure_ascii=False,

@@ -66,7 +66,7 @@ legacy VT-STRAT-0001/0002 bodies, which stay byte-for-byte exact by design.
 |---|---|---|---|
 | `GET /execution-instances?dispatch_key=...` | Find an original instance by client dispatch key | `200` with one of `not_dispatched`, `dispatched`, `absent` | `400 invalid_request`, `503 storage_unavailable`, `503 identity_conflict` |
 | `GET /execution-instances/{remote_id}` | Read the five-state status | `200` status body | `400 invalid_request`, `404 not_found`, `503 storage_unavailable` |
-| `GET /execution-instances/{remote_id}/result` | Read the bounded result artifact | `200` available or unavailable body | `400 invalid_request`, `404 not_found`, `503 storage_unavailable` |
+| `GET /execution-instances/{remote_id}/result` | Read the bounded result artifact | `200` available, unavailable, or failed-reason body | `400 invalid_request`, `404 not_found`, `503 storage_unavailable` |
 | `POST /execution-instances` | Start or replay a prepared backtest or a frozen factor declaration | `202` accepted-start body | `400 invalid_request`, `409 prepare_required`, `409 idempotency_conflict`, `409 input_digest_mismatch`, `503 storage_unavailable`, `503 worker_start_failed` |
 | `POST /execution-instances/{remote_id}/stop` | Resolve one idempotent stop tuple | `202` stop body | `400 invalid_request`, `404 not_found`, `409 idempotency_conflict`, `503 storage_unavailable` |
 | `POST /backtest/prepare` | Validate and freeze one backtest input set | `200` prepare response | `400 invalid_input`, `404 strategy_not_found`, `404 version_not_found`, `409 input_digest_mismatch`, `409 idempotency_conflict`, `503 storage_unavailable` |
@@ -197,8 +197,12 @@ Rules:
   execution slot.
 - A legacy `running` row follows the same handle rule.
 - `failed` always carries `error_kind`. The closed vocabulary is `timeout`,
-  `runner_error`, `strategy_not_found`, `version_not_found`,
-  `input_digest_mismatch`.
+  `runner_error`, `network_timeout`, `logic_error`, `strategy_not_found`,
+  `version_not_found`, `input_digest_mismatch`.
+- A failed native row with a persisted reason additively carries
+  `failure_reason`: a non-empty string of at most 500 characters, redacted of
+  credentials and internal topology. Every other row keeps the exact
+  eight-field body. See `5.2` for the source, bound and classification.
 - Timestamps are UTC ISO-8601 with millisecond precision and a `Z` suffix, or null.
 - `run_dir` is null for legacy rows.
 - A native factor row folds the batch outcome its worker recorded into `status`
@@ -223,8 +227,10 @@ which adds `batch_status` as an eighth field:
 }
 ```
 
-`result_status` is `available` or `unavailable`. An unavailable body has
-`result: null` and `progress: null`. `has_more` is always `false`; the result read
+`result_status` is `available`, `unavailable`, or `failed`. An unavailable body
+has `result: null` and `progress: null`. A `failed` body is the failure reason
+document of `5.2`: `result` carries `failure_kind` and `failure_reason`, and
+`progress` is null. `has_more` is always `false`; the result read
 is not paginated. A malformed identifier or a result path that resolves outside
 the server-declared run directory is `400 {"error":"invalid_request","contract_version":"mcp-execution-control-v1"}`. An unknown
 remote id is `404 {"error":"not_found","contract_version":"mcp-execution-control-v1"}`. A storage fault is
@@ -291,6 +297,65 @@ Example status body for a partial factor batch:
   "contract_version":"mcp-execution-control-v1"
 }
 ```
+
+### 5.2 Failure diagnostics
+
+A failed execution must stay attributable after the execution box is
+reclaimed. When a native worker exits non-zero (or its exit is unobservable),
+the supervisor captures one bounded diagnostic while the run directory still
+exists and persists it in the dispatch row:
+
+- Source: the runner's `state.json` failure reason when present, otherwise the
+  last 4 KiB of `worker.log`. The text passes the shared credential and
+  internal-path redaction, then is truncated to at most 500 characters. When
+  nothing survived, the reason is a synthetic exit-code statement; a failure
+  never carries an empty reason.
+- Classification (`error_kind`, machine-readable):
+  - `network_timeout` — the reason matches a data-plane fetch or timeout
+    signature (retry exhaustion, incomplete history, connect/read timeout,
+    connection reset, name-resolution failure, no available source).
+  - `logic_error` — the child reported a Python exception reason without a
+    network signature (strategy, config or input fault).
+  - `runner_error` — nothing classifiable survived; the honest fallback.
+  - `timeout` keeps its existing meaning: the supervisor's own wall-clock
+    budget killed the worker. It is never reclassified.
+- Persistence: the reason is an additive nullable `failure_reason` column on
+  `execution_dispatches`, written only by the one terminal transition, and an
+  additive `failure_reason` field in `worker_result.json` on failed runs only.
+  Success bodies are byte-identical to the prior contract.
+- Read surfaces: the status body adds `failure_reason` only for a failed row
+  with a persisted reason; the result read returns `result_status:"failed"`
+  with `result: {"failure_kind": ..., "failure_reason": ...}` for the same
+  rows. Failed rows without a persisted reason (legacy ledgers) keep the
+  `unavailable` projection. Consumers that ignore the new fields are
+  unaffected; the contract version stays `mcp-execution-control-v1`.
+
+Example failed result body:
+
+```json
+{
+  "remote_id":"mcp-long-demo-1",
+  "status":"failed",
+  "result_status":"failed",
+  "result":{
+    "failure_kind":"network_timeout",
+    "failure_reason":"ValueError: incomplete tencent history for 000001: failed after 3 attempts"
+  },
+  "progress":null,
+  "has_more":false,
+  "contract_version":"mcp-execution-control-v1"
+}
+```
+
+Data-plane fact (registration, not a behavior change): the execution child
+runs generated strategy code under the scrubbed runtime environment, so
+warehouse credentials are structurally absent and the ClickHouse availability
+probe runs anonymously. A declaration of `data_source:"clickhouse"` is
+therefore served by the public Tencent fallback chain in the execution child,
+and `data_digest_status:"unavailable"` at prepare reflects the same fact.
+Transient public-endpoint failures surface as `network_timeout` with the
+fetch signature in `failure_reason`, not as an opaque runner fault. Credential
+scrubbing and the fallback order are unchanged.
 
 ## 6. Backtest prepare: `POST /backtest/prepare`
 
