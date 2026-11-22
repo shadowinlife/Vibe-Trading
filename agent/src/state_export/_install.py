@@ -21,6 +21,11 @@ from pathlib import Path
 
 from src.state_export._archive import _extract_blob
 from src.state_export._errors import ImportFailed, StateExportError, _SelfCheckFailed
+from src.state_export._library_check import (
+    check_strategy_library,
+    strategy_directories,
+    version_directory_pairs,
+)
 from src.state_export._models import ImportResult
 from src.state_export._paths import (
     _DB_SIDECARS,
@@ -245,19 +250,18 @@ def _self_check(
         except sqlite3.Error as exc:
             raise _SelfCheckFailed(f"integrity_check failed for {name}") from exc
 
-    strategy_dirs = _strategy_directories(root)
-    row_count = 0
+    strategy_dirs = strategy_directories(root)
     if _STRATEGY_STORE_DB in installed_databases:
         try:
-            row_count = _strategy_row_count(databases[_STRATEGY_STORE_DB])
+            check_strategy_library(databases[_STRATEGY_STORE_DB], root)
         except sqlite3.Error as exc:
             raise _SelfCheckFailed("strategy table is not enumerable") from exc
-    if row_count != len(strategy_dirs):
+    elif strategy_dirs:
         raise _SelfCheckFailed(
-            f"strategy row count {row_count} does not match {len(strategy_dirs)} strategy directories"
+            f"strategy row count 0 does not match {len(strategy_dirs)} strategy directories"
         )
 
-    on_disk = _version_directory_pairs(root)
+    on_disk = version_directory_pairs(root)
     declared_versions = _manifest_version_pairs(manifest)
     if on_disk != declared_versions:
         raise _SelfCheckFailed(
@@ -276,37 +280,6 @@ def _integrity_check(path: Path) -> None:
         connection.close()
     if row is None or str(row[0]).lower() != "ok":
         raise _SelfCheckFailed(f"integrity_check returned {row!r}")
-
-
-def _strategy_row_count(path: Path) -> int:
-    """Return the number of ``type='strategy'`` artifact rows."""
-    connection = sqlite3.connect(_read_only_uri(path), uri=True)
-    try:
-        row = connection.execute("SELECT COUNT(*) FROM artifacts WHERE type = 'strategy'").fetchone()
-    finally:
-        connection.close()
-    return int(row[0]) if row is not None else 0
-
-
-def _strategy_directories(root: Path) -> list[Path]:
-    """Return the real direct-child directories of ``<root>/strategies``."""
-    strategies = root / _STRATEGY_DIRNAME
-    if strategies.is_symlink() or not strategies.is_dir():
-        return []
-    return [entry for entry in strategies.iterdir() if entry.is_dir() and not entry.is_symlink()]
-
-
-def _version_directory_pairs(root: Path) -> set[tuple[str, str]]:
-    """Return every ``(strategy_id, version)`` directory pair on disk."""
-    pairs: set[tuple[str, str]] = set()
-    for strategy_dir in _strategy_directories(root):
-        versions_dir = strategy_dir / "versions"
-        if versions_dir.is_symlink() or not versions_dir.is_dir():
-            continue
-        for version_dir in versions_dir.iterdir():
-            if version_dir.is_dir() and not version_dir.is_symlink():
-                pairs.add((strategy_dir.name, version_dir.name))
-    return pairs
 
 
 def _manifest_version_pairs(manifest: StateManifest) -> set[tuple[str, str]]:
