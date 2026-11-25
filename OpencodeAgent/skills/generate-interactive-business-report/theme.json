@@ -1,0 +1,31 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Default accessible blue",
+  "mode": "light",
+  "colors": {
+    "primary": "#2563EB",
+    "primary_dark": "#1E3A8A",
+    "primary_light": "#3B82F6",
+    "primary_soft": "#EFF6FF",
+    "secondary": "#B45309",
+    "ink": "#172033",
+    "muted": "#5C6675",
+    "line": "#D6DCE5",
+    "paper": "#FFFFFF",
+    "surface": "#F7F9FC",
+    "positive": "#18794E",
+    "negative": "#B42332",
+    "caution": "#8A5A00"
+  },
+  "typography": {
+    "text": ["Aptos", "Segoe UI", "Helvetica Neue", "Arial", "sans-serif"],
+    "number": ["Aptos", "Segoe UI", "Helvetica Neue", "Arial", "sans-serif"]
+  },
+  "layout": {
+    "content_width_px": 1200,
+    "reading_width_ch": 82,
+    "gutter_px": 32,
+    "section_gap_px": 56,
+    "radius_px": 4
+  }
+}

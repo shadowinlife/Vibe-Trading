@@ -1,0 +1,193 @@
+{
+  "meta": {
+    "title": "Chart Runtime Gallery",
+    "period": "Synthetic",
+    "scope": "All supported chart families",
+    "source": "Synthetic test data"
+  },
+  "opening": {
+    "context": "Renderer validation",
+    "headline": "All supported chart families render from constrained dataset mappings",
+    "summary": "This fixture exercises browser runtime branches and carries no business meaning."
+  },
+  "datasets": {
+    "bar-data": {
+      "columns": [
+        {"key": "label", "label": "Label", "type": "text"},
+        {"key": "value", "label": "Value", "type": "number", "decimals": 0},
+        {"key": "status", "label": "Status", "type": "text"}
+      ],
+      "rows": [
+        {"label": "Alpha", "value": 24, "status": "positive"},
+        {"label": "Beta", "value": -8, "status": "negative"},
+        {"label": "Gamma", "value": 11, "status": "neutral"}
+      ]
+    },
+    "line-data": {
+      "columns": [
+        {"key": "label", "label": "Period", "type": "text"},
+        {"key": "x", "label": "Year", "type": "number", "decimals": 0},
+        {"key": "value", "label": "Value", "type": "number", "decimals": 1},
+        {"key": "low", "label": "Low", "type": "number", "decimals": 1},
+        {"key": "high", "label": "High", "type": "number", "decimals": 1}
+      ],
+      "rows": [
+        {"label": "FY23", "x": 2023, "value": 10, "low": 8, "high": 12},
+        {"label": "FY24", "x": 2024, "value": 14, "low": 12, "high": 16},
+        {"label": "FY25", "x": 2025, "value": 18, "low": 16, "high": 20}
+      ]
+    },
+    "waterfall-data": {
+      "columns": [
+        {"key": "label", "label": "Step", "type": "text"},
+        {"key": "kind", "label": "Kind", "type": "text"},
+        {"key": "value", "label": "Value", "type": "number", "decimals": 0}
+      ],
+      "rows": [
+        {"label": "Opening", "kind": "total", "value": 100},
+        {"label": "Growth", "kind": "change", "value": 30},
+        {"label": "Loss", "kind": "change", "value": -15},
+        {"label": "Closing", "kind": "total", "value": 115}
+      ]
+    },
+    "stacked-data": {
+      "columns": [
+        {"key": "label", "label": "Group", "type": "text"},
+        {"key": "one", "label": "One", "type": "number", "decimals": 0},
+        {"key": "two", "label": "Two", "type": "number", "decimals": 0}
+      ],
+      "rows": [
+        {"label": "Smart TV", "one": 40, "two": 60},
+        {"label": "Mobile", "one": 70, "two": 30}
+      ]
+    },
+    "dumbbell-data": {
+      "columns": [
+        {"key": "label", "label": "Group", "type": "text"},
+        {"key": "before", "label": "Before", "type": "number", "decimals": 0},
+        {"key": "after", "label": "After", "type": "number", "decimals": 0}
+      ],
+      "rows": [
+        {"label": "Series", "before": 20, "after": 35},
+        {"label": "Film", "before": 31, "after": 25}
+      ]
+    },
+    "scatter-data": {
+      "columns": [
+        {"key": "label", "label": "Point", "type": "text"},
+        {"key": "x", "label": "Input", "type": "number", "decimals": 1},
+        {"key": "value", "label": "Output", "type": "number", "decimals": 1}
+      ],
+      "rows": [
+        {"label": "A", "x": 1, "value": 3},
+        {"label": "B", "x": 2, "value": 5},
+        {"label": "C", "x": 4, "value": 6}
+      ]
+    },
+    "bullet-data": {
+      "columns": [
+        {"key": "label", "label": "Metric", "type": "text"},
+        {"key": "value", "label": "Actual", "type": "number", "decimals": 1},
+        {"key": "target", "label": "Target", "type": "number", "decimals": 1},
+        {"key": "status", "label": "Status", "type": "text"}
+      ],
+      "rows": [
+        {"label": "Service", "value": 94, "target": 96, "status": "caution"},
+        {"label": "Quality", "value": 98, "target": 97, "status": "positive"}
+      ]
+    },
+    "histogram-data": {
+      "columns": [
+        {"key": "label", "label": "Band", "type": "text"},
+        {"key": "start", "label": "Start", "type": "number", "decimals": 0},
+        {"key": "end", "label": "End", "type": "number", "decimals": 0},
+        {"key": "count", "label": "Count", "type": "integer"}
+      ],
+      "rows": [
+        {"label": "0-10", "start": 0, "end": 10, "count": 4},
+        {"label": "10-20", "start": 10, "end": 20, "count": 9},
+        {"label": "20-30", "start": 20, "end": 30, "count": 5}
+      ]
+    },
+    "range-data": {
+      "columns": [
+        {"key": "label", "label": "Scenario", "type": "text"},
+        {"key": "low", "label": "Low", "type": "currency", "currency": "USD", "decimals": 0},
+        {"key": "high", "label": "High", "type": "currency", "currency": "USD", "decimals": 0},
+        {"key": "estimate", "label": "Estimate", "type": "currency", "currency": "USD", "decimals": 0}
+      ],
+      "rows": [
+        {"label": "Base", "low": 80, "high": 120, "estimate": 102},
+        {"label": "Stretch", "low": 95, "high": 145, "estimate": 128}
+      ]
+    },
+    "heatmap-data": {
+      "columns": [
+        {"key": "row", "label": "Team", "type": "text"},
+        {"key": "column", "label": "Week", "type": "text"},
+        {"key": "value", "label": "Score", "type": "percent", "decimals": 0}
+      ],
+      "rows": [
+        {"row": "Team A", "column": "Week 1", "value": 72},
+        {"row": "Team A", "column": "Week 2", "value": 81},
+        {"row": "Team B", "column": "Week 1", "value": 64},
+        {"row": "Team B", "column": "Week 2", "value": 89}
+      ]
+    },
+    "timeline-data": {
+      "columns": [
+        {"key": "event", "label": "Event", "type": "text"},
+        {"key": "date", "label": "Date", "type": "date"},
+        {"key": "detail", "label": "Detail", "type": "text"}
+      ],
+      "rows": [
+        {"event": "Pilot", "date": "2026-01-15", "detail": "Pilot started"},
+        {"event": "Review", "date": "2026-03-01", "detail": "Review completed"},
+        {"event": "Launch", "date": "2026-05-20", "detail": "Launch completed"}
+      ]
+    },
+    "scenario-data": {
+      "columns": [
+        {"key": "period", "label": "Period", "type": "text"},
+        {"key": "base", "label": "Base", "type": "number", "decimals": 0},
+        {"key": "upside", "label": "Upside", "type": "number", "decimals": 0},
+        {"key": "downside", "label": "Downside", "type": "number", "decimals": 0}
+      ],
+      "rows": [
+        {"period": "Q1", "base": 100, "upside": 110, "downside": 92},
+        {"period": "Q2", "base": 108, "upside": 124, "downside": 96},
+        {"period": "Q3", "base": 116, "upside": 139, "downside": 101}
+      ]
+    }
+  },
+  "charts": {
+    "bar": {"type": "bar", "title": "Bar", "unit": "Units", "period": "Test", "caption": "Synthetic.", "dataset": "bar-data", "category": "label", "value": "value", "status": "status"},
+    "line": {"type": "line", "title": "Line", "unit": "Units", "period": "Test", "caption": "Synthetic.", "dataset": "line-data", "category": "label", "x": "x", "value": "value", "low": "low", "high": "high", "x_unit": "Year"},
+    "waterfall": {"type": "waterfall", "title": "Waterfall", "unit": "Units", "period": "Test", "caption": "Synthetic.", "dataset": "waterfall-data", "category": "label", "value": "value", "kind": "kind"},
+    "stacked": {"type": "stacked", "title": "Stacked", "unit": "Share", "period": "Test", "caption": "Synthetic.", "dataset": "stacked-data", "category": "label", "series": ["one", "two"], "normalize": true},
+    "dumbbell": {"type": "dumbbell", "title": "Dumbbell", "unit": "Units", "period": "Test", "caption": "Synthetic.", "dataset": "dumbbell-data", "category": "label", "before": "before", "after": "after", "before_label": "Before", "after_label": "After"},
+    "scatter": {"type": "scatter", "title": "Scatter", "unit": "Output", "period": "Test", "caption": "Synthetic.", "dataset": "scatter-data", "category": "label", "x": "x", "value": "value", "x_unit": "Input"},
+    "bullet": {"type": "bullet", "title": "Bullet", "unit": "Score", "period": "Test", "caption": "Synthetic.", "dataset": "bullet-data", "category": "label", "value": "value", "target": "target", "status": "status"},
+    "variance": {"type": "variance", "title": "Variance", "unit": "Difference", "period": "Test", "caption": "Synthetic.", "dataset": "bar-data", "category": "label", "value": "value", "status": "status", "sort": "descending"},
+    "histogram": {"type": "histogram", "title": "Histogram", "unit": "Observations", "period": "Test", "caption": "Synthetic.", "dataset": "histogram-data", "category": "label", "value": "count", "bin_start": "start", "bin_end": "end"},
+    "range": {"type": "range", "title": "Range", "unit": "USD", "period": "Test", "caption": "Synthetic.", "dataset": "range-data", "category": "label", "low": "low", "high": "high", "value": "estimate"},
+    "heatmap": {"type": "heatmap", "title": "Heatmap", "unit": "Score", "period": "Test", "caption": "Synthetic.", "dataset": "heatmap-data", "category": "row", "x_category": "column", "value": "value"},
+    "timeline": {"type": "timeline", "title": "Timeline", "unit": "Date", "period": "Test", "caption": "Synthetic.", "dataset": "timeline-data", "category": "event", "x": "date", "detail": "detail"},
+    "scenario": {"type": "scenario", "title": "Scenario comparison", "unit": "Index", "period": "Test", "caption": "Synthetic.", "dataset": "scenario-data", "category": "period", "series": ["base", "upside", "downside"], "style": "line"}
+  },
+  "sections": [
+    {"id": "bar", "eyebrow": "01 Bar", "navigation_label": "Bar chart", "title": "Bar runtime", "blocks": [{"type": "chart", "chart": "bar"}]},
+    {"id": "line", "eyebrow": "02 Line", "navigation_label": "Line chart", "title": "Line runtime", "blocks": [{"type": "chart", "chart": "line"}]},
+    {"id": "waterfall", "eyebrow": "03 Waterfall", "navigation_label": "Waterfall chart", "title": "Waterfall runtime", "blocks": [{"type": "chart", "chart": "waterfall"}]},
+    {"id": "stacked", "eyebrow": "04 Stacked", "navigation_label": "Stacked chart", "title": "Stacked runtime", "blocks": [{"type": "chart", "chart": "stacked"}]},
+    {"id": "dumbbell", "eyebrow": "05 Dumbbell", "navigation_label": "Dumbbell chart", "title": "Dumbbell runtime", "blocks": [{"type": "chart", "chart": "dumbbell"}]},
+    {"id": "scatter", "eyebrow": "06 Scatter", "navigation_label": "Scatter", "title": "Scatter runtime", "blocks": [{"type": "chart", "chart": "scatter"}]},
+    {"id": "bullet", "eyebrow": "07 Bullet", "navigation_label": "Bullet", "title": "Bullet runtime", "blocks": [{"type": "chart", "chart": "bullet"}]},
+    {"id": "variance", "eyebrow": "08 Variance", "navigation_label": "Variance", "title": "Variance runtime", "blocks": [{"type": "chart", "chart": "variance"}]},
+    {"id": "histogram", "eyebrow": "09 Histogram", "navigation_label": "Histogram", "title": "Histogram runtime", "blocks": [{"type": "chart", "chart": "histogram"}]},
+    {"id": "range", "eyebrow": "10 Range", "navigation_label": "Range", "title": "Range runtime", "blocks": [{"type": "chart", "chart": "range"}]},
+    {"id": "heatmap", "eyebrow": "11 Heatmap", "navigation_label": "Heatmap", "title": "Heatmap runtime", "blocks": [{"type": "chart", "chart": "heatmap"}]},
+    {"id": "timeline", "eyebrow": "12 Timeline", "navigation_label": "Timeline", "title": "Timeline runtime", "blocks": [{"type": "chart", "chart": "timeline"}]},
+    {"id": "scenario", "eyebrow": "13 Scenario", "navigation_label": "Scenario", "title": "Scenario runtime", "blocks": [{"type": "chart", "chart": "scenario"}]}
+  ]
+}

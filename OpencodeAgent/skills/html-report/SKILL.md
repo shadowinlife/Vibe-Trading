@@ -3,6 +3,7 @@ name: html-report
 description: |
   手工导出带 ECharts 的独立 HTML 文件（非产品报告路径），经 RM STS 直传交付可点击报告链接。Use when: 用户明确要求“生成一个独立 HTML 文件”、离线分享、非产品报告导出。
   支持 6 种专用模板：Vibe-Trading 回测、Alpha158 Walk-Forward、七看八问、基本面分析、缠论分析、信号报告。
+  模板之外的任意报告结构走自适应引擎 generate-interactive-business-report：编写 JSON 报告规格渲染，同样经 upload_report.py 交付。
 argument-hint: "报告类型 + 股票代码"
 user-invocable: true
 triggers:
@@ -43,6 +44,45 @@ Only when the user explicitly asks for a standalone HTML file. Product reports �
 | 信号报告 | `render_signal_html()` | Signal summary + price chart with markers |
 | Markdown fallback | `render_from_markdown()` | Convert existing .md reports to styled HTML |
 
+## Adaptive Reports (any shape)
+
+The fixed templates above are the fast path **only when the report shape matches
+one of them**. For any other shape — novel layouts, mixed evidence, custom
+section counts — compose a JSON report specification and render it through the
+vendored adaptive engine, the sibling skill `generate-interactive-business-report`
+at `/home/opencode/.config/opencode/skills/generate-interactive-business-report`.
+
+Decision logic:
+
+1. Shape matches one of the 6 templates (or a Markdown conversion) → use
+   `scripts/reports/html_renderer.py` as in the Workflow below.
+2. Otherwise → author a JSON spec per the engine's `report-specification.md`
+   (`meta` + `sections` required; `composition`, `opening`, `datasets`, `charts`,
+   `closing`, `supporting` optional) and render with the engine.
+
+The engine accepts validated JSON content only: **raw HTML, CSS, JavaScript, and
+ECharts options are rejected**. It emits one self-contained HTML with inline
+ECharts and a hash-locked CSP, so the same self-contained delivery gate applies.
+
+Build command (CN A-share reports use the bundled A-share theme — red=up /
+green=down, CJK-first fonts). Run `--check` first to validate the spec, then
+render:
+
+```bash
+python -B /home/opencode/.config/opencode/skills/generate-interactive-business-report/scripts/render_html_report.py spec.json report.html --theme /home/opencode/.config/opencode/skills/generate-interactive-business-report/theme.ashare.json --check
+python -B /home/opencode/.config/opencode/skills/generate-interactive-business-report/scripts/render_html_report.py spec.json report.html --theme /home/opencode/.config/opencode/skills/generate-interactive-business-report/theme.ashare.json
+```
+
+Then deliver exactly like the fixed path — same upload, same rules:
+
+```bash
+python /home/opencode/.config/opencode/skills/html-report/scripts/reports/upload_report.py report.html
+```
+
+Return the printed `report_url` as a clickable markdown link; never a bare path.
+The `frontend-design` (design direction) and `web-design-guidelines` (QA) steps
+and all Design Constraints below apply to adaptive reports too.
+
 ## Design Constraints (Hard Rules)
 
 Every generated HTML must follow these constraints:
@@ -73,7 +113,7 @@ Every generated HTML must follow these constraints:
 
 ## Workflow
 
-1. Determine the report type from the analysis context.
+1. Determine the report type from the analysis context. If the shape matches none of the templates, take the Adaptive Reports path above instead of steps 3–4.
 2. Load `frontend-design` for design direction; prepare the data structure matching the renderer function's parameters.
 3. Call the appropriate renderer from `scripts/reports/html_renderer.py`:
    ```python

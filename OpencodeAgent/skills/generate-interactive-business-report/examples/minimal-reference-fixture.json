@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "title": "Service coverage reference",
+    "scope": "Synthetic support channels",
+    "source": "Synthetic package fixture"
+  },
+  "sections": [
+    {
+      "id": "coverage",
+      "title": "Coverage included in this reference",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "This compact fixture shows that a complete report can use one section without an opening summary, metrics, charts, controls, closing list, or appendix."
+        },
+        {
+          "type": "list",
+          "items": [
+            "Email support is available during the synthetic service window.",
+            "Telephone support is outside this fixture's scope."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="{{HTML_LANG}}">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="{{REPORT_CSP}}">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{REPORT_TITLE}}</title>
+  <style>
+{{REPORT_BASE_CSS}}
+  </style>
+</head>
+<body class="{{REPORT_COMPOSITION_CLASS}}" data-ui-labels="{{UI_LABELS_ENCODED}}">
+  <a class="skip-link" href="#opening">{{SKIP_TO_REPORT}}</a>
+  <div class="report-shell">
+    <header class="report-header">
+      <div class="report-brand">{{BRAND_LOGO_HTML}}<p class="report-title">{{REPORT_TITLE}}</p></div>
+      <p class="report-meta">{{REPORT_META}}</p>
+    </header>
+    <main>
+{{HERO_HTML}}
+{{SECTION_NAV_HTML}}
+{{SECTIONS_HTML}}
+  {{CLOSING_HTML}}
+{{SUPPORTING_HTML}}
+    </main>
+    <footer class="report-footer">{{FOOTER_TEXT}}</footer>
+  </div>
+  <script>
+{{ECHARTS_RUNTIME_JS}}
+  </script>
+  <script>
+{{REPORT_CHARTS_JS}}
+  </script>
+  <script>
+{{REPORT_INTERACTIONS_JS}}
+  </script>
+</body>
+</html>

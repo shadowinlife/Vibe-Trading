@@ -1,0 +1,7 @@
+interface:
+  display_name: "Interactive Business Report"
+  short_description: "Build secure interactive business reports"
+  default_prompt: "Use $generate-interactive-business-report to turn this analysis into a standalone interactive business report."
+
+policy:
+  allow_implicit_invocation: true

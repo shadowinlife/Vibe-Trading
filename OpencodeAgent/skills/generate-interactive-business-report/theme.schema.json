@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Interactive HTML report theme",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "colors", "typography", "layout"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 100},
+    "mode": {"type": "string", "enum": ["light", "dark"], "default": "light"},
+    "colors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary", "primary_dark", "primary_light", "primary_soft", "secondary",
+        "ink", "muted", "line", "paper", "surface", "positive", "negative", "caution"
+      ],
+      "properties": {
+        "primary": {"$ref": "#/$defs/color"},
+        "primary_dark": {"$ref": "#/$defs/color"},
+        "primary_light": {"$ref": "#/$defs/color"},
+        "primary_soft": {"$ref": "#/$defs/color"},
+        "secondary": {"$ref": "#/$defs/color"},
+        "ink": {"$ref": "#/$defs/color"},
+        "muted": {"$ref": "#/$defs/color"},
+        "line": {"$ref": "#/$defs/color"},
+        "paper": {"$ref": "#/$defs/color"},
+        "surface": {"$ref": "#/$defs/color"},
+        "positive": {"$ref": "#/$defs/color"},
+        "negative": {"$ref": "#/$defs/color"},
+        "caution": {"$ref": "#/$defs/color"}
+      }
+    },
+    "typography": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "number"],
+      "properties": {
+        "text": {"$ref": "#/$defs/fontStack"},
+        "number": {"$ref": "#/$defs/fontStack"}
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content_width_px", "reading_width_ch", "gutter_px", "section_gap_px", "radius_px"],
+      "properties": {
+        "content_width_px": {"type": "integer", "minimum": 640, "maximum": 2000},
+        "reading_width_ch": {"type": "integer", "minimum": 45, "maximum": 120},
+        "gutter_px": {"type": "integer", "minimum": 12, "maximum": 64},
+        "section_gap_px": {"type": "integer", "minimum": 24, "maximum": 96},
+        "radius_px": {"type": "integer", "minimum": 0, "maximum": 24}
+      }
+    }
+  },
+  "$defs": {
+    "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+    "fontStack": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {"type": "string", "minLength": 1, "maxLength": 64}
+    }
+  }
+}

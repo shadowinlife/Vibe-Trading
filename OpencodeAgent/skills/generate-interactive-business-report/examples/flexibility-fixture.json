@@ -1,0 +1,89 @@
+{
+  "meta": {
+    "title": "Structured flexibility validation",
+    "period": "Illustrative period",
+    "scope": "Synthetic report-authoring workflow",
+    "source": "Synthetic package fixture",
+    "freshness": "Created for renderer validation"
+  },
+  "datasets": {
+    "stages": {
+      "columns": [
+        {"key": "stage", "label": "Stage", "type": "text"},
+        {"key": "value", "label": "Illustrative value", "type": "number", "decimals": 0}
+      ],
+      "rows": [
+        {"stage": "Collect", "value": 30},
+        {"stage": "Structure", "value": 55},
+        {"stage": "Render", "value": 85}
+      ]
+    }
+  },
+  "sections": [
+    {
+      "id": "controlled-content",
+      "title": "Richer structure remains explicit and bounded",
+      "intro": [
+        {"type": "text", "text": "This synthetic fixture exercises the new rendering path; review the "},
+        {"type": "link", "text": "documented contract", "href": "https://example.com/method"},
+        {"type": "text", "text": " before using it with production evidence. "},
+        {"type": "citation", "label": "1", "href": "https://example.com/source", "title": "Synthetic source used only for package validation"}
+      ],
+      "blocks": [
+        {
+          "type": "subsection",
+          "title": "Narrative controls",
+          "intro": "Typed nodes provide emphasis and provenance without opening an HTML escape hatch.",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": [
+                {"type": "text", "text": "Use "},
+                {"type": "emphasis", "text": "ordered"},
+                {"type": "text", "text": " lists only when sequence matters."}
+              ]
+            },
+            {
+              "type": "list",
+              "style": "ordered",
+              "items": [
+                "Validate the evidence and intended hierarchy.",
+                [
+                  {"type": "strong", "text": "Generate"},
+                  {"type": "text", "text": " a specialized figure only when the library cannot express the evidence."}
+                ],
+                "Inspect the final artifact at desktop and mobile widths."
+              ]
+            }
+          ]
+        },
+        {
+          "type": "subsection",
+          "title": "Controlled embedded image",
+          "blocks": [
+            {
+              "type": "image",
+              "title": "Three synthetic workflow stages increase in sequence",
+              "image": {
+                "mime_type": "image/png",
+                "base64": "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"
+              },
+              "alt": "Three vertical bars increase from left to right above a horizontal baseline.",
+              "caption": "Synthetic image for package validation; the structured table provides the exact values.",
+              "width": "wide"
+            },
+            {
+              "type": "table",
+              "dataset": "stages",
+              "title": "Exact synthetic values",
+              "columns": ["stage", "value"],
+              "limit": 3,
+              "search": false,
+              "display": "inline"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

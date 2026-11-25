@@ -1,0 +1,46 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "A-share red-up CJK",
+  "mode": "light",
+  "colors": {
+    "primary": "#2563EB",
+    "primary_dark": "#1E3A8A",
+    "primary_light": "#3B82F6",
+    "primary_soft": "#EFF6FF",
+    "secondary": "#B45309",
+    "ink": "#172033",
+    "muted": "#5C6675",
+    "line": "#D6DCE5",
+    "paper": "#FFFFFF",
+    "surface": "#F7F9FC",
+    "positive": "#E11D48",
+    "negative": "#15803D",
+    "caution": "#8A5A00"
+  },
+  "typography": {
+    "text": [
+      "Noto Sans SC",
+      "Source Han Sans SC",
+      "PingFang SC",
+      "Microsoft YaHei",
+      "-apple-system",
+      "Segoe UI",
+      "Roboto",
+      "sans-serif"
+    ],
+    "number": [
+      "JetBrains Mono",
+      "Fira Code",
+      "SF Mono",
+      "Noto Sans SC",
+      "monospace"
+    ]
+  },
+  "layout": {
+    "content_width_px": 1200,
+    "reading_width_ch": 82,
+    "gutter_px": 32,
+    "section_gap_px": 56,
+    "radius_px": 4
+  }
+}
