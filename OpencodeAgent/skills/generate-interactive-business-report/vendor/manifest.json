@@ -1,0 +1,12 @@
+{
+  "name": "Apache ECharts",
+  "version": "6.1.0",
+  "homepage": "https://echarts.apache.org/",
+  "source": "https://www.npmjs.com/package/echarts/v/6.1.0",
+  "license": "Apache-2.0",
+  "bundle": "echarts.custom.min.js",
+  "shared_with": "../../html-report/scripts/reports/assets/echarts.min.js",
+  "bytes": 1121884,
+  "sha256": "659dafd219f4db91efb12e6c59ba3a8a571f9917cd8d9075fb0df582d199e13f",
+  "note": "echarts.custom.min.js is a symlink to the html-report full UMD build, so both skills inline one shared ECharts bundle. The full build is a superset of the former tree-shaken custom build (echarts-entry.js kept for reference); the engine renders via SVGRenderer."
+}
