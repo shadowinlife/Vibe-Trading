@@ -38,6 +38,14 @@ RUN pip install --no-cache-dir -e /opt/vibe-trading/ || \
 # already ran at build time.
 RUN /opt/venv/bin/python3 -c "import sys; sys.path.insert(0, '/opt/vibe-trading/agent'); from mcp_server import mcp; print('VT MCP import OK')"
 
+# html-report RM delivery: upload_report.py imports oss2 at module top, so the
+# uploader is dead without it. App-layer install (aliyun mirror from pip.conf,
+# tuna fallback) keeps the base image untouched.
+RUN (pip install --no-cache-dir "oss2>=2.18" || \
+     pip install --no-cache-dir "oss2>=2.18" \
+       --index-url https://pypi.tuna.tsinghua.edu.cn/simple) && \
+    /opt/venv/bin/python3 -c "import oss2; print('oss2 import OK')"
+
 # ── Pre-bake the OMO plugin into opencode's package cache ───────────────────
 # opencode >=1.18 resolves config plugins via Npm.add(): when
 #   ~/.cache/opencode/packages/<spec>/node_modules/<name>

@@ -117,7 +117,7 @@ ClickHouse 数据由外部同步进程维护，本容器内不包含同步逻辑
 1. 回测 `run_dir` 固定为 `/home/opencode/.vibe-trading/runs/<run_id>`。先在该目录写 `config.json` 与 `code/signal_engine.py`，再调用 `vibe-trading_backtest(run_dir=...)`；禁止用 bash 直接跑回测，禁止把 `run_dir` 放到 `/workspace`、`/tmp` 或 `analysis/`。
 2. 回测完成后，控制面从 tool result 的 `summary` 与 `run_dir` artifacts 自动渲染报告。不要为“可视化回测报告”手写 HTML/PDF，也不要再生成一份 Markdown 回测报告。
 3. 回答只返回 `run_id`、关键指标和简短结论；报告入口是控制面的 Run Detail。用户追问“可视化/报告”时，返回 `run_id` 并说明在 Run Detail 查看。
-4. `html-report` 仅用于用户明确要求的独立 HTML 导出（非产品需求），保存到 `/home/opencode/.vibe-trading/reports/`；禁止 `/workspace/reports`、`nginx:8088`、`scp`。
+4. `html-report` 仅用于用户明确要求的独立 HTML 导出（非产品需求），保存到 `/home/opencode/.vibe-trading/reports/`；生成后用 `upload_report.py` 经 RM 直传交付，把回执中的 `report_url` 作为可点击链接返回给用户，不得以裸文件路径或 `docker cp` 作为交付物；禁止 `/workspace/reports`、`nginx:8088`、`scp`。
 
 ### 产物布局（控制面契约，不得改名）
 
@@ -228,7 +228,7 @@ LLM 不得自行计算收益率、估值倍数、回撤、IC/IR、显著性等�
 
 - 回测报告：控制面 Run Detail 自动渲染，不生成 HTML/PDF。
 - 分析类 Markdown：保存到 `analysis/<stock_code>/`，按需更新 `_index.json`。
-- `html-report` 仅作为手工离线导出工具保留，不属于产品交付路径；不要主动询问用户是否生成 HTML。
+- `html-report` 仅用于用户明确要求的独立 HTML 导出，不属于产品交付路径；不要主动询问用户是否生成 HTML。用户明确要求时：先用 `frontend-design` 技能定设计方向，生成后用 `web-design-guidelines` 技能做 QA，再经 `upload_report.py` 上传 RM，把回执 `report_url` 作为可点击 markdown 链接返回；不得让用户 `docker cp` 或只给裸文件路径。
 
 # 组合能力（多 Skill 工作流）
 

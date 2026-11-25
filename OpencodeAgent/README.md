@@ -16,8 +16,8 @@ Docker build project for `opencode-serve` — OpenCode Web Server with Vibe-Trad
 This project packages the OpenCode Web Server research environment into a reproducible Docker image. It extends the base `opencode-serve` image with:
 
 - **OpenCode CLI** (pinned in `Dockerfile.base`, currently 1.19.3) + **OMO (oh-my-openagent) plugin** (pinned via `OMO_VERSION`, currently 5.1.35, pre-baked into the plugin cache)
-- **13 OpenCode skills**: data-warehouse (ClickHouse heavy queries), semantic-layer (ClickHouse semantic catalogue and table/result decision rules; read before querying), escape-top-microstructure (top-detection signals), html-report (manual offline HTML export only; not a product report path), intake (clarification routing, slot defaults and parameter compile table, loaded on demand), periodic-execution (cron), research-scenarios (scenario playbooks A-F, loaded on demand), plus six external-evidence skills: ashare-filings (定期报告全文), ashare-events (临时公告), ashare-risk (监管处罚), ashare-ir (机构调研), ashare-research (券商研报), ashare-policy (gov.cn 行业政策)
-- **Full AGENTS.md** (395 lines, always loaded): an 8-artifact product index, a scenario-based VT capability map, all 30 swarm presets grouped by use case, behavior instructions for 6 scenarios (A through F), a 4-class request router and anti-hallucination discipline; the clarification protocol now lives in the `intake` skill, not in this file
+- **15 OpenCode skills**: data-warehouse (ClickHouse heavy queries), semantic-layer (ClickHouse semantic catalogue and table/result decision rules; read before querying), escape-top-microstructure (top-detection signals), html-report (manual standalone HTML export with RM upload delivery; not a product report path), frontend-design (design-direction companion for html-report, Apache-2.0), web-design-guidelines (post-build UI QA companion, MIT), intake (clarification routing, slot defaults and parameter compile table, loaded on demand), periodic-execution (cron), research-scenarios (scenario playbooks A-F, loaded on demand), plus six external-evidence skills: ashare-filings (定期报告全文), ashare-events (临时公告), ashare-risk (监管处罚), ashare-ir (机构调研), ashare-research (券商研报), ashare-policy (gov.cn 行业政策)
+- **Full AGENTS.md** (396 lines, always loaded): an 8-artifact product index, a scenario-based VT capability map, all 30 swarm presets grouped by use case, behavior instructions for 6 scenarios (A through F), a 4-class request router and anti-hallucination discipline; the clarification protocol now lives in the `intake` skill, not in this file
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
 - **Cron job infrastructure** with CLI management and DingTalk/email notification
 
@@ -75,9 +75,11 @@ OpencodeAgent/
 │   ├── package.json            # OpenCode plugin dependencies
 │   └── vibe-trading-tools.json # Tool governance manifest (disabled VT tools → permission denies)
 │
-├── skills/                     # OpenCode skills (13) — installed to the global config dir, not /workspace
+├── skills/                     # OpenCode skills (15) — installed to the global config dir, not /workspace
 │   ├── data-warehouse/         # ClickHouse query interface (query_warehouse, list_tables)
-│   ├── html-report/            # Manual offline HTML export with ECharts (not a product path)
+│   ├── html-report/            # Manual standalone HTML export with ECharts + RM upload delivery (not a product path)
+│   ├── frontend-design/        # Design-direction companion for html-report (vendored, Apache-2.0)
+│   ├── web-design-guidelines/  # Post-build UI QA companion (vendored, MIT)
 │   ├── intake/                 # Clarification routing, slot defaults and parameter compile table
 │   ├── periodic-execution/     # Cron job management (manage.py, notifier)
 │   ├── escape-top-microstructure/ # A-share top-detection signals
@@ -110,7 +112,7 @@ Query interface for the ClickHouse A-share warehouse (`query_warehouse(sql)` / `
 
 ### 2. `html-report` — Manual HTML Export
 
-Generates a standalone HTML file with ECharts only when the user explicitly asks for one. Product backtest reports are rendered by the control plane from `run_dir`, not by this skill. Templates: backtest, Alpha158, fundamental analysis, Chanlun, signal, screening, markdown conversion.
+Generates a standalone HTML file with ECharts only when the user explicitly asks for one. Product backtest reports are rendered by the control plane from `run_dir`, not by this skill. Templates: backtest, Alpha158, fundamental analysis, Chanlun, signal, screening, markdown conversion. Delivery: `scripts/reports/upload_report.py` uploads the self-contained HTML to the Resource Manager via STS and prints a clickable `report_url` (contract: `skills/html-report/docs/report-delivery.md`). Design companions: `frontend-design` before building, `web-design-guidelines` as the QA pass.
 
 ### 3. `periodic-execution` — Cron Job Management
 
@@ -215,5 +217,7 @@ Two-image build: `Dockerfile.base` (Ubuntu 22.04 + Python 3.12 + Node 20 + the p
 
 ## License
 
-- `skills/html-report/` — from [shadowinlife/vibetrading-html-report](https://github.com/shadowinlife/vibetrading-html-report)
+- `skills/html-report/` — from [shadowinlife/vibetrading-html-report](https://github.com/shadowinlife/vibetrading-html-report); vendored ECharts build Apache-2.0 (see `skills/html-report/scripts/reports/assets/PROVENANCE.md`)
+- `skills/frontend-design/` — vendored verbatim, Apache-2.0 (LICENSE.txt included)
+- `skills/web-design-guidelines/` — vendored verbatim from vercel, v1.1.0, MIT
 - Other components — see individual file headers

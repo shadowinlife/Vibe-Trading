@@ -10,6 +10,8 @@
 - **当前状态头**: 回测报告顶部显示当前信号、建议仓位、判断依据
 - **多策略 Tab**: Vibe-Trading 回测支持多策略对比展示
 - **本地归档**: 复制到 `/home/opencode/.vibe-trading/reports/`
+- **RM 直传交付**: STS 临时凭据直传私有 OSS，回执含可点击 `report_url`（`docs/report-delivery.md`）
+- **自包含单文件**: ECharts 内联（vendored Apache-2.0 构建）+ 系统 CJK 字体，不透明源 CSP 下可渲染
 - **手工导出**: 仅用于用户明确要求的独立 HTML 文件；产品回测报告由控制面渲染
 
 ## 适用范围
@@ -25,12 +27,13 @@
 - Jinja2 >= 3.0
 - pandas >= 1.5
 - markupsafe >= 2.0
-- ECharts 5 (CDN, 需要网络访问)
+- oss2 >= 2.18 (仅交付上传需要；渲染不需要)
+- ECharts 6.1.0 已内联于 `scripts/reports/assets/echarts.min.js`（Apache-2.0），**无需网络/CDN**
 
 ## 安装
 
 ```bash
-pip install jinja2 pandas markupsafe
+pip install jinja2 pandas markupsafe oss2
 ```
 
 ## 快速开始
@@ -118,7 +121,20 @@ python scripts/reports/deploy_report.py report.html --stock 588000.SH
 # 默认写入 /home/opencode/.vibe-trading/reports/588000.SH/report.html
 ```
 
-本镜像不提供 nginx，也不提供报告 URL。需要分享时由调用方自行处理文件。
+### 5. 交付给用户（RM STS 直传私有 OSS）
+
+```bash
+# 沙箱内交付（读取预置的 agent token 与 RM_AGENT_API_URL）
+python scripts/reports/upload_report.py report.html
+
+# 只做自包含校验与流程预览（零网络调用）
+python scripts/reports/upload_report.py report.html --dry-run
+```
+
+成功后回执打印 `report_id` 与可点击的 `report_url`
+（`{public_base}/reports/{report_id}`，默认 base 为 `https://www.jetwind.net/sandbox`，
+可用 `--public-base` 覆盖）。把 `report_url` 作为 markdown 链接返回给用户；
+契约细节见 `docs/report-delivery.md`。
 
 ## 模板说明
 
@@ -139,7 +155,9 @@ python scripts/reports/deploy_report.py report.html --stock 588000.SH
 ## 安全说明
 
 - 所有路径参数经过严格正则校验，防止命令注入和路径穿越
-- Jinja2 模板启用 autoescape，防止 XSS
+- Jinja2 模板启用 autoescape，防止 XSS（内联 ECharts 以 `Markup` 显式豁免）
+- agent token 与 STS 凭据只读一次、仅存内存，任何输出/错误信息不携带凭据
+- 上传前强制自包含校验，拒绝外部脚本/样式/字体引用
 
 ## License
 
