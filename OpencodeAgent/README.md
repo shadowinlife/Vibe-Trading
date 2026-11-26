@@ -16,8 +16,8 @@ Docker build project for `opencode-serve` — OpenCode Web Server with Vibe-Trad
 This project packages the OpenCode Web Server research environment into a reproducible Docker image. It extends the base `opencode-serve` image with:
 
 - **OpenCode CLI** (pinned in `Dockerfile.base`, currently 1.19.3) + **OMO (oh-my-openagent) plugin** (pinned via `OMO_VERSION`, currently 5.1.35, pre-baked into the plugin cache)
-- **16 OpenCode skills**: data-warehouse (ClickHouse heavy queries), semantic-layer (ClickHouse semantic catalogue and table/result decision rules; read before querying), escape-top-microstructure (top-detection signals), html-report (manual standalone HTML export with RM upload delivery; not a product report path), frontend-design (design-direction companion for html-report, Apache-2.0), web-design-guidelines (post-build UI QA companion, MIT), generate-interactive-business-report (adaptive spec→renderer engine for any-shape standalone HTML reports, AjjayK, Apache-2.0), intake (clarification routing, slot defaults and parameter compile table, loaded on demand), periodic-execution (cron), research-scenarios (scenario playbooks A-F, loaded on demand), plus six external-evidence skills: ashare-filings (定期报告全文), ashare-events (临时公告), ashare-risk (监管处罚), ashare-ir (机构调研), ashare-research (券商研报), ashare-policy (gov.cn 行业政策)
-- **Full AGENTS.md** (396 lines, always loaded): an 8-artifact product index, a scenario-based VT capability map, all 30 swarm presets grouped by use case, behavior instructions for 6 scenarios (A through F), a 4-class request router and anti-hallucination discipline; the clarification protocol now lives in the `intake` skill, not in this file
+- **17 OpenCode skills**: data-warehouse (ClickHouse heavy queries), semantic-layer (ClickHouse semantic catalogue and table/result decision rules; read before querying), escape-top-microstructure (top-detection signals), strategy-library (public strategy/knowledge/indicator library with bundled `library/` data, search-before-answer routing and citation discipline, MIT), html-report (manual standalone HTML export with RM upload delivery; not a product report path), frontend-design (design-direction companion for html-report, Apache-2.0), web-design-guidelines (post-build UI QA companion, MIT), generate-interactive-business-report (adaptive spec→renderer engine for any-shape standalone HTML reports, AjjayK, Apache-2.0), intake (clarification routing, slot defaults and parameter compile table, loaded on demand), periodic-execution (cron), research-scenarios (scenario playbooks A-F, loaded on demand), plus six external-evidence skills: ashare-filings (定期报告全文), ashare-events (临时公告), ashare-risk (监管处罚), ashare-ir (机构调研), ashare-research (券商研报), ashare-policy (gov.cn 行业政策)
+- **Full AGENTS.md** (420 lines, always loaded): an 8-artifact product index, a scenario-based VT capability map, all 30 swarm presets grouped by use case, behavior instructions for 6 scenarios (A through F), a 4-class request router, the mandatory strategy-library routing section and anti-hallucination discipline; the clarification protocol now lives in the `intake` skill, not in this file
 - **Quantitative scripts**: market microstructure, multi-layer screening, realtime quote adapter (backtest / Chanlun / agent memory now provided by Vibe-Trading built-ins)
 - **Cron job infrastructure** with CLI management and DingTalk/email notification
 
@@ -75,8 +75,9 @@ OpencodeAgent/
 │   ├── package.json            # OpenCode plugin dependencies
 │   └── vibe-trading-tools.json # Tool governance manifest (disabled VT tools → permission denies)
 │
-├── skills/                     # OpenCode skills (16) — installed to the global config dir, not /workspace
+├── skills/                     # OpenCode skills (17) — installed to the global config dir, not /workspace
 │   ├── data-warehouse/         # ClickHouse query interface (query_warehouse, list_tables)
+│   ├── strategy-library/       # Public strategy library: SKILL.md + bundled library/ (entries + library.py, MIT)
 │   ├── html-report/            # Manual standalone HTML export with ECharts + RM upload delivery (not a product path)
 │   ├── frontend-design/        # Design-direction companion for html-report (vendored, Apache-2.0)
 │   ├── web-design-guidelines/  # Post-build UI QA companion (vendored, MIT)
@@ -218,6 +219,7 @@ Two-image build: `Dockerfile.base` (Ubuntu 22.04 + Python 3.12 + Node 20 + the p
 
 ## License
 
+- `skills/strategy-library/` — vendored from [shadowinlife/vibetrading-strategy-library](https://github.com/shadowinlife/vibetrading-strategy-library) (commit d63c777), MIT (LICENSE included in `library/`); SKILL.md verbatim, repo root bundled as `library/` (entries + library.py + tests); AGENTS.md routing section inserted from its `docs/agents-patch.md`
 - `skills/html-report/` — from [shadowinlife/vibetrading-html-report](https://github.com/shadowinlife/vibetrading-html-report); vendored ECharts build Apache-2.0 (see `skills/html-report/scripts/reports/assets/PROVENANCE.md`)
 - `skills/frontend-design/` — vendored verbatim, Apache-2.0 (LICENSE.txt included)
 - `skills/web-design-guidelines/` — vendored verbatim from vercel, v1.1.0, MIT
